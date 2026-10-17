@@ -11,7 +11,16 @@
     "build": "node scripts/run-framework.mjs build",
     "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "studio:build": "vite build --config studio/vite.config.ts",
+    "studio:demo": "node selfhost/demo.mjs",
+    "studio:release": "node selfhost/release.mjs",
+    "studio:start": "node selfhost/server.mjs",
+    "studio:invite": "node selfhost/admin.mjs",
+    "studio:runner": "node selfhost/runner.mjs",
+    "studio:test": "node --test selfhost/*.test.mjs",
+    "studio:verify": "node selfhost/verify.mjs",
+    "studio:source-guard": "node selfhost/source-guard.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -24,6 +33,7 @@
     "drizzle-orm": "0.45.2",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
+    "jose": "^6.2.12",
     "lucide-react": "^1.31.0",
     "next": "16.3.4",
     "next-themes": "^0.4.6",

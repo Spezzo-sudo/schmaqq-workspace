@@ -1,3 +1,27 @@
+# SCHMAQQ Studio
+
+Eigenständige Entwicklungsumgebung für die Zusammenarbeit an SCHMAQQ.
+
+**Hier starten:** [AGENTS.md](AGENTS.md), [Status](docs/STATUS.json),
+[Übergabe für neue Chats](docs/HANDOFF.md), [Hermes-Betriebsauftrag](docs/HERMES_HANDOFF.md).
+
+Node.js >=24.15.0, Git und Python 3. Im Studio-Verzeichnis:
+
+```sh
+npm ci --no-audit --no-fund
+npm run studio:verify
+npm run studio:demo
+```
+
+Die Demo läuft lokal auf Port 4320. Der persönliche Server startet mit
+`npm run studio:start` auf Port 4310; beide sind zunächst nur lokal erreichbar.
+Details zu echtem Backend, Runner, Backup und Betrieb: [Selfhost](selfhost/README.md).
+
+Der folgende Abschnitt beschreibt den ursprünglichen Sites-Starter. Dessen
+`dev`-/Hosting-/Mock-Auth-Pfad ist getrennt vom selbst betriebenen Studio.
+
+---
+
 # vinext-starter
 
 A clean full-stack starter running on [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and Drizzle support.
@@ -44,7 +68,7 @@ Local tool usage metrics are disabled by default. Set `WRANGLER_SEND_METRICS=tru
 - `vite.config.ts` simulates declared bindings for local development
 - `db/index.ts` reads the D1 binding from the Cloudflare Worker environment
 - `db/schema.ts` starts intentionally empty
-- `@cloudflare/workers-types` provides Worker types; `cloudflare-env.d.ts` declares optional `DB`/`BUCKET` bindings—update these declarations if binding names change
+- `@cloudflare/workers-types` provides Worker types; `cloudflare-env.d.ts` declares optional `DB`/`BUCKET` bindingsâ€”update these declarations if binding names change
 - `examples/d1/` contains an optional D1 example surface
 - `drizzle.config.ts` supports local migration generation when needed
 

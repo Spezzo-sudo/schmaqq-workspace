@@ -1,0 +1,27 @@
+[Unit]
+Description=Schmaqq collaborative development workspace
+After=network.target
+
+[Service]
+Type=simple
+User=schmaqq-studio
+Group=schmaqq-studio
+WorkingDirectory=/opt/schmaqq-studio/current
+EnvironmentFile=/etc/schmaqq-studio.env
+ExecStart=/usr/bin/node selfhost/server.mjs
+Restart=on-failure
+RestartSec=5
+StateDirectory=schmaqq-studio
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/schmaqq-studio
+MemoryMax=256M
+CPUQuota=50%
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

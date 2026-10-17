@@ -1,0 +1,28 @@
+services:
+  studio:
+    image: schmaqq-studio:local
+    build:
+      context: ..
+      dockerfile: selfhost/Dockerfile
+    restart: unless-stopped
+    environment:
+      STUDIO_ORIGIN: ${STUDIO_ORIGIN:?Set the full HTTPS Studio origin}
+      STUDIO_PREVIEW_ORIGIN: ${STUDIO_PREVIEW_ORIGIN:?Set a different HTTPS preview origin}
+    ports:
+      - "127.0.0.1:4310:4310"
+      - "127.0.0.1:4311:4311"
+    volumes:
+      - studio_data:/app/.studio
+    mem_limit: 256m
+    cpus: 0.5
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+volumes:
+  studio_data:

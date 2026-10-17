@@ -1,0 +1,14 @@
+node_modules
+.git
+.studio
+.studio-runner
+.wrangler
+.sites-runtime
+.next
+.vinext
+dist
+studio-dist
+*.private.json
+.env*
+*.zip
+*.tar.gz

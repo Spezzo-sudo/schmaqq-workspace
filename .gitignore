@@ -54,3 +54,12 @@ next-env.d.ts
 /.codex/
 /outputs/
 /work/
+
+# Self-hosted Studio secrets, runtime data and builds
+/.studio/
+/.studio-runner/
+/studio-dist/
+*.private.json
+
+# Reproducible build cache
+*.tsbuildinfo

@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "observed_on": "2026-10-17",
+  "product": "SCHMAQQ Studio",
+  "purpose": "Gemeinsame Entwicklung digitaler Services durch zwei Personen mit eigenen KI-Konten",
+  "application": {
+    "entry": "studio/main.tsx",
+    "server": "selfhost/server.mjs",
+    "storage": "SQLite WAL",
+    "runner": "selfhost/runner.mjs",
+    "minimum_node": "24.15.0"
+  },
+  "implemented_and_locally_tested": [
+    "Einmalige Eigentümereinrichtung, passwortbasierte Sitzungen und E-Mail-gebundene Einladungen",
+    "Gemeinsame Projekte, Aufgaben, Teamchat und versionierte Dokumente",
+    "Eigene Geräte und Git-Arbeitskopien, Auftragswarteschlange und Heartbeats",
+    "Dateieditor mit Revisionserkennung und Zugriffsschutz",
+    "Tests, statische Vorschauen und unveränderliche Git-Prüfstände",
+    "Gegenseitige Codefreigabe mit Bindung an Commit-SHA",
+    "OIDC-Identitätslogin gegen lokalen signierenden Testanbieter",
+    "Lokale KI-Freigaben und Ollama-Protokoll gegen Testdienst"
+  ],
+  "implemented_requires_external_setup": [
+    "ChatGPT-Website-Login benötigt registrierten Client; aktuell deaktiviert",
+    "Codex-Aufträge benötigen eigenen verbundenen Runner und persönliche Codex-Anmeldung",
+    "Lokale Inferenz benötigt vorhandenen Ollama-Dienst und explizit erlaubte Modelle"
+  ],
+  "not_yet_proven": [
+    "Linux-Neuinstallation und gesamte Suite in echter Codex-Cloud-Umgebung",
+    "Gemeinsamer Zugang zwischen Schweiz und Thailand",
+    "Studio-Dauerbetrieb auf Hostinger-VPS und Wiederherstellung dort",
+    "Live-OIDC-Anmeldung bei OpenAI",
+    "Live-Inferenz mit vorhandenem Ollama-Modell",
+    "Visuelle Abnahme des neuesten Studio-Layouts auf Desktop und Mobilgerät"
+  ],
+  "not_implemented": [
+    "Allgemeine Anmeldung und Modelladapter für beliebige weitere KI-Anbieter",
+    "Selbstbedienbare Wiederherstellung und Trennung externer Studio-Konten",
+    "Dauerbetrieb allein durch GitHub oder eine endliche Codex-Cloud-Aufgabe"
+  ],
+  "environments": {
+    "personal_local": "127.0.0.1:4310; private Einrichtung noch erforderlich",
+    "isolated_demo": "127.0.0.1:4320; zwei Testkonten und lokale Runner",
+    "vps": "Hostinger vorhanden laut Nutzer; Studio-Installation nicht erfolgt",
+    "github": "Spezzo-sudo/NetzKontor, Branch chatgpt/391-studio-cloud-handoff, tools/schmaqq-studio; Quelle wird als isolierter Snapshot versioniert"
+  },
+  "design": {
+    "reference": "https://preview.schmaqq.com/",
+    "source": "NetzKontor/marketing/site/assets/styles.css",
+    "logo_source": "NetzKontor/marketing/site/assets/brand/upright-paths.js",
+    "logo_blob": "5b114714317156d559e0df88a0460ff5d608b9cd",
+    "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
+  },
+  "next_steps": [
+    "Übergabe-Branch in vorhandener GitHub-Verbindung für Cloud-Aufgabe wählen und studio:verify ausführen",
+    "Neuestes UI sichtbar prüfen; zwei Rollen durch Bearbeiten, Test, Vorschau, Review führen",
+    "Hermes zunächst nur VPS-Preflight und isolierte Zielkonfiguration prüfen lassen",
+    "Nach Freigabe Studio auf eigener Origin mit persistentem Speicher betreiben"
+  ],
+  "verification": {
+    "command": "npm run studio:verify",
+    "host": "Windows",
+    "result": "pass",
+    "backend_tests": 13,
+    "typescript": "pass",
+    "frontend_build": "pass",
+    "browser_acceptance": "pending",
+    "linux_cloud": "pending"
+  }
+}
