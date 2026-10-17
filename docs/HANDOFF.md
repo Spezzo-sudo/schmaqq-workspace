@@ -13,7 +13,9 @@ Workspace ist die universelle Arbeitsplattform für Menschen und Agenten; Studio
 ## Nächster Meilenstein und Konsolidierung
 
 Die operative Gesamtplanung steht in [ROADMAP.md](ROADMAP.md). Aktives Paket ist
-**P1: Kandidat abschließen**; danach P2 kontrollierte Bereitstellung, P3 zwei
+**P2: kontrollierte Bereitstellung**; P1 ist mit Codeprüfung, 17 Linux-Tests,
+Build, entpacktem Runtime-Smoke und künstlicher Legacy-Upgrade-Probe abgeschlossen.
+Evidence: `docs/evidence/P1_CANDIDATE_LINUX_20261017.md`. Danach P3 zwei
 persönliche Zugänge, P4 echte gemeinsame Abnahme. Vorhandene Setup-/Live-Checks
 nicht pauschal wiederholen. Langfristige Anbieter-/Compute-Arbeit bleibt Backlog.
 

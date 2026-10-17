@@ -56,10 +56,9 @@
     "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
   },
   "next_steps": [
-    "Review draft PR #6 and the pilot plan; no merge or deployment authorized",
-    "Obtain release approval and privileged current backup/restore proof before controlled rollout; read-only live audit complete, see docs/LIVE_PREFLIGHT_20261017.md",
-    "Run the actual two-person remote pilot described in docs/PILOT_PLAN.md",
-    "Fix observed onboarding and workflow obstacles before adding more provider features"
+    "P2: release approval and privileged current live backup/restore before controlled rollout; P1 candidate review/Linux checks passed",
+    "P3/P4: connect Markus and run actual two-person remote pilot using an explicitly approved shared test remote",
+    "P5: fix observed onboarding and workflow obstacles before expanding provider features"
   ],
   "verification": {
     "command": "node selfhost/verify.mjs (Node 24)",
@@ -71,7 +70,7 @@
     "source_guard": "pass_known_patterns_not_complete_secret_audit",
     "browser_acceptance": "Previous two-context parallel workflow PASS; consolidation regressions for pending comment and existing offline copy PASS",
     "release_smoke": "pass: latest consolidated local runtime manifest, HTTP/auth, collaboration routes and task-comment backup",
-    "linux_current_candidate": "not_run; older R4 evidence is historical_verification_r4",
+    "linux_current_candidate": "PASS at source 57c274c52fb4fd67ca9f9dc857a4456962806a18: fresh npm ci --ignore-scripts, 17 tests, TypeScript, build, extracted archive smoke and synthetic legacy upgrade; see docs/evidence/P1_CANDIDATE_LINUX_20261017.md",
     "github_ci": "not_configured; no Actions run requested",
     "production_deployment": "not_performed; live instance unchanged",
     "notes": "No actual Switzerland/Thailand pilot or paid personal AI task. Determine exact candidate SHA through Git."
@@ -204,15 +203,29 @@
     "tls": "both Studio origins validated; expiry 2027-01-15",
     "personal_runner": "Windows-PC R5-A online; no active jobs at observation",
     "backup_restore": "unverified; protected data inaccessible to audit account",
-    "candidate_linux": "not yet run",
+    "candidate_linux": "PASS for tested source; current live backup/restore still unverified",
     "deployment": "not performed; preparation only"
   },
   "execution_plan": {
     "document": "docs/ROADMAP.md",
-    "active_package": "P1",
-    "next_action": "Review candidate diff against main, resolve findings, verify exact candidate on isolated Linux with synthetic data before a separately approved deployment",
+    "active_package": "P2",
+    "next_action": "Obtain approval for the tested release and privileged live backup/restore, then controlled deployment using docs/LIVE_PREFLIGHT_20261017.md; no merge or deployment performed",
     "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
     "deployment_authorized": false,
-    "feature_expansion": "deferred until actual two-person pilot acceptance"
+    "feature_expansion": "deferred until actual two-person pilot acceptance",
+    "completed_packages": [
+      "P1: candidate review and exact-source Linux/runtime/synthetic upgrade verification PASS"
+    ]
+  },
+  "candidate_review": {
+    "source_sha": "57c274c52fb4fd67ca9f9dc857a4456962806a18",
+    "evidence": "docs/evidence/P1_CANDIDATE_LINUX_20261017.md",
+    "blocking_code_findings": 0,
+    "linux_tests": 17,
+    "extracted_archive_smoke": "PASS",
+    "synthetic_legacy_upgrade": "PASS; 18 original tables, retained session/device/copy and additive schema",
+    "live_restore": "not verified",
+    "cleanup": "PASS; no persistent test build files",
+    "production_mutations": false
   }
 }

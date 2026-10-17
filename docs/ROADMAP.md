@@ -80,7 +80,10 @@ Infrastruktur ist für den nächsten Pilotstand nicht begründet.
 | P6 – Eigene KI praktisch nutzen | Beide können einen kleinen Auftrag mit eigener freigegebener KI ausführen | Tatsächliches Ergebnis mit persönlichem Auftraggeber, richtigem Projekt, Tests und sichtbarem Fehlerfall; keine fremde Kontoübernahme | Engineering + persönliche Zustimmung; funktionierender menschlicher Ablauf zuerst |
 | P7 – Alltag mit SCHMAQQ | Ihr entwickelt ein reales abgegrenztes Service-Vorhaben im Studio | Ein vereinbartes Arbeitsergebnis wird über denselben Ablauf fertig; Entscheidungen bleiben auffindbar; Änderungen im Zielrepo separat autorisiert | Marco + Markus; Pilot und zentrale Hürden abgeschlossen |
 
-**Jetzt aktiv: P1.** P2 ist vorbereitet; der lesende Live-Audit muss nicht
+**P1 abgeschlossen:** Review und Linux-/Runtime-/Upgrade-Nachweis für den
+geprüften Quellstand: [Evidence](evidence/P1_CANDIDATE_LINUX_20261017.md).
+**Jetzt aktiv: P2 – kontrollierte Bereitstellung vorbereiten/freigeben.**
+Der lesende Live-Audit muss nicht
 wiederholt werden, solange sich Betrieb oder zeitlicher Kontext nicht wesentlich
 ändern. P3–P7 sind geordnetes Backlog. Persönliche Anmeldungen werden erst dann
 angefragt, wenn der jeweilige Schritt bereitsteht.
