@@ -32,6 +32,10 @@ keine wechselnden HEAD-SHAs in dauerhaftem Planungstext pflegen.
 
 Das Live-Studio ist bereits erreichbar. Sein aktueller Betrieb muss vor einem
 Update lesend geprüft werden; historische R4-Texte sind kein aktuelles Inventar.
+Der aktuelle Befund und konkrete Ablauf stehen jetzt in
+[LIVE_PREFLIGHT_20261017.md](LIVE_PREFLIGHT_20261017.md). Dienst, Release,
+Ressourcen, HTTPS und Runner sind lesend geprüft; Live-Backup/Restore bleibt
+wegen der korrekt geschützten Daten Aufgabe des befugten Betreibers.
 Es gibt einen separaten R4/Hermes-Betriebsentwurf. Dieser Kandidat ersetzt oder
 führt diesen Entwurf nicht automatisch aus. Zu prüfen sind:
 

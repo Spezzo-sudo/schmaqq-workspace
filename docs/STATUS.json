@@ -30,7 +30,7 @@
   ],
   "not_yet_proven": [
     "Gemeinsamer Zugang zwischen Schweiz und Thailand",
-    "Studio-Dauerbetrieb auf Hostinger-VPS und Wiederherstellung dort",
+    "Wiederherstellung der aktuellen Live-Datenbank unter dem Studio-Dienstbenutzer",
     "Live-OIDC-Anmeldung bei OpenAI",
     "Live-Inferenz mit vorhandenem Ollama-Modell",
     "Manuelle visuelle Endabnahme auf echten Desktop-/Mobilgeräten trotz bestandenem automatisierten Chrome-Test",
@@ -44,7 +44,7 @@
   "environments": {
     "personal_local": "127.0.0.1:4310: legacy local installation; consolidated candidate is tested separately on 4340/4341",
     "isolated_demo": "127.0.0.1:4320; zwei Testkonten und lokale Runner",
-    "vps": "Historical R4 isolated tests passed. Live Studio origin observed during R5-A; current hosting/service configuration is not audited by this candidate.",
+    "vps": "Read-only live audit 2026-10-17: dedicated active/enabled service, old main b22175035f6f3d5c9a5c6894028ad7a0149f8761, Node 24.22.0, loopback 4310/4311, valid TLS; candidate not deployed. See docs/LIVE_PREFLIGHT_20261017.md.",
     "github": "Private zentrale Codebasis Spezzo-sudo/schmaqq-workspace, Remote-Branch main, Code im Repository-Root",
     "local_parallel_pilot": "127.0.0.1:4340; preview 4341; isolated fixture with two test accounts and runners; manual process, no autostart"
   },
@@ -57,7 +57,7 @@
   },
   "next_steps": [
     "Review draft PR #6 and the pilot plan; no merge or deployment authorized",
-    "Read-only audit of existing live service and prepare backup/rollback before a separately approved rollout",
+    "Obtain release approval and privileged current backup/restore proof before controlled rollout; read-only live audit complete, see docs/LIVE_PREFLIGHT_20261017.md",
     "Run the actual two-person remote pilot described in docs/PILOT_PLAN.md",
     "Fix observed onboarding and workflow obstacles before adding more provider features"
   ],
@@ -89,7 +89,7 @@
     "production_changes": false,
     "ai_jobs_executed": false
   },
-  "status_scope_note": "Ältere R4-/VPS-Felder dokumentieren historische Prüfungen, keinen aktuellen Hosting-Audit. R5-A hat das Live-Studio und einen persönlichen Windows-Runner nachgewiesen. Die folgenden UI-Korrekturen sind ausschließlich lokal gebaut und geprüft, nicht deployed.",
+  "status_scope_note": "Ältere R4-/VPS-Felder dokumentieren historische Prüfungen. Aktueller Live-Befund unter live_preflight und docs/LIVE_PREFLIGHT_20261017.md: älteres Release aktiv, persönlicher Windows-Runner online. Die neueren UI-/Kollaborationsänderungen sind lokal geprüft und als Draft in GitHub, nicht deployed.",
   "studio_usability_followup": {
     "branch": "fix/studio-first-workspace-layout",
     "deployment": "local_only",
@@ -189,5 +189,22 @@
     "human_acceptance": "not_yet_run",
     "pull_request": "https://github.com/Spezzo-sudo/schmaqq-workspace/pull/6",
     "merge": "not_performed"
+  },
+  "live_preflight": {
+    "observed_on": "2026-10-17",
+    "evidence": "docs/LIVE_PREFLIGHT_20261017.md",
+    "access": "existing authorized Remote Desktop Commander as dc-remote; own authenticated browser GET",
+    "live_release": "b22175035f6f3d5c9a5c6894028ad7a0149f8761",
+    "service": "schmaqq-studio.service active/running enabled",
+    "runtime_node": "24.22.0",
+    "manifest_files_verified": 697,
+    "backend_modules_match_git": 8,
+    "disk_free_bytes": 30580879360,
+    "memory_current_bytes": 112869376,
+    "tls": "both Studio origins validated; expiry 2027-01-15",
+    "personal_runner": "Windows-PC R5-A online; no active jobs at observation",
+    "backup_restore": "unverified; protected data inaccessible to audit account",
+    "candidate_linux": "not yet run",
+    "deployment": "not performed; preparation only"
   }
 }

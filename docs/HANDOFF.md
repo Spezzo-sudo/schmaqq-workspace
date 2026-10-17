@@ -47,7 +47,11 @@ und tatsächliche Codex-Statusanzeigen. Echte GitHub-Clientregistrierung und Liv
 Freigabe fehlen noch; Claude/Copilot sind nicht integriert. Aktuelle Details:
 `docs/CONNECTIONS_HANDOFF.md`. Historische Aussagen
 zu einem noch nicht eingerichteten VPS weiter unten sind keine aktuelle
-Betriebsbestandsaufnahme; ein Audit des tatsächlichen Live-Hostings steht aus.
+Betriebsbestandsaufnahme. Der lesende Live-Audit vom 17.10.2026 ist nun in
+`docs/LIVE_PREFLIGHT_20261017.md` dokumentiert: alter main-Stand aktiv, eigener
+Node-24-Dienst, gültiges HTTPS, persönlicher Runner online. Neuer Kandidat bleibt
+unveröffentlicht im Live-Betrieb. Live-Backup/Restore und privilegierter
+Dienstwechsel sind noch offen.
 
 ## Wo der Stand liegt
 
@@ -78,7 +82,8 @@ Betriebszustand des VPS.
 - `selfhost/oidc.mjs`: Identitätslogin mit PKCE/Nonce/JWKS; echter OpenAI-Client fehlt.
 - `selfhost/local-ai.mjs`, `ai-routes.mjs`: ausdrücklich freigegebene lokale Modelle.
 - `selfhost/release.mjs`, `backup.mjs`, `deploy/`: leichtes Runtime-Paket, konsistentes
-  Backup, Preflight und Deployment-Vorlagen; noch kein VPS-Deployment.
+  Backup, Preflight und Deployment-Vorlagen; bestehendes Live-Release separat
+  geprüft, aktueller Kandidat nicht deployed.
 - `app/api/`, `db/`, `build/`: ursprünglicher Sites-Starter, anderer Hostingpfad.
   Für dieses Vorhaben `studio:*` verwenden. Root-`npm run dev` startet den Starter.
 
