@@ -65,6 +65,12 @@
     "typescript": "pass",
     "frontend_build": "pass",
     "browser_acceptance": "pending",
-    "linux_cloud": "pending"
+    "linux_cloud": "pending",
+    "github_ci": {
+      "result": "failed_without_step_logs",
+      "run_url": "https://github.com/Spezzo-sudo/NetzKontor/actions/runs/39011115243",
+      "observed": "GitHub reports failure; steps empty and logs unavailable. Cause unverified.",
+      "required": "Resolve GitHub CI execution and run Linux verification before acceptance."
+    }
   }
 }

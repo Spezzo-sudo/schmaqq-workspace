@@ -95,3 +95,22 @@ Markus: Diff ansehen → Rückmeldung/Freigabe. Marco: geprüften Stand veröffe
 und zusammenführen. Das lokale Demo-Remote ist ein echtes isoliertes Bare-Repository.
 Die echte NetzKontor-Quelle verlangt weiterhin Issue/PR/CI und wird dadurch nicht
 automatisch freigegeben oder deployed.
+
+
+## Letzte Prüf-Evidence und offene GitHub-CI
+
+Lokal am 17.10.2026: `npm run studio:verify` bestanden (13 Tests, TypeScript,
+Frontend-Build und Source-Guard). Die GitHub-Übertragung wurde als vollständiger
+Baum geprüft. Entwurfs-PR: https://github.com/Spezzo-sudo/NetzKontor/pull/392.
+
+Der erste Studio-CI-Lauf https://github.com/Spezzo-sudo/NetzKontor/actions/runs/39011115243
+wird von GitHub als fehlgeschlagen gemeldet; es wurden keine Jobschritte oder
+abrufbaren Logs zurückgegeben. Auch die übergeordnete CI meldete einen Fehler.
+Die Ursache ist nicht bewiesen. Dies ist kein grüner Linux-Nachweis. Zuerst die
+GitHub-Laufausführung prüfen; alternativ in einer echten Cloud-Entwicklungsumgebung
+installieren und prüfen. Kein Neustarten einer Schleife ohne neue Evidence.
+
+Die Codex-Cloud-Umgebung selbst ist noch nicht angelegt/aktiviert. Dafür muss die
+bereits bestehende GitHub-Verbindung Zugriff auf den Übergabe-Branch haben und
+Node >=24.15 bereitstehen. Die Projektdateien und der obige Starttext sind dafür
+vorbereitet. Ein Chat-/Cloud-Wechsel überträgt keine laufende lokale Sitzung.
