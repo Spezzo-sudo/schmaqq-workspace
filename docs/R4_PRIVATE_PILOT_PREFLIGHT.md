@@ -35,13 +35,13 @@ R2_LINUX_VERIFY=PASS
 R2_TWO_ROLE_SMOKE=PASS
 R3A_BROWSER_AUTOMATED=PASS
 R4_READ_ONLY_VPS_PREFLIGHT=PASS
-R4_RELEASE_PACKAGE_SMOKE=NOT_RUN
-R4_NODE24_SERVICE_PATH=BLOCKED
+R4_RELEASE_PACKAGE_SMOKE=PASS
+R4_NODE24_SERVICE_PATH=TEMPLATE_UPDATED_RUNTIME_NOT_INSTALLED
 R4_HTTPS_ORIGINS=UNDECIDED
-R4_BACKUP_RESTORE=NOT_RUN
+R4_BACKUP_RESTORE=PASS_FIXTURE_ONLY
 R4_REMOTE_TWO_REAL_USERS=NOT_RUN
 R4_OWNER_DEPLOYMENT_GO=NO
 PRODUCTION_MUTATION=NO
 ```
 
-**Nächster sinnvoller Codeblock:** Release-Paket samt Test-Manifest überprüfen und die systemd-Vorlage auf eigene Node-24-Laufzeit vorbereiten. Keine neue Infrastruktur bestellen und kein Deployment eigenmächtig auslösen.
+**R4-A Testblock 17.10.2026:** Release-Archiv (783465 Bytes), entpacktes Paket, Manifest, Login-/HTTP-Smoke und Backup-/Restore mit Fixture-Daten erfolgreich geprüft. Evidence: [R4A_RELEASE_RESTORE_20261017.md](evidence/R4A_RELEASE_RESTORE_20261017.md). systemd-Vorlage verwendet neu explizit `/opt/schmaqq-studio/runtime/node/bin/node`, dieser Pfad ist jedoch noch nicht installiert. **Nächster Schritt:** sichere TLS-/DNS-/Dienstbereitstellung mit separatem Owner-Go; kein Deployment durch diese Dokumentänderung. Keine neue Infrastruktur bestellen und kein Deployment eigenmächtig auslösen.
