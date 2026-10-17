@@ -60,6 +60,27 @@ npm run studio:verify
 
 In der Test-Sandbox `node selfhost/demo.mjs` auf Loopback 127.0.0.1:4320 und 4321 starten; nach erfolgreichem Readiness-Check von `/healthz` **getrennt** `node selfhost/demo-smoke.mjs` ausführen. Die Demo erstellt eigene Fixture-Konten und ein isoliertes Bare-Git-Repository; keine echte SCHMAQQ-Produktionsquelle. Testprozesse kontrolliert stoppen und den privaten `.studio/`-Inhalt nie in GitHub hochladen.
 
+## Ausführbarer R2-Teststarter (17.10.2026)
+
+Im selben R2-Branch liegt `scripts/r2-hermes-ephemeral.sh`. Der Shell-Parser und die Fail-Closed-Einstiegskontrollen wurden unabhängig geprüft. **Der echte Docker-/npm-Test ist noch nicht gelaufen.**
+
+Nur auf einer **externen, kurzlebigen Linux-Test-VM mit Docker**, nicht auf dem produktiven VPS:
+
+```sh
+git clone https://github.com/Spezzo-sudo/schmaqq-workspace.git schmaqq-r2
+cd schmaqq-r2
+git checkout 51786459aa9aef83600581f9977309e7bdd77e2e
+# Skript aus dem R2-Branch über einen getrennten, geprüften Download bereitstellen;
+# das alte Test-Commit enthält das Skript selbst noch nicht.
+SCHMAQQ_R2_EXTERNAL_RUNNER=YES bash /pfad/zum/geprueften/r2-hermes-ephemeral.sh "$PWD"
+```
+
+Voraussetzungen: unprivilegierter VM-Benutzer, autorisierter lesender GitHub-Zugang, Docker-Daemon **nur auf dieser externen Test-VM**, Zugriff auf den offiziellen `node:24-bookworm`-Container und npm-Registry. Netzwerk des externen Runners nicht mit internen Produktivnetzen verbinden. Eine begrenzte Test-VM ist nach Testende vollständig zu entsorgen; Container-`--rm` alleine entfernt nicht das Image und die Docker-Layer auf der VM.
+
+Der Starter blockiert produktionsähnliche Hostpfade, fremde Git-Remotes, abweichende Commit-SHAs, Root-Benutzer, bereits vorhandene generierte Dateien und einen nicht bestätigten externen Runner. Er startet unter Docker einen read-only Container mit 4 GiB RAM, 2 vCPU, 30 Minuten Timeout, 6 GiB flüchtigem `/workspace` und 512 MiB `/tmp`, ohne Capabilities oder Host-Docker-Socket. Host-Secrets dürfen nicht in das Test-Checkout gelangen. Sein Build-Verzeichnis wird nach Containerende verworfen.
+
+**Verifizierungsstand:** Einstiegskontrollen und Shell-Syntax statisch geprüft, **kein** Docker-Container gestartet, keine npm-Abhängigkeiten installiert, keine Browser-Abnahme. Die spätere Evidence muss das tatsächliche Runner-Image und dessen externen Host samt vollständiger VM-Entsorgung berücksichtigen.
+
 ## Phase 3: Sanitizierte Evidence
 
 ```text
