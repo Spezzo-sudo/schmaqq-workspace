@@ -414,5 +414,24 @@
     "runner_online": true,
     "merge": false,
     "deployment": false
+  },
+  "overnight_acceptance": {
+    "state": "in_progress",
+    "order": "docs/OVERNIGHT_TEST_ORDER.md",
+    "report": "docs/evidence/OVERNIGHT_ACCEPTANCE.md",
+    "automation_id": "schmaqq-vollst-ndige-technische-abnahme",
+    "schedule": "hourly local heartbeat in same chat; requires available PC/Codex",
+    "baseline": {
+      "backend_passed": 19,
+      "backend_skipped": 1,
+      "backend_failed": 0,
+      "source_guard": "PASS",
+      "typescript": "PASS",
+      "build": "PASS"
+    },
+    "remaining": "Map evidence and execute targeted unproven browser/negative cases; do not repeat unchanged full flow",
+    "paid_model_jobs_allowed": false,
+    "runner_policy": "Codex OFF, Publish OFF; direct integration blocked",
+    "deployment_allowed": false
   }
 }
