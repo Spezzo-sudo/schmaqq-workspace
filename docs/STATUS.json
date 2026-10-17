@@ -56,9 +56,9 @@
     "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
   },
   "next_steps": [
-    "P3: targeted Markus GitHub invite after username supplied, own Studio account and Mac runner; configure approved shared pilot on both own devices",
-    "P4: actual parallel human pilot with new tasks/comments, own copies, checks/previews and independent review",
-    "P5: address observed onboarding/workflow obstacles; defer additional provider integrations"
+    "Close observed Studio-to-GitHub handoff gap: direct PR transition with explicit authorization and clear runner capability guidance; no deployment implied",
+    "Add bounded pilot CI in a separate implementation step; current Studio checks are local runner tests",
+    "Resume actual two-person pilot when second account/device available; not blocker for current workflow improvements"
   ],
   "verification": {
     "command": "node selfhost/verify.mjs (Node 24)",
@@ -346,10 +346,11 @@
       1024,
       1440
     ],
-    "remote_main": "unchanged initial seed; no published studio branches",
-    "ai_executed": false,
+    "remote_main": "unchanged initial seed; one pilot Studio branch now published with draft PR #1",
+    "ai_executed": true,
     "product_code_changes": false,
-    "markus_mac_tested": false
+    "markus_mac_tested": false,
+    "latest_followup": "docs/evidence/P3_FULL_FLOW_20261017.md; original 2-test evidence remains historical"
   },
   "identity_environment_audit": {
     "evidence": "docs/evidence/P3_IDENTITY_AND_ENVIRONMENT_20261017.md",
@@ -376,6 +377,42 @@
       "id": "P5-ENV-01",
       "finding": "User confused local demo with live Studio despite existing demo label",
       "state": "observed; improve environment orientation after human pilot"
+    },
+    {
+      "id": "P5-PR-01",
+      "finding": "Studio publishes branch but provides no direct PR creation path; agent created pilot draft externally",
+      "state": "confirmed in real full-flow pilot; next implementation priority"
+    },
+    {
+      "id": "P5-CAPABILITY-01",
+      "finding": "Local Codex/publish consent requires manual configuration and runner restart",
+      "state": "observed; original restrictions restored after bounded test"
+    },
+    {
+      "id": "P5-REVIEW-01",
+      "finding": "Same commit appears separately as local review and published submission",
+      "state": "observed; clarify status presentation"
     }
-  ]
+  ],
+  "full_flow_pilot": {
+    "evidence": "docs/evidence/P3_FULL_FLOW_20261017.md",
+    "scope": "actual own-account Playwright + Windows runner, private pilot only",
+    "codex": "PASS; one bounded real CLI task using existing own ChatGPT login",
+    "tests": {
+      "pass": 3,
+      "fail": 0
+    },
+    "preview": "PASS; new content, navigation, desktop and 390px",
+    "review_commit": "3e6b305249cca00fd765a5f59ce9124b6661b48d",
+    "github_branch": "studio/33b3135a-38ea-4c3e-84a0-4e840db314ef",
+    "pull_request": "https://github.com/Spezzo-sudo/schmaqq-studio-pilot/pull/1",
+    "pr_creation": "outside Studio via authorized GitHub connector",
+    "github_ci": "not configured; no PR workflow runs",
+    "independent_review": "pending",
+    "original_runner_policy_restored": true,
+    "restored_policy_negative_probes": "PASS: codex, submit, integrate refused",
+    "runner_online": true,
+    "merge": false,
+    "deployment": false
+  }
 }

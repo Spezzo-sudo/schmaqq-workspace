@@ -10,6 +10,18 @@ den geprüften Kollaborationskandidaten. Der Heim-PC soll dafür nicht ständig 
 
 Workspace ist die universelle Arbeitsplattform für Menschen und Agenten; Studio ist der erste Bereich. Freiwilliges Peer-Compute und Monetarisierung sind spätere, sicherheitskritische Entwicklungsphasen. Vor Architektur-/Produktarbeit [Produktvision](PRODUCT_VISION.md), [Zielarchitektur](ARCHITECTURE.md), [Roadmap](ROADMAP.md) und [Integrationsgrenzen](INTEGRATION_BOUNDARIES.md) lesen. **Nur** [STATUS.json](STATUS.json) enthält den aktuellen technischen Fähigkeitsnachweis. Plattform-Repo und dessen Runtime bleiben unabhängig.
 
+## Aktuelle Priorität nach dem vollständigen Pilotlauf
+
+Owner priorisiert die technische Strecke unabhängig von Markus. Ein echter begrenzter
+Codex-Auftrag, 3/3 Studio-Tests, neue Desktop-/Mobilvorschau und Branch-Push sind belegt.
+Draft-PR im privaten Pilot: https://github.com/Spezzo-sudo/schmaqq-studio-pilot/pull/1.
+PR-Erstellung erfolgte außerhalb Studio über GitHub-Connector; CI fehlt.
+Nachweis und konkrete Lücken: `docs/evidence/P3_FULL_FLOW_20261017.md`.
+Ursprüngliche Runner-Sperren für KI und Push sind wieder aktiv; direkte Integration
+bleibt gesperrt. Kein Merge/Deployment. Nächste Produktarbeit: direkten PR-Übergang
+und klare Freigabeführung umsetzen. Markus und weitere Anbieter sind dafür kein Blocker.
+Die folgende frühere P3/P4-Reihenfolge bleibt als Hintergrund erhalten.
+
 ## Nächster Meilenstein und Konsolidierung
 
 Die operative Gesamtplanung steht in [ROADMAP.md](ROADMAP.md). Aktives Paket ist

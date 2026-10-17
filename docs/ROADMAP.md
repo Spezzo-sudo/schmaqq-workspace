@@ -21,6 +21,16 @@ eine Aufgabe, besprechen sie im Studio, führen echte Tests aus, sehen ihre
 Vorschau und prüfen das Ergebnis des anderen. Der Ablauf muss für euch ohne
 ständige Agentenerklärung verständlich sein.
 
+## Aktuelle Arbeitspriorität nach Owner-Steuerung
+
+Die persönliche Strecke wurde tatsächlich bis zum Draft-PR ausgeführt: echter
+Codex-Auftrag, 3/3 Tests, neue Vorschau, Git-Push; PR separat per GitHub-Connector.
+Nachweis: [vollständiger Pilotlauf](evidence/P3_FULL_FLOW_20261017.md).
+Jetzt die beobachteten Lücken schließen: PR-Übergang aus Studio und verständliche
+lokale Freigabeführung; CI gesondert begrenzt einrichten. Kein neues Deployment
+oder Merge dadurch freigegeben. Zweite Person bleibt spätere Abnahme, blockiert
+diese konkrete Produktarbeit aber nicht.
+
 ## So gehören die Teile zusammen
 
 ```mermaid
@@ -61,7 +71,7 @@ GitHub-Fernpilot ist noch offen; der lokale Zwei-Rollen-Test ist bereits belegt.
 | Gleichzeitige Entwicklung | Eigene Kopien, parallele Tests und gegenseitige Reviews lokal belegt | Tatsächlich Marco + Markus über Entfernung |
 | Einfacher Einstieg | Erste Kopie und Layout verbessert | Einrichtung und Verständlichkeit mit Markus beobachten |
 | Kontoverbindungen | Lokale GitHub-Identitätsverknüpfung vorbereitet | Echter Client und persönliche Zustimmung; kein Repozugriff dadurch |
-| Persönliche KI-Nutzung | Runnerweg vorhanden, persönlicher End-to-End-Auftrag offen | Ein kleiner ausdrücklich freigegebener Auftrag je Person |
+| Persönliche KI-Nutzung | Eigener begrenzter Live-Codex-Auftrag PASS | Freigabeführung vereinfachen; zweite Person später |
 | Weitere Kunden / Compute | Zukunftsbild | Eigene spätere Produkt- und Sicherheitsphasen |
 
 Live-Befund: [LIVE_PREFLIGHT_20261017.md](LIVE_PREFLIGHT_20261017.md).
