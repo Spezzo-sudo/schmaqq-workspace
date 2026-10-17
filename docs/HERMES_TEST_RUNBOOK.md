@@ -1,6 +1,6 @@
 # R2 – Hermes Linux-Testauftrag
 
-_Status: Prüfauftrag vorbereitet am 17.10.2026. Nicht ausgeführt oder für einen Runtime-Eingriff freigegeben._
+_Status: Prüfauftrag vorbereitet und per read-only Host-Preflight aktualisiert am 17.10.2026. Studio-Tests nicht ausgeführt; kein Runtime-Eingriff freigegeben._
 
 ## Ziel und Grenzen
 
@@ -15,9 +15,12 @@ Hermes soll die eigenständige Anwendung `Spezzo-sudo/schmaqq-workspace` auf ein
 - Installiere auf dem bestehenden Produktionshost nicht stillschweigend eine neue Node-Version und führe dort weder `npm ci` noch einen schweren Build aus.
 - Wenn die Umgebung oder die Sicherheitsgrenzen nicht passen: **BLOCKED**, keine improvisierte Umrüstung.
 
-**Momentaufnahme vom 17.10.2026:** Read-only-Check auf dem verbundenen Host `srv1365337` ergab Linux x86_64, Root-Datenträger 90 % voll (~11 GB verfügbar), ~8 GB RAM und systemweites Node v22.22.2. Das reicht **nicht** für Studio mit Node >=24.15.0. Dieser Befund ersetzt keinen Preflight unmittelbar vor der Ausführung.
+**Aktualisierter read-only Host-Befund vom 17.10.2026:** Verbundener Produktions-VPS `srv1365337`: Linux x86_64, ext4 Root-Dateisystem ca. 71 % belegt (~28,6 GiB frei nach separater freigegebener Modell-Bereinigung), 7,8 GiB RAM, kein Swap und System-Node v22.22.2. GitHub-Zugang zum privaten Studio-Repository ist vorhanden, aber es gibt dort keine bereits vorbereitete isolierte Studio-Testumgebung. **Kein Build auf dem produktiven Host!** Der separate Test-Runner benötigt Node >=24.15.0 und begrenzte Ressourcen. Dieser Befund ersetzt nicht den erneuten Preflight bei Ausführung.
 
-## Phase 1: Checkout und echte Prüfungen (erst nach gesonderter Freigabe)
+## Phase 1: Checkout und echte Prüfungen (nach bestandenem Sandbox-Preflight)
+
+**Fester freigegebener Testkandidat (R2-Quellstand):** `51786459aa9aef83600581f9977309e7bdd77e2e` (`main` bei R2-Vorbereitung). Vor dem Start darf Hermes abweichende Änderungen nicht stillschweigend mittesten. Wenn ein anderer Commit getestet werden soll, exakten SHA vorher dokumentieren und bewusst als neuen Testkandidaten behandeln. Der Auftrag prüft Code, nicht die noch ungemergten R1/R2-Dokumente.
+
 
 1. Das private Repository über einen autorisierten **read-only** Git-Zugang in eine neue, isolierte Arbeitskopie übernehmen. Auf den für den Auftrag freigegebenen **exakten Commit SHA** wechseln, nicht auf einen wandernden Branch vertrauen. Token/Remote-Credentials nie in Logs ausgeben.
 2. Prüfung der tatsächlichen Versionsvoraussetzungen und Checkout-Identität:
