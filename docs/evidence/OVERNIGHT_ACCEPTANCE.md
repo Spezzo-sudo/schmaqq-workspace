@@ -1,37 +1,76 @@
-# Technische Abnahme – laufender Bericht
+# Technische Abnahme – Ergebnis und Grenzen
 
-## Stand
+Stand: 17.10.2026. Die endliche Matrix ist eingeordnet. Vier reproduzierte Fehler
+im lokalen Kandidaten behoben; kein Deployment. Der Kernablauf funktioniert in
+den beschriebenen Prüfungen. Keine vollständige Sicherheits- oder Nutzerfreigabe.
 
-Auftrag: [verbindliche Testmatrix](../OVERNIGHT_TEST_ORDER.md).
-Vollständiger Quellstand-Prüflauf abgeschlossen: PASS. Rohlog in .studio/overnight-audit/verify.log.
-19 Backend-Tests bestanden, 1 POSIX-Rechtetest unter Windows explizit übersprungen,
-0 Fehler. Source Guard, TypeScript und Produktionsbuild PASS. Keine Anwendungscodeänderung
-seit dem Start dieses Laufs.
+## Nachweise
 
-Realer Pilotlauf bis Draft-PR ist bereits belegt: [P3 Full Flow](P3_FULL_FLOW_20261017.md).
-Originale Runner-Sperren sind wieder aktiv. Kein weiterer KI-Auftrag vorgesehen.
+Vollständige Prüfung nach Korrekturen: .studio/overnight-audit/verify-final.log.
+19 Tests PASS, 1 POSIX-Rechtetest unter Windows SKIP, 0 FAIL. Source Guard,
+TypeScript und Frontend-Build PASS. Frühere Baseline: verify.log.
 
-## Offene Durchführung
+Sichtbarer Playwright/Brave, zwei getrennte synthetische Konten/Browserkontexte,
+echte lokale Git-Kopien und zwei Runner. Neue Fixture nur auf Loopback 4350/4351,
+lokale Bare-Remote, KI und Veröffentlichung gesperrt. Private Belege unter
+.studio/overnight-audit/ bleiben ignoriert. Bereits belegter echter Pilot:
+[P3 Full Flow](P3_FULL_FLOW_20261017.md). Kein weiterer Modellauftrag oder Live-Push.
 
-- Vollständige Suite bestanden; Testfälle nun der Matrix zuordnen.
-- Kritische noch unbewiesene Fälle gezielt im isolierten Browser/Fixture testen.
-- Konkrete Fehler und Einschränkungen priorisieren; keine unbegründete All-PASS-Aussage.
+## Vier reproduzierte und behobene Fehler
 
-## Automatische Fortsetzung
+1. **Private Dateijob-Protokolle:** Fremdes angemeldetes Teammitglied erhielt bei
+   development/events HTTP 200 mit Dateinamen/Metadaten, obwohl die Ergebnisroute
+   403 lieferte. Für files/read-file/save-file gilt jetzt auch bei Events die
+   Eigentümergrenze. Regression mit tatsächlich gespeicherten Runner-Events:
+   Eigentümer 200, anderes Mitglied 403, ohne Anmeldung 401. Browser bestätigt.
+   Kein Nachweis eines unauthentifizierten Zugriffs oder Token-Leaks.
+2. **Ergebnisdialog:** Fokus lag außerhalb, Escape schloss nicht. Jetzt
+   Anfangsfokus, Tab-Begrenzung, Escape und Rückkehr zum Auslöser. Sichtbarer
+   Retest bestanden; keine pauschale Barrierefreiheitsabnahme aller Dialoge.
+3. **Verzögerte Freigabe der Aktionen:** Nach abgeschlossenem Job blieb die
+   Hauptansicht bis zum nächsten Poll gesperrt. Jetzt sofortige Aktualisierung;
+   Tests-Schaltfläche nach Schließen direkt verfügbar, Browser-Retest PASS.
+4. **Verschwindende Wissenskonfliktwarnung:** Zweites Speichern derselben Revision
+   wurde korrekt abgewiesen, aber Polling löschte den Fehlertext. Sync- und
+   Aktionsfehler sind jetzt getrennt. Nach mehr als einem Polling-Intervall bleiben
+   Warnung und Entwurf erhalten; fremde gespeicherte Version unverändert.
 
-Stündlicher lokaler Heartbeat in diesem Chat aktiv: SCHMAQQ: vollständige technische Abnahme.
-Automations-ID: schmaqq-vollst-ndige-technische-abnahme. Läuft nur bei verfügbarer lokaler
-Umgebung. Keine Garantie bei ausgeschaltetem PC. Nicht mit serverseitigem Dauerbetrieb verwechseln.
+## Matrix
 
-## Bereits erreichte Gates
-
-| Gate | Status | Quelle / Grenze |
+| Bereich | Ergebnis | Beleg / Grenze |
 | --- | --- | --- |
-| Source Guard | PASS | Aktueller kompletter Prüflauf; bekannte Muster, kein vollständiger Secret-Audit |
-| Backend-Verträge | PASS | 19 bestanden, 1 POSIX-Skip unter Windows; lokale synthetische Integration |
-| TypeScript | PASS | Aktueller kompletter Prüflauf |
-| Produktionsbuild | PASS | Aktueller kompletter Prüflauf; kein Deployment |
-| Echter persönlicher Codex bis Draft-PR | PASS mit Produktlücke | P3_FULL_FLOW_20261017.md; PR außerhalb Studio erstellt |
-| Weitere Browser-/Bedienfehlerfälle | NOT_TESTED im Nachtauftrag | Gezielte offene Fälle aus Matrix noch abarbeiten |
-| Externe OAuth / macOS / unabhängige menschliche Freigabe | NOT_TESTED | Nicht durch Windows-Tests ersetzen |
+| Anmeldung/Autorisierung | PASS im geprüften Umfang | Browser: ohne Sitzung 401, falsche Origin 403, fremdes Gerät 403, private Dateijob-Ergebnisse/Events 403. Getrennte Abmeldung zuvor in P3_IDENTITY_AND_ENVIRONMENT_20261017.md; Backend-Verträge erneut bestanden. |
+| Aufgaben/Kommunikation | PASS | Gleichzeitige UI-Übernahme: genau 200/409; Zuständigkeit nach Polling konsistent. Kommentarentwurf über Navigation erhalten; gesendet nach Reload vorhanden. collaboration.test.mjs ergänzt Persistenz/Zuordnung. |
+| Eigene Arbeitskopien | PASS | Eigene Kopie aus Aufgabe erstellt/geöffnet. Getrennte Kopien und parallele Ausführung zuvor in PARALLEL_COLLABORATION_HANDOFF.md. Aktuelle workspaces/studio/development-target Tests bestanden. |
+| Dateieditor | PASS | Browser: Stale-Save erzeugt Konflikt, schützt externe Version, erhält Entwurf. Vergleich/Basisübernahme/Speichern erfolgreich. files.test.mjs prüft Bytes, Revisionen, Secrets, Hardlinks, Nichttext und Limits. |
+| Runner/Jobs | PASS / NOT_TESTED | Echter Fixture-Runner gestoppt: Offline, Aktionen gesperrt, Kopie/Entwurf erhalten. Gleiche Konfiguration wieder verbunden. Laufenden Check per UI abgebrochen; Prozessbaum-Abbruch per process.test.mjs bestanden. Neuer voller Lauf bis maximalem Timeout und Windows-Neustart NOT_TESTED. |
+| Tests | PASS | Bewusst ungültige Überschrift führt zu echtem fehlgeschlagenem Check, ohne Erfolgsmeldung. Wiederhergestellte Datei besteht. Initial ungültiges Checkskript war Fixture-Generatorfehler und wurde nur dort korrigiert. Live-Pilot 3/3 schon belegt. |
+| Vorschau | PASS im belegten Umfang | Echter gebauter Pilotstand, getrennte HTTPS-Origin, Navigation und 390px in P3_FULL_FLOW_20261017.md. Aktuelle Backend-Preview-Verträge bestanden; kein neuer Produktionsjob. |
+| Review | PASS technisch / BLOCKED menschlich | review.test.mjs: echte Git-Snapshots, keine Selbstfreigabe, Commit-Bindung, Rückmeldung/Merge-Gate. Vorheriger Zwei-Rollen-Browserlauf belegt. Keine unabhängige menschliche Freigabe. |
+| GitHub | PASS mit Produktlücken | Pilot-PR #1 erneut lesend bestätigt: offen, Draft, ungemergt; Kopf entspricht Prüfcommit, main unverändert. Kandidaten-PR #6 Draft. Direkte PR-Erstellung aus Studio und GitHub Actions fehlen. |
+| Persönliche KI | PASS für bestehenden Pilot | Ein echter begrenzter CLI-Auftrag bereits belegt. Hier keine Modellnutzung, keine persönlichen Sperren geöffnet. |
+| Sicherheitsgrenzen | PASS im geprüften Umfang | Aktuelle pilot-runner/review/studio Tests und vorherige reale Sperrproben. PR-Workflow verhindert direkte Integration. Source Guard für bekannte Muster PASS; kein vollständiger Secret-/Penetrationstest. |
+| Bedienbarkeit | PASS mit Restlücken | Acht Hauptbereiche bei 390/1024/1440px ohne Seitenüberlauf (responsive-sweep.json), keine erfassten JS-Pageerrors. Ergebnisdialog/Fehler nachgetestet. Gesamte Barrierefreiheit NOT_TESTED. Gleiche Demo-Initialen, Erstinstallation und fehlender PR-Übergang bleiben Lücken. |
+| Gemeinsames Wissen | PASS nach Fix | Zwei Browser bearbeiten gleiche Revision: zweite Speicherung abgewiesen, Entwurf/Warnung erhalten. knowledge-conflict-fixed.png. Auflösung weiterhin manuell sichern/neu öffnen. |
+| Backup/Betrieb | PASS laut bestehender Evidence | P2_HERMES_BACKUP_REPORT_20261017.md und P2_SWITCH_ACCEPTANCE_20261017.md. Keine neue Live-DB-Operation. Offsite-Restore NOT_TESTED. |
+| Externe Einrichtung | BLOCKED / NOT_TESTED | Echte zweite Person/Mac nicht verfügbar; echte OAuth-Clients nicht eingerichtet. Nicht durch Windows-/Testanbieterergebnisse ersetzt. |
 
+## Höchstens fünf nächste Arbeiten
+
+1. Vier Korrekturen reviewen und separat für kontrollierten Dienstwechsel freigeben;
+   noch nicht live.
+2. Veröffentlichten Branch direkt zum passenden GitHub-PR führen; PR/CI klar von
+   lokalen Tests unterscheiden.
+3. Projektbezogene Runner-Freigaben vor Aufträgen erklären/anzeigen, Erststart
+   vereinfachen. Online-Heartbeat allein erlaubt weder KI noch Push.
+4. Wissen: Entwurf sichern und neue Version vergleichen statt nur manuell kopieren;
+   weitere Dialoge auf Fokusführung und Entwurfsverlust prüfen.
+5. Echter Zwei-Personen-/Mac-Pilot und unabhängiger Review. Kein Blocker für lokale
+   Produktverbesserungen.
+
+## Fortsetzung
+
+Matrix eingeordnet; NOT_TESTED/BLOCKED sind keine versteckten PASS. Keine
+unveränderten Wiederholungsprüfungen im nächsten Heartbeat. Neue Arbeit nur an
+konkreter Änderung oder verfügbarem Zugang. Der Auftrag zur Produktverbesserung
+bleibt bestehen; dies schließt die begrenzte Abnahme, nicht die Produktentwicklung.

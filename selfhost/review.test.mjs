@@ -29,7 +29,9 @@ test('two accounts review real Git snapshots: no self approval, SHA binding, fee
   async function dispatch(operation,worktree,source,extra={}){
    const queued=await request('/api/development',{action:'job',device:device.id,project:'website',operation,worktree,source,...extra},a.cookie);assert.equal(queued.status,200,JSON.stringify(queued.data));
    const job=(await request('/api/runner/poll',{},null,device.token)).data.job;assert.equal(job.id,queued.data.id);
-   const result=await runner.run(job);const report=await request('/api/runner/report',{id:job.id,lease:job.lease,ok:true,result},null,device.token);assert.equal(report.status,200);
+   const events=[];const result=await runner.run(job,{onEvent:event=>events.push({...event,seq:events.length+1})});
+   const heartbeat=await request('/api/runner/report',{id:job.id,lease:job.lease,heartbeat:true,events:events.slice(0,40)},null,device.token);assert.equal(heartbeat.status,200);
+   const report=await request('/api/runner/report',{id:job.id,lease:job.lease,ok:true,result},null,device.token);assert.equal(report.status,200);
    return {job,result};
   }
   const prepared=await dispatch('prepare');writeFileSync(path.join(prepared.result.path,'value.txt'),'Gemeinsam prüfen\n');
@@ -39,6 +41,14 @@ test('two accounts review real Git snapshots: no self approval, SHA binding, fee
   assert.equal((await request('/api/development/job?id='+opened.job.id,null,b.cookie)).status,403);
   assert.equal((await request('/api/development',{action:'job',operation:'files',device:device.id,project:'website',worktree:prepared.job.id},b.cookie)).status,403);
   const saved=await dispatch('save-file',prepared.job.id,undefined,{file:'value.txt',revision:opened.result.revision,content:'Gemeinsam prüfen\n'});assert.equal(saved.result.saved,true);
+  // File results and their real command logs have the same ownership boundary.
+  for(const fileJob of [files,opened,saved]){
+   const route='/api/development/events?job='+fileJob.job.id;
+   assert.equal((await request(route)).status,401);
+   const own=await request(route,null,a.cookie);assert.equal(own.status,200);
+   assert.ok(own.data.events.some(event=>event.text.includes('value.txt')));
+   assert.equal((await request(route,null,b.cookie)).status,403);
+  }
   await assert.rejects(runner.run({...opened.job,action:'read-file',payload:{...opened.job.payload,file:'new.txt'}}),/Git erfasste/);
   const first=await dispatch('review',prepared.job.id);
   assert.match(first.result.diff,/Gemeinsam prüfen/);assert.match(first.result.diff,/new.txt/);assert.equal(first.result.published,false);

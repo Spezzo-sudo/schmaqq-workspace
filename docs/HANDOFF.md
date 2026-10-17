@@ -10,7 +10,17 @@ den geprüften Kollaborationskandidaten. Der Heim-PC soll dafür nicht ständig 
 
 Workspace ist die universelle Arbeitsplattform für Menschen und Agenten; Studio ist der erste Bereich. Freiwilliges Peer-Compute und Monetarisierung sind spätere, sicherheitskritische Entwicklungsphasen. Vor Architektur-/Produktarbeit [Produktvision](PRODUCT_VISION.md), [Zielarchitektur](ARCHITECTURE.md), [Roadmap](ROADMAP.md) und [Integrationsgrenzen](INTEGRATION_BOUNDARIES.md) lesen. **Nur** [STATUS.json](STATUS.json) enthält den aktuellen technischen Fähigkeitsnachweis. Plattform-Repo und dessen Runtime bleiben unabhängig.
 
-## Aktiver autonomer Testauftrag
+## Aktueller Abschluss der begrenzten technischen Abnahme
+
+Die Matrix ist eingeordnet: docs/evidence/OVERNIGHT_ACCEPTANCE.md. Vier lokale
+Korrekturen sind geprüft: Dateijob-Eventzugriff, Dialogfokus, sofortige Freigabe
+nach Jobabschluss und dauerhafte Wissenskonfliktwarnung. Vollprüfung nach Fixes:
+19 PASS, 1 POSIX-SKIP, 0 FAIL, TypeScript/Build/Source Guard PASS. Acht Hauptansichten
+bei drei Breiten ohne Seitenüberlauf. Noch nicht deployed. Keine unveränderten
+Tests erneut starten. Nächste Produktarbeit: PR-Übergang, Runner-Freigabeführung
+und komfortable Wissenskonfliktauflösung; kein neuer KI-Job oder Live-Eingriff.
+
+## Ursprünglicher autonomer Testauftrag
 
 Owner hat eine stündliche lokale Fortsetzung dieses Chats für die technische Abnahme
 beauftragt. Endliche Matrix und Grenzen: `docs/OVERNIGHT_TEST_ORDER.md`. Fortschritt:

@@ -209,7 +209,7 @@
   "execution_plan": {
     "document": "docs/ROADMAP.md",
     "active_package": "P3",
-    "next_action": "Markus personally creates GitHub account and own Studio account; use restricted starter for Mac setup and actual two-human acceptance. Windows pilot already connected; no repeat setup.",
+    "next_action": "Review verified audit fixes; improve direct PR handoff and runner capability guidance. Real second-person/Mac pilot remains pending, not a blocker for these changes.",
     "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
     "deployment_authorized": true,
     "feature_expansion": "deferred until actual two-person pilot acceptance",
@@ -416,7 +416,7 @@
     "deployment": false
   },
   "overnight_acceptance": {
-    "state": "in_progress",
+    "state": "matrix_classified_local_fixes_verified",
     "order": "docs/OVERNIGHT_TEST_ORDER.md",
     "report": "docs/evidence/OVERNIGHT_ACCEPTANCE.md",
     "automation_id": "schmaqq-vollst-ndige-technische-abnahme",
@@ -429,9 +429,18 @@
       "typescript": "PASS",
       "build": "PASS"
     },
-    "remaining": "Map evidence and execute targeted unproven browser/negative cases; do not repeat unchanged full flow",
+    "remaining": "No repeated unchanged tests. Review four local fixes before separately authorized rollout; PR handoff/CI, runner permission guidance and knowledge conflict recovery remain product work. Mac, real second person, external OAuth, full timeout and offsite restore remain unverified.",
     "paid_model_jobs_allowed": false,
     "runner_policy": "Codex OFF, Publish OFF; direct integration blocked",
-    "deployment_allowed": false
+    "deployment_allowed": false,
+    "local_fixes": [
+      "Private file-job event ownership enforced",
+      "Development result dialog keyboard focus/Escape/return",
+      "Immediate job completion refresh",
+      "Workspace mutation errors survive background synchronization"
+    ],
+    "latest_log": ".studio/overnight-audit/verify-final.log",
+    "browser": "Two synthetic contexts: concurrent claim, comments, editor conflict, failed check, cancellation, offline/reconnect, knowledge revision conflict; 8 views x 3 widths without page overflow",
+    "fixes_deployed": false
   }
 }
