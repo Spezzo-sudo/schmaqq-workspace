@@ -1,35 +1,31 @@
 # R2 – Hermes Linux-Testauftrag
 
-_Status: Prüfauftrag vorbereitet und per read-only Host-Preflight aktualisiert am 17.10.2026. Studio-Tests nicht ausgeführt; kein Runtime-Eingriff freigegeben._
+_Status: R2-Linux-Test und lokale Browserabnahme am 17.10.2026 auf dem bestehenden VPS durchgeführt; alle Testartefakte danach entfernt. Dauerbetrieb/öffentliches Studio weiterhin nicht freigegeben._
 
 ## Ziel und Grenzen
 
-Hermes soll die eigenständige Anwendung `Spezzo-sudo/schmaqq-workspace` auf einer **vom laufenden SCHMAQQ-/NetzKontor-Stack getrennten, autorisierten Linux-Testumgebung** prüfen. GitHub bleibt Source of Truth für den Code und sanitizierte Evidence; keine automatische Actions-Ausführung für jeden PR/Push.
+Hermes kann die eigenständige Anwendung `Spezzo-sudo/schmaqq-workspace` **in einem getrennten, zeitlich begrenzten Arbeitsverzeichnis auf dem bereits vorhandenen VPS** testen. Der Owner hat die Nutzung dieses VPS dafür ausdrücklich freigegeben. Eine zusätzliche Cloud-VM ist nicht erforderlich. Für jeden weiteren Lauf gelten die Ressourcen- und Bereinigungsgates unten. GitHub bleibt Source of Truth für den Code und sanitizierte Evidence; keine automatische Actions-Ausführung für jeden PR/Push.
 
 **Kein Deployment, kein Merge, keine Änderungen an Produktionsdiensten, Reverse Proxy, Traefik, Docker-Volumes, Datenbanken, Tokens oder Provider-Konfigurationen.** Keine echten Codex-/ChatGPT-Sitzungen, keine Modell-Downloads und kein ungewollter Zugriff auf fremde Projekte. Diese Prüfung benötigt keine produktiven Secrets.
 
 ## Phase 0: Read-only Preflight (zwingend vor Installation)
 
 - Prüfe für den vorgesehenen *isolierten* Ausführungsort: Linux/Architektur, Node >=24.15.0, npm, Git, Python 3, freier Speicher/Inodes, CPU, RAM, erreichbare Pakete und sichere Scratch-Pfade.
-- Trenne Tester vom produktiven Host durch unprivilegierten Benutzer plus geeignete Sandbox/Ressourcenlimits; keine Host-Sockets oder Produktivverzeichnisse einbinden.
-- Installiere auf dem bestehenden Produktionshost nicht stillschweigend eine neue Node-Version und führe dort weder `npm ci` noch einen schweren Build aus.
+- Verwende ausschliesslich einen unprivilegierten Testbenutzer, exklusiven temporären Arbeitsordner, eigenen npm-/HOME-/TMP-Cache, zeitlich begrenzte Prozesse und explizites Monitoring von RAM, CPU und Disk. Keine produktiven Sockets, Verzeichnisse oder Secrets einbinden.
+- Node >=24.15 nur **innerhalb des Testordners** bereitstellen (Download vorher gegen offizielle SHA256-Liste verifizieren). System-Node, globale Pakete und produktive Dienste unverändert lassen. `npm ci`/Build nur im geprüften Testordner und mit überwachten Limits.
 - Wenn die Umgebung oder die Sicherheitsgrenzen nicht passen: **BLOCKED**, keine improvisierte Umrüstung.
 
-**Aktualisierter read-only Host-Befund vom 17.10.2026:** Verbundener Produktions-VPS `srv1365337`: Linux x86_64, ext4 Root-Dateisystem ca. 71 % belegt (~28,6 GiB frei nach separater freigegebener Modell-Bereinigung), 7,8 GiB RAM, kein Swap und System-Node v22.22.2. GitHub-Zugang zum privaten Studio-Repository ist vorhanden, aber es gibt dort keine bereits vorbereitete isolierte Studio-Testumgebung. **Kein Build auf dem produktiven Host!** Der separate Test-Runner benötigt Node >=24.15.0 und begrenzte Ressourcen. Dieser Befund ersetzt nicht den erneuten Preflight bei Ausführung.
+**Verifizierter Befund vom 17.10.2026:** Host `srv1365337`, Linux x86_64, Root-Dateisystem ca. 71 % belegt (28,6 GiB frei), ca. 7,8 GiB RAM, System-Node v22.22.2. Ein benutzereigenes Node v24.22.0, exakter Checkout und `npm ci --ignore-scripts` wurden nur temporär installiert. **13/13 Tests**, TypeScript, Vite-Build und Zwei-Rollen-Demo-Smoke bestanden; ausserdem reale Chrome-/Playwright-Browserprüfungen auf 1440×900 und 390×844. Alle Testdaten/Ports wurden danach entfernt, drei Live-Websites weiter HTTP 200. Die ursprüngliche strikte `ulimit -v`-Grenze blockierte einmal V8; ein Retry ohne diese virtuelle Adressraumgrenze bestand. Vgl. [R2 Linux Evidence](evidence/R2_VPS_LINUX_TEST_20261017.md) und [R3-A Browser Evidence](evidence/R3A_LOCAL_BROWSER_20261017.md).
 
-## R2 Speicherschutz und vollständiger Test-Rückbau
+## R2 Speicherschutz und Rückbau (verbindlich)
 
-**Standard: Build/Test NICHT auf dem produktiven VPS `srv1365337`.** Hermes darf den Auftrag koordinieren, aber npm-Installation, Node-24-Runtime, Browser und Build-Artefakte müssen auf einem **separaten, ephemeren Test-Runner ausserhalb des Produktionshosts** liegen. Nur wenn der Owner dafür später ausdrücklich eine eigene Ausnahme genehmigt, darf ein streng isolierter produktionshostnaher Runner erneut geprüft werden. Die aktuelle R2-Freigabe enthält diese Ausnahme nicht.
+1. **VPS erlaubt, nicht unbegrenzt:** Neue Tests auf demselben VPS nur als unprivilegierter, einmaliger Lauf in einem eindeutig benannten isolierten Testordner. Keine Änderungen an Production, Preview, KlimaFinder, Hermes, Docker-Volumes oder globaler Node-Installation. Keine externen, kostenpflichtigen Runner auf eigene Initiative.
+2. **Budget und Überwachung:** Initial höchstens **3 GiB zusätzlich belegter Platz** für den Testordner (R2 beobachtet ca. 1,6 GiB); bei drohender Überschreitung abbrechen und melden. RAM-Verfügbarkeit, Last und Disk auch während des Builds prüfen; nice/ionice, `timeout` und Node-Heap-Limits einsetzen. Diese Massnahmen sind **keine** harte Container-/cgroup-Isolation; keine falschen Garantieaussagen. Für untrusted Code oder Fremdprojekte wären stärkere Grenzen nötig.
+3. **Nur Wegwerfdateien:** `node_modules`, npm-Cache, Git-Checkout, Screenshots, `.studio`, Logs, Toolchain und `TMPDIR` im selben exklusiven Bereich. Keine persistierenden Worktrees, keine globalen npm-Caches oder externen Mounts.
+4. **Vorsicht beim Cleanup:** Nur den vorher zweifelsfrei verifizierten Testordner entfernen, nachdem alle zugehörigen Prozesse beendet und die Test-Ports geschlossen sind. Keine fremden Pfade, Backups, Images oder Dienste anfassen. Sanitizierte Evidence vorher im PR ablegen; keine Testpasswörter, privaten Konten oder Tokens veröffentlichen.
+5. **Abnahme:** Disk/RAM und HTTP-Gesundheit vorher/nachher; erwartete dauerhafte Build-Daten: **0 Bytes**. Bleibt etwas liegen, gilt `CLEANUP=FAIL` und keine weitere Testwiederholung ohne Klärung.
 
-Verpflichtende Gates für die externe Testumgebung:
-
-1. **Hard-Quota statt Schätzung:** eigener begrenzter Scratch-/Filesystem-Bereich mit initial maximal **8 GiB beschreibbarem Speicher**, max. **4 GiB RAM**, max. **2 vCPU** und begrenzter Laufzeit. Wenn Limits technisch nicht erzwungen werden können, **BLOCKED** statt stillschweigendem Ausweichen auf Produktionspfade. Bei echtem Mehrbedarf erst Messwerte liefern und neue Freigabe holen.
-2. **Ephemeres Laufwerk:** Checkout, `node_modules`, `.studio`, `dist`, Testdaten, npm-Cache, `HOME`, `TMPDIR`, Browser-Caches und heruntergeladene Werkzeuge im selben isolierten, begrenzten Bereich halten. Keine gemeinsamen Root-Caches, keine Produktionspfade, kein Host-Docker-Socket und kein globales `npm install -g`. Node >=24.15 ausschliesslich in der Testumgebung bereitstellen.
-3. **Messung und Abbruch:** Vorher/Nachher-Belegung des **Produktionshosts** und des Scratch-Bereichs in Bytes erfassen. Während des Tests Quota-, RAM- und Laufzeitgrenzen kontrollieren; bei Überschreitung sauber abbrechen. Keine automatische Vergrösserung des VPS-Speichers oder schleichend persistenten Arbeitskopien.
-4. **Aufräumen durch Isolation:** Nach Abschluss oder Fehler alle zu diesem einen Auftrag gehörenden Kindprozesse kontrolliert stoppen; Scratch-Umgebung und damit Caches, Pakete, Build und Demo-Daten **vollständig zerstören**. Nie produktive Container/Volumes oder geteilte Ordner löschen. Laufende Referenzen vorher prüfen. Evidence vor dem Rückbau sanitisiert sichern; keine Auth- oder Runner-Secrets.
-5. **Nachprüfung:** Ursprüngliche freie Bytes und die auf dem VPS neu belegten Bytes vergleichen; Ziel **0 Byte dauerhaftes Build-/Testwachstum auf dem Produktionshost** (normale Systemlogs separat ausweisen). Ein nicht erfolgreich bereinigter Testlauf erhält `CLEANUP=FAIL`, nicht `PASS`. Kein zweiter Testlauf, solange die Ursache ungeklärt ist.
-
-**Kein** `docker system prune`, `git clean -fdx` ausserhalb des expliziten ephemeren Arbeitsbereichs, pauschales Löschen alter Worktrees oder shared `npm`-/Python-Caches. Keine Bereinigung fremder Prozesse.
+**Historischer externer Runner:** `scripts/r2-hermes-ephemeral.sh` und `scripts/r2-guards.test.sh` bleiben im PR als *optionaler* Off-VPS-Docker-Ansatz dokumentiert. Ihre dortigen External-Runner-Guards sind beabsichtigt; sie sind **nicht** der tatsächliche Ausführungsweg vom 17.10.2026 und dürfen niemals auf dem produktiven Host verwendet werden. Die separate Docker-Variante wurde nicht vollständig ausgeführt.
 
 ## Phase 1: Checkout und echte Prüfungen (nach bestandenem Sandbox-Preflight)
 
@@ -47,39 +43,22 @@ git --version
 python3 --version
 ```
 
-3. Erst in der isolierten Umgebung, ohne Produktionssecrets und als unprivilegierter Benutzer:
+3. Erst im geprüften temporären Arbeitsordner, ohne Produktionssecrets und als unprivilegierter Benutzer:
 
 ```sh
 npm ci --no-audit --no-fund
 npm run studio:verify
 ```
 
-`studio:verify` führt Source Guard, vorhandene Node-Backendtests, TypeScript-Prüfung und Vite-Studio-Build aus. Kein Entfernen oder Abschwächen von Checks bei Fehlern.
+`studio:verify` führt Source Guard, vorhandene Node-Backendtests, TypeScript-Prüfung und Vite-Studio-Build aus. Kein Entfernen oder Abschwächen von Checks bei Fehlern. **R2-Evidence:** `npm ci --ignore-scripts --no-audit --no-fund` wurde aus Sicherheitsgründen ausgeführt; ein Standardlauf mit npm-Lifecycle-Skripten war nicht Teil dieser Abnahme.
 
 ## Phase 2: Lokaler Zwei-Rollen-Smoke (optional nach Preflight)
 
 In der Test-Sandbox `node selfhost/demo.mjs` auf Loopback 127.0.0.1:4320 und 4321 starten; nach erfolgreichem Readiness-Check von `/healthz` **getrennt** `node selfhost/demo-smoke.mjs` ausführen. Die Demo erstellt eigene Fixture-Konten und ein isoliertes Bare-Git-Repository; keine echte SCHMAQQ-Produktionsquelle. Testprozesse kontrolliert stoppen und den privaten `.studio/`-Inhalt nie in GitHub hochladen.
 
-## Ausführbarer R2-Teststarter (17.10.2026)
+## Optionaler externer Docker-Teststarter (nicht auf dem VPS ausführen)
 
-Im selben R2-Branch liegt `scripts/r2-hermes-ephemeral.sh`. Der Shell-Parser und die Fail-Closed-Einstiegskontrollen wurden unabhängig geprüft. **Der echte Docker-/npm-Test ist noch nicht gelaufen.**
-
-Nur auf einer **externen, kurzlebigen Linux-Test-VM mit Docker**, nicht auf dem produktiven VPS:
-
-```sh
-git clone https://github.com/Spezzo-sudo/schmaqq-workspace.git schmaqq-r2
-cd schmaqq-r2
-git checkout 51786459aa9aef83600581f9977309e7bdd77e2e
-# Skript aus dem R2-Branch über einen getrennten, geprüften Download bereitstellen;
-# das alte Test-Commit enthält das Skript selbst noch nicht.
-SCHMAQQ_R2_EXTERNAL_RUNNER=YES bash /pfad/zum/geprueften/r2-hermes-ephemeral.sh "$PWD"
-```
-
-Voraussetzungen: unprivilegierter VM-Benutzer, autorisierter lesender GitHub-Zugang, Docker-Daemon **nur auf dieser externen Test-VM**, Zugriff auf den offiziellen `node:24-bookworm`-Container und npm-Registry. Netzwerk des externen Runners nicht mit internen Produktivnetzen verbinden. Eine begrenzte Test-VM ist nach Testende vollständig zu entsorgen; Container-`--rm` alleine entfernt nicht das Image und die Docker-Layer auf der VM.
-
-Der Starter blockiert produktionsähnliche Hostpfade, fremde Git-Remotes, abweichende Commit-SHAs, Root-Benutzer, bereits vorhandene generierte Dateien und einen nicht bestätigten externen Runner. Er startet unter Docker einen read-only Container mit 4 GiB RAM, 2 vCPU, 30 Minuten Timeout, 6 GiB flüchtigem `/workspace` und 512 MiB `/tmp`, ohne Capabilities oder Host-Docker-Socket. Host-Secrets dürfen nicht in das Test-Checkout gelangen. Sein Build-Verzeichnis wird nach Containerende verworfen.
-
-**Verifizierungsstand:** Einstiegskontrollen und Shell-Syntax statisch geprüft, **kein** Docker-Container gestartet, keine npm-Abhängigkeiten installiert, keine Browser-Abnahme. Die spätere Evidence muss das tatsächliche Runner-Image und dessen externen Host samt vollständiger VM-Entsorgung berücksichtigen.
+`scripts/r2-hermes-ephemeral.sh` ist ein optionaler separater Docker-Tester mit bewusster Host-Sperre. Dessen simulierte Guard-Prüfungen bestanden; der Docker-Live-Test wurde nicht ausgeführt. Der Owner bevorzugt Tests im begrenzten temporären VPS-Arbeitsverzeichnis; dafür **nicht** den externen Docker-Starter zweckentfremden.
 
 ## Phase 3: Sanitizierte Evidence
 
@@ -88,7 +67,7 @@ SCHMAQQ_WORKSPACE_R2
 REPO=Spezzo-sudo/schmaqq-workspace
 EXPECTED_SHA=<approved>
 CHECKOUT_SHA=<actual>
-TEST_HOST=<isolated environment>
+TEST_HOST=<isolated ephemeral VPS directory or separately approved environment>
 OS_ARCH=<value>
 NODE_VERSION=<value>
 PREFLIGHT=PASS|BLOCKED
@@ -103,14 +82,14 @@ PRODUCTION_MUTATION=NO
 PRODUCTION_DISK_FREE_BEFORE_BYTES=<value>
 PRODUCTION_DISK_FREE_AFTER_BYTES=<value>
 EPHEMERAL_DISK_PEAK_BYTES=<value>
-EPHEMERAL_SCRATCH_QUOTA_BYTES=<value>
+EPHEMERAL_SCRATCH_BUDGET_BYTES=<value>
 TEST_SANDBOX_CLEANUP=PASS|FAIL|NOT_RUN
 PERSISTENT_BUILD_BYTES_ON_PRODUCTION=<value>
 SECRETS_EXPORTED=NO
 ERRORS=<sanitized>
 ```
 
-Ergebnisse dem R2-PR zuordnen. **Nur tatsächlich ausgeführte** Schritte als PASS markieren. Fehlende/ausbleibende Logs sind `NOT_RUN`/ungeklärt, nicht erfolgreich. Erst nach echter Evidence `docs/STATUS.json` in einem eigenen Review-Änderungspaket aktualisieren.
+**Für den abgeschlossenen Test gelten die zwei verlinkten Evidence-Dateien.** Ergebnisse künftiger Testläufe dem zugehörigen PR zuordnen. **Nur tatsächlich ausgeführte** Schritte als PASS markieren. Fehlende/ausbleibende Logs sind `NOT_RUN`/ungeklärt, nicht erfolgreich. Erst nach echter Evidence `docs/STATUS.json` in einem eigenen Review-Änderungspaket aktualisieren.
 
 ## Unabhängige Abnahmen
 
