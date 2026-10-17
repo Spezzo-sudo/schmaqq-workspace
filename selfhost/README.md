@@ -337,7 +337,7 @@ Die beiden Rollen in getrennten Browserprofilen testen oder dazwischen abmelden.
 
 ## Bedienung und Entwürfe
 
-Die selbst betriebene Oberfläche startet direkt in Entwicklung. Der eigene verbundene PC und eine vorhandene eigene Arbeitskopie werden vorausgewählt. Ein neuer Arbeitsbereich erscheint nach erfolgreicher Erstellung automatisch im Editor. Neue Arbeitsbereiche und technische Protokolle sind bei Bedarf aufklappbar; Tests, Änderungen und Vorschau öffnen ihr Ergebnis unmittelbar. Die lokale Demo ist auf Anmeldung und Arbeitsfläche ausdrücklich markiert.
+Die selbst betriebene Oberfläche startet in der gemeinsamen Projektübersicht. Dort Projekt wählen, eine Aufgabe übernehmen und Kommentare direkt am Thema festhalten. „Weiterarbeiten“ öffnet die passende eigene Arbeitskopie oder bereitet das Formular für eine neue vor. Aufgaben-Prüfstände lassen sich direkt von dort öffnen; nur eine andere Person kann die Codefreigabe erteilen. Projekt und Ansicht bleiben beim Neuladen über die URL erhalten. Der eigene verbundene PC und eine vorhandene eigene Arbeitskopie werden vorausgewählt. Ein neuer Arbeitsbereich erscheint nach erfolgreicher Erstellung automatisch im Editor. Neue Arbeitsbereiche und technische Protokolle sind bei Bedarf aufklappbar; Tests, Änderungen und Vorschau öffnen ihr Ergebnis unmittelbar. Die lokale Demo ist auf Anmeldung und Arbeitsfläche ausdrücklich markiert.
 
 Ungespeicherte Editor-Entwürfe bleiben pro Benutzer, Gerät, Projekt und Arbeitskopie im Arbeitsspeicher des Browser-Tabs erhalten, auch beim Wechsel zu Aufgaben oder Team-Chat. Sie werden nicht im Browser-Dauerspeicher abgelegt. Vor Neuladen/Schließen warnt der Browser; Abmelden verlangt bei offenen Entwürfen eine ausdrückliche Bestätigung. Nach Schließen des Tabs sind diese Entwürfe weg, daher zuerst speichern oder herunterladen. Speicherrevisionen werden auch bei wiederhergestellten Entwürfen unverändert geprüft.
 
@@ -346,7 +346,7 @@ Die UI-Änderungen sind gebaut und typgeprüft; ein visueller Browser-Abnahmetes
 
 ## KI-Anbieter und freigegebene lokale Modelle
 
-Unter **KI & Rechner** zeigt Studio den vom eigenen Runner gemeldeten Codex-Anmeldestatus und die ausdrücklich freigegebenen lokalen Ollama-Modelle. Der Runner prüft den Codex-Status nur, wenn Codex für ein lokales Projekt bereits aktiviert wurde. OAuth-Tokens, API-Keys und Auth-Caches werden weder gelesen noch zum Studio übertragen. Persönliche Codex-Konten bleiben nicht teilbar; Codex-Aufträge dürfen weiterhin nur auf dem eigenen Gerät ausgeführt werden.
+Unter **Verbindungen** zeigt Studio den vom eigenen Runner gemeldeten Codex-Anmeldestatus und die ausdrücklich freigegebenen lokalen Ollama-Modelle. Der Runner prüft den Codex-Status nur, wenn Codex für ein lokales Projekt bereits aktiviert wurde. OAuth-Tokens, API-Keys und Auth-Caches werden weder gelesen noch zum Studio übertragen. Persönliche Codex-Konten bleiben nicht teilbar; Codex-Aufträge dürfen weiterhin nur auf dem eigenen Gerät ausgeführt werden.
 
 Für ChatGPT unterstützt die bestehende Codex-Integration `codex login` sowie `codex login --device-auth`; Studio besitzt jetzt einen separaten OIDC-Login für registrierte ChatGPT-Website-Clients (Aktivierung unten). Ein eigener Provider-Device-Code-Flow für Modellnutzung ist nicht implementiert. Offizielle Quellen, geprüft am 17.10.2026:
 - https://learn.chatgpt.com/docs/auth
@@ -408,7 +408,7 @@ Die isolierte lokale Demo aktiviert grundsätzlich keine echten Anbieter-Logins.
    Bei den beiden letzten Methoden auch `STUDIO_CHATGPT_CLIENT_SECRET` setzen.
    Geheimnisse niemals ins Repository oder in Browser-Code schreiben. Server neu starten.
 4. Bestehende Mitglieder melden sich zuerst mit ihrem Studio-Passwort an und wählen
-   **KI & Rechner → Deine Anmeldung im Studio → ChatGPT-Konto verbinden**.
+   **Verbindungen → Deine Anmeldung im Studio → ChatGPT-Konto verbinden**.
    Danach funktioniert **Mit ChatGPT anmelden** auf der Startseite.
 5. Neue Mitglieder öffnen ihre persönliche Einladung und melden sich dort mit ChatGPT an.
    Ihre beim Anbieter bestätigte E-Mail muss zur Einladung passen. Ohne Einladung oder
@@ -431,3 +431,81 @@ Verknüpfung, E-Mail-Verifikation, Logout während der Verknüpfung, PKCE, Brows
 Wiederholungen, falsche Nonce/Audience/Issuer, abgelaufene Tokens und Origin-Prüfung.
 Ein Live-Login bei OpenAI ist ohne registrierten Client noch nicht nachgewiesen.
 Referenz: https://developers.openai.com/siwc/website
+
+
+## Persönliche Dienste unter „Verbindungen“
+
+Der neue Bereich zeigt GitHub, ChatGPT/Codex, Claude und Copilot mit ihrem
+jeweiligen tatsächlichen Integrationsstand. Eine erkannte Codex-Anmeldung wird
+nur aus der vorhandenen eigenen Runner-Telemetrie angezeigt. Claude und Copilot
+sind noch nicht als ausführbare Studio-Adapter integriert. Lokale Ollama-Freigaben
+bleiben unterhalb dieser Übersicht erreichbar.
+
+GitHub-Kontoverknüpfung (kein Repository-Zugriff und kein Copilot-Adapter):
+
+1. Der Betreiber registriert eine eigene GitHub OAuth App mit der exakten
+   Callback-URL `<STUDIO_ORIGIN>/api/connections/github/callback`.
+2. `STUDIO_GITHUB_CLIENT_ID` und `STUDIO_GITHUB_CLIENT_SECRET` ausschließlich in
+   der privaten Serverumgebung konfigurieren. Keine bestehenden fremden Clients
+   wiederverwenden. Ein Live-Neustart/Deployment benötigt separate Freigabe.
+3. Angemeldete Mitglieder wählen unter Verbindungen „Mit GitHub verbinden“.
+   GitHub übernimmt die persönliche Anmeldung. Ohne App-Konfiguration erklärt
+   Studio den fehlenden Betreiberschritt; es zeigt keinen funktionslosen Login.
+4. Studio prüft die Antwort mit State, PKCE, Browserbindung, ursprünglicher
+   gültiger Sitzung und GitHub-Profilabfrage. Gespeichert werden nur stabile
+   GitHub-ID, Benutzername, Studio-Mitglied und Bestätigungszeit, keine Anbieter-
+   Access-/Refresh-Tokens. Die ID wird nicht still anhand von E-Mail verknüpft.
+5. „Verknüpfung entfernen“ entfernt ausschließlich die Zuordnung in Studio und
+   beendet offene Versuche. Die App-Autorisierung bei GitHub bleibt bis zum
+   dortigen Widerruf bestehen. Git-Anmeldung/Arbeitskopien auf dem PC bleiben
+   unabhängig. Die Bestätigung ist kein laufender Repo- oder Berechtigungscheck.
+
+Die lokale Demo deaktiviert echte GitHub-/ChatGPT-Provider unabhängig von ENV.
+Automatisierte GitHub-OAuth-Tests verwenden einen ausdrücklich lokalen Testanbieter.
+Eine tatsächliche GitHub-Registrierung und persönliche Live-Autorisierung sind
+noch nicht erfolgt. Es wurden keine KI-Aufträge ausgeführt.
+
+Offizielle Integrationswege (geprüft 17.10.2026):
+- GitHub OAuth: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+- Copilot SDK: https://docs.github.com/en/copilot/how-tos/copilot-sdk/setup/github-oauth
+- ChatGPT-Plan-Nutzung: https://developers.openai.com/siwc/token-sharing-open-source
+- Claude Agent SDK/Plan: https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan
+
+Die letzten drei Links beschreiben Anbieterfähigkeiten, keine implementierten
+zusätzlichen Studio-Adapter. Ein direkter ChatGPT-Plan-Flow ist gesondert nach
+Einsatzform zu prüfen (lokale/OSS-Apps gegenüber gehosteter Anwendung).
+
+
+## Parallel am selben Projekt arbeiten
+
+1. Jede Person meldet sich mit eigenem Studio-Konto an und verbindet ihren eigenen
+   Rechner. Die gemeinsame Projektübersicht ist der Einstieg.
+2. Projekt wählen und konkrete Aufgaben anlegen. „Aufgabe übernehmen“ weist genau
+   eine Person zu; bei gleichzeitiger Übernahme erhält die andere eine Meldung.
+3. Rückfragen, Brainstorming und Entscheidungen direkt an der jeweiligen Aufgabe
+   kommentieren. Kommentare sind für die Mitglieder dieses privaten Studios
+   sichtbar und werden dauerhaft in SQLite gespeichert. Entwürfe bleiben nur
+   im geöffneten Tab; vor dem Schließen senden. Der Browser warnt vor Verlust.
+4. „Weiterarbeiten“ öffnet die eigene verknüpfte Arbeitskopie. Fehlt sie noch,
+   werden Aufgabe und Titel vorausgewählt. Geplanten Datei-/Ordnerbereich bewusst
+   angeben, damit Überschneidungen vor Beginn auffallen.
+5. In getrennten Kopien bearbeiten, speichern, testen und Vorschau prüfen.
+   Unterschiedliche verbundene PCs können gleichzeitig Aufträge ausführen;
+   auf demselben Runner werden Aufträge weiterhin seriell ausgeführt.
+6. „Zur Teamprüfung“ erstellt einen echten geprüften Git-Stand. Die zweite Person
+   öffnet ihn über „Prüfstand ansehen“ an der Aufgabe. Rückmeldungen gelten genau
+   diesem Stand. Der Aufgabenstatus wird bewusst manuell gepflegt.
+7. Anschließende Veröffentlichung/Übernahme richtet sich nach dem Repository-
+   Workflow. Eine Studio-Freigabe ist noch kein GitHub-Merge. Arbeitsbereiche
+   werden unter Entwicklung bewusst abgeschlossen; das gibt reservierte Bereiche
+   frei und bewahrt Dateien/Branches.
+
+Die Reservierung ist eine Abstimmung über angegebene Bereiche, keine Garantie
+gegen sämtliche Codekonflikte. Getrennte Kopien sind kein gleichzeitiger Editor
+für dieselbe Datei. Ein ausgeschalteter persönlicher PC führt keine Jobs aus.
+
+Das neue Schema ergänzt nur `task_comments` und einen Index; vorhandene Aufgaben,
+Dateien und Git-Historien bleiben erhalten. Neues Frontend und Backend müssen
+zusammen ausgerollt bzw. lokal zusammen gestartet werden. Alte laufende Server
+kennen die neuen Collaboration-Endpunkte nicht. Betreiber führen vor einem
+separat freigegebenen Live-Rollout ein konsistentes Backup aus.

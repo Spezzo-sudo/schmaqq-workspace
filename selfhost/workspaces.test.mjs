@@ -7,6 +7,7 @@ import {randomUUID} from 'node:crypto';
 import {createStudioServer} from './server.mjs';
 import {createInvite,openStore} from './store.mjs';
 import {listWorkspaces,validScope} from './workspaces.mjs';
+import {developmentJob} from '../app/development-request.ts';
 
 test('persistent workspaces: two owners, atomic reservations, archive, revisions and task assignment',async()=>{
  const root=mkdtempSync(path.join(os.tmpdir(),'studio-workspaces-')),filename=path.join(root,'data.sqlite'),origin='http://127.0.0.1:44322';
@@ -17,7 +18,13 @@ test('persistent workspaces: two owners, atomic reservations, archive, revisions
   const accounts=[];
   for(const name of ['a','b']){const account=await request('/api/auth/register',{invite:createInvite(app.db,name+'@fixture.invalid'),name,password:'fixture-password-12345'});account.device=(await request('/api/development',{action:'device',name},account.cookie)).data;account.id=app.db.prepare('SELECT id FROM members WHERE name=?').get(name).id;accounts.push(account);}
   const [a,b]=accounts;
-  const queue=(account,extra={})=>request('/api/development',{action:'job',operation:'prepare',project:'website',device:account.device.id,...extra},account.cookie);
+  const queue=(account,extra={})=>request('/api/development',developmentJob({operation:'prepare',project:'website',device:account.device.id,worktree:'',...extra}),account.cookie);
+  // A fresh browser has no worktree selected. Repository-level actions must still work.
+  const inspected=await request('/api/development',developmentJob({operation:'inspect',project:'website',device:a.device.id,worktree:''}),a.cookie);
+  assert.equal(inspected.status,200);
+  assert.equal((await request('/api/development',{action:'cancel',id:inspected.data.id},a.cookie)).status,200);
+  // Omitting a missing copy must not weaken ownership/required-copy validation.
+  assert.equal((await request('/api/development',developmentJob({operation:'check',project:'website',device:a.device.id,worktree:''}),a.cookie)).status,403);
   const edit=(account,w,extra={})=>request('/api/development',{action:'workspace',id:w.id,revision:w.revision,title:w.title,scope:w.scope,archived:!!w.archived,...extra},account.cookie);
   const get=async()=> (await request('/api/development',null,a.cookie)).data;
   const task=randomUUID();app.db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(task,'website','Angebote','Beschreibung','todo','Normal',null,Date.now());

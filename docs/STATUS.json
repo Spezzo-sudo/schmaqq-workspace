@@ -18,7 +18,10 @@
     "Tests, statische Vorschauen und unveränderliche Git-Prüfstände",
     "Gegenseitige Codefreigabe mit Bindung an Commit-SHA",
     "OIDC-Identitätslogin gegen lokalen signierenden Testanbieter",
-    "Lokale KI-Freigaben und Ollama-Protokoll gegen Testdienst"
+    "Lokale KI-Freigaben und Ollama-Protokoll gegen Testdienst",
+    "Gemeinsame Projektübersicht mit Zuständigkeiten, offenen Arbeitskopien und Dateibereichen",
+    "Atomare Aufgabenübernahme und dauerhafte aufgabenbezogene Kommentare",
+    "Direkte Verknüpfung von Aufgaben, eigener Arbeitskopie und unabhängig freigegebenem Prüfstand"
   ],
   "implemented_requires_external_setup": [
     "ChatGPT-Website-Login benötigt registrierten Client; aktuell deaktiviert",
@@ -39,10 +42,11 @@
     "Dauerbetrieb allein durch GitHub oder eine endliche Codex-Cloud-Aufgabe"
   ],
   "environments": {
-    "personal_local": "127.0.0.1:4310; private Einrichtung noch erforderlich",
+    "personal_local": "127.0.0.1:4310: legacy local installation; consolidated candidate is tested separately on 4340/4341",
     "isolated_demo": "127.0.0.1:4320; zwei Testkonten und lokale Runner",
-    "vps": "Hostinger srv1365337: Linux/Release/Browser-Tests in temporären Nutzerordnern PASS; alle Artefakte entfernt; kein Studio-Dauerdienst oder öffentliches Deployment",
-    "github": "Private zentrale Codebasis Spezzo-sudo/schmaqq-workspace, Remote-Branch main, Code im Repository-Root"
+    "vps": "Historical R4 isolated tests passed. Live Studio origin observed during R5-A; current hosting/service configuration is not audited by this candidate.",
+    "github": "Private zentrale Codebasis Spezzo-sudo/schmaqq-workspace, Remote-Branch main, Code im Repository-Root",
+    "local_parallel_pilot": "127.0.0.1:4340; preview 4341; isolated fixture with two test accounts and runners; manual process, no autostart"
   },
   "design": {
     "reference": "https://preview.schmaqq.com/",
@@ -52,12 +56,104 @@
     "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
   },
   "next_steps": [
-    "R4-Deployment-Kandidaten auf exakten Git-Commit pinnen und gegen fertiges Release erneut prüfen",
-    "Eigene Node-24-Serviceruntime, Dienstbenutzer, HTTPS-Origins und separate Datenpfade nur nach ausdrücklichem Deployment-Go einrichten",
-    "Geheimen Eigentümer-Zugang und E-Mail-Einladung kontrolliert initialisieren; keine Tokens nach GitHub kopieren",
-    "Live-Backup und separaten Restore mit echten Dienstrechten nachweisen; Zwei-Personen-Fernpilot durchführen"
+    "Back up reviewed candidate branch and create a draft PR; do not merge",
+    "Read-only audit of existing live service and prepare backup/rollback before a separately approved rollout",
+    "Run the actual two-person remote pilot described in docs/PILOT_PLAN.md",
+    "Fix observed onboarding and workflow obstacles before adding more provider features"
   ],
   "verification": {
+    "command": "node selfhost/verify.mjs (Node 24)",
+    "host": "Windows; local candidate only",
+    "result": "pass",
+    "backend_tests": 17,
+    "typescript": "pass",
+    "frontend_build": "pass",
+    "source_guard": "pass_known_patterns_not_complete_secret_audit",
+    "browser_acceptance": "Previous two-context parallel workflow PASS; consolidation regressions for pending comment and existing offline copy PASS",
+    "release_smoke": "pass: latest consolidated local runtime manifest, HTTP/auth, collaboration routes and task-comment backup",
+    "linux_current_candidate": "not_run; older R4 evidence is historical_verification_r4",
+    "github_ci": "not_configured; no Actions run requested",
+    "production_deployment": "not_performed; live instance unchanged",
+    "notes": "No actual Switzerland/Thailand pilot or paid personal AI task. Determine exact candidate SHA through Git."
+  },
+  "windows_pc_setup_r5a": {
+    "runner_ready": true,
+    "report": "R5_A_TECH_HANDOFF.md",
+    "device": "Windows-PC R5-A",
+    "project": "automation",
+    "studio_origin": "https://studio.schmaqq.com",
+    "tests": "Git, worktree, editor save, diff, safe check, built preview and runner restart PASS",
+    "initial_ui_workaround": "First worktree created through authenticated API without empty worktree ID; existing workspace usable through UI",
+    "autostart": false,
+    "windows_reboot_tested": false,
+    "production_changes": false,
+    "ai_jobs_executed": false
+  },
+  "status_scope_note": "Ältere R4-/VPS-Felder dokumentieren historische Prüfungen, keinen aktuellen Hosting-Audit. R5-A hat das Live-Studio und einen persönlichen Windows-Runner nachgewiesen. Die folgenden UI-Korrekturen sind ausschließlich lokal gebaut und geprüft, nicht deployed.",
+  "studio_usability_followup": {
+    "branch": "fix/studio-first-workspace-layout",
+    "deployment": "local_only",
+    "first_copy": "inspect and prepare omit missing worktree; authenticated browser flow passed without API workaround",
+    "layout": "desktop and mobile visually inspected at 390, 1024, 1280 and 1600 px; no page overflow or file/editor overlap",
+    "real_fixture_tests": "first Git inspection, worktree creation, editor save, configured test and built preview PASS; local bare Git remote only",
+    "verification": "studio:verify PASS: source guard, 13 tests, TypeScript and frontend build",
+    "remaining": [
+      "One-click installation/start for a new PC is not implemented",
+      "Personal AI readiness is not established by a Studio login or heartbeat",
+      "Real two-person remote pilot with Markus remains unproven",
+      "Local UI fixes require review and separate deployment approval"
+    ],
+    "offline_reconnect": "PASS: actual fixture runner stopped, offline guidance and disabled actions observed; reconnected with saved copy unchanged",
+    "project_navigation": "Shared overview project and view survive reload through URL; task-to-development navigation selects the linked own copy."
+  },
+  "account_connections": {
+    "state": "implemented_locally_not_deployed",
+    "navigation": "Verbindungen",
+    "github": "OAuth account verification with state, PKCE, browser/session binding, profile verification and local unlink. No persisted provider tokens, repository permissions or Copilot adapter.",
+    "github_live_blocker": "Own STUDIO_GITHUB_CLIENT_ID and STUDIO_GITHUB_CLIENT_SECRET registration/configuration required; not registered or authorized live in this task.",
+    "chatgpt": "Existing optional identity OIDC unchanged; actual Codex status from own runner capabilities. No new direct plan-usage flow or login orchestration.",
+    "claude_copilot": "Explicitly shown as not integrated; official documentation linked. No model execution adapter added.",
+    "verification": "15 tests, TypeScript, frontend build and source guard PASS; local release smoke PASS; visible browser at desktop 1280 and mobile 390 px PASS for unconfigured state.",
+    "oauth_evidence": "Local HTTP test provider, not actual GitHub authorization.",
+    "remaining": [
+      "Register a dedicated GitHub client and complete personal live consent after approved rollout",
+      "Implement repository-scoped GitHub App access separately",
+      "Implement a direct personal ChatGPT/Codex connection flow for the selected deployment model",
+      "Implement and verify individual Claude and Copilot adapters"
+    ]
+  },
+  "collaboration_pilot": {
+    "state": "local_two_role_end_to_end_pass_not_deployed",
+    "entry": "Personal Studio starts in the shared project overview",
+    "evidence": "docs/PARALLEL_COLLABORATION_HANDOFF.md",
+    "actors": "Two isolated test accounts and browser contexts; not Marco and Markus as real remote participants",
+    "execution": "Two actual runner processes and distinct Git clones/worktrees of one local bare repository",
+    "passed": [
+      "Separate tasks claimed through UI",
+      "Two-way task comments persisted across local server restart",
+      "Comment drafts survive in-tab navigation",
+      "Own worktree opened from task; existing copy reused",
+      "Two files edited and saved in separate copies",
+      "Both configured checks observed running simultaneously, then passing",
+      "Two actual built previews show respective changes",
+      "Each account approved the other exact Git review from a task link",
+      "Desktop/mobile viewport checks at 1440, 1280 and 390 px without page overflow",
+      "16 backend tests, TypeScript, build and source guard PASS"
+    ],
+    "not_done": [
+      "Real Switzerland/Thailand two-person pilot",
+      "Personal paid AI execution",
+      "Production deployment",
+      "GitHub PR publication/merge of either task result",
+      "Public multi-tenant rollout"
+    ],
+    "test_only_findings": [
+      "Stale comment form on rapid task switch fixed and verified with delayed real response",
+      "Initial isolated check script had an invalid expression; fixed in fixture seed and worktrees, real retry passed"
+    ],
+    "comment_storage": "Additive task_comments table; authenticated members in the existing single private Studio share task discussions; no tenant separation added"
+  },
+  "historical_verification_r4": {
     "command": "npm run studio:verify",
     "host": "Windows und isolierter unprivilegierter VPS-Testordner",
     "result": "pass_for_tested_source_sha_51786459aa9aef83600581f9977309e7bdd77e2e",
@@ -78,5 +174,18 @@
     "production_deployment": "not_started",
     "cleanup": "pass",
     "notes": "Test-SHA ist vor den reinen Docs/Deployment-Template-Merges; endgültiger main-Release-SHA muss für Deployment erneut verifiziert werden."
+  },
+  "pilot_candidate": {
+    "branch": "fix/studio-first-workspace-layout",
+    "base": "origin/main",
+    "plan": "docs/PILOT_PLAN.md",
+    "publication": "prepared_for_private_branch_backup_and_draft_review",
+    "deployment": "requires_separate_approval",
+    "release_scope": "Coherent frontend/backend with additive task-comments and optional GitHub account-link tables",
+    "review_corrections": [
+      "Disable comment editing while a mutation is pending",
+      "Resume task copy on its existing own device even if another own device is online"
+    ],
+    "human_acceptance": "not_yet_run"
   }
 }

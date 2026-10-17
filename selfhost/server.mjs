@@ -1,5 +1,7 @@
 import http from 'node:http';
 import {createOidcRoutes} from './oidc.mjs';
+import {createConnectionRoutes} from './connections.mjs';
+import {collaborationRoute,assertAssignment} from './collaboration.mjs';
 import { readFileSync,writeFileSync,existsSync,statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,7 +27,7 @@ const actions=z.discriminatedUnion('action',[
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
 function parse(schema,data){const r=schema.safeParse(data);if(!r.success)throw fail(400,'Bitte Eingaben prüfen.');return r.data;}
-export function createStudioServer({oidcProvider, demoMode=false,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist')}={}){
+export function createStudioServer({oidcProvider,githubProvider, demoMode=false,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist')}={}){
  if(!/^[a-z_]{1,60}$/.test(sessionCookie))throw new Error('Ungültiger Sitzungsname.');
  if(new URL(origin).origin===new URL(previewOrigin).origin)throw new Error('Studio und Vorschau benötigen unterschiedliche Origins.');
  const db=openStore(filename),secure=new URL(origin).protocol==='https:';const rate=new Map();
@@ -35,6 +37,7 @@ export function createStudioServer({oidcProvider, demoMode=false,sessionCookie='
  function session(res,member){const t=token();db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(digest(t),member,now()+7*86400000);res.setHeader('Set-Cookie',`${sessionCookie}=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800${secure?'; Secure':''}`);}
  function record(author,message){db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(uuid(),author,message,now());}
  const oidcRoute=createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,provider:demoMode?null:oidcProvider});
+ const connectionRoute=createConnectionRoutes({db,origin,sessionCookie,user,provider:demoMode?null:githubProvider});
  const server=http.createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');
   const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
@@ -44,6 +47,8 @@ export function createStudioServer({oidcProvider, demoMode=false,sessionCookie='
    if(route==='/healthz'){send({ok:true});return;}
    if(method==='POST'&&!route.startsWith('/api/runner/')){if(req.headers.origin!==origin)throw fail(403,'Ungültiger Ursprung.');if(!req.headers['content-type']?.includes('application/json'))throw fail(415,'JSON erforderlich.');}
    if(await oidcRoute({route,method,req,res,url,send}))return;
+   if(await connectionRoute({route,method,req,res,url,send}))return;
+   if(await collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
    if(await aiRoute({route,method,req,db,user,device,send,readJSON,parse}))return;
    if(route==='/api/auth/session'){send({user:publicMember(user(req))});return;}
    if(route==='/api/auth/login'&&method==='POST'){
@@ -179,7 +184,7 @@ export function createStudioServer({oidcProvider, demoMode=false,sessionCookie='
      db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created) VALUES(?,?,?,?,?,?,?,?)').run(jid,m.id,value.device,value.project,value.operation,JSON.stringify(payload),'queued',now());
      if(value.operation==='prepare'){
       db.prepare('INSERT INTO workspaces(job,title,scope,task) VALUES(?,?,?,?)').run(jid,value.title??(value.issue?'Issue #'+value.issue:'Arbeitskopie'),value.scope??'',value.task??null);
-      if(value.task)db.prepare('UPDATE tasks SET assignee=? WHERE id=?').run(m.id,value.task);
+      if(value.task)db.prepare("UPDATE tasks SET assignee=?,status=CASE WHEN status='todo' THEN 'doing' ELSE status END WHERE id=?").run(m.id,value.task);
      }
     });send({ok:true,id:jid});return;
    }
@@ -189,7 +194,7 @@ export function createStudioServer({oidcProvider, demoMode=false,sessionCookie='
     const v=parse(actions,await readJSON(req));
     if(v.action==='project')db.prepare('INSERT INTO projects VALUES(?,?,?,?,?,?)').run(uuid(),v.title,v.description,v.color,v.stage,now());
     else if(v.action==='task'){if(!db.prepare('SELECT id FROM projects WHERE id=?').get(v.project))throw fail(404,'Projekt fehlt.');if(v.assignee&&!db.prepare('SELECT id FROM members WHERE id=?').get(v.assignee))throw fail(400,'Mitglied fehlt.');db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(uuid(),v.project,v.title,v.description,'todo',v.priority,v.assignee,now());}
-    else if(v.action==='status'||v.action==='assign'){if(v.action==='assign'&&v.assignee&&!db.prepare('SELECT id FROM members WHERE id=?').get(v.assignee))throw fail(400,'Mitglied fehlt.');const r=v.action==='status'?db.prepare('UPDATE tasks SET status=? WHERE id=?').run(v.status,v.id):db.prepare('UPDATE tasks SET assignee=? WHERE id=?').run(v.assignee,v.id);if(!r.changes)throw fail(404,'Aufgabe fehlt.');}
+    else if(v.action==='status'||v.action==='assign'){if(v.action==='assign'&&v.assignee&&!db.prepare('SELECT id FROM members WHERE id=?').get(v.assignee))throw fail(400,'Mitglied fehlt.');if(v.action==='assign')assertAssignment(db,v.id,v.assignee);const r=v.action==='status'?db.prepare('UPDATE tasks SET status=? WHERE id=?').run(v.status,v.id):db.prepare('UPDATE tasks SET assignee=? WHERE id=?').run(v.assignee,v.id);if(!r.changes)throw fail(404,'Aufgabe fehlt.');}
     else if(v.action==='message'){if(v.channel!=='general'&&!db.prepare('SELECT id FROM projects WHERE id=?').get(v.channel))throw fail(404,'Raum fehlt.');db.prepare('INSERT OR IGNORE INTO messages VALUES(?,?,?,?,?)').run(v.id,v.channel,m.id,v.body,now());}
     else if(v.id){if(!db.prepare('UPDATE documents SET title=?,body=?,author=?,updated=?,revision=revision+1 WHERE id=? AND revision=?').run(v.title,v.body,m.id,now(),v.id,v.revision??0).changes)throw fail(409,'Dokument inzwischen geändert. Entwurf kopieren und neu laden.');}
     else db.prepare('INSERT INTO documents VALUES(?,?,?,?,1,?)').run(uuid(),v.title,v.body,m.id,now());

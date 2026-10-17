@@ -10,6 +10,45 @@ dauerhaft betreiben. Der Heim-PC soll dafür nicht ständig laufen müssen.
 
 Workspace ist die universelle Arbeitsplattform für Menschen und Agenten; Studio ist der erste Bereich. Freiwilliges Peer-Compute und Monetarisierung sind spätere, sicherheitskritische Entwicklungsphasen. Vor Architektur-/Produktarbeit [Produktvision](PRODUCT_VISION.md), [Zielarchitektur](ARCHITECTURE.md), [Roadmap](ROADMAP.md) und [Integrationsgrenzen](INTEGRATION_BOUNDARIES.md) lesen. **Nur** [STATUS.json](STATUS.json) enthält den aktuellen technischen Fähigkeitsnachweis. Plattform-Repo und dessen Runtime bleiben unabhängig.
 
+## Nächster Meilenstein und Konsolidierung
+
+Der verbindliche Ablauf für Sicherung, Review, kontrollierte Bereitstellung und
+anschließende menschliche Abnahme steht in `PILOT_PLAN.md`. Neueste technische
+Prüfung: `STATUS.json` unter `verification`; die frühere R4-Prüfung ist ausdrücklich
+als `historical_verification_r4` erhalten. Quellcode-Backup und Draft-Review erteilen
+keine Deployment-Freigabe. Zwei zusätzliche Review-Korrekturen schützen Kommentare
+während des Speicherns und öffnen vorhandene Aufgabenkopien auf ihrem richtigen
+PC. Runtimeprofile, SQLite-Daten und Browser-Screenshots bleiben lokal ignoriert.
+
+## Aktuelle Priorität: gemeinsam parallel arbeiten
+
+Die lokale Studio-Startseite ist jetzt die gemeinsame Projektübersicht. Aufgaben
+können atomar übernommen, kommentiert und aus ihrem Kontext in eigene Arbeitskopien
+geöffnet werden. Prüfstände sind direkt an Aufgaben verlinkt. Zwei getrennte
+Testkonten, Browserkontexte und echte Runner haben diesen Ablauf inklusive
+parallel laufender Tests, Vorschauen und gegenseitiger Freigabe durchlaufen.
+Dies ersetzt keinen tatsächlichen Fernpilot mit Marco und Markus. Details,
+Datenmigration und offene Grenzen: `docs/PARALLEL_COLLABORATION_HANDOFF.md`.
+Die Änderungen gehören zum separaten Kandidatenbranch; Veröffentlichung/Review-Stand siehe `STATUS.json` und Git. Kein Deployment und keine produktiven Git-Aktionen.
+
+## Aktuelle Fortsetzung: Windows-Runner und Bedienbarkeit
+
+R5-A hat den persönlichen Windows-Runner mit dem Live-Studio verbunden und
+Git, Arbeitskopie, Dateispeicherung, Tests, gebaute Vorschau und Runner-Neustart
+mit einem isolierten lokalen Testrepository nachgewiesen. Details stehen in
+`R5_A_TECH_HANDOFF.md`. Das ist kein Nachweis für Markus' Fernzugriff, persönliche
+KI-Aufträge oder die Ausführung bei ausgeschaltetem Heim-PC.
+
+Die anschließenden Korrekturen für die erste Arbeitskopie und den responsiven
+Editor liegen auf `fix/studio-first-workspace-layout`. Sie sind lokal geprüft,
+nicht deployed. Siehe `docs/USABILITY_FIRST_WORKSPACE.md`.
+Der neue Bereich „Verbindungen“ ergänzt eine lokal getestete GitHub-Kontoverknüpfung
+und tatsächliche Codex-Statusanzeigen. Echte GitHub-Clientregistrierung und Live-
+Freigabe fehlen noch; Claude/Copilot sind nicht integriert. Aktuelle Details:
+`docs/CONNECTIONS_HANDOFF.md`. Historische Aussagen
+zu einem noch nicht eingerichteten VPS weiter unten sind keine aktuelle
+Betriebsbestandsaufnahme; ein Audit des tatsächlichen Live-Hostings steht aus.
+
 ## Wo der Stand liegt
 
 Die zentrale Codebasis ist das private Repository
@@ -58,7 +97,9 @@ Repository übertragen und zusätzlich als lokales Git-Bundle gesichert. Private
 Runtime-Daten werden dabei nicht übertragen; eine neue Installation erzeugt
 eigene Daten, Konten und Zugangsdaten.
 
-Das Studio bleibt auf localhost, bis ein Server separat eingerichtet wird. Ein
+Neue Standardinstallationen binden an localhost. Das in R5-A geprüfte Live-Studio
+ist unter https://studio.schmaqq.com erreichbar; dessen Betrieb wurde hier nicht
+vollständig auditiert. Ein
 Cloud-Entwickler kann Code bearbeiten/testen, auch wenn dieser PC aus ist; er
 ersetzt weder automatisch das Studio-Hosting noch einen ausgeschalteten Runner.
 Ein normaler Chat hat nur die tatsächlich verbundenen Tools und kann nicht
