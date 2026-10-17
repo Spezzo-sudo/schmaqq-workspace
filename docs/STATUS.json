@@ -26,12 +26,12 @@
     "Lokale Inferenz benötigt vorhandenen Ollama-Dienst und explizit erlaubte Modelle"
   ],
   "not_yet_proven": [
-    "Linux-Neuinstallation und gesamte Suite in echter Codex-Cloud-Umgebung",
     "Gemeinsamer Zugang zwischen Schweiz und Thailand",
     "Studio-Dauerbetrieb auf Hostinger-VPS und Wiederherstellung dort",
     "Live-OIDC-Anmeldung bei OpenAI",
     "Live-Inferenz mit vorhandenem Ollama-Modell",
-    "Visuelle Abnahme des neuesten Studio-Layouts auf Desktop und Mobilgerät"
+    "Manuelle visuelle Endabnahme auf echten Desktop-/Mobilgeräten trotz bestandenem automatisierten Chrome-Test",
+    "Finaler zusammengeführter main-Commit als Release-Smoke auf dauerhaftem Servicepfad"
   ],
   "not_implemented": [
     "Allgemeine Anmeldung und Modelladapter für beliebige weitere KI-Anbieter",
@@ -41,7 +41,7 @@
   "environments": {
     "personal_local": "127.0.0.1:4310; private Einrichtung noch erforderlich",
     "isolated_demo": "127.0.0.1:4320; zwei Testkonten und lokale Runner",
-    "vps": "Hostinger vorhanden laut Nutzer; Studio-Installation nicht erfolgt",
+    "vps": "Hostinger srv1365337: Linux/Release/Browser-Tests in temporären Nutzerordnern PASS; alle Artefakte entfernt; kein Studio-Dauerdienst oder öffentliches Deployment",
     "github": "Private zentrale Codebasis Spezzo-sudo/schmaqq-workspace, Remote-Branch main, Code im Repository-Root"
   },
   "design": {
@@ -52,24 +52,31 @@
     "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
   },
   "next_steps": [
-    "Neue private Codebasis in GitHub-Verbindung für Codex/ChatGPT/Work freigeben und Cloud-Setup sowie studio:verify ausführen",
-    "Neuestes UI sichtbar prüfen; zwei Rollen durch Bearbeiten, Test, Vorschau, Review führen",
-    "Hermes zunächst nur VPS-Preflight und isolierte Zielkonfiguration prüfen lassen",
-    "Nach Freigabe Studio auf eigener Origin mit persistentem Speicher betreiben"
+    "R4-Deployment-Kandidaten auf exakten Git-Commit pinnen und gegen fertiges Release erneut prüfen",
+    "Eigene Node-24-Serviceruntime, Dienstbenutzer, HTTPS-Origins und separate Datenpfade nur nach ausdrücklichem Deployment-Go einrichten",
+    "Geheimen Eigentümer-Zugang und E-Mail-Einladung kontrolliert initialisieren; keine Tokens nach GitHub kopieren",
+    "Live-Backup und separaten Restore mit echten Dienstrechten nachweisen; Zwei-Personen-Fernpilot durchführen"
   ],
   "verification": {
     "command": "npm run studio:verify",
-    "host": "Windows",
-    "result": "pass",
+    "host": "Windows und isolierter unprivilegierter VPS-Testordner",
+    "result": "pass_for_tested_source_sha_51786459aa9aef83600581f9977309e7bdd77e2e",
     "backend_tests": 13,
     "typescript": "pass",
     "frontend_build": "pass",
-    "browser_acceptance": "pending",
-    "linux_cloud": "pending",
+    "browser_acceptance": "automated_desktop_mobile_pass_manual_visual_pending",
+    "linux_cloud": "not_required_vps_used",
     "github_ci": {
       "result": "not_configured_in_standalone_repository",
       "historical_netzkontor_run": "https://github.com/Spezzo-sudo/NetzKontor/actions/runs/39011115243",
       "note": "Historical snapshot CI failed without available steps/logs. No Linux proof for this repository."
-    }
+    },
+    "linux_vps": "pass",
+    "demo_smoke": "two_fixture_users_two_runners_pass",
+    "release_smoke": "archive_manifest_auth_http_pass",
+    "backup_restore": "fixture_restore_integrity_foreign_keys_members_tasks_docs_pass",
+    "production_deployment": "not_started",
+    "cleanup": "pass",
+    "notes": "Test-SHA ist vor den reinen Docs/Deployment-Template-Merges; endgültiger main-Release-SHA muss für Deployment erneut verifiziert werden."
   }
 }
