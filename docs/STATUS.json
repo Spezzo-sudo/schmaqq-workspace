@@ -206,5 +206,13 @@
     "backup_restore": "unverified; protected data inaccessible to audit account",
     "candidate_linux": "not yet run",
     "deployment": "not performed; preparation only"
+  },
+  "execution_plan": {
+    "document": "docs/ROADMAP.md",
+    "active_package": "P1",
+    "next_action": "Review candidate diff against main, resolve findings, verify exact candidate on isolated Linux with synthetic data before a separately approved deployment",
+    "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
+    "deployment_authorized": false,
+    "feature_expansion": "deferred until actual two-person pilot acceptance"
   }
 }

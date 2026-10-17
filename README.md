@@ -4,6 +4,10 @@ Eigenständige Entwicklungsumgebung für die Zusammenarbeit an SCHMAQQ.
 Zentrale private Codebasis: [Spezzo-sudo/schmaqq-workspace](https://github.com/Spezzo-sudo/schmaqq-workspace).
 Der Code liegt direkt im Repository-Root. NetzKontor ist ein separates Projekt.
 
+**Projektüberblick und verbindliche nächste Schritte:** [Gesamtplan](docs/ROADMAP.md).
+Nächster Meilenstein: Marco und Markus arbeiten parallel am selben Testprojekt,
+mit eigenen Kopien, Kommentaren, echten Tests, Vorschauen und gegenseitiger Prüfung.
+
 
 ## Produktvision und Architektur
 
@@ -19,13 +23,14 @@ Der Code liegt direkt im Repository-Root. NetzKontor ist ein separates Projekt.
 - `app/`: gemeinsame Oberfläche, Projekte, Aufgaben, Teamchat, Dateieditor und Review.
 - `selfhost/`: Node-HTTP-Server, SQLite-WAL-Datenbank und persönliche Runner.
 - Runner führen Git-, Test- und Codex-Aufträge auf dem verbundenen Rechner aus.
-- `selfhost/deploy/`: vorbereitete Deployment-Anleitung; kein erfolgtes VPS-Deployment.
+- `selfhost/deploy/`: Betriebsanleitung; älteres Live-Release läuft auf dem VPS,
+  aktueller Kollaborationskandidat noch nicht deployed.
 - `app/api/`, `db/`, `build/`: erhaltener Sites-/Cloudflare-Starter, separater Laufzeitpfad.
 
 Lokal nachgewiesen sind Backend-Verträge, Git-Arbeitskopien, Dateibearbeitung,
 Tests/Vorschau und gegenseitiges Review. ChatGPT-Website-Login benötigt einen
-registrierten Client; Cloud-/Linux-Betrieb und echte gemeinsame Fernnutzung sind
-noch gesondert zu prüfen. Details und offene Punkte stehen in `docs/STATUS.json`.
+registrierten Client; älterer Linux-/Live-Betrieb ist belegt, aktueller Kandidat
+und echte gemeinsame Fernnutzung sind noch gesondert zu prüfen. Details und offene Punkte stehen in `docs/STATUS.json`.
 
 ## Entwicklungsstart
 

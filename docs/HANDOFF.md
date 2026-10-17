@@ -2,8 +2,8 @@
 
 Wir bauen eine echte gemeinsame Entwicklungsumgebung für Marco in der Schweiz
 und Markus in Thailand. Beide verwenden ihre eigenen ChatGPT-Konten. GitHub
-bewahrt Code und Review; der vorhandene Hostinger-VPS soll später das Studio
-dauerhaft betreiben. Der Heim-PC soll dafür nicht ständig laufen müssen.
+bewahrt Code und Review; der vorhandene Hostinger-VPS betreibt bereits ein
+älteres Studio-Release. Der Heim-PC soll dafür nicht ständig laufen müssen.
 
 
 ## Langfristiges Produktbild (separat vom heutigen Status)
@@ -11,6 +11,11 @@ dauerhaft betreiben. Der Heim-PC soll dafür nicht ständig laufen müssen.
 Workspace ist die universelle Arbeitsplattform für Menschen und Agenten; Studio ist der erste Bereich. Freiwilliges Peer-Compute und Monetarisierung sind spätere, sicherheitskritische Entwicklungsphasen. Vor Architektur-/Produktarbeit [Produktvision](PRODUCT_VISION.md), [Zielarchitektur](ARCHITECTURE.md), [Roadmap](ROADMAP.md) und [Integrationsgrenzen](INTEGRATION_BOUNDARIES.md) lesen. **Nur** [STATUS.json](STATUS.json) enthält den aktuellen technischen Fähigkeitsnachweis. Plattform-Repo und dessen Runtime bleiben unabhängig.
 
 ## Nächster Meilenstein und Konsolidierung
+
+Die operative Gesamtplanung steht in [ROADMAP.md](ROADMAP.md). Aktives Paket ist
+**P1: Kandidat abschließen**; danach P2 kontrollierte Bereitstellung, P3 zwei
+persönliche Zugänge, P4 echte gemeinsame Abnahme. Vorhandene Setup-/Live-Checks
+nicht pauschal wiederholen. Langfristige Anbieter-/Compute-Arbeit bleibt Backlog.
 
 Der verbindliche Ablauf für Sicherung, Review, kontrollierte Bereitstellung und
 anschließende menschliche Abnahme steht in `PILOT_PLAN.md`. Neueste technische
