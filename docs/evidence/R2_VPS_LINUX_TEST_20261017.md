@@ -34,6 +34,6 @@
 - Temporäres Testverzeichnis vor Cleanup: `1,508,091,451` Bytes Dateigrösse (belegter Disk-Blockbedarf `du -sh` rund 1.6 GB).
 - Keine Änderung an Production/Preview, Host-Nginx/Traefik, PostgreSQL, Docker-Volumes oder produktiven systemd-Diensten.
 - Eigener Loopback-Port; keine Internet-Exposition.
-- Laufende Demo musste nach PASS kontrolliert beendet und Testverzeichnis vollständig entfernt werden. Cleanup-Ergebnis im PR-Status separat bestätigen.
+- Laufende Demo musste nach PASS kontrolliert beendet und Testverzeichnis vollständig entfernt werden. Cleanup abgeschlossen: Demo beendet; Ports 4320/4321 geschlossen; exklusiver Testordner entfernt. Vor Löschung 29,026,709,504 Bytes frei, nach Löschung 30,735,028,224 Bytes frei. `CLEANUP=PASS`. System-Node unverändert v22.22.2. Alle drei öffentlichen URLs nach Löschung HTTP 200.
 
 **Einschränkungen:** `--ignore-scripts` war eine bewusste Sicherheitsmassnahme für npm-Install-Skripte; in einem späteren reproducibility-Test ohne dieses Flag sollte die Abweichung gesondert bewertet werden. Dieser Test beweist weder dauerhaften Studio-Webbetrieb noch browserseitige UI-Qualität, Multi-Tenancy oder echte Zwei-Personen-Fernnutzung.
