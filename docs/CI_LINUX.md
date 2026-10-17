@@ -44,3 +44,12 @@ npm run studio:verify
 For the demo flow, separately run `node selfhost/demo.mjs`; from a second terminal run `node selfhost/demo-smoke.mjs`. The demo writes private fixture data under ignored `.studio/`; do not upload it. Stop the demo after verification.
 
 **Next gate:** real rendered Browser acceptance on desktop and mobile, followed by cross-device two-person pilot and separate VPS preflight. No deploy or merge is implied by CI success.
+
+## First observed GitHub Actions run — 17 October 2026
+
+- Workflow: [run #1](https://github.com/Spezzo-sudo/schmaqq-workspace/actions/runs/39014844042), PR #2, head `bb706a9d049bd1b9d9a65acc96c80cd37c1136e9`.
+- Result: **failure**, completed. One job `Node 24 / Linux / Studio`, job ID `117344722493`.
+- Evidence limitation: the jobs API returned `steps: []`, no runner name, and the job-log download responded `BlobNotFound` (HTTP 404). The wrapper for job steps also returned an empty list.
+- Therefore **no npm install, test, type-check, build or demo result is currently proven by this run**. This is not proof of an application test failure either.
+- Suspected possibilities (not confirmed): runner provisioning/Actions startup, permissions/organization policy, or another infrastructure-level pre-step failure. Do **not** assume one of these without further evidence.
+- Next diagnostic: inspect the linked run's GitHub UI and any platform-level run annotation/message or contact GitHub support; confirm account/repository Actions availability. Once a runner starts and logs are available, address any actual failing step. No bypasses or blind changes to test gates.
