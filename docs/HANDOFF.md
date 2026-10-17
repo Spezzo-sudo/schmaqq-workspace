@@ -24,6 +24,10 @@ steht vor der gezielten Einladung. Evidence: `docs/evidence/P3_PILOT_SETUP_20261
 Marcos vorhandener Runner ist inzwischen am Pilotprojekt mit eigener Kopie,
 Tests und neuer Vorschau angebunden. Eingeschränktes Mac-Paket vorbereitet,
 noch kein Mac-Test: `docs/evidence/P3_RUNNER_SAFETY_20261017.md`.
+Der klare UI-Arbeitsvorgang steht jetzt in `docs/PILOT_PLAN.md`. Ein aktueller
+Live-Browserlauf über Kommentare, Editieren/Speichern, Tests, neue Vorschau und
+lokalen Prüfstand ist belegt: `docs/evidence/P3_LIVE_BROWSER_WORKFLOW_20261017.md`.
+Die Pilotaufgabe steht auf Zur Prüfung; keine Selbstfreigabe oder Veröffentlichung.
 Danach P4 echte gemeinsame Abnahme. Vorhandene Setup-/Live-Checks
 nicht pauschal wiederholen. Langfristige Anbieter-/Compute-Arbeit bleibt Backlog.
 

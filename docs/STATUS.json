@@ -68,7 +68,7 @@
     "typescript": "pass",
     "frontend_build": "pass",
     "source_guard": "pass_known_patterns_not_complete_secret_audit",
-    "browser_acceptance": "Previous two-context parallel workflow PASS; consolidation regressions for pending comment and existing offline copy PASS",
+    "browser_acceptance": "Previous local two-context flow and current live own-account UI workflow PASS: comment, edit/save, actual diff/check/preview, immutable review, task link/reload, 390/1024/1440px; real second person pending",
     "release_smoke": "pass: latest consolidated local runtime manifest, HTTP/auth, collaboration routes and task-comment backup",
     "linux_current_candidate": "PASS at source 57c274c52fb4fd67ca9f9dc857a4456962806a18: fresh npm ci --ignore-scripts, 17 tests, TypeScript, build, extracted archive smoke and synthetic legacy upgrade; see docs/evidence/P1_CANDIDATE_LINUX_20261017.md",
     "github_ci": "not_configured; no Actions run requested",
@@ -300,11 +300,12 @@
     "studio_project": "986b71a9-48e4-49d8-97bd-f2156bbf61c8",
     "studio_title": "Studio-Pilottest",
     "tasks_created": 2,
-    "new_runner_jobs": 0,
     "github_collaborator": "not invited; Markus has no GitHub account yet",
     "mac_runner": "not configured",
     "windows_pilot_project": "configured on same personal device; own copy, real checks and new preview HTTP 200 PASS",
-    "human_acceptance": "not run"
+    "human_acceptance": "not run",
+    "seed_phase_new_runner_jobs": 0,
+    "browser_agent_acceptance": "own-account end-to-end UI workflow PASS; independent second person still required"
   },
   "pilot_runner_safety": {
     "evidence": "docs/evidence/P3_RUNNER_SAFETY_20261017.md",
@@ -323,5 +324,31 @@
     "mac_hardware": "not tested; MAC_RUNNER_READY=NO",
     "isolation_limit": "project commands run with local user rights; no general untrusted-code sandbox",
     "autostart": false
+  },
+  "live_browser_workflow": {
+    "evidence": "docs/evidence/P3_LIVE_BROWSER_WORKFLOW_20261017.md",
+    "workflow": "docs/PILOT_PLAN.md",
+    "scope": "agent-operated real UI; own existing authorized Windows browser session and runner; not a separate cloud browser",
+    "file": "site/index.html",
+    "review_commit": "237dc034c204548bd18ea1f58743d0022a8f8338",
+    "tests": {
+      "pass": 2,
+      "fail": 0
+    },
+    "comment_and_file_drafts": "survive in-tab navigation",
+    "saved_comment": "persists after reload",
+    "new_preview": "matches saved heading; separate HTTPS origin",
+    "task_review_link": "same commit reopened through UI",
+    "task_status": "review",
+    "independent_approval": "pending; no self-approval",
+    "widths_without_page_overflow": [
+      390,
+      1024,
+      1440
+    ],
+    "remote_main": "unchanged initial seed; no published studio branches",
+    "ai_executed": false,
+    "product_code_changes": false,
+    "markus_mac_tested": false
   }
 }

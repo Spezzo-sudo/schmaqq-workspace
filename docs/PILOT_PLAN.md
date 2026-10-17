@@ -18,6 +18,33 @@ Runner noch offen. Der ausdrücklich genehmigte private Testremote ist nun
 ([P3-Vorbereitung](evidence/P3_PILOT_SETUP_20261017.md)). Die folgenden
 Bereitstellungsabschnitte bleiben als Ablauf und Freigabegrenzen erhalten.
 
+## Arbeitsvorgang im Studio – ab jetzt der gemeinsame Standard
+
+| Schritt | Was du im Studio machst | Woran du den Erfolg erkennst |
+| --- | --- | --- |
+| 1 | Studio-Pilottest wählen, eigene Aufgabe öffnen und übernehmen | Zuständige Person und besprochener Dateibereich sind klar |
+| 2 | Anforderungen/Rückfragen an der Aufgabe kommentieren und senden | Gesendeter Kommentar bleibt auch nach Neuladen sichtbar |
+| 3 | Weiterarbeiten / Eigene Arbeitskopie öffnen | Eigene vorhandene Kopie wird verwendet; bei Erststart eine eigene erstellen |
+| 4 | Dateien laden, gewünschte Datei öffnen, ändern und speichern | Runner bestätigt Speicherung; keine ungespeicherte Änderung übersehen |
+| 5 | Änderungen ansehen und Tests ausführen | Richtige Dateien im Diff; reale Testausgabe bestanden oder Fehler verständlich |
+| 6 | Vorschau bauen und öffnen | Gespeicherte Änderung erscheint in der tatsächlichen neuen Vorschau |
+| 7 | Zur Teamprüfung, danach Aufgabe auf Zur Prüfung setzen | Lokaler Commit, Tests und Diff sind an einem unveränderlichen Stand sichtbar |
+| 8 | Zweite Person öffnet Prüfstand aus der Aufgabe und prüft | Rückmeldung gehört genau zu diesem Stand; keine Selbstfreigabe |
+| 9 | Erst separat freigegebene Veröffentlichung/Übernahme | Repositoryregeln erfüllt; nach zwischenzeitlichen Änderungen erneut testen |
+
+„Auftrag abgeschlossen“ bedeutet nicht, dass die Aufgabe unabhängig abgenommen
+oder veröffentlicht ist. Kommentare/Dateien sind erst nach Senden/Speichern
+dauerhaft. Ungespeicherte Entwürfe nur innerhalb desselben Tabs erhalten.
+Der aktuelle Pilot sperrt KI, Veröffentlichung und direkte Integration.
+
+**Browserabnahme vom 17.10.2026:** Der Agent hat Schritte 1–7 und das erneute
+Öffnen des Prüfstands tatsächlich über die Live-Oberfläche ausgeführt, inklusive
+Kommentar-/Dateientwurfserhalt, neuer Vorschau und 2/2 Tests. Die Aufgabe steht
+auf Zur Prüfung. Beleg: [Browserablauf](evidence/P3_LIVE_BROWSER_WORKFLOW_20261017.md).
+Schritt 8 benötigt die zweite echte Person und bleibt offen; Schritt 9 bleibt
+gesperrt. Persönliche Mac-/Konteneinrichtung ist eine Voraussetzung für Markus,
+kein durch einen Browser-Test ersetzter Schritt.
+
 ## 1. Geprüften Kandidaten sichern
 
 Die zusammengehörigen lokalen Arbeiten werden im privaten Repository
