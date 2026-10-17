@@ -3,7 +3,7 @@
 Wir bauen eine echte gemeinsame Entwicklungsumgebung für Marco in der Schweiz
 und Markus in Thailand. Beide verwenden ihre eigenen ChatGPT-Konten. GitHub
 bewahrt Code und Review; der vorhandene Hostinger-VPS betreibt bereits ein
-älteres Studio-Release. Der Heim-PC soll dafür nicht ständig laufen müssen.
+den geprüften Kollaborationskandidaten. Der Heim-PC soll dafür nicht ständig laufen müssen.
 
 
 ## Langfristiges Produktbild (separat vom heutigen Status)
@@ -13,10 +13,11 @@ Workspace ist die universelle Arbeitsplattform für Menschen und Agenten; Studio
 ## Nächster Meilenstein und Konsolidierung
 
 Die operative Gesamtplanung steht in [ROADMAP.md](ROADMAP.md). Aktives Paket ist
-**P2: kontrollierte Bereitstellung**; P1 ist mit Codeprüfung, 17 Linux-Tests,
-Build, entpacktem Runtime-Smoke und künstlicher Legacy-Upgrade-Probe abgeschlossen.
-Evidence: `docs/evidence/P1_CANDIDATE_LINUX_20261017.md`. Danach P3 zwei
-persönliche Zugänge, P4 echte gemeinsame Abnahme. Vorhandene Setup-/Live-Checks
+**P3: Markus auf macOS und gemeinsamen Testremote verbinden**. P1 und P2 sind
+abgeschlossen: `docs/evidence/P1_CANDIDATE_LINUX_20261017.md` und
+`docs/evidence/P2_SWITCH_ACCEPTANCE_20261017.md`. Der Mac ist noch nicht
+angebunden; vorbereiteter Ablauf in `docs/MARKUS_MAC_ONBOARDING.md`.
+Danach P4 echte gemeinsame Abnahme. Vorhandene Setup-/Live-Checks
 nicht pauschal wiederholen. Langfristige Anbieter-/Compute-Arbeit bleibt Backlog.
 
 Der verbindliche Ablauf für Sicherung, Review, kontrollierte Bereitstellung und
@@ -36,7 +37,7 @@ Testkonten, Browserkontexte und echte Runner haben diesen Ablauf inklusive
 parallel laufender Tests, Vorschauen und gegenseitiger Freigabe durchlaufen.
 Dies ersetzt keinen tatsächlichen Fernpilot mit Marco und Markus. Details,
 Datenmigration und offene Grenzen: `docs/PARALLEL_COLLABORATION_HANDOFF.md`.
-Die Änderungen gehören zum separaten Kandidatenbranch; Veröffentlichung/Review-Stand siehe `STATUS.json` und Git. Kein Deployment und keine produktiven Git-Aktionen.
+Die Änderungen gehören zum separaten Kandidatenbranch; Veröffentlichung/Review-Stand siehe `STATUS.json` und Git. Der freigegebene Betreiberwechsel ist abgeschlossen, main bleibt ungemerged.
 
 ## Aktuelle Fortsetzung: Windows-Runner und Bedienbarkeit
 
@@ -47,23 +48,23 @@ mit einem isolierten lokalen Testrepository nachgewiesen. Details stehen in
 KI-Aufträge oder die Ausführung bei ausgeschaltetem Heim-PC.
 
 Die anschließenden Korrekturen für die erste Arbeitskopie und den responsiven
-Editor liegen auf `fix/studio-first-workspace-layout`. Sie sind lokal geprüft,
-nicht deployed. Siehe `docs/USABILITY_FIRST_WORKSPACE.md`.
+Editor liegen auf `fix/studio-first-workspace-layout`. Sie sind lokal geprüft und inzwischen durch den befugten Betreiber deployed. Siehe `docs/USABILITY_FIRST_WORKSPACE.md`.
 Der neue Bereich „Verbindungen“ ergänzt eine lokal getestete GitHub-Kontoverknüpfung
 und tatsächliche Codex-Statusanzeigen. Echte GitHub-Clientregistrierung und Live-
 Freigabe fehlen noch; Claude/Copilot sind nicht integriert. Aktuelle Details:
 `docs/CONNECTIONS_HANDOFF.md`. Historische Aussagen
 zu einem noch nicht eingerichteten VPS weiter unten sind keine aktuelle
 Betriebsbestandsaufnahme. Der lesende Live-Audit vom 17.10.2026 ist nun in
-`docs/LIVE_PREFLIGHT_20261017.md` dokumentiert: alter main-Stand aktiv, eigener
-Node-24-Dienst, gültiges HTTPS, persönlicher Runner online. Neuer Kandidat bleibt
-unveröffentlicht im Live-Betrieb. Hermes hat die Live-Snapshot-/Restore-Probe inzwischen als bestanden gemeldet
+`docs/LIVE_PREFLIGHT_20261017.md` dokumentiert (historischer Stand vor dem Update): alter main-Stand aktiv, eigener
+Node-24-Dienst, gültiges HTTPS, persönlicher Runner online. Der neue Kandidat läuft inzwischen live; aktueller Nachweis in
+`docs/evidence/P2_SWITCH_ACCEPTANCE_20261017.md`. Hermes hat die Live-Snapshot-/Restore-Probe inzwischen als bestanden gemeldet
 (Owner-Weiterleitung: `docs/evidence/P2_HERMES_BACKUP_REPORT_20261017.md`).
-Ein frischer finaler Snapshot und der privilegierte Dienstwechsel stehen noch aus.
+Finaler Snapshot und Dienstwechsel sind laut anschließendem Hermes-Bericht
+abgeschlossen; aktives Release, Oberfläche und erhaltener Runner direkt geprüft.
 Das geprüfte Paket samt `HERMES_README.md` liegt geschützt unter
 `/home/dc-remote/schmaqq-studio-handoff/p2-4a0092b-20261017`; Hermes benötigt
 für die Übernahme keinen GitHub-Zugriff. Hash/Quelle in STATUS.json unter
-`operator_delivery`. Noch nicht deployed und nicht zum Dienstwechsel freigegeben.
+`operator_delivery`. Dieses Paket wurde nach Owner-Freigabe deployed; weitere Änderungen sind damit nicht freigegeben.
 
 ## Wo der Stand liegt
 
@@ -94,8 +95,8 @@ Betriebszustand des VPS.
 - `selfhost/oidc.mjs`: Identitätslogin mit PKCE/Nonce/JWKS; echter OpenAI-Client fehlt.
 - `selfhost/local-ai.mjs`, `ai-routes.mjs`: ausdrücklich freigegebene lokale Modelle.
 - `selfhost/release.mjs`, `backup.mjs`, `deploy/`: leichtes Runtime-Paket, konsistentes
-  Backup, Preflight und Deployment-Vorlagen; bestehendes Live-Release separat
-  geprüft, aktueller Kandidat nicht deployed.
+  Backup, Preflight und Deployment-Vorlagen; aktueller Kandidat kontrolliert
+  deployed und lesend nachgeprüft.
 - `app/api/`, `db/`, `build/`: ursprünglicher Sites-Starter, anderer Hostingpfad.
   Für dieses Vorhaben `studio:*` verwenden. Root-`npm run dev` startet den Starter.
 

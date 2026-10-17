@@ -54,10 +54,10 @@ GitHub-Fernpilot ist noch offen; der lokale Zwei-Rollen-Test ist bereits belegt.
 
 | Bereich | Einordnung | Nächster fehlender Nachweis |
 | --- | --- | --- |
-| Private Codebasis | Gesichert, Kandidat in Draft-PR #6 | Review und freigegebener Release-Stand |
-| Live-Studio | Älterer Stand läuft; HTTPS und eigener Dienst geprüft | Aktuelles Live-Backup und Wiederherstellung |
-| Marcos Windows-Runner | Eingerichtet, echter Funktionstest; zuletzt online | Kein erneutes Setup; Reconnect nach Update prüfen |
-| Gemeinsame neue Oberfläche | Lokal mit zwei Testrollen und Runnern geprüft | Zusammengehörigen Kandidaten kontrolliert bereitstellen |
+| Private Codebasis | Gesichert, P1 geprüft; Draft-PR #6 weiterhin ungemerged | Fortsetzung bewusst auf Kandidatenstand |
+| Live-Studio | Neuer Kandidat läuft; P2-Betreiberbericht und direkte Nachprüfung PASS | Echte gemeinsame Nutzung |
+| Marcos Windows-Runner | Nach Update weiterhin online, Kopie erhalten | Für gemeinsamen Pilot weiterverwenden |
+| Gemeinsame neue Oberfläche | Jetzt live; vorhandene Owner-Sitzung und Desktop geprüft | Aufgaben und Diskussion mit beiden Personen |
 | Gleichzeitige Entwicklung | Eigene Kopien, parallele Tests und gegenseitige Reviews lokal belegt | Tatsächlich Marco + Markus über Entfernung |
 | Einfacher Einstieg | Erste Kopie und Layout verbessert | Einrichtung und Verständlichkeit mit Markus beobachten |
 | Kontoverbindungen | Lokale GitHub-Identitätsverknüpfung vorbereitet | Echter Client und persönliche Zustimmung; kein Repozugriff dadurch |
@@ -82,10 +82,13 @@ Infrastruktur ist für den nächsten Pilotstand nicht begründet.
 
 **P1 abgeschlossen:** Review und Linux-/Runtime-/Upgrade-Nachweis für den
 geprüften Quellstand: [Evidence](evidence/P1_CANDIDATE_LINUX_20261017.md).
-**Jetzt aktiv: P2 – kontrollierte Bereitstellung vorbereiten/freigeben.**
+**P2 abgeschlossen:** Autorisierter Betreiberwechsel und direkte Nachprüfung
+[belegt](evidence/P2_SWITCH_ACCEPTANCE_20261017.md).
+**Jetzt aktiv: P3 – Markus auf macOS und gemeinsamen Testremote verbinden.**
+[Einstiegsplan für den Mac](MARKUS_MAC_ONBOARDING.md).
 Der lesende Live-Audit muss nicht
 wiederholt werden, solange sich Betrieb oder zeitlicher Kontext nicht wesentlich
-ändern. P3–P7 sind geordnetes Backlog. Persönliche Anmeldungen werden erst dann
+ändern. P4–P7 sind geordnetes Backlog. Persönliche Anmeldungen werden erst dann
 angefragt, wenn der jeweilige Schritt bereitsteht.
 
 Für P2 gilt der konkrete Ablauf einschließlich Rückweg aus dem Live-Preflight.

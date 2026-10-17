@@ -10,6 +10,12 @@ Bis zur Abnahme dieses Ablaufs keine weiteren Anbieter- oder Dashboardfunktionen
 Der tatsächliche Fähigkeits-/Teststand steht ausschließlich in `STATUS.json`.
 Dieser Plan beschreibt Reihenfolge und Abnahme, keine Live-Freigabe.
 
+Aktueller Übergang: P1 und P2 abgeschlossen; siehe
+[P2-Abnahme](evidence/P2_SWITCH_ACCEPTANCE_20261017.md). Jetzt P3/P4:
+Markus nutzt macOS, [Einstieg vorbereitet](MARKUS_MAC_ONBOARDING.md), eigener
+Runner und gemeinsamer freigegebener Testremote noch offen. Die folgenden
+Bereitstellungsabschnitte bleiben als Ablauf und Freigabegrenzen erhalten.
+
 ## 1. Geprüften Kandidaten sichern
 
 Die zusammengehörigen lokalen Arbeiten werden im privaten Repository

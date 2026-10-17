@@ -44,7 +44,7 @@
   "environments": {
     "personal_local": "127.0.0.1:4310: legacy local installation; consolidated candidate is tested separately on 4340/4341",
     "isolated_demo": "127.0.0.1:4320; zwei Testkonten und lokale Runner",
-    "vps": "Read-only live audit 2026-10-17: dedicated active/enabled service, old main b22175035f6f3d5c9a5c6894028ad7a0149f8761, Node 24.22.0, loopback 4310/4311, valid TLS; candidate not deployed. See docs/LIVE_PREFLIGHT_20261017.md.",
+    "vps": "Live Studio active on candidate source 4a0092be2d04a4b66aa1d200cf7c9f9c53c4c47d; 699-file manifest and retained owner session/runner/preview directly checked after authorized operator switch. See docs/evidence/P2_SWITCH_ACCEPTANCE_20261017.md.",
     "github": "Private zentrale Codebasis Spezzo-sudo/schmaqq-workspace, Remote-Branch main, Code im Repository-Root",
     "local_parallel_pilot": "127.0.0.1:4340; preview 4341; isolated fixture with two test accounts and runners; manual process, no autostart"
   },
@@ -56,9 +56,9 @@
     "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
   },
   "next_steps": [
-    "P2: obtain explicit approval for staged runtime delivery, fresh final live snapshot and Studio-only service switch; earlier backup/restore PASS reported by Hermes",
-    "P3/P4: connect Markus and run actual two-person remote pilot using an explicitly approved shared test remote",
-    "P5: fix observed onboarding and workflow obstacles before expanding provider features"
+    "P3: own Studio account and macOS runner for Markus; choose explicitly approved shared writable test remote",
+    "P4: actual parallel human pilot with new tasks/comments, own copies, checks/previews and independent review",
+    "P5: address observed onboarding/workflow obstacles; defer additional provider integrations"
   ],
   "verification": {
     "command": "node selfhost/verify.mjs (Node 24)",
@@ -72,7 +72,7 @@
     "release_smoke": "pass: latest consolidated local runtime manifest, HTTP/auth, collaboration routes and task-comment backup",
     "linux_current_candidate": "PASS at source 57c274c52fb4fd67ca9f9dc857a4456962806a18: fresh npm ci --ignore-scripts, 17 tests, TypeScript, build, extracted archive smoke and synthetic legacy upgrade; see docs/evidence/P1_CANDIDATE_LINUX_20261017.md",
     "github_ci": "not_configured; no Actions run requested",
-    "production_deployment": "not_performed; live instance unchanged",
+    "production_deployment": "Authorized Hermes switch to source 4a0092be2d04a4b66aa1d200cf7c9f9c53c4c47d reported PASS; subsequent engineering read-only manifest/auth/UI/runner/retained-preview checks PASS",
     "notes": "No actual Switzerland/Thailand pilot or paid personal AI task. Determine exact candidate SHA through Git."
   },
   "windows_pc_setup_r5a": {
@@ -88,10 +88,10 @@
     "production_changes": false,
     "ai_jobs_executed": false
   },
-  "status_scope_note": "Ältere R4-/VPS-Felder dokumentieren historische Prüfungen. Aktueller Live-Befund unter live_preflight und docs/LIVE_PREFLIGHT_20261017.md: älteres Release aktiv, persönlicher Windows-Runner online. Die neueren UI-/Kollaborationsänderungen sind lokal geprüft und als Draft in GitHub, nicht deployed.",
+  "status_scope_note": "Historical R4/R5 tests remain historical. P2 operator switch and direct live follow-up are recorded under live_rollout; new UI/collaboration code is now live. Real remote two-person acceptance and Mac runner remain unproven.",
   "studio_usability_followup": {
     "branch": "fix/studio-first-workspace-layout",
-    "deployment": "local_only",
+    "deployment": "deployed_with_pilot_candidate; retained owner session and desktop entry checked",
     "first_copy": "inspect and prepare omit missing worktree; authenticated browser flow passed without API workaround",
     "layout": "desktop and mobile visually inspected at 390, 1024, 1280 and 1600 px; no page overflow or file/editor overlap",
     "real_fixture_tests": "first Git inspection, worktree creation, editor save, configured test and built preview PASS; local bare Git remote only",
@@ -99,14 +99,13 @@
     "remaining": [
       "One-click installation/start for a new PC is not implemented",
       "Personal AI readiness is not established by a Studio login or heartbeat",
-      "Real two-person remote pilot with Markus remains unproven",
-      "Local UI fixes require review and separate deployment approval"
+      "Real two-person remote pilot with Markus remains unproven"
     ],
     "offline_reconnect": "PASS: actual fixture runner stopped, offline guidance and disabled actions observed; reconnected with saved copy unchanged",
     "project_navigation": "Shared overview project and view survive reload through URL; task-to-development navigation selects the linked own copy."
   },
   "account_connections": {
-    "state": "implemented_locally_not_deployed",
+    "state": "deployed; GitHub provider unconfigured and disabled",
     "navigation": "Verbindungen",
     "github": "OAuth account verification with state, PKCE, browser/session binding, profile verification and local unlink. No persisted provider tokens, repository permissions or Copilot adapter.",
     "github_live_blocker": "Own STUDIO_GITHUB_CLIENT_ID and STUDIO_GITHUB_CLIENT_SECRET registration/configuration required; not registered or authorized live in this task.",
@@ -122,7 +121,7 @@
     ]
   },
   "collaboration_pilot": {
-    "state": "local_two_role_end_to_end_pass_not_deployed",
+    "state": "deployed_after_local_two_role_end_to_end; real_two_person_acceptance_pending",
     "entry": "Personal Studio starts in the shared project overview",
     "evidence": "docs/PARALLEL_COLLABORATION_HANDOFF.md",
     "actors": "Two isolated test accounts and browser contexts; not Marco and Markus as real remote participants",
@@ -142,7 +141,6 @@
     "not_done": [
       "Real Switzerland/Thailand two-person pilot",
       "Personal paid AI execution",
-      "Production deployment",
       "GitHub PR publication/merge of either task result",
       "Public multi-tenant rollout"
     ],
@@ -179,7 +177,7 @@
     "base": "origin/main",
     "plan": "docs/PILOT_PLAN.md",
     "publication": "private_candidate_branch_pushed_draft_pr_open",
-    "deployment": "requires_separate_approval",
+    "deployment": "deployed_by_authorized_operator; actual two-person acceptance pending",
     "release_scope": "Coherent frontend/backend with additive task-comments and optional GitHub account-link tables",
     "review_corrections": [
       "Disable comment editing while a mutation is pending",
@@ -208,14 +206,16 @@
   },
   "execution_plan": {
     "document": "docs/ROADMAP.md",
-    "active_package": "P2",
-    "next_action": "Explicit owner approval of staged release and Studio-only service switch; Hermes can use local HERMES_README.md without GitHub access; fresh final snapshot before update",
+    "active_package": "P3",
+    "next_action": "Prepare Markus macOS onboarding and explicitly approved shared Git test remote; own invite/registration and Mac execution not yet done",
     "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
-    "deployment_authorized": false,
+    "deployment_authorized": true,
     "feature_expansion": "deferred until actual two-person pilot acceptance",
     "completed_packages": [
-      "P1: candidate review and exact-source Linux/runtime/synthetic upgrade verification PASS"
-    ]
+      "P1: candidate review and exact-source Linux/runtime/synthetic upgrade verification PASS",
+      "P2: operator reports final backup/restore and Studio-only switch PASS; direct manifest, existing owner session/UI, runner and retained preview checks PASS"
+    ],
+    "deployment_authorization_scope": "Only completed operator switch of delivered 4a0092b artifact; future changes need separate approval"
   },
   "candidate_review": {
     "source_sha": "57c274c52fb4fd67ca9f9dc857a4456962806a18",
@@ -242,7 +242,7 @@
     "hermes_repo_access": "authentication failed in operator context; existing development read-only context works; no credentials transferred"
   },
   "operator_delivery": {
-    "state": "staged_not_deployed",
+    "state": "deployed_by_hermes_report; active_release_independently_confirmed",
     "source_sha": "4a0092be2d04a4b66aa1d200cf7c9f9c53c4c47d",
     "runtime_matches_tested_source": "57c274c52fb4fd67ca9f9dc857a4456962806a18",
     "directory": "/home/dc-remote/schmaqq-studio-handoff/p2-4a0092b-20261017",
@@ -252,7 +252,38 @@
     "instructions": "HERMES_README.md",
     "extracted_archive_smoke": "PASS",
     "build_scratch_cleanup": "PASS",
-    "deployment_authorized": false,
-    "requires_github_access_for_operator": false
+    "deployment_authorized": true,
+    "requires_github_access_for_operator": false,
+    "authorization_scope": "Completed Studio-only switch of this artifact; no merge, other services or future deployment authorized"
+  },
+  "live_rollout": {
+    "evidence": "docs/evidence/P2_SWITCH_ACCEPTANCE_20261017.md",
+    "source_sha": "4a0092be2d04a4b66aa1d200cf7c9f9c53c4c47d",
+    "operator_report": "owner-forwarded Hermes SWITCH=PASS; protected final backup/restore not independently inspected",
+    "final_snapshot": "/var/lib/schmaqq-studio/backups/p2-final-20261017T190218Z/studio.sqlite",
+    "direct_checks": {
+      "release_path": "matches delivered source",
+      "manifest_files": 699,
+      "manifest_mismatches": 0,
+      "service": "active; MainPID 427094; NRestarts 0; ExecMainStatus 0",
+      "retained_owner_session": "HTTP 200; no fresh password login tested",
+      "collaboration_and_connections_api": "HTTP 200",
+      "desktop": "1440x1000 visible; no horizontal page overflow",
+      "runner": "one own Windows runner online; one retained copy; no new jobs",
+      "retained_preview": "concrete existing preview HTTP 200 HTML on separate origin; capability path not logged",
+      "github_oauth": "disabled"
+    },
+    "live_data_counts": "Hermes reports 22 tables and existing counts retained",
+    "merge": "not performed",
+    "real_human_pilot": "pending"
+  },
+  "markus_onboarding": {
+    "os": "macOS confirmed by owner",
+    "plan": "docs/MARKUS_MAC_ONBOARDING.md",
+    "mac_runner_ready": false,
+    "remote_mac_access": "not available",
+    "own_studio_account": "not created",
+    "shared_test_remote": "not selected or authorized",
+    "runner_distribution": "source modules identified; separate Mac package not created/tested"
   }
 }

@@ -23,14 +23,14 @@ mit eigenen Kopien, Kommentaren, echten Tests, Vorschauen und gegenseitiger Prü
 - `app/`: gemeinsame Oberfläche, Projekte, Aufgaben, Teamchat, Dateieditor und Review.
 - `selfhost/`: Node-HTTP-Server, SQLite-WAL-Datenbank und persönliche Runner.
 - Runner führen Git-, Test- und Codex-Aufträge auf dem verbundenen Rechner aus.
-- `selfhost/deploy/`: Betriebsanleitung; älteres Live-Release läuft auf dem VPS,
-  aktueller Kollaborationskandidat noch nicht deployed.
+- `selfhost/deploy/`: Betriebsanleitung; geprüfter Kollaborationskandidat läuft auf dem VPS.
+  [Betriebswechsel und Nachprüfung](docs/evidence/P2_SWITCH_ACCEPTANCE_20261017.md).
 - `app/api/`, `db/`, `build/`: erhaltener Sites-/Cloudflare-Starter, separater Laufzeitpfad.
 
 Lokal nachgewiesen sind Backend-Verträge, Git-Arbeitskopien, Dateibearbeitung,
 Tests/Vorschau und gegenseitiges Review. ChatGPT-Website-Login benötigt einen
-registrierten Client; älterer Linux-/Live-Betrieb ist belegt, aktueller Kandidat
-und echte gemeinsame Fernnutzung sind noch gesondert zu prüfen. Details und offene Punkte stehen in `docs/STATUS.json`.
+registrierten Client. Linux-Prüfung und kontrollierter Live-Wechsel des Kandidaten
+sind belegt; echte gemeinsame Fernnutzung mit Markus steht noch aus. Details und offene Punkte stehen in `docs/STATUS.json`.
 
 ## Entwicklungsstart
 
