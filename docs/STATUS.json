@@ -350,5 +350,32 @@
     "ai_executed": false,
     "product_code_changes": false,
     "markus_mac_tested": false
-  }
+  },
+  "identity_environment_audit": {
+    "evidence": "docs/evidence/P3_IDENTITY_AND_ENVIRONMENT_20261017.md",
+    "screenshot_environment": "local demo 127.0.0.1:4320, not live",
+    "live_team": "one actual account, correct own marker",
+    "fresh_live_context": "HTTP 401",
+    "two_fixture_contexts": "distinct user IDs and correct own cards",
+    "same_profile_tabs": "share same login as expected",
+    "logout_isolation": "B=401, A remains 200",
+    "confirmed_display_issue": "both fixture avatars show M( due to initials from parenthetical Testkonto",
+    "live_review": "same commit and 2/2 checks retained; independent review pending",
+    "live_accounts_created": 0,
+    "live_jobs_started": 0,
+    "product_code_changes": false,
+    "automation_recovery": "own authorized persistent profile reused after timeout; no imported foreign sessions"
+  },
+  "usability_backlog": [
+    {
+      "id": "P5-IDENTITY-01",
+      "finding": "Fixture initials are ambiguous (M(); display names and IDs are distinct",
+      "state": "observed; not an authentication defect in tested cases"
+    },
+    {
+      "id": "P5-ENV-01",
+      "finding": "User confused local demo with live Studio despite existing demo label",
+      "state": "observed; improve environment orientation after human pilot"
+    }
+  ]
 }

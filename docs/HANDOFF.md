@@ -28,6 +28,10 @@ Der klare UI-Arbeitsvorgang steht jetzt in `docs/PILOT_PLAN.md`. Ein aktueller
 Live-Browserlauf über Kommentare, Editieren/Speichern, Tests, neue Vorschau und
 lokalen Prüfstand ist belegt: `docs/evidence/P3_LIVE_BROWSER_WORKFLOW_20261017.md`.
 Die Pilotaufgabe steht auf Zur Prüfung; keine Selbstfreigabe oder Veröffentlichung.
+Nach blockiertem Work-Browser in Codex fortgesetzt: Demo-/Live-Verwechslung
+und gleiche Demo-Avatare diagnostiziert, getrennte Fixture-Sessions und isolierte
+Abmeldung geprüft. Evidence: `docs/evidence/P3_IDENTITY_AND_ENVIRONMENT_20261017.md`.
+Keine vermischten IDs in dieser Prüfung; reale zweite Person weiterhin offen.
 Danach P4 echte gemeinsame Abnahme. Vorhandene Setup-/Live-Checks
 nicht pauschal wiederholen. Langfristige Anbieter-/Compute-Arbeit bleibt Backlog.
 
