@@ -38,8 +38,9 @@ erfolgen; kein geteiltes Owner-Konto und keine fremden Tokens.
 6. Runner-Code aus dem bewusst gewählten Studio-Kandidatenstand bereitstellen;
    das Server-Runtime-Archiv ist kein Mac-Runner-Paket. Eigener Runner besteht aus
    `selfhost/runner.mjs`, `local-ai.mjs`, `process.mjs`, `files.mjs` und
-   `codex-run.mjs`; er braucht laut Importprüfung keine npm-Pakete. Ein separates
-   geprüftes Mac-Paket ist noch nicht erstellt oder auf macOS erprobt.
+   `codex-run.mjs`; er braucht laut Importprüfung keine npm-Pakete. Ein eingeschränktes
+   Mac-Paket ist jetzt gebaut; siehe `docs/evidence/P3_RUNNER_SAFETY_20261017.md`.
+   Windows-/Linux-Prüfungen bestanden, tatsächliche macOS-Abnahme steht aus.
 7. Private Konfiguration und Runnerzustand außerhalb des Git-Projekts ablegen,
    Konfiguration nur für Markus lesbar. Absolute Mac-Pfade verwenden. Manuell
    starten: `node /absoluter/pfad/selfhost/runner.mjs /absoluter/pfad/schmaqq-runner.private.json`.
@@ -48,7 +49,10 @@ erfolgen; kein geteiltes Owner-Konto und keine fremden Tokens.
    kleine Testdatei ändern und den freigegebenen Test-/Vorschauablauf ausführen.
    Ein erster erfolgreicher Heartbeat allein ist keine fertige Abnahme.
 
-Der Terminalbefehl beschreibt die heutige technische Bedienung. Ein einfacher
+Das vorbereitete Paket bietet `--configure`, `--check` und `Start-Pilot.command`.
+Der Konfigurationsimport setzt feste Pilotbefehle und private Speicherpfade;
+Details stehen in der mitgelieferten README. Der bisherige allgemeine
+Terminalbefehl beschreibt weiterhin die technische Bedienung ohne Paket. Ein einfacher
 Installer oder ein vollständig durch OAuth ersetztes Runner-Setup existiert
 noch nicht. Beobachtete Hürden im Pilot festhalten und anschließend gezielt
 vereinfachen; keine Einrichtung als „ein Klick“ ausgeben.

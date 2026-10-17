@@ -62,9 +62,9 @@
   ],
   "verification": {
     "command": "node selfhost/verify.mjs (Node 24)",
-    "host": "Windows; local candidate only",
+    "host": "Windows current source; focused new pilot module tests additionally run on Linux",
     "result": "pass",
-    "backend_tests": 17,
+    "backend_tests": 20,
     "typescript": "pass",
     "frontend_build": "pass",
     "source_guard": "pass_known_patterns_not_complete_secret_audit",
@@ -73,7 +73,9 @@
     "linux_current_candidate": "PASS at source 57c274c52fb4fd67ca9f9dc857a4456962806a18: fresh npm ci --ignore-scripts, 17 tests, TypeScript, build, extracted archive smoke and synthetic legacy upgrade; see docs/evidence/P1_CANDIDATE_LINUX_20261017.md",
     "github_ci": "not_configured; no Actions run requested",
     "production_deployment": "Authorized Hermes switch to source 4a0092be2d04a4b66aa1d200cf7c9f9c53c4c47d reported PASS; subsequent engineering read-only manifest/auth/UI/runner/retained-preview checks PASS",
-    "notes": "No actual Switzerland/Thailand pilot or paid personal AI task. Determine exact candidate SHA through Git."
+    "notes": "POSIX skipped on Windows, all three new pilot policy tests passed on Linux. Actual Mac and two-human remote acceptance pending.",
+    "backend_passed": 19,
+    "backend_skipped": 1
   },
   "windows_pc_setup_r5a": {
     "runner_ready": true,
@@ -207,7 +209,7 @@
   "execution_plan": {
     "document": "docs/ROADMAP.md",
     "active_package": "P3",
-    "next_action": "Markus creates own GitHub account and supplies username; then targeted pilot-only collaborator invitation, personal Studio signup and Mac runner setup",
+    "next_action": "Markus personally creates GitHub account and own Studio account; use restricted starter for Mac setup and actual two-human acceptance. Windows pilot already connected; no repeat setup.",
     "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
     "deployment_authorized": true,
     "feature_expansion": "deferred until actual two-person pilot acceptance",
@@ -284,7 +286,7 @@
     "remote_mac_access": "not available",
     "own_studio_account": "not created",
     "shared_test_remote": "Spezzo-sudo/schmaqq-studio-pilot explicitly approved, created private and seeded; Markus write access still pending",
-    "runner_distribution": "source modules identified; separate Mac package not created/tested",
+    "runner_distribution": "restricted package built and policy/import checks passed on Windows/Linux; actual macOS acceptance pending",
     "github_username": "Owner confirms Markus has no GitHub account yet; personal signup required before targeted collaborator invitation"
   },
   "pilot_setup": {
@@ -301,7 +303,25 @@
     "new_runner_jobs": 0,
     "github_collaborator": "not invited; Markus has no GitHub account yet",
     "mac_runner": "not configured",
-    "windows_pilot_project": "not configured; existing runner preserved",
+    "windows_pilot_project": "configured on same personal device; own copy, real checks and new preview HTTP 200 PASS",
     "human_acceptance": "not run"
+  },
+  "pilot_runner_safety": {
+    "evidence": "docs/evidence/P3_RUNNER_SAFETY_20261017.md",
+    "package_source": "8e6ee0c3b3b085699ed9e3600ebcfa5e448e699c",
+    "package_sha256": "96f877b5155a708762135b94773d59f3f976561bf678693daa9741d879683b85",
+    "archive_bytes": 12431,
+    "local_artifact": ".studio/p3-pilot/SCHMAQQ-Mac-Pilotrunner.tar.gz",
+    "github_or_public_upload": false,
+    "windows_live_pilot": "PASS; existing registration and prior project preserved",
+    "ai_enabled": false,
+    "publishing_enabled": false,
+    "direct_integration": "refused",
+    "linux_new_module_tests": "3/3 PASS",
+    "package_configuration_import": "PASS with synthetic data",
+    "package_tamper_detection": "PASS",
+    "mac_hardware": "not tested; MAC_RUNNER_READY=NO",
+    "isolation_limit": "project commands run with local user rights; no general untrusted-code sandbox",
+    "autostart": false
   }
 }

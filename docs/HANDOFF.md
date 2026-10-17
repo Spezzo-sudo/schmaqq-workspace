@@ -21,6 +21,9 @@ Der Owner hat inzwischen `Spezzo-sudo/schmaqq-studio-pilot` als privaten
 Testremote genehmigt; Repository, Seed und zwei Aufgaben im Live-Projekt
 „Studio-Pilottest“ sind angelegt. Markus hat laut Owner noch kein GitHub-Konto; persönliche Registrierung
 steht vor der gezielten Einladung. Evidence: `docs/evidence/P3_PILOT_SETUP_20261017.md`.
+Marcos vorhandener Runner ist inzwischen am Pilotprojekt mit eigener Kopie,
+Tests und neuer Vorschau angebunden. Eingeschränktes Mac-Paket vorbereitet,
+noch kein Mac-Test: `docs/evidence/P3_RUNNER_SAFETY_20261017.md`.
 Danach P4 echte gemeinsame Abnahme. Vorhandene Setup-/Live-Checks
 nicht pauschal wiederholen. Langfristige Anbieter-/Compute-Arbeit bleibt Backlog.
 
