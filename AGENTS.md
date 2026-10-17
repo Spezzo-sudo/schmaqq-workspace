@@ -4,10 +4,10 @@ Ziel: Marco und Markus entwickeln gemeinsam digitale Services, mit eigenen Konte
 eigenen Arbeitskopien und gegenseitigem Review. Designreferenz ist SCHMAQQ.
 
 Vor Arbeit lesen: `docs/STATUS.json`, `docs/HANDOFF.md`, dann nur relevante Source.
-Dieses Verzeichnis ist eine eigenständige Anwendung. Wenn es unter
-`tools/schmaqq-studio/` in NetzKontor liegt, gelten zusätzlich dessen übergeordnete
-AGENTS.md-Regeln; die hier beschriebenen Befehle laufen in diesem Unterordner.
-Keine Dateien der Kundenanwendung oder Marketing-Website nebenbei verändern.
+Dieses Repository ist die eigenständige Anwendung `Spezzo-sudo/schmaqq-workspace`.
+Alle Befehle laufen im Repository-Root. Der frühere NetzKontor-Übergabe-Snapshot
+ist historische Evidence; neue Studio-Arbeit erfolgt hier. NetzKontor und dessen
+Kundenanwendung/Marketing-Website sind ein getrenntes Repository.
 
 ## Arbeit und Nachweis
 

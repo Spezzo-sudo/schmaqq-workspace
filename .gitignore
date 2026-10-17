@@ -63,3 +63,13 @@ next-env.d.ts
 
 # Reproducible build cache
 *.tsbuildinfo
+
+# Credentials and local database snapshots, including files outside runtime folders
+*.key
+*.p12
+*.pfx
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-journal

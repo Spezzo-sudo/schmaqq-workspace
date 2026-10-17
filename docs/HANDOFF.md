@@ -7,13 +7,18 @@ dauerhaft betreiben. Der Heim-PC soll dafür nicht ständig laufen müssen.
 
 ## Wo der Stand liegt
 
-Der lokale Ursprung ist ein eigenes Git-Projekt ohne Remote. Die Online-Übergabe
-erfolgt als getrennter Unterordner `tools/schmaqq-studio/` auf einem eigenen Branch
-im privaten `Spezzo-sudo/NetzKontor`-Repository. Das ist ein Entwicklungsstand zur
-Weiterarbeit, keine Integration in Marketing, Kundenportal oder Production.
-Übergabe-Branch: `chatgpt/391-studio-cloud-handoff` (Issue #391).
-Branch und Commit immer direkt aus GitHub/Git lesen. `STATUS.json` beschreibt
-Fähigkeiten und offene Nachweise, nicht den aktuellen Betriebszustand des VPS.
+Die zentrale Codebasis ist das private Repository
+`https://github.com/Spezzo-sudo/schmaqq-workspace`, Remote-Hauptbranch `main`.
+Der gesamte Code liegt direkt im Repository-Root. Die vorhandene lokale
+Git-Historie wird unverändert als Vorgeschichte übernommen; Git zeigt den
+aktuellen Commit und Branch. Ein vorhandener lokaler Branch namens `main`
+kann noch den alten Starter zeigen: maßgeblich ist `origin/main`.
+
+Der frühere NetzKontor-Branch `chatgpt/391-studio-cloud-handoff` und PR #392
+sind historische Übergabe-Snapshots. Sie sind nicht die neue Studio-Codebasis.
+Das NetzKontor-Repository wird durch diese Übertragung nicht verändert.
+`STATUS.json` beschreibt Fähigkeiten und offene Nachweise, nicht den aktuellen
+Betriebszustand des VPS.
 
 ## Codekarte und wichtige Entscheidungen
 
@@ -43,9 +48,10 @@ Commit und muss von der anderen Person stammen. Vorschau läuft auf anderer Orig
 
 Private Datenbanken, ChatGPT-/Codex-Sitzungen, Runnerprofile, persönliche Programme,
 lokale Modelle und der gesamte Chatverlauf bleiben außerhalb des Git-Repositories.
-Die lokale Git-Historie wird zusätzlich als Git-Bundle gesichert; der NetzKontor-
-Branch erhält einen nachvollziehbaren Quellcode-Snapshot. Keine gemeinsame
-Git-Vergangenheit der beiden Projekte vortäuschen.
+Die vorhandene lokale Git-Historie wird vollständig in das eigenständige
+Repository übertragen und zusätzlich als lokales Git-Bundle gesichert. Private
+Runtime-Daten werden dabei nicht übertragen; eine neue Installation erzeugt
+eigene Daten, Konten und Zugangsdaten.
 
 Das Studio bleibt auf localhost, bis ein Server separat eingerichtet wird. Ein
 Cloud-Entwickler kann Code bearbeiten/testen, auch wenn dieser PC aus ist; er
@@ -55,23 +61,23 @@ allein wegen dieser Dokumentation Befehle auf einem Rechner ausführen.
 
 ## Einstieg in Codex Cloud oder Work
 
-1. Die vorhandene GitHub-Verbindung für `Spezzo-sudo/NetzKontor` verwenden.
-2. Den Studio-Übergabe-Branch bzw. dessen genauen Commit wählen. Nicht blind main.
-3. Im Checkout zu `tools/schmaqq-studio` wechseln. Node >=24.15, Python 3 und Git.
+1. Der GitHub-Verbindung Zugriff auf `Spezzo-sudo/schmaqq-workspace` geben.
+2. Den Remote-Branch `main` oder den gewünschten Entwicklungsbranch wählen.
+3. Im Repository-Root arbeiten. Node >=24.15, Python 3 und Git bereitstellen.
 4. Setup: `node selfhost/cloud-setup.mjs`. Das installiert aus dem Lockfile und
    baut das Studio. Keine echten KI-/VPS-/Provider-Secrets für diese Arbeit nötig.
 5. `npm run studio:verify` ausführen. Linux-Fehler tatsächlich beheben und berichten.
 6. Eigener Branch, eng begrenzte Änderung, Tests, PR und Review. Ein Merge ist
-   keine Deployment-Freigabe. Die übergeordneten NetzKontor-Regeln gelten ebenfalls.
+   keine Deployment-Freigabe. NetzKontor bleibt ein getrenntes Projekt.
 
 Offizielle Referenz: https://learn.chatgpt.com/docs/environments/cloud-environment
 Die tatsächliche Verfügbarkeit und Freigabe der Umgebung im Konto separat prüfen.
 
 ## Starttext für einen neuen Codex-/Work-Chat
 
-> Wir entwickeln SCHMAQQ Studio weiter. Öffne den Studio-Übergabe-Branch im privaten
-> Spezzo-sudo/NetzKontor-Repository und arbeite unter tools/schmaqq-studio. Lies die
-> übergeordneten AGENTS.md-Regeln, dann unsere AGENTS.md, docs/STATUS.json und
+> Wir entwickeln SCHMAQQ Studio weiter. Öffne main im privaten Repository
+> Spezzo-sudo/schmaqq-workspace und arbeite im Repository-Root. Lies
+> AGENTS.md, docs/STATUS.json und
 > docs/HANDOFF.md. Prüfe den tatsächlichen Git-Stand. Starte mit studio:verify.
 > Keine private Runtime aus dem alten PC voraussetzen. Nächste Aufgabe: Linux-
 > Reproduzierbarkeit und sichtbare Abnahme des neuesten Layouts, danach den
@@ -80,9 +86,8 @@ Die tatsächliche Verfügbarkeit und Freigabe der Umgebung im Konto separat prü
 
 ## Starttext für einen normalen ChatGPT-Chat
 
-> Lies im verbundenen privaten GitHub-Repository Spezzo-sudo/NetzKontor auf dem
-> Studio-Übergabe-Branch die Dateien tools/schmaqq-studio/docs/STATUS.json und
-> HANDOFF.md. Wenn dieser Branch nicht zugänglich ist, sage das ausdrücklich und
+> Lies im verbundenen privaten GitHub-Repository Spezzo-sudo/schmaqq-workspace
+> auf main die Dateien docs/STATUS.json und docs/HANDOFF.md. Wenn dieser Branch nicht zugänglich ist, sage das ausdrücklich und
 > verlange die beiden Dateien. Arbeite am nächsten eng begrenzten Arbeitspaket.
 > Behaupte keine Ausführung, wenn keine Ausführungsumgebung verbunden ist.
 
@@ -97,13 +102,13 @@ Die echte NetzKontor-Quelle verlangt weiterhin Issue/PR/CI und wird dadurch nich
 automatisch freigegeben oder deployed.
 
 
-## Letzte Prüf-Evidence und offene GitHub-CI
+## Historische Prüf-Evidence und offene Cloud-Abnahme
 
 Lokal am 17.10.2026: `npm run studio:verify` bestanden (13 Tests, TypeScript,
 Frontend-Build und Source-Guard). Die GitHub-Übertragung wurde als vollständiger
 Baum geprüft. Entwurfs-PR: https://github.com/Spezzo-sudo/NetzKontor/pull/392.
 
-Der erste Studio-CI-Lauf https://github.com/Spezzo-sudo/NetzKontor/actions/runs/39011115243
+Im früheren NetzKontor-Snapshot wurde der erste Studio-CI-Lauf https://github.com/Spezzo-sudo/NetzKontor/actions/runs/39011115243
 wird von GitHub als fehlgeschlagen gemeldet; es wurden keine Jobschritte oder
 abrufbaren Logs zurückgegeben. Auch die übergeordnete CI meldete einen Fehler.
 Die Ursache ist nicht bewiesen. Dies ist kein grüner Linux-Nachweis. Zuerst die
@@ -111,6 +116,11 @@ GitHub-Laufausführung prüfen; alternativ in einer echten Cloud-Entwicklungsumg
 installieren und prüfen. Kein Neustarten einer Schleife ohne neue Evidence.
 
 Die Codex-Cloud-Umgebung selbst ist noch nicht angelegt/aktiviert. Dafür muss die
-bereits bestehende GitHub-Verbindung Zugriff auf den Übergabe-Branch haben und
+bereits GitHub-Verbindung Zugriff auf das neue Repository haben und
 Node >=24.15 bereitstehen. Die Projektdateien und der obige Starttext sind dafür
 vorbereitet. Ein Chat-/Cloud-Wechsel überträgt keine laufende lokale Sitzung.
+
+
+Im eigenständigen Studio-Repository ist noch kein GitHub-Actions-Workflow
+konfiguriert. Der fehlgeschlagene historische NetzKontor-Lauf ist kein aktueller
+Studio-CI-Lauf. Maßgeblicher lokaler Prüfeinstieg bleibt `npm run studio:verify`.

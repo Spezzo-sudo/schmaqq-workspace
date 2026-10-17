@@ -42,7 +42,7 @@
     "personal_local": "127.0.0.1:4310; private Einrichtung noch erforderlich",
     "isolated_demo": "127.0.0.1:4320; zwei Testkonten und lokale Runner",
     "vps": "Hostinger vorhanden laut Nutzer; Studio-Installation nicht erfolgt",
-    "github": "Spezzo-sudo/NetzKontor, Branch chatgpt/391-studio-cloud-handoff, tools/schmaqq-studio; Quelle wird als isolierter Snapshot versioniert"
+    "github": "Private zentrale Codebasis Spezzo-sudo/schmaqq-workspace, Remote-Branch main, Code im Repository-Root"
   },
   "design": {
     "reference": "https://preview.schmaqq.com/",
@@ -52,7 +52,7 @@
     "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
   },
   "next_steps": [
-    "Übergabe-Branch in vorhandener GitHub-Verbindung für Cloud-Aufgabe wählen und studio:verify ausführen",
+    "Neue private Codebasis in GitHub-Verbindung für Codex/ChatGPT/Work freigeben und Cloud-Setup sowie studio:verify ausführen",
     "Neuestes UI sichtbar prüfen; zwei Rollen durch Bearbeiten, Test, Vorschau, Review führen",
     "Hermes zunächst nur VPS-Preflight und isolierte Zielkonfiguration prüfen lassen",
     "Nach Freigabe Studio auf eigener Origin mit persistentem Speicher betreiben"
@@ -67,10 +67,9 @@
     "browser_acceptance": "pending",
     "linux_cloud": "pending",
     "github_ci": {
-      "result": "failed_without_step_logs",
-      "run_url": "https://github.com/Spezzo-sudo/NetzKontor/actions/runs/39011115243",
-      "observed": "GitHub reports failure; steps empty and logs unavailable. Cause unverified.",
-      "required": "Resolve GitHub CI execution and run Linux verification before acceptance."
+      "result": "not_configured_in_standalone_repository",
+      "historical_netzkontor_run": "https://github.com/Spezzo-sudo/NetzKontor/actions/runs/39011115243",
+      "note": "Historical snapshot CI failed without available steps/logs. No Linux proof for this repository."
     }
   }
 }

@@ -1,6 +1,33 @@
 # SCHMAQQ Studio
 
 Eigenständige Entwicklungsumgebung für die Zusammenarbeit an SCHMAQQ.
+Zentrale private Codebasis: [Spezzo-sudo/schmaqq-workspace](https://github.com/Spezzo-sudo/schmaqq-workspace).
+Der Code liegt direkt im Repository-Root. NetzKontor ist ein separates Projekt.
+
+## Tatsächliche Architektur
+
+- `studio/`: React-Einstieg, Vite-Build und SCHMAQQ-Gestaltung.
+- `app/`: gemeinsame Oberfläche, Projekte, Aufgaben, Teamchat, Dateieditor und Review.
+- `selfhost/`: Node-HTTP-Server, SQLite-WAL-Datenbank und persönliche Runner.
+- Runner führen Git-, Test- und Codex-Aufträge auf dem verbundenen Rechner aus.
+- `selfhost/deploy/`: vorbereitete Deployment-Anleitung; kein erfolgtes VPS-Deployment.
+- `app/api/`, `db/`, `build/`: erhaltener Sites-/Cloudflare-Starter, separater Laufzeitpfad.
+
+Lokal nachgewiesen sind Backend-Verträge, Git-Arbeitskopien, Dateibearbeitung,
+Tests/Vorschau und gegenseitiges Review. ChatGPT-Website-Login benötigt einen
+registrierten Client; Cloud-/Linux-Betrieb und echte gemeinsame Fernnutzung sind
+noch gesondert zu prüfen. Details und offene Punkte stehen in `docs/STATUS.json`.
+
+## Entwicklungsstart
+
+```sh
+git clone https://github.com/Spezzo-sudo/schmaqq-workspace.git
+cd schmaqq-workspace
+```
+
+Anschließend die folgenden Installations-/Prüfbefehle ausführen. Node >=24.15.0
+ist für den selbst betriebenen Server erforderlich; die ältere Engine-Angabe im
+Starter-Paket ersetzt diese Voraussetzung nicht.
 
 **Hier starten:** [AGENTS.md](AGENTS.md), [Status](docs/STATUS.json),
 [Übergabe für neue Chats](docs/HANDOFF.md), [Hermes-Betriebsauftrag](docs/HERMES_HANDOFF.md).
