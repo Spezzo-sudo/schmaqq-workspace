@@ -13,6 +13,11 @@ Git-Testremote `https://github.com/Spezzo-sudo/schmaqq-studio-pilot` ausdrückli
 genehmigt; er ist angelegt und befüllt. Markus’ persönlicher Schreibzugriff
 ist noch einzurichten. Keine Freigabe für andere Repositories ableiten.
 
+Aktuelle Voraussetzung laut Owner: Markus hat noch kein GitHub-Konto.
+Er erstellt dieses persönlich und nennt anschließend seinen Benutzernamen.
+Danach kann die gezielte Einladung ausschließlich zum privaten Pilotrepository
+erfolgen; kein geteiltes Owner-Konto und keine fremden Tokens.
+
 ## Reihenfolge bei der begleiteten Einrichtung
 
 1. Persönlichen Studio-Einladungslink für Markus bereitstellen und privat

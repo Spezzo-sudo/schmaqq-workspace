@@ -19,8 +19,8 @@ abgeschlossen: `docs/evidence/P1_CANDIDATE_LINUX_20261017.md` und
 angebunden; vorbereiteter Ablauf in `docs/MARKUS_MAC_ONBOARDING.md`.
 Der Owner hat inzwischen `Spezzo-sudo/schmaqq-studio-pilot` als privaten
 Testremote genehmigt; Repository, Seed und zwei Aufgaben im Live-Projekt
-„Studio-Pilottest“ sind angelegt. Markus’ GitHub-Benutzername für die gezielte
-Einladung fehlt noch. Evidence: `docs/evidence/P3_PILOT_SETUP_20261017.md`.
+„Studio-Pilottest“ sind angelegt. Markus hat laut Owner noch kein GitHub-Konto; persönliche Registrierung
+steht vor der gezielten Einladung. Evidence: `docs/evidence/P3_PILOT_SETUP_20261017.md`.
 Danach P4 echte gemeinsame Abnahme. Vorhandene Setup-/Live-Checks
 nicht pauschal wiederholen. Langfristige Anbieter-/Compute-Arbeit bleibt Backlog.
 

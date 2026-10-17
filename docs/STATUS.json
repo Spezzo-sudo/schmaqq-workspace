@@ -207,7 +207,7 @@
   "execution_plan": {
     "document": "docs/ROADMAP.md",
     "active_package": "P3",
-    "next_action": "Identify authorized Markus GitHub account for targeted pilot-only write invitation; then own Studio signup and Mac runner plus configure existing Windows runner for approved pilot project",
+    "next_action": "Markus creates own GitHub account and supplies username; then targeted pilot-only collaborator invitation, personal Studio signup and Mac runner setup",
     "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
     "deployment_authorized": true,
     "feature_expansion": "deferred until actual two-person pilot acceptance",
@@ -285,7 +285,7 @@
     "own_studio_account": "not created",
     "shared_test_remote": "Spezzo-sudo/schmaqq-studio-pilot explicitly approved, created private and seeded; Markus write access still pending",
     "runner_distribution": "source modules identified; separate Mac package not created/tested",
-    "github_username": "requested; no collaborator invitation sent"
+    "github_username": "Owner confirms Markus has no GitHub account yet; personal signup required before targeted collaborator invitation"
   },
   "pilot_setup": {
     "evidence": "docs/evidence/P3_PILOT_SETUP_20261017.md",
@@ -299,7 +299,7 @@
     "studio_title": "Studio-Pilottest",
     "tasks_created": 2,
     "new_runner_jobs": 0,
-    "github_collaborator": "not invited; actual username requested",
+    "github_collaborator": "not invited; Markus has no GitHub account yet",
     "mac_runner": "not configured",
     "windows_pilot_project": "not configured; existing runner preserved",
     "human_acceptance": "not run"
