@@ -1,15 +1,17 @@
 # Kleines Serverpaket
 
-Dieses Paket enthält die fertig gebaute Oberfläche und den Node/SQLite-Server. Kein npm install, Docker-Build oder Projekt-Repository auf dem VPS nötig. Node >=24.15 muss bereits verfügbar sein. Die Runner bleiben auf den persönlichen PCs.
+Dieses Paket enthält die fertig gebaute Oberfläche und den Node/SQLite-Server. Kein npm install, Docker-Build oder Projekt-Repository auf dem VPS nötig. Eine ausschliesslich für Studio bereitgestellte Node-Laufzeit >=24.15 muss am vorgegebenen Pfad vorhanden sein; die systemweite Node-v22-Installation bleibt unverändert. Die Runner bleiben auf den persönlichen PCs.
 
 Noch keine Installation durchführen, bevor bestehende Dienste, freie Ports, Node-Pfad, HTTPS-Proxy und Zieladressen geprüft wurden. Die beigefügte systemd-Datei ist eine Vorlage; sie ersetzt keinen bestehenden Webserver.
 
 1. Vorhandenen VPS per SSH prüfen. `node selfhost/deploy/preflight.mjs /geplantes/ziel` meldet Node, SQLite, Speicher und Portverfügbarkeit; es verändert keine Dateien oder Dienste. Für das Ziel einen bereits vorhandenen Ordner wählen.
 2. Paket in ein neues Release-Verzeichnis unter `/opt/schmaqq-studio/releases/` entpacken. Den Dienstbenutzer `schmaqq-studio` ohne Login vorsehen. `/opt/schmaqq-studio/current` muss auf dieses Release zeigen.
 3. Env-Vorlage nach `/etc/schmaqq-studio.env` übernehmen und zwei tatsächliche HTTPS-Adressen setzen. Vorhandenen Reverse-Proxy gezielt um Studio → 127.0.0.1:4310 und Vorschau → 127.0.0.1:4311 ergänzen. Zertifikate müssen für beide Adressen gültig sein; der Studio-Proxy muss JSON-Anfragen bis 9 MB zulassen. Vorhandene schmaqq.com-Routen erhalten.
-4. Node-Pfad in der systemd-Vorlage mit dem vorhandenen Runtime-Pfad abgleichen. Der Dienst verwendet `/var/lib/schmaqq-studio` für SQLite, Setup-Link und Backups; dieser Pfad bleibt unabhängig vom Release bestehen. systemd legt ihn für den Dienst an.
+4. Separates Node 24 am Pfad `/opt/schmaqq-studio/runtime/node/bin/node` nach Herkunfts-/SHA256-Prüfung und passender Berechtigung bereitstellen. Die systemd-Vorlage verwendet genau diesen Pfad; `/usr/bin/node` bleibt unberührt. Erst danach Service-Einrichtung zulassen. Der Dienst verwendet `/var/lib/schmaqq-studio` für SQLite, Setup-Link und Backups; dieser Pfad bleibt unabhängig vom Release bestehen. systemd legt ihn für den Dienst an.
 5. Nach bewusstem Einrichten und Start des Dienstes zuerst `/healthz`, beide HTTPS-Adressen und anschließend den ersten persönlichen Login prüfen. Der private Setup-Link liegt im Datenverzeichnis. Niemals in öffentliche Protokolle oder Git kopieren.
 6. Beide PCs mit dem HTTPS-Studio verbinden. Ein vollständiger Abnahmetest umfasst zwei persönliche Konten, getrennte Arbeitskopien, Tests, Teamprüfung, Runner-Neustart und Backup-Wiederherstellung in einer separaten Testinstanz.
+
+R4-A-Nachweis vom 17.10.2026: Ein isoliert gebautes Release-Archiv (783465 Bytes; 697 Manifestdateien) wurde entpackt und mit `release-smoke.mjs` geprüft. Ein zusätzlicher Backup-/Restore-Probelauf bestätigte SQLite-Integrität, Fremdschlüssel und die Wiederherstellung von Mitglied, Projekt, Aufgabe und Dokument. Das ist **keine** Produktionsinstallation und ersetzt keinen Restore-Test unter dem späteren Dienstbenutzer.
 
 Backup: als Dienstbenutzer mit `STUDIO_DATA_DIR=/var/lib/schmaqq-studio node selfhost/backup.mjs /var/lib/schmaqq-studio/backups/EINDEUTIG.sqlite` einen konsistenten SQLite-Snapshot erstellen und geschützt außerhalb dieses Servers sichern. Vor einem Update ein Backup erstellen. Ein älteres Programmrelease nur mit kompatiblem Datenbankschema verwenden; ein Rollback darf keine neueren Teamdaten überschreiben.
 

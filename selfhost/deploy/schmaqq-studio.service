@@ -8,7 +8,9 @@ User=schmaqq-studio
 Group=schmaqq-studio
 WorkingDirectory=/opt/schmaqq-studio/current
 EnvironmentFile=/etc/schmaqq-studio.env
-ExecStart=/usr/bin/node selfhost/server.mjs
+# R4: dedicated, version-pinned Studio Node 24 runtime; never use /usr/bin/node (system Node 22).
+# Verify executable, ownership, SHA256 and >=24.15 before enabling this template.
+ExecStart=/opt/schmaqq-studio/runtime/node/bin/node selfhost/server.mjs
 Restart=on-failure
 RestartSec=5
 StateDirectory=schmaqq-studio
