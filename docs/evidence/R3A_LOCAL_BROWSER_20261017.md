@@ -31,4 +31,4 @@ Hinweis: Die erste automatisierte `networkidle`-Navigation lief in ein Timeout, 
 - Visuelle Bewertung der entstandenen Screenshots durch einen Menschen (Abstände, Typografie, visuelle Hierarchie) war noch kein vollständig ausgewerteter Review; die automatisierten Browser-Gates sind kein Ersatz.
 - Echte Zwei-Personen-Fernverbindung, Rechte-/Admin-Prüfung mit realen Geräten und sicherer öffentlicher Origin erst mit gesondertem R4-Deployment-/Auth-Go.
 - Für die spätere Studio-Produktversion getrennte Hostnamen, TLS, sichere Cookies, serverseitige Autorisierung und Backup/Restore testen.
-- Der komplette temporäre QA-Ordner muss nach Dokumentation wieder entfernt werden. Ergebnisse niemals als allgemein produktionsreife UI deklarieren.
+- Cleanup abgeschlossen: Demo beendet, Loopback-Ports 4320/4321 geschlossen, vollständiger temporärer QA-Ordner entfernt. Freier Speicher vor Cleanup: 29,026,279,424 Bytes; nach Cleanup: 30,734,778,368 Bytes. System-Node weiterhin v22.22.2. SCHMAQQ Production, Preview und KlimaFinder nach Cleanup jeweils HTTP 200. Ergebnisse niemals als allgemein produktionsreife UI deklarieren.
