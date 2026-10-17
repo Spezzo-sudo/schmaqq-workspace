@@ -8,7 +8,7 @@ _Status: R1-Planung, 17.10.2026. Reihenfolge statt künstlicher Termine. Jede Ph
 ### R0 — Repository-Übertragung [nachgewiesen]
 - Private Codebasis `Spezzo-sudo/schmaqq-workspace`, Historie übertragen, Startdokumentation vorhanden.
 - Lokale Quelle: 13 Backendtests, TypeScript, Source-Guard, Frontend-Build PASS laut Übertragungs-Evidence 17.10.2026.
-- Fehlende Nachweise: Cloud/Linux-Installation, GitHub-CI, Browser, tatsächlicher Zwei-Personen-Betrieb, VPS.
+- Fehlende Nachweise: Cloud/Linux-Installation, Hermes-Linux-Testlauf, Browser, tatsächlicher Zwei-Personen-Betrieb, VPS. GitHub Actions ist bewusst kein verpflichtendes Gate.
 - **Gate:** Migration von GitHub lesbar; kein Production-Change. Kein Anspruch, dass alle Plattformfunktionen produktiv sind.
 
 ### R1 — Vision/Architektur (dieser PR) [in Review]
@@ -16,8 +16,8 @@ _Status: R1-Planung, 17.10.2026. Reihenfolge statt künstlicher Termine. Jede Ph
 
 **Gate:** Owner prüft, dass Universal-Workspace, Studio als Modul, optionale Agenten, langfristiges Compute-Netzwerk, Sicherheit und Monetarisierungsoptionen korrekt beschrieben sind. Keine Laufzeitänderung. Erst Merge macht den Stand zur im Repo akzeptierten Richtung.
 
-### R2 — Frischer Cloud-/Linux-Start + CI [nächster Engineering-Block]
-**Auftrag:** Auf einem frischen Linux-Checkout mit Node >=24.15.0 / Git / Python 3 reproduzierbar installieren, `node selfhost/cloud-setup.mjs`, `npm run studio:verify`. Ein schmaler GitHub-Actions-Workflow führt die reale Suite aus; kein Umgehen von Fehlern. Browserabnahme der Demo am Desktop und Mobil-Viewport. Nachweis: Logs, Commit, ggf. Screenshots und reproduzierbare Befehle.
+### R2 — Frischer Cloud-/Linux-Start mit Hermes-Test-Evidence [nächster Engineering-Block]
+**Auftrag:** Auf einem frischen Linux-Checkout mit Node >=24.15.0 / Git / Python 3 reproduzierbar installieren, `node selfhost/cloud-setup.mjs`, `npm run studio:verify`. Die reale Suite läuft über Hermes auf einem gesonderten, autorisierten Linux-Test-Runner. Keine neuen automatischen GitHub-Actions-Workflows; kein Umgehen von Fehlern. Browserabnahme der Demo am Desktop und Mobil-Viewport. Nachweis: Logs, Commit, ggf. Screenshots und reproduzierbare Befehle.
 
 **Gate:** Wiederholbarer Linux-Green-Run; install/build/test getrennt dokumentiert; fehlerfreier Demo-Start; keine produktiven Credentials/Deployments; Hinweis auf weiterhin fehlende echten Mehrbenutzerbetrieb. Alte fehlgeschlagene NetzKontor-CI gilt nicht als aktueller Studio-Test.
 
@@ -55,9 +55,15 @@ _Status: R1-Planung, 17.10.2026. Reihenfolge statt künstlicher Termine. Jede Ph
 
 | Rang | Paket | Konkreter Output | Nicht Teil davon |
 | --- | --- | --- | --- |
-| 1 | **R2-A: Linux + CI** | Cloud-Setup erfolgreich, `studio:verify` in Actions reproduzierbar, Fehler dokumentiert/behandelt | VPS, Auth-Provider oder grosser Refactor |
+| 1 | **R2-A: Linux + CI** | Cloud-Setup und `studio:verify` unter isoliertem Linux/Hermes nachweisbar, Fehler dokumentiert/behandelt | VPS, Auth-Provider oder grosser Refactor |
 | 2 | **R2-B/R3-A: Sichtbares Produkt** | Browser-Demo und zwei Rollen mit echten Aufgaben/Dateien/Review, dokumentierte UX-Lücken | Allgemeiner AI-Marktplatz |
 | 3 | **R3-B/R4-A: Zugang & Betriebsvorbereitung** | Admin auffindbar, Rechtegate geprüft, VPS-Preflight nur lesend | Eigenmächtige Production-Änderung |
+
+## Testausführung ohne GitHub-Actions-Quota
+
+- Hermes ist für R2 die vorgesehenen Ausführungsinstanz, nicht GitHub Actions. `docs/HERMES_TEST_RUNBOOK.md` auf dem R2-Branch enthält das genaue Testverfahren; bei Merge von PR #2 wird es Teil von main.
+- Tests nur auf einem isolierten, autorisierten Linux-Testhost mit Node >=24.15.0. System-Node auf dem produktiven VPS v22.22.2 nicht verändern; keine Tests ohne sichere Sandbox und passende Rechtegrenzen.
+- Saubere SHA-/Node-/npm-/Install-/Test-Evidence dokumentieren. Browser-/Mobilabnahme und echter Mehrbenutzerbetrieb bleiben separate Gates.
 
 ## Abhängigkeitsregeln
 
