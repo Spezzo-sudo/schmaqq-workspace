@@ -4,6 +4,15 @@ Eigenständige Entwicklungsumgebung für die Zusammenarbeit an SCHMAQQ.
 Zentrale private Codebasis: [Spezzo-sudo/schmaqq-workspace](https://github.com/Spezzo-sudo/schmaqq-workspace).
 Der Code liegt direkt im Repository-Root. NetzKontor ist ein separates Projekt.
 
+
+## Produktvision und Architektur
+
+**SCHMAQQ Workspace** ist langfristig eine universelle Plattform für die Zusammenarbeit von Menschen und KI-Agenten. **SCHMAQQ Studio** ist der erste spezialisierte Bereich für Softwareentwicklung. Ein freiwilliges, später eventuell vergütetes Compute-Netzwerk ist ein **Zukunftsziel**, heute weder implementiert noch öffentlich betreibbar.
+
+- [Produktvision](docs/PRODUCT_VISION.md) · [Zielarchitektur und Bestand](docs/ARCHITECTURE.md) · [Meilensteine](docs/ROADMAP.md)
+- [Integrationsgrenzen zur SCHMAQQ-Plattform](docs/INTEGRATION_BOUNDARIES.md) · [Architekturentscheidungen](docs/DECISIONS/0001-modular-core.md)
+- **Tatsächliche Funktionen/Nachweise:** [STATUS.json](docs/STATUS.json). Die neue Zielarchitektur ist kein Beleg für produktive Umsetzung.
+
 ## Tatsächliche Architektur
 
 - `studio/`: React-Einstieg, Vite-Build und SCHMAQQ-Gestaltung.
