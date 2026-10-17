@@ -30,4 +30,4 @@
 - Der systemd-Prototyp verwies ursprünglich auf `/usr/bin/node` (Node 22). PR #3 ändert **nur** die Vorlage zu `/opt/schmaqq-studio/runtime/node/bin/node`. Dieser produktive Pfad existiert **noch nicht** und darf nicht als bereits installiert gelten.
 - Keine Ports ausserhalb Loopback veröffentlicht, kein öffentliches Studio, keine DNS-/Traefik-/Systemd-Änderungen.
 - Zwei HTTPS-Origins, echter Account-Zugang, externe Backup-Aufbewahrung, dauerhaftes systemd-Startverhalten und Remote-Pilot sind nicht getestet.
-- Alle Fixture-Daten sind Testdaten. Die lokale temporäre Build-Umgebung muss nach Evidence-Abgabe vollständig gelöscht und der Speicher sowie HTTP-Status erneut geprüft werden.
+- Alle Fixture-Daten waren Testdaten. **Cleanup ausgeführt: PASS**; gesamter exklusiver temporärer Ordner entfernt, keine Testports offen. Frei vor Cleanup **29,014,794,240 Bytes**, nach Cleanup **30,734,704,640 Bytes**. System-Node weiterhin **v22.22.2**. SCHMAQQ Production, SCHMAQQ Preview und KlimaFinder antworteten nach Cleanup mit **HTTP 200**. Kein Deployment oder produktiver Dienst erstellt.
