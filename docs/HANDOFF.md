@@ -2,7 +2,7 @@
 
 Wir bauen eine echte gemeinsame Entwicklungsumgebung für Marco in der Schweiz
 und Markus in Thailand. Beide verwenden ihre eigenen ChatGPT-Konten. GitHub
-bewahrt Code und Review; der vorhandene Hostinger-VPS betreibt bereits ein
+bewahrt Code und Review; der vorhandene Hostinger-VPS betreibt bereits
 den geprüften Kollaborationskandidaten. Der Heim-PC soll dafür nicht ständig laufen müssen.
 
 
@@ -17,6 +17,10 @@ Die operative Gesamtplanung steht in [ROADMAP.md](ROADMAP.md). Aktives Paket ist
 abgeschlossen: `docs/evidence/P1_CANDIDATE_LINUX_20261017.md` und
 `docs/evidence/P2_SWITCH_ACCEPTANCE_20261017.md`. Der Mac ist noch nicht
 angebunden; vorbereiteter Ablauf in `docs/MARKUS_MAC_ONBOARDING.md`.
+Der Owner hat inzwischen `Spezzo-sudo/schmaqq-studio-pilot` als privaten
+Testremote genehmigt; Repository, Seed und zwei Aufgaben im Live-Projekt
+„Studio-Pilottest“ sind angelegt. Markus’ GitHub-Benutzername für die gezielte
+Einladung fehlt noch. Evidence: `docs/evidence/P3_PILOT_SETUP_20261017.md`.
 Danach P4 echte gemeinsame Abnahme. Vorhandene Setup-/Live-Checks
 nicht pauschal wiederholen. Langfristige Anbieter-/Compute-Arbeit bleibt Backlog.
 

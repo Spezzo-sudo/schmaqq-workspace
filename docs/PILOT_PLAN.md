@@ -13,7 +13,9 @@ Dieser Plan beschreibt Reihenfolge und Abnahme, keine Live-Freigabe.
 Aktueller Übergang: P1 und P2 abgeschlossen; siehe
 [P2-Abnahme](evidence/P2_SWITCH_ACCEPTANCE_20261017.md). Jetzt P3/P4:
 Markus nutzt macOS, [Einstieg vorbereitet](MARKUS_MAC_ONBOARDING.md), eigener
-Runner und gemeinsamer freigegebener Testremote noch offen. Die folgenden
+Runner noch offen. Der ausdrücklich genehmigte private Testremote ist nun
+`Spezzo-sudo/schmaqq-studio-pilot`; Seed und zwei Aufgaben sind angelegt
+([P3-Vorbereitung](evidence/P3_PILOT_SETUP_20261017.md)). Die folgenden
 Bereitstellungsabschnitte bleiben als Ablauf und Freigabegrenzen erhalten.
 
 ## 1. Geprüften Kandidaten sichern
@@ -63,10 +65,9 @@ blosse Bereitstellung dieses Plans. Bestehendes NetzKontor bleibt unberührt.
 
 ## 3. Echten Zwei-Personen-Pilot durchführen
 
-Ein ausdrücklich freigegebenes Testprojekt verwenden. Die bisherige Freigabe
-gilt für isolierte lokale Testrepositories, nicht für Änderungen an NetzKontor.
-Für einen gemeinsamen entfernten Git-Remote muss dessen Freigabe zuerst geklärt
-sein. Vorhandenen Marcos Runner verwenden; keine Doppelregistrierung. Markus
+Ein ausdrücklich freigegebenes Testprojekt verwenden. Der Owner hat inzwischen zusätzlich
+`Spezzo-sudo/schmaqq-studio-pilot` als privaten gemeinsamen Testremote genehmigt.
+Dies erlaubt keine Änderungen an NetzKontor. Vorhandenen Marcos Runner verwenden; keine Doppelregistrierung. Markus
 benötigt seinen eigenen Studio-Zugang und seinen eigenen Runner.
 
 Aufgabe A: Startseitenbotschaft überarbeiten, Datei-/Ordnerbereich deklarieren.

@@ -56,7 +56,7 @@
     "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
   },
   "next_steps": [
-    "P3: own Studio account and macOS runner for Markus; choose explicitly approved shared writable test remote",
+    "P3: targeted Markus GitHub invite after username supplied, own Studio account and Mac runner; configure approved shared pilot on both own devices",
     "P4: actual parallel human pilot with new tasks/comments, own copies, checks/previews and independent review",
     "P5: address observed onboarding/workflow obstacles; defer additional provider integrations"
   ],
@@ -207,7 +207,7 @@
   "execution_plan": {
     "document": "docs/ROADMAP.md",
     "active_package": "P3",
-    "next_action": "Prepare Markus macOS onboarding and explicitly approved shared Git test remote; own invite/registration and Mac execution not yet done",
+    "next_action": "Identify authorized Markus GitHub account for targeted pilot-only write invitation; then own Studio signup and Mac runner plus configure existing Windows runner for approved pilot project",
     "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
     "deployment_authorized": true,
     "feature_expansion": "deferred until actual two-person pilot acceptance",
@@ -283,7 +283,25 @@
     "mac_runner_ready": false,
     "remote_mac_access": "not available",
     "own_studio_account": "not created",
-    "shared_test_remote": "not selected or authorized",
-    "runner_distribution": "source modules identified; separate Mac package not created/tested"
+    "shared_test_remote": "Spezzo-sudo/schmaqq-studio-pilot explicitly approved, created private and seeded; Markus write access still pending",
+    "runner_distribution": "source modules identified; separate Mac package not created/tested",
+    "github_username": "requested; no collaborator invitation sent"
+  },
+  "pilot_setup": {
+    "evidence": "docs/evidence/P3_PILOT_SETUP_20261017.md",
+    "repository": "https://github.com/Spezzo-sudo/schmaqq-studio-pilot",
+    "private_verified": true,
+    "seed_commit": "942b14b83df6b47f0870312c548d71023e38e277",
+    "tracked_files": 10,
+    "tests": "2/2 PASS",
+    "preview_build": "PASS; not published",
+    "studio_project": "986b71a9-48e4-49d8-97bd-f2156bbf61c8",
+    "studio_title": "Studio-Pilottest",
+    "tasks_created": 2,
+    "new_runner_jobs": 0,
+    "github_collaborator": "not invited; actual username requested",
+    "mac_runner": "not configured",
+    "windows_pilot_project": "not configured; existing runner preserved",
+    "human_acceptance": "not run"
   }
 }

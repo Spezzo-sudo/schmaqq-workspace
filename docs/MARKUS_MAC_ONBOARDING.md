@@ -8,9 +8,10 @@ persönliche Anmeldungen dort sind noch nicht geprüft.
 
 Markus sieht dasselbe Testprojekt wie Marco, hat einen eigenen Runner und eine
 eigene Arbeitskopie. Keine Tokens oder ChatGPT-Konten teilen. Marcos bestehenden
-Windows-Runner unverändert weiterverwenden. Ein konkreter, zum Schreiben
-freigegebener gemeinsamer Git-Testremote ist noch zu bestimmen; die bisherige
-Freigabe isolierter lokaler Repositories ersetzt dies nicht.
+Windows-Runner unverändert weiterverwenden. Der Owner hat den privaten gemeinsamen
+Git-Testremote `https://github.com/Spezzo-sudo/schmaqq-studio-pilot` ausdrücklich
+genehmigt; er ist angelegt und befüllt. Markus’ persönlicher Schreibzugriff
+ist noch einzurichten. Keine Freigabe für andere Repositories ableiten.
 
 ## Reihenfolge bei der begleiteten Einrichtung
 

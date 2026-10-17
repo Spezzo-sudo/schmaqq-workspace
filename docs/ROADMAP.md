@@ -85,7 +85,10 @@ geprüften Quellstand: [Evidence](evidence/P1_CANDIDATE_LINUX_20261017.md).
 **P2 abgeschlossen:** Autorisierter Betreiberwechsel und direkte Nachprüfung
 [belegt](evidence/P2_SWITCH_ACCEPTANCE_20261017.md).
 **Jetzt aktiv: P3 – Markus auf macOS und gemeinsamen Testremote verbinden.**
-[Einstiegsplan für den Mac](MARKUS_MAC_ONBOARDING.md).
+[Einstiegsplan für den Mac](MARKUS_MAC_ONBOARDING.md). Privater gemeinsamer
+Testremote und zwei echte Studio-Aufgaben sind inzwischen
+[angelegt](evidence/P3_PILOT_SETUP_20261017.md); persönliche Zugänge und Runner
+für dieses neue Projekt bleiben offen.
 Der lesende Live-Audit muss nicht
 wiederholt werden, solange sich Betrieb oder zeitlicher Kontext nicht wesentlich
 ändern. P4–P7 sind geordnetes Backlog. Persönliche Anmeldungen werden erst dann
