@@ -24,7 +24,7 @@ Prüfbelege und bekannte Grenzen:
 - `USABILITY_FIRST_WORKSPACE.md`: erster Einstieg und Editor-Korrekturen.
 - `../R5_A_TECH_HANDOFF.md`: bereits eingerichteter persönlicher Windows-Runner.
 
-Die Abnahme erfolgt über einen Draft-Pull-Request. Quellcode-Sicherung ist kein
+Der Kandidat ist über [Draft-PR #6](https://github.com/Spezzo-sudo/schmaqq-workspace/pull/6) zur Prüfung verfügbar. Quellcode-Sicherung ist kein
 Merge, kein Release und kein Deployment. Aktuellen Commit aus Git ermitteln;
 keine wechselnden HEAD-SHAs in dauerhaftem Planungstext pflegen.
 

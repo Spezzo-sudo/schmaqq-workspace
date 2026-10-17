@@ -56,7 +56,7 @@
     "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
   },
   "next_steps": [
-    "Back up reviewed candidate branch and create a draft PR; do not merge",
+    "Review draft PR #6 and the pilot plan; no merge or deployment authorized",
     "Read-only audit of existing live service and prepare backup/rollback before a separately approved rollout",
     "Run the actual two-person remote pilot described in docs/PILOT_PLAN.md",
     "Fix observed onboarding and workflow obstacles before adding more provider features"
@@ -179,13 +179,15 @@
     "branch": "fix/studio-first-workspace-layout",
     "base": "origin/main",
     "plan": "docs/PILOT_PLAN.md",
-    "publication": "prepared_for_private_branch_backup_and_draft_review",
+    "publication": "private_candidate_branch_pushed_draft_pr_open",
     "deployment": "requires_separate_approval",
     "release_scope": "Coherent frontend/backend with additive task-comments and optional GitHub account-link tables",
     "review_corrections": [
       "Disable comment editing while a mutation is pending",
       "Resume task copy on its existing own device even if another own device is online"
     ],
-    "human_acceptance": "not_yet_run"
+    "human_acceptance": "not_yet_run",
+    "pull_request": "https://github.com/Spezzo-sudo/schmaqq-workspace/pull/6",
+    "merge": "not_performed"
   }
 }
