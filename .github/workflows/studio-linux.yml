@@ -1,0 +1,81 @@
+# SCHMAQQ Studio self-hosted path: Linux reproducibility (no deployment).
+# No stored secrets, no runtime tokens, no database uploads.
+name: Studio Linux verification
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: studio-linux-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Node 24 / Linux / Studio
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 24 LTS
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.15.0'
+          package-manager-cache: false
+
+      - name: Report tool versions
+        run: |
+          node --version
+          npm --version
+          git --version
+          python3 --version
+
+      - name: Install exact dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run Studio source guard, backend tests, types and build
+        run: npm run studio:verify
+
+      - name: Isolated two-account integration smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Only local fixture accounts, local bare Git repo and loopback ports.
+          node selfhost/demo.mjs > "$RUNNER_TEMP/schmaqq-demo.log" 2>&1 &
+          demo_pid=$!
+
+          cleanup() {
+            kill "$demo_pid" 2>/dev/null || true
+            wait "$demo_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for attempt in {1..45}; do
+            if ! kill -0 "$demo_pid" 2>/dev/null; then
+              echo "Demo process terminated during startup."
+              exit 1
+            fi
+            if curl --silent --show-error --fail --output /dev/null http://127.0.0.1:4320/healthz; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            echo "Studio demo was not ready within the startup window."
+            exit 1
+          fi
+
+          node selfhost/demo-smoke.mjs
