@@ -1,0 +1,18 @@
+import {mkdirSync,readFileSync,writeFileSync,cpSync,statSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const sourceFiles=['runner','local-ai','process','files','codex-run','pilot-runner'].map(n=>'selfhost/'+n+'.mjs');
+const source=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
+if(execFileSync('git',['status','--porcelain','--',...sourceFiles,'selfhost/runner-package.mjs'],{cwd:root,encoding:'utf8'}).trim())throw new Error('Runner-Quellcode zuerst prüfen und committen.');
+const destination=path.join(root,'.studio','runner-packages',new Date().toISOString().replace(/[:.]/g,'-'));
+mkdirSync(destination,{recursive:true});mkdirSync(path.join(destination,'selfhost'));
+for(const f of sourceFiles)cpSync(path.join(root,f),path.join(destination,f),{errorOnExist:true,force:false});
+writeFileSync(path.join(destination,'Start-Pilot.command'),'#!/bin/sh\nset -eu\ncd -- "$(dirname -- "$0")"\nif ! command -v node >/dev/null 2>&1; then printf "%s\\n" "Node >=24.15 fehlt. Keine automatische Installation." >&2; exit 1; fi\nexec node selfhost/pilot-runner.mjs\n',{mode:0o700});
+writeFileSync(path.join(destination,'README.md'),`# SCHMAQQ – persönlicher Mac-Pilotrunner\n\nQuelle: ${source}\nNur privates Testprojekt, keine KI und keine Veröffentlichung.\nKein npm install, sudo, Autostart oder fremde Zugangsdaten nötig.\n\n1. Archivhash gegen den separat übergebenen Wert prüfen und lokal entpacken.\n2. Git, Node >=24.15 und eigener freigegebener Pilot-Checkout sind erforderlich.\n3. Im persönlichen Studio-Konto Entwicklung → PC verbinden, Projekt Studio-Pilottest.\n   Nur ein eigenes Mac-Gerät anlegen und Konfiguration privat herunterladen.\n4. Im Paketordner: node selfhost/pilot-runner.mjs --configure /absoluter/pfad/download.private.json /absoluter/pfad/schmaqq-studio-pilot\n   Es werden nur Server, persönliches Token und Projektzuordnung übernommen.\n   Befehle und Sperren setzt der Starter selbst. Bestehende Registrierung wird nicht überschrieben.\n5. node selfhost/pilot-runner.mjs --check\n6. Start-Pilot.command oder: node selfhost/pilot-runner.mjs\n   Falls macOS den Start blockiert, keine Schutzmechanismen abschalten. Terminalstart verwenden.\n\nKonfiguration liegt unter ~/.schmaqq-studio/pilot/runner.private.json (0600),\nRunnerzustand separat darunter. Downloads enthalten ebenfalls den privaten Zugang;\nnicht in Git, Teamchat oder gemeinsame Cloudordner legen.\nBeenden: Ctrl+C. Neustart mit derselben Konfiguration, kein neues Gerät registrieren.\nEin laufender Runner führt Projektcode mit deinen Benutzerrechten aus. Dieses Paket\nist keine Sandbox für fremde Repositories oder beliebige andere Teammitglieder.\nMac-Hardware-/Gatekeeper-Abnahme steht noch aus. Kein signierter Installer.\n`);
+const files=[...sourceFiles,'Start-Pilot.command','README.md'].map(file=>{const bytes=readFileSync(path.join(destination,file));return {path:file,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')};});
+writeFileSync(path.join(destination,'runner-manifest.json'),JSON.stringify({schema:1,source,files},null,2));
+const archive=destination+'.tar.gz';execFileSync('tar',['-czf',archive,'-C',destination,'.'],{windowsHide:true});
+console.log(JSON.stringify({directory:destination,archive,source,files:files.length,archiveBytes:statSync(archive).size,sha256:createHash('sha256').update(readFileSync(archive)).digest('hex')},null,2));
