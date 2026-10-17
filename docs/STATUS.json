@@ -56,7 +56,7 @@
     "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
   },
   "next_steps": [
-    "P2: release approval and privileged current live backup/restore before controlled rollout; P1 candidate review/Linux checks passed",
+    "P2: obtain explicit approval for staged runtime delivery, fresh final live snapshot and Studio-only service switch; earlier backup/restore PASS reported by Hermes",
     "P3/P4: connect Markus and run actual two-person remote pilot using an explicitly approved shared test remote",
     "P5: fix observed onboarding and workflow obstacles before expanding provider features"
   ],
@@ -202,14 +202,14 @@
     "memory_current_bytes": 112869376,
     "tls": "both Studio origins validated; expiry 2027-01-15",
     "personal_runner": "Windows-PC R5-A online; no active jobs at observation",
-    "backup_restore": "unverified; protected data inaccessible to audit account",
-    "candidate_linux": "PASS for tested source; current live backup/restore still unverified",
+    "backup_restore": "PASS reported by Hermes via owner for snapshot p2-20261017T185530Z; not independently inspected by this engineering account; fresh final snapshot required before update",
+    "candidate_linux": "PASS for tested source; live snapshot restore separately reported PASS by Hermes",
     "deployment": "not performed; preparation only"
   },
   "execution_plan": {
     "document": "docs/ROADMAP.md",
     "active_package": "P2",
-    "next_action": "Obtain approval for the tested release and privileged live backup/restore, then controlled deployment using docs/LIVE_PREFLIGHT_20261017.md; no merge or deployment performed",
+    "next_action": "Explicit owner approval of staged release and Studio-only service switch; Hermes can use local HERMES_README.md without GitHub access; fresh final snapshot before update",
     "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
     "deployment_authorized": false,
     "feature_expansion": "deferred until actual two-person pilot acceptance",
@@ -224,8 +224,35 @@
     "linux_tests": 17,
     "extracted_archive_smoke": "PASS",
     "synthetic_legacy_upgrade": "PASS; 18 original tables, retained session/device/copy and additive schema",
-    "live_restore": "not verified",
+    "live_restore": "Hermes reports snapshot integrity, foreign keys and original row counts PASS; restored service was not started",
     "cleanup": "PASS; no persistent test build files",
     "production_mutations": false
+  },
+  "operator_backup_report": {
+    "evidence": "docs/evidence/P2_HERMES_BACKUP_REPORT_20261017.md",
+    "provenance": "owner-forwarded Hermes report, not independently verified by engineering account",
+    "snapshot": "/var/lib/schmaqq-studio/backups/p2-20261017T185530Z/studio.sqlite",
+    "restored_copy": "/var/lib/schmaqq-studio/restore-tests/p2-20261017T185530Z/studio.sqlite",
+    "backup": "PASS_REPORTED",
+    "restore": "PASS_REPORTED",
+    "tables_reported": 19,
+    "service_restarted": false,
+    "public_restore_instance": false,
+    "final_update_snapshot": "still required after quiescing writes and jobs",
+    "hermes_repo_access": "authentication failed in operator context; existing development read-only context works; no credentials transferred"
+  },
+  "operator_delivery": {
+    "state": "staged_not_deployed",
+    "source_sha": "4a0092be2d04a4b66aa1d200cf7c9f9c53c4c47d",
+    "runtime_matches_tested_source": "57c274c52fb4fd67ca9f9dc857a4456962806a18",
+    "directory": "/home/dc-remote/schmaqq-studio-handoff/p2-4a0092b-20261017",
+    "archive": "schmaqq-studio-runtime.tar.gz",
+    "sha256": "316d9f5fcd7903b5ab43b9e74947d3f81b09f69e15a464c3c6073fe0d43433bf",
+    "archive_bytes": 793555,
+    "instructions": "HERMES_README.md",
+    "extracted_archive_smoke": "PASS",
+    "build_scratch_cleanup": "PASS",
+    "deployment_authorized": false,
+    "requires_github_access_for_operator": false
   }
 }

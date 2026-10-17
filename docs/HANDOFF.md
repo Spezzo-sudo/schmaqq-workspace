@@ -57,8 +57,13 @@ zu einem noch nicht eingerichteten VPS weiter unten sind keine aktuelle
 Betriebsbestandsaufnahme. Der lesende Live-Audit vom 17.10.2026 ist nun in
 `docs/LIVE_PREFLIGHT_20261017.md` dokumentiert: alter main-Stand aktiv, eigener
 Node-24-Dienst, gültiges HTTPS, persönlicher Runner online. Neuer Kandidat bleibt
-unveröffentlicht im Live-Betrieb. Live-Backup/Restore und privilegierter
-Dienstwechsel sind noch offen.
+unveröffentlicht im Live-Betrieb. Hermes hat die Live-Snapshot-/Restore-Probe inzwischen als bestanden gemeldet
+(Owner-Weiterleitung: `docs/evidence/P2_HERMES_BACKUP_REPORT_20261017.md`).
+Ein frischer finaler Snapshot und der privilegierte Dienstwechsel stehen noch aus.
+Das geprüfte Paket samt `HERMES_README.md` liegt geschützt unter
+`/home/dc-remote/schmaqq-studio-handoff/p2-4a0092b-20261017`; Hermes benötigt
+für die Übernahme keinen GitHub-Zugriff. Hash/Quelle in STATUS.json unter
+`operator_delivery`. Noch nicht deployed und nicht zum Dienstwechsel freigegeben.
 
 ## Wo der Stand liegt
 
