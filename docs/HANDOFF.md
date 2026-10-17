@@ -5,6 +5,11 @@ und Markus in Thailand. Beide verwenden ihre eigenen ChatGPT-Konten. GitHub
 bewahrt Code und Review; der vorhandene Hostinger-VPS soll später das Studio
 dauerhaft betreiben. Der Heim-PC soll dafür nicht ständig laufen müssen.
 
+
+## Langfristiges Produktbild (separat vom heutigen Status)
+
+Workspace ist die universelle Arbeitsplattform für Menschen und Agenten; Studio ist der erste Bereich. Freiwilliges Peer-Compute und Monetarisierung sind spätere, sicherheitskritische Entwicklungsphasen. Vor Architektur-/Produktarbeit [Produktvision](PRODUCT_VISION.md), [Zielarchitektur](ARCHITECTURE.md), [Roadmap](ROADMAP.md) und [Integrationsgrenzen](INTEGRATION_BOUNDARIES.md) lesen. **Nur** [STATUS.json](STATUS.json) enthält den aktuellen technischen Fähigkeitsnachweis. Plattform-Repo und dessen Runtime bleiben unabhängig.
+
 ## Wo der Stand liegt
 
 Die zentrale Codebasis ist das private Repository

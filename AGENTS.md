@@ -23,6 +23,13 @@ Kundenanwendung/Marketing-Website sind ein getrenntes Repository.
   im Übergabebericht nennen. Keine aktuellen Commit-SHAs in dauerhaftem Text pflegen;
   tatsächlichen Stand mit Git ermitteln.
 
+
+## Produktbild und sichere Entwicklung
+
+SCHMAQQ Workspace ist die übergeordnete, langfristig universelle Kollaborationsplattform; Studio ist der erste Fachbereich für Softwareentwicklung. **Nicht** als reine ChatGPT-App oder schon existierendes öffentliches Compute-Netzwerk darstellen. Verbindliche R1-Vision/Zielarchitektur stehen in `docs/PRODUCT_VISION.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md` und `docs/INTEGRATION_BOUNDARIES.md`. Deren Zukunftsziele nicht als derzeit implementiert ausgeben; für den Ist-Zustand ist `docs/STATUS.json` maßgeblich. Entwürfe/ADRs gelten erst nach Owner-Review/Merge.
+
+Keine fremden Aufträge auf private Runner erweitern, keine externe Selbstregistrierung oder providerübergreifende Kontonutzung ohne separate Security-, Consent- und Berechtigungsprüfung. Workspace-, Agenten-, Runner- und Provideridentitäten trennen. NetzKontor-Integration nur über eigenen, gesondert geprüften Plattform-PR.
+
 ## Grenzen
 
 - `selfhost/` + `studio/` sind die tatsächliche Node/SQLite-Anwendung.
