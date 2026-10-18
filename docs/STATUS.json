@@ -208,16 +208,21 @@
   },
   "execution_plan": {
     "document": "docs/ROADMAP.md",
-    "active_package": "P3",
-    "next_action": "Review verified audit fixes; improve direct PR handoff and runner capability guidance. Real second-person/Mac pilot remains pending, not a blocker for these changes.",
+    "active_package": "S1_planned_not_implemented",
+    "next_action": "Implement the first bounded S1 slice from ROADMAP: connect task, own workspace and review evidence in the project overview; inspect actual code-state binding before claiming current tests. This turn records the plan only.",
     "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
-    "deployment_authorized": true,
-    "feature_expansion": "deferred until actual two-person pilot acceptance",
+    "deployment_authorized": false,
+    "feature_expansion": "Follow S1-S5 in ROADMAP; reuse existing implementation. Additional providers, hosted IDE platforms and public compute remain deferred.",
     "completed_packages": [
       "P1: candidate review and exact-source Linux/runtime/synthetic upgrade verification PASS",
       "P2: operator reports final backup/restore and Studio-only switch PASS; direct manifest, existing owner session/UI, runner and retained preview checks PASS"
     ],
-    "deployment_authorization_scope": "Only completed operator switch of delivered 4a0092b artifact; future changes need separate approval"
+    "deployment_authorization_scope": "Historical authorization covered only the completed operator switch; future deployment remains separately authorized.",
+    "plan_updated_on": "2026-10-18",
+    "plan_state": "documented; no application changes in planning step",
+    "sequence": ["S1 coherent change overview", "S2 project start and personal readiness", "S3 repository-scoped GitHub integration", "S4 isolated own-infrastructure checks", "S5 actual two-person acceptance and controlled release"],
+    "ci_policy": "Personal runners first; bounded isolated Linux worker later. No GitHub-hosted Actions by default; choose one CI implementation after evaluation.",
+    "external_dependencies": "Actual Markus/macOS acceptance, GitHub App registration/installation and VPS worker setup are separate gates, not blockers for local S1/S2 work."
   },
   "candidate_review": {
     "source_sha": "57c274c52fb4fd67ca9f9dc857a4456962806a18",

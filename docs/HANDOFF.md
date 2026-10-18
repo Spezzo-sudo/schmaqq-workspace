@@ -10,6 +10,22 @@ den geprüften Kollaborationskandidaten. Der Heim-PC soll dafür nicht ständig 
 
 Workspace ist die universelle Arbeitsplattform für Menschen und Agenten; Studio ist der erste Bereich. Freiwilliges Peer-Compute und Monetarisierung sind spätere, sicherheitskritische Entwicklungsphasen. Vor Architektur-/Produktarbeit [Produktvision](PRODUCT_VISION.md), [Zielarchitektur](ARCHITECTURE.md), [Roadmap](ROADMAP.md) und [Integrationsgrenzen](INTEGRATION_BOUNDARIES.md) lesen. **Nur** [STATUS.json](STATUS.json) enthält den aktuellen technischen Fähigkeitsnachweis. Plattform-Repo und dessen Runtime bleiben unabhängig.
 
+## Aktiver Umsetzungsplan vom 18.10.2026
+
+Owner wünscht zuerst einen klaren, integrierten Plan, danach schrittweise Codearbeit.
+Maßgeblich ist jetzt die S1–S5-Reihenfolge in [ROADMAP.md](ROADMAP.md):
+Änderungsansicht → Projektstart/Bereitschaft → GitHub-Verknüpfung → isolierte
+Linux-Prüfung → echter Zwei-Personen-Pilot und kontrollierter Release.
+Die nachfolgenden älteren P-/R-Prioritäten sind Hintergrund, keine parallelen Aufträge.
+
+Nächste Codeaufgabe: erster begrenzter Teil von S1. Bestehende Projektübersicht,
+Aufgaben, Kopien und Prüfstände zusammenführen; Codezustandsbindung prüfen und
+fehlende Belege sichtbar lassen. Keine vorweggenommenen grünen Tests für geänderte
+Dateien. Kein GitHub-App-/CI-/Deploymentumbau im selben Paket. S1/S2 funktionieren
+lokal ohne Markus; tatsächlicher Mac-/Fernpilot bleibt ein eigener Nachweis.
+Der Planungsschritt ändert nur Dokumentation, keine Anwendung. Kein neuer
+unveränderter Volltest erforderlich. Produktvision und bestehende Daten erhalten.
+
 ## Aktueller Abschluss der begrenzten technischen Abnahme
 
 Die Matrix ist eingeordnet: docs/evidence/OVERNIGHT_ACCEPTANCE.md. Vier lokale

@@ -1,6 +1,6 @@
 # SCHMAQQ Workspace – Gesamtplan und nächste Arbeit
 
-_Planungsstand 17.10.2026. Dieser Plan ordnet die Arbeit; der technische
+_Planungsstand 18.10.2026. Dieser Plan ordnet die Arbeit; der technische
 Iststand mit Nachweisen bleibt in [STATUS.json](STATUS.json). Keine
 Deployment-, Merge- oder Providerfreigabe durch diesen Text._
 
@@ -23,13 +23,123 @@ ständige Agentenerklärung verständlich sein.
 
 ## Aktuelle Arbeitspriorität nach Owner-Steuerung
 
-Die persönliche Strecke wurde tatsächlich bis zum Draft-PR ausgeführt: echter
-Codex-Auftrag, 3/3 Tests, neue Vorschau, Git-Push; PR separat per GitHub-Connector.
-Nachweis: [vollständiger Pilotlauf](evidence/P3_FULL_FLOW_20261017.md).
-Jetzt die beobachteten Lücken schließen: PR-Übergang aus Studio und verständliche
-lokale Freigabeführung; CI gesondert begrenzt einrichten. Kein neues Deployment
-oder Merge dadurch freigegeben. Zweite Person bleibt spätere Abnahme, blockiert
-diese konkrete Produktarbeit aber nicht.
+Maßgeblich ist die folgende S-Reihenfolge. Die älteren P-/R-Pakete weiter unten
+bleiben Betriebs- und Pilotvorgeschichte, keine konkurrierenden aktiven Aufträge.
+Der Owner möchte zunächst diesen konkreten Plan, danach dessen schrittweise
+Integration. Dieser Dokumentationsschritt implementiert noch keine Funktionen.
+
+Die persönliche Strecke bis Draft-PR und der erneute Live-Browserlauf sind
+belegt: [Pilotlauf](evidence/P3_FULL_FLOW_20261017.md),
+[Abnahme einschließlich Retest](evidence/OVERNIGHT_ACCEPTANCE.md). Live wurden
+zuletzt 3/3 Tests, neue Vorschau und Prüfstand bestätigt. Zwei getrennte Konten,
+Kopien und Fremdfreigabe sind lokal synthetisch belegt; live ist nur Marco sichtbar.
+Vier geprüfte Fehlerkorrekturen liegen im Kandidaten, noch nicht live.
+
+## Umsetzungsplan: verständlicher gemeinsamer Entwicklungsablauf
+
+### Fertiges Nutzererlebnis
+
+Marco oder Markus öffnet ein Projekt und sieht Ziel, Zuständigkeiten, nächste
+Aktion und die letzten Änderungen. Jeder Vorgang erklärt **was, warum, von wem,
+wo ausgeführt, wie geprüft und wo verfügbar**. Ein typischer Ablauf lautet:
+
+`Aufgabe → eigene Kopie → Änderung → Tests/Vorschau → Teamprüfung → PR → Merge → Live`
+
+Diese Zustände werden getrennt angezeigt: lokal geändert, lokal committed,
+auf GitHub veröffentlicht, PR offen, zusammengeführt, deployed. Merge ist kein
+Deploymentnachweis. Ohne belastbaren Nachweis steht dort „unbekannt“ oder
+„noch nicht geprüft“. Eine Aufgabe kann mehrere Kopien und PRs haben; keine
+erzwungene Eins-zu-eins-Zuordnung. Planung/Wissen bleiben auch ohne Git nutzbar.
+
+### Datenverantwortung und Wiederverwendung
+
+| Information | Maßgebliche Quelle / geplante Darstellung |
+| --- | --- |
+| Veröffentlichter Code, Issues, PRs, GitHub-Reviews und Merge | GitHub; Studio speichert stabile Verweise und einen gekennzeichneten synchronisierten Stand |
+| Noch unverknüpfte Aufgabe, Diskussion, Entwurf, eigene Kopie, Runnerjob | Studio beziehungsweise persönlicher Runner; bestehende Aufgaben bleiben erhalten |
+| Verknüpfte Aufgabe | GitHub-Issue ist maßgeblich für synchronisierte Issue-Felder; lokale Zuweisung/Ausführung und Studio-Diskussion bleiben eigene Felder. Konkrete Feldzuordnung vor S3 festlegen; keine stille Überschreibung oder doppelte Kommentarspiegelung |
+| Tests, Vorschau und Freigabe | Unveränderlicher Ausführungsnachweis mit Quelle und Codezustand; lokale Studio-Freigabe getrennt von GitHub-Review |
+| Verständliche Beschreibung der Änderung | Verfassertext mit Kategorie Funktion/Fehlerbehebung/Wartung und optionaler Aufgaben-/Issue-Verknüpfung. KI-Vorschläge optional und bestätigungspflichtig; aus einem Diff nicht automatisch „Issue gelöst“ ableiten |
+| Live-Status | Bestätigter Deploymentnachweis mit Umgebung/Version, sonst unbekannt; zunächst nur belegte Links anzeigen |
+
+Bestehendes React/Node/SQLite-Studio erweitern. `app/collaboration-board.tsx`,
+`development.tsx`, `code-review.tsx` sowie bestehende Jobs, Workspaces und Kommentare
+weiterverwenden. Ergänzungen additiv migrieren; Altstände ohne neue Metadaten
+ehrlich kennzeichnen. Keine Kopie von GitHub und keine neue Ausführungsplattform.
+
+### Pakete mit verbindlicher Abnahme
+
+| Reihenfolge | Ergebnis und konkrete Arbeit | Fertigkriterium / Abhängigkeit |
+| --- | --- | --- |
+| **S1 – Zusammenhängende Änderungsansicht** | Projektbezogene Vorgänge aus Aufgabe, Kopie, Jobs und Prüfstand bilden. Beschreibung/Kategorie, Person, Herkunft, Codezustand, Tests, Vorschau und nächster Schritt zusammen anzeigen. Reload-Projektauswahl erhalten. Erst mit vorhandenen Daten, ohne GitHub-Client. | Zwei getrennte Konten erkennen Zuständigkeit und eigenen nächsten Schritt. Fehlgeschlagene/abgebrochene Checks erscheinen nicht grün. Fehlende Belege und lokale/veröffentlichte Zustände unterscheidbar. Neue Dateiänderung macht vorherige Tests/Vorschau als nicht mehr aktuell kenntlich. Desktop/Mobil im echten Browser geprüft. |
+| **S2 – Projektstart und persönliche Bereitschaft** | Bestehendes Repo verbinden oder aus einer kleinen geprüften Vorlage starten. Projektmetadaten, Remote/Base, Test-/Previewbefehle und Runnerprofil abstimmen; kein beliebiges Kommando aus fremden Templates automatisch ausführen. Pro Person Online/Git/Projektfreigaben/KI getrennt erklären. | Bestehendes Repo ohne Überschreiben angebunden; neues synthetisches Projekt mit eigener Kopie nutzbar. Offline-, fehlende Rechte- und fehlende KI-Anmeldung führen zu konkreten nächsten Schritten. Ohne KI nutzbar. Lokaler Start funktioniert vor externer Repoanlage; letztere erst mit S3-Zugriff. |
+| **S3 – GitHub-Verknüpfung und PR-Übergang** | Zunächst validierter Vergleichs-/PR-Link nach veröffentlichtem Branch; anschließend eng berechtigte GitHub App für gewählte Repos. Issue/PR/Commit-Verweise, explizite PR-Erstellung, signierte Webhooks und lokaler Lesestand. Feldzuordnung aus obiger Tabelle konkretisieren. | Vorhandener PR wird wiedergefunden, kein Duplikat erstellt. Fremde Repos/Installationen abgewiesen. Doppelte Events wirkungslos; verpasste Events durch begrenzten Abgleich korrigierbar. API-Limit/Verbindungsfehler zeigen letzten Sync statt falschem Erfolg. Registrierung/Installation benötigt separate persönliche Freigabe; lokale Vertragsprüfungen blockieren daran nicht. |
+| **S4 – Zentrale Linux-Prüfung** | Vorhandene Prüfbefehle in einem reproduzierbaren, isolierten Worker ausführen; lokaler schneller Check bleibt. Woodpecker als vorhandene CI-Komponente gegen einfachen vorhandenen Runnerbetrieb bewerten, dann genau eine Lösung wählen. Joblog/Resultat im Studio, optional GitHub-Check. | Ein synthetischer Commit läuft mit tatsächlichem Erfolg und absichtlichem Fehler. Nachweis enthält Commit, Umgebung, Befehl und Ergebnis. Neue Version entwertet alte Freigabe; Zusammenführen gegen aktualisierten Zielbranch wird in temporärer Kopie geprüft. Timeout/Abbruch/Bereinigung funktionieren. VPS-Installation separat freigeben. |
+| **S5 – Zwei-Personen-Abnahme und kontrollierter Release** | Marco/Markus, eigene Studio-/GitHub-Konten, Windows/Mac, zwei parallele Aufgaben, Rückfragen, Tests, Vorschauen, gegenseitige Prüfung und PR. Bewusste Überschneidung gemeinsam auflösen. | Beide wiederholen Ablauf mit integrierter Führung; keine gemeinsamen Credentials. Änderungen nach Review verlangen neue Prüfung. Daten und Entwürfe bleiben erhalten. Konkreter geprüfter Kandidat, Backup/Restore und Rückweg vor separat freigegebenem Dienstwechsel. Kein automatischer Merge/Deploy. |
+
+S1/S2 können ohne Markus und ohne neue Providerregistrierung umgesetzt werden.
+Markus' persönlicher Einstieg wird vorbereitet und sobald verfügbar geprüft;
+sein Fehlen blockiert S5, nicht die davor liegende Engineering-Arbeit.
+Die vorhandenen vier Sicherheits-/Bedienkorrekturen gehören vor einer nächsten
+Freigabe in den geprüften Kandidaten. Dringende separate Fehlerbehebung bleibt
+möglich; kein pauschales Warten auf alle S-Pakete für einen nötigen Patch.
+
+### Codezustand statt irreführender grüner Haken
+
+- Reiner Branchname reicht nicht als Ergebnisbindung. Für saubere Stände Commit,
+  für uncommittete Änderungen zusätzlich eine verlässliche Inhaltsrevision nutzen;
+  andernfalls Ergebnis als nicht eindeutig zuordenbar kennzeichnen.
+- Änderungen außerhalb des Studio-Editors ebenfalls vor Folgeaktionen erkennen.
+  Alte Testergebnisse nicht löschen, sondern als historischen Stand anzeigen.
+- Teststatus, Studio-Review, GitHub-Review, Merge und Deployment getrennt führen.
+  Erfolgreiche persönliche Checks sind nicht automatisch unabhängige CI.
+- Bei neuem Zielbranchstand reicht ein zuvor grüner Featurebranch nicht: in
+  temporärer Kopie kombinieren/prüfen, Konflikt anhalten, Freigabe an den geprüften
+  Stand binden. Kein Schreiben in produktive Checkout-Verzeichnisse.
+
+### Ressourcen, Sicherheit und GitHub-Kontingente
+
+- Tests auf persönlichen Rechnern oder eigener isolierter Linux-Ausführung;
+  keine GitHub-gehosteten Actions als Standard. Keine KI-Aufträge für feste Tests.
+- Webhooks für relevante Änderungen, eng begrenzter Abgleich als Rückfallebene;
+  lokale gecachte Dashboardansicht. Deduplizierung pro Lieferung/Job/Codezustand,
+  Backoff/Retry-After beachten. Manuelle Wiederholung muss erkennbar bleiben.
+- Vor VPS-Ausführung CPU/RAM/Speicher prüfen. Zunächst höchstens ein zentraler
+  Testjob gleichzeitig, begrenzte Laufzeit/Logs/Artefakte und Bereinigung; konkrete
+  Werte nach Bestandsaufnahme. Kein neues Infrastrukturpaket auf Verdacht.
+- Unprivilegierter isolierter Worker ohne Produktionspfade/-Secrets und ohne
+  frei nutzbaren Host-Docker-Socket. Containerbetrieb allein ist keine vollständige
+  Sicherheitsgrenze. Berechtigungen und erlaubte Repos explizit kontrollieren.
+- Studio-Login, GitHub-Repositoryrechte und persönliche KI-Berechtigung bleiben
+  getrennt. Keine gemeinsame oder weiterverkaufte Abo-Nutzung.
+
+### Unmittelbar nächste Codeänderung
+
+**S1, erster Teil:** Bestehende Projektübersicht um eine getestete Zuordnung von
+Aufgabe, eigener Kopie und letztem Prüfstand erweitern. Zunächst klären, welche
+vorhandenen Ergebnisfelder die Zustandsbindung wirklich tragen; fehlende Belege
+sichtbar lassen. Danach UI und gezielte Regressionen, vollständiger Check vor
+Codeübergabe. Kein GitHub-App-, CI- oder Deploymentumbau im selben Änderungspaket.
+
+Der Plan ist fertig, wenn jede Umsetzung einen beobachtbaren Nutzen, Scope und
+Abnahmekriterium aus dieser Reihenfolge hat. Ein Paket gilt erst mit echten
+Belegen als implementiert; STATUS.json erhält keine vorweggenommenen Fähigkeiten.
+
+### Recherchierte Vorbilder (18.10.2026)
+
+- [Backstage-Katalog](https://backstage.io/docs/features/software-catalog/) und
+  [Vorlagen](https://backstage.io/docs/features/software-templates/): Zuständigkeit,
+  zentraler Überblick, geführter Start. Konzept übernehmen, kein Backstage-Rollout.
+- [Coder](https://coder.com/docs/user-guides): eigene reproduzierbare Umgebungen.
+  Spätere Option für gehostete IDEs; kein Ersatz der funktionierenden Runner jetzt.
+- [Woodpecker](https://woodpecker-ci.org/docs/intro): bestehende selbst gehostete CI
+  für S4 evaluieren; keine parallelen CI-Systeme installieren.
+- [GitHub Apps](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/about-creating-github-apps),
+  [Webhooks](https://docs.github.com/en/webhooks/using-webhooks/best-practices-for-using-webhooks),
+  [Checks](https://docs.github.com/en/rest/checks): begrenzter Repozugriff und
+  ereignisbasierte Integration statt ständiger Abfragen.
+- [Zusammengeführten Stand prüfen](https://docs.gitlab.com/ci/pipelines/merged_results_pipelines/):
+  fachliches Vorbild, keine GitLab-Migration oder Annahme über GitHub-Free-Regeln.
 
 ## So gehören die Teile zusammen
 
@@ -78,7 +188,7 @@ Live-Befund: [LIVE_PREFLIGHT_20261017.md](LIVE_PREFLIGHT_20261017.md).
 Der VPS hat laut dieser Momentaufnahme etwa 28,5 GiB frei. Zusätzliche
 Infrastruktur ist für den nächsten Pilotstand nicht begründet.
 
-## Reihenfolge mit klarer Abnahme
+## Frühere P-Reihenfolge und erhaltene Nachweise
 
 | Paket | Konkretes Ergebnis | Erledigt, wenn | Wer / Abhängigkeit |
 | --- | --- | --- | --- |
@@ -94,14 +204,14 @@ Infrastruktur ist für den nächsten Pilotstand nicht begründet.
 geprüften Quellstand: [Evidence](evidence/P1_CANDIDATE_LINUX_20261017.md).
 **P2 abgeschlossen:** Autorisierter Betreiberwechsel und direkte Nachprüfung
 [belegt](evidence/P2_SWITCH_ACCEPTANCE_20261017.md).
-**Jetzt aktiv: P3 – Markus auf macOS und gemeinsamen Testremote verbinden.**
+**P3 noch offen: Markus auf macOS und gemeinsamen Testremote verbinden.**
 [Einstiegsplan für den Mac](MARKUS_MAC_ONBOARDING.md). Privater gemeinsamer
 Testremote und zwei echte Studio-Aufgaben sind inzwischen
 [angelegt](evidence/P3_PILOT_SETUP_20261017.md); persönliche Zugänge und Runner
 für dieses neue Projekt bleiben offen.
 Der lesende Live-Audit muss nicht
 wiederholt werden, solange sich Betrieb oder zeitlicher Kontext nicht wesentlich
-ändern. P4–P7 sind geordnetes Backlog. Persönliche Anmeldungen werden erst dann
+ändern. P4–P7 bleiben als Hintergrund erhalten; aktive S-Reihenfolge siehe oben. Persönliche Anmeldungen werden erst dann
 angefragt, wenn der jeweilige Schritt bereitsteht.
 
 Für P2 gilt der konkrete Ablauf einschließlich Rückweg aus dem Live-Preflight.
@@ -131,7 +241,8 @@ einem gemeinsamen Dokument ist kein aktuelles Produktversprechen.
 - Ein aktives Paket und darin eine konkrete nächste Aufgabe. Vor Start stehen
   Nutzen, betroffene Teile und beobachtbares Fertigkriterium fest.
 - Kleine, prüfbare Änderungen auf einem eigenen Branch. Kein neuer Prototyp,
-  kein Architekturumbau nebenbei und keine weitere Dashboardfunktion vor P4.
+  kein Architekturumbau nebenbei. Die oben geplante Änderungsansicht schließt
+  gezielt die beobachtete Lücke im gemeinsamen Ablauf.
 - Passende Tests für geändertes Verhalten. Vor einer Codeübergabe vollständiger
   Check; sichtbare UI-Prüfung bei Oberflächenänderungen. Vor einem Release
   zusätzlicher Linux-/Runtime-Nachweis. Reine Dokumentpflege benötigt keinen
