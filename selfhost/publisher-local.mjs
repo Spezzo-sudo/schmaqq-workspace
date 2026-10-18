@@ -144,6 +144,10 @@ function validateQuarantine(fixture,bundle,base,commit,featureRef){
  */
 export function publishLocalBundle({binding,request,fixtureRoot,bundlePath,onCheckpoint}){
  const approved=validatePublisherRequest(binding,request),fixture=verifyFixture(fixtureRoot,binding);
+ const lock=path.join(fixture.root,'publisher-exclusive.lock');
+ try{mkdirSync(lock,{mode:0o700});}
+ catch{deny('Concurrent or interrupted publisher requires operator reconciliation.');}
+ try{
  if(requireGit(fixture,fixture.bare,'rev-parse','--is-bare-repository')!=='true')deny('Not a bare repository.');
  if(requireGit(fixture,fixture.bare,'rev-parse','--show-object-format')!=='sha1')deny('SHA-1 fixture required.');
  const baseRef='refs/heads/'+approved.defaultBranch,featureRef='refs/heads/'+approved.branch;
@@ -180,4 +184,5 @@ export function publishLocalBundle({binding,request,fixtureRoot,bundlePath,onChe
  if(refAt(fixture,baseRef)!==base||refAt(fixture,featureRef)!==approved.commit)deny('Post-update Git references disagree.');
  journalWrite(journal,{status:'complete',requestHash,bundleHash,commit:approved.commit,base,branch:approved.branch},false);
  return Object.freeze({branch:approved.branch,commit:approved.commit,base,created:!journal.record,replayed:!!journal.record,recovered:!!journal.record});
+ }finally{rmSync(lock,{recursive:false,force:true});}
 }
