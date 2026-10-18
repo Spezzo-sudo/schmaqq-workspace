@@ -41,7 +41,7 @@ export function createStudioServer({oidcProvider,githubProvider, publisherFixtur
  function record(author,message){db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(uuid(),author,message,now());}
  const oidcRoute=createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,provider:demoMode?null:oidcProvider});
  const connectionRoute=createConnectionRoutes({db,origin,sessionCookie,user,provider:demoMode?null:githubProvider});
- const publisherHandoffRoute=createPublisherHandoffRoute({fixture:publisherFixture,db,device,readJSON,send:(..._args)=>{throw new Error('Publisher send must be injected per request.');}});
+ const publisherHandoffRoute=createPublisherHandoffRoute({fixture:publisherFixture,db,device,readJSON});
  const server=http.createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');
   const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
