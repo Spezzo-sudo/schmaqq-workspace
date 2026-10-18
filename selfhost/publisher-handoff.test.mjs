@@ -82,14 +82,16 @@ test('reviewed handoff: two identities, owned runner, exact commit, local Git bu
   assert.equal((await upload({...payload,commit:'a'.repeat(40)})).status,409);
   assert.equal((await upload({...payload,branch:'main'})).status,409);
   assert.equal((await upload({...payload,expectedBaseCommit:'b'.repeat(40)})).status,409);
-  assert.equal((await upload({...payload,bundleBase64:'x'.repeat(256)})).status,400);
-  assert.equal((await upload({...payload,bundleBase64:'A'.repeat(7000001)})).status,400); // Exceeds schema limit.
+  // Bundle format/size checks only execute after the independent review gate.
   const myReview=await request('/api/development/reviews',{id:randomUUID(),job:reviewed.job.id,commit:reviewed.result.commit,decision:'approved',body:'Selbstfreigabe'},a.cookie);
   assert.equal(myReview.status,403);
   const decisionId=randomUUID();
   const approved=await request('/api/development/reviews',{id:decisionId,job:reviewed.job.id,commit:reviewed.result.commit,decision:'approved',body:'Geprüft'},b.cookie);
   assert.equal(approved.status,200);
   assert.equal(approved.data.state,'approved');
+  assert.equal((await upload({...payload,bundleBase64:'x'.repeat(256)})).status,400);
+  assert.equal((await upload({...payload,bundleBase64:'A'.repeat(7000001)})).status,400); // Exceeds schema limit.
+
   assert.equal(await git(dir,'--git-dir',bare,'rev-parse','refs/heads/main'),base);
   const first=await upload();
   assert.equal(first.status,200,JSON.stringify(first.data));
