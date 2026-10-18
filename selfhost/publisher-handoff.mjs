@@ -18,8 +18,8 @@ const submission=z.object({
  bundleBase64:z.string().min(136).max(6991000),
 }).strict();
 
-export function createPublisherHandoffRoute({fixture,db,device,readJSON,send}){
- return async function publisherHandoffRoute({route,method,req}){
+export function createPublisherHandoffRoute({fixture,db,device,readJSON}){
+ return async function publisherHandoffRoute({route,method,req,send}){
   if(route!=='/api/runner/publisher-handoff')return false;
   // Disabled even for authenticated users on normal Studio deployments.
   if(!fixture)throw fail(404,'Schnittstelle nicht verfügbar.');
