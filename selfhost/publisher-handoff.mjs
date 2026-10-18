@@ -31,7 +31,7 @@ export function createPublisherHandoffRoute({fixture,db,device,readJSON}){
   // Per-device, process-local abuse throttle. A distributed publisher will need a shared store.
   const now=Date.now(),previous=attempts.get(d.id);
   const bucket=!previous||now-previous.start>=60000?{start:now,count:0}:previous;
-  if(++bucket.count>8)throw fail(429,'Bitte vor der nächsten Übergabe warten.');
+  if(++bucket.count>32)throw fail(429,'Bitte vor der nächsten Übergabe warten.');
   attempts.set(d.id,bucket);
   if(active.has(d.id))throw fail(409,'Eine Übergabe dieses Gerätes läuft bereits.');
   active.add(d.id);
