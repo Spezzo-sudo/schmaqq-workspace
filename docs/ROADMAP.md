@@ -26,7 +26,7 @@ ständige Agentenerklärung verständlich sein.
 Maßgeblich ist die folgende S-Reihenfolge. Die älteren P-/R-Pakete weiter unten
 bleiben Betriebs- und Pilotvorgeschichte, keine konkurrierenden aktiven Aufträge.
 Der Owner hat nach dem Plan die schrittweise Umsetzung beauftragt. Aktuell ist
-der erste begrenzte Teil von S1 im Kandidaten implementiert und lokal geprüft;
+S1 im begrenzten unten beschriebenen Umfang im Kandidaten implementiert und lokal geprüft;
 die übrigen S-Pakete sind damit nicht als erledigt markiert.
 
 Die persönliche Strecke bis Draft-PR und der erneute Live-Browserlauf sind
@@ -114,7 +114,7 @@ möglich; kein pauschales Warten auf alle S-Pakete für einen nötigen Patch.
 - Studio-Login, GitHub-Repositoryrechte und persönliche KI-Berechtigung bleiben
   getrennt. Keine gemeinsame oder weiterverkaufte Abo-Nutzung.
 
-### Unmittelbar nächste Codeänderung
+### Aktueller Abschluss und nächste Codeänderung
 
 **S1, erster Teil lokal umgesetzt:** Die Aufgabenübersicht zeigt pro verknüpfter
 Kopie Tests, Vorschau, Prüfstand, Branch-Veröffentlichung und den nächsten Schritt.
@@ -123,12 +123,21 @@ Bearbeitung sind sichtbar; aktuelle Dateirevision ausdrücklich unbestätigt.
 Nachweis: [S1-Abschnitt im Abnahmebericht](evidence/OVERNIGHT_ACCEPTANCE.md).
 Kein GitHub-App-, CI- oder Deploymentumbau im selben Änderungspaket.
 
-**Als Nächstes innerhalb S1:** Verlässliche Inhaltsrevision für Test-/Previewläufe
-einschließlich externer Änderungen konzipieren und im Runner nachweisen, danach
-bearbeitbare Änderungskategorie/-beschreibung ergänzen. Noch keine automatische
-Issue-Auflösung oder aktuelle Dateifreigabe aus historischen Ergebnissen ableiten.
-S2 startet nach der abgegrenzten S1-Abnahme; echte Provider- und VPS-Eingriffe bleiben
-separat freizugeben.
+**S1 ergänzt und lokal abgenommen:** Tests, statische gebaute Vorschauen und
+Prüfstände tragen nun eine begrenzte Dateirevision. Vor-/Nachabgleich erkennt
+Änderungen während des Laufs; ein eigener Dateiabgleich erkennt auch externe
+Bearbeitung. Das Dashboard vergleicht Ergebnisse mit dem datierten letzten
+Abgleich, nicht mit einer behaupteten dauerhaften Überwachung. Ignorierte Dateien,
+Abhängigkeiten und Umgebung bleiben außerhalb dieses Nachweises; unmessbare,
+instabile oder alte Ergebnisse ohne Revision bleiben unbestätigt.
+Eigene Kopien haben außerdem Änderungstyp und Beschreibung mit Teamansicht und
+optimistischem Revisionsschutz. Server-/Runnerpakete enthalten die neuen Module.
+Keine automatische Issue-Auflösung. Nachweis im Abnahmebericht.
+
+**Als Nächstes S2:** Geführter Projektstart mit bestehendem oder lokal neuem
+Repository und getrennten Bereitschaftszuständen für Git, PC und persönliche KI.
+Vorhandene Registrierung/Runner weiterverwenden. Echte GitHub-App-Installation,
+neue externe Repositories und VPS-Eingriffe erst im jeweiligen freigegebenen Schritt.
 
 Der Plan ist fertig, wenn jede Umsetzung einen beobachtbaren Nutzen, Scope und
 Abnahmekriterium aus dieser Reihenfolge hat. Ein Paket gilt erst mit echten

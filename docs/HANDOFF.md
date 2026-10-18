@@ -25,12 +25,24 @@ Projektauswahl nach Reload erhalten. Vollprüfung 20 PASS, 1 POSIX-SKIP, 0 FAIL,
 TypeScript/Build/Guard PASS; zwei Browserkonten und drei Breiten geprüft.
 Noch nicht deployed. Details im S1-Abschnitt von evidence/OVERNIGHT_ACCEPTANCE.md.
 
-Aktuelle Dateirevision bleibt ausdrücklich unbestätigt: normale Checks tragen nur
-HEAD, Preview kein Inhaltsabbild als Revision. Bekannte spätere Bearbeitungen
-markieren historische Belege; externe Änderungen können nicht live erkannt werden.
-Nächste S1-Arbeit: belastbare Inhaltsrevision im Runner und danach Kategorie/Text
-für die Änderung. Kein GitHub-App-/CI-/Deploymentumbau im selben Paket. S1/S2 können
-lokal ohne Markus fortgesetzt werden; echter Mac-/Fernpilot bleibt eigener Nachweis.
+S1 inzwischen erweitert und lokal abgenommen: source-revision bindet Tests,
+statische Build-Vorschauen und Reviews an versionierte/nicht ignorierte Quelldateien.
+Vor-/Nachabgleich erkennt instabile Läufe. Eigene Aktion Dateistand abgleichen
+verwendet einen Statusjob; Unterschiede zu extern bearbeiteten Dateien werden
+sichtbar. Keine dauerhafte Überwachung, keine Aussage über ignorierte Dependencies
+oder Umgebung. Fallback bei alten Runnern, Links, sensiblen Pfaden oder Größenlimits:
+unbestätigt. Erst aktualisierte Runner liefern neue Nachweise; Live-Runner unverändert.
+
+Änderungstyp und Beschreibung liegen additiv in change_notes. Nur Eigentümer der
+Kopie darf ändern; Stale-Save 409 erhält Entwurf. Team kann lesen. Server-/Runnerpakete
+um neue Abhängigkeiten ergänzt, lokaler Release-Smoke und Paketimport PASS.
+Letzte Vollprüfung: 21 PASS, 1 POSIX-SKIP, 0 FAIL, TypeScript/Build/Guard PASS.
+Zwei Browserkonten, externer Edit/Restore, geteilter Text, Konflikt und drei Breiten
+geprüft. Noch nicht deployed. Details im letzten Abschnitt des Abnahmeberichts.
+
+Nächste Umsetzung S2: geführter Projektstart und persönliche Bereitschaft; vorhandene
+Runner wiederverwenden. Kein GitHub-App-/CI-/Deploymentumbau im selben Paket.
+S2 kann lokal ohne Markus fortgesetzt werden; echter Mac-/Fernpilot bleibt eigener Nachweis.
 
 ## Aktueller Abschluss der begrenzten technischen Abnahme
 

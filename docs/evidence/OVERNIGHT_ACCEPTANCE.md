@@ -141,3 +141,56 @@ overview-final-1440.png. Keine Live-Aufträge oder KI-Aufträge in diesem S1-Lau
 S1 insgesamt bleibt offen: belastbare Inhaltsrevisionen und eigene Änderungsbeschreibung/
 Kategorie folgen. S2–S5 nicht als erledigt ausgeben; keine automatische GitHub-Synchronisierung,
 keine zentralen VPS-Tests und kein Markus-Mac-Nachweis durch diese Änderung.
+
+## S1 – Dateirevision und Änderungsbeschreibung, 18.10.2026
+
+Lokal umgesetzt und abgenommen; keine Produktivänderung. Runner misst HEAD sowie
+Dateinamen/Modus/Inhalt der versionierten und neuen, nicht ignorierten Quelldateien.
+Vor-/Nachmessung für Test, Review und statische gebaute Vorschau. Dateiänderung während
+des Laufs, nicht messbare Eingaben oder alte Resultate ergeben keinen gültigen
+Dateinachweis. Der Server erhält nur Hash/Zeit, keine zusätzlichen Dateiinhalte.
+Dateistand abgleichen startet bewusst einen eigenen Statusjob und stellt auch
+externe Änderungen fest. Es gibt keine kontinuierliche Überwachung und keine
+Aussage über ignorierte Dateien, Dependencies oder Umgebungszustand. Ein passender
+Hash bedeutet Übereinstimmung mit der datierten Momentaufnahme, keine unabhängige CI.
+Laufende Devserver-Vorschauen bleiben ohne statischen Inhaltsnachweis.
+
+Limits: 10000 Dateien, 8 MiB je Datei, 64 MiB insgesamt, begrenzte Git-Ausgaben.
+Links, Hardlinks und sensible/disallowed Pfade werden nicht als Quellen bestätigt.
+Dies ist keine Sandbox für unvertrauenswürdigen Code und keine atomare Filesystem-
+Snapshot-Technologie; eigene vertrauenswürdige Runner bleiben Voraussetzung.
+
+Additive Tabelle change_notes: Kategorie, Text, Revision, Verfasser und Zeit pro
+Kopie. Eigentümer darf schreiben, Team lesen. Stale-Save HTTP 409; Entwurf und
+Warnung bleiben trotz Nachladen erhalten. Beschreibungen sind Verfassertexte,
+keine automatische Issue-Auflösung. Bestehende Daten werden nicht überschrieben.
+
+Verifikation: 22 Tests, davon 21 PASS, 1 Windows-POSIX-SKIP, 0 FAIL; TypeScript,
+Build und Guard PASS. .studio/overnight-audit/verify-s1-revisions-final.log.
+Neuer echter Runner-Test: identischer Snapshot trotz ignorierter Datei, externer
+Edit bei unverändertem Commit, neue/gelöschte Datei, Restore, statische Vorschau
+mit passendem Quellstand, während Check veränderte Datei, sensible Eingaben,
+Hardlink und Größenlimit. API-Regression: Eigentümer/Origin, Stale-Save und Teamlesen;
+Projection vergleicht gleiche/abweichende/fehlende Revisionen und bewahrt Legacy-Fallback.
+
+Sichtbarer Playwright/Brave mit zwei synthetischen Konten und getrennten Sitzungen:
+Beschreibung geteilt, fremde Bearbeitung nicht angeboten; echter Test und statische
+Vorschau passen zum Abgleich. Direkter externer Edit wird nach Abgleich als abweichend
+angezeigt; Datei bytegleich zurückgesetzt, Zuordnung stimmt wieder. Zweiter Tab
+speichert neuere Beschreibung; alter Entwurf wird abgewiesen und bleibt nach
+mehr als einem Polling-Intervall erhalten. Beschreibung über lokalen Serverneustart
+erhalten. 390/1024/1440px ohne Seitenüberlauf, keine erfassten JS-Pageerrors.
+Belege ignoriert unter .studio/s1-revision-acceptance/: result.json,
+external-edit-detected.png, description-conflict.png, overview-390-completed.png.
+
+Zusätzliche Paketprüfung: fehlende neue Abhängigkeiten in expliziten Server-/
+Runner-Packlisten ergänzt. Lokaler Runtime-Manifest/Auth/Schema/Backup-Smoke PASS
+(release-smoke.log). Persönliches Mac-Runnerpaket aus sauberem Quellstand gebaut,
+Module importiert PASS, kein Runner gestartet oder persönliche Konfiguration gelesen.
+Keine Aussage über echten Mac-Betrieb. Bereits aktive persönliche Runner werden
+nicht automatisch ersetzt; alte Runner liefern zunächst unbestätigte Quellen.
+Keine KI-Jobs, GitHub Actions, Merges, Deployments oder neuen Live-Konten.
+
+S1 ist in diesem begrenzten Umfang lokal abgenommen. Nächste Arbeit S2: Projektstart
+und Bereitschaft. GitHub-App/Issue-Sync, zentrale Linux-Worker und echter Markus-Pilot
+bleiben spätere Pakete; Rollout bleibt separat freizugeben.
