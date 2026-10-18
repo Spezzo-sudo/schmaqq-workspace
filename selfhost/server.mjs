@@ -73,7 +73,23 @@ export function createStudioServer({oidcProvider,githubProvider, demoMode=false,
     transaction(db,()=>{if(db.prepare('SELECT id FROM members LIMIT 1').get())throw fail(409,'Workspace bereits eingerichtet.');db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(memberId,v.name,v.email.toLowerCase(),hash,'owner',now());db.prepare("DELETE FROM workspace_meta WHERE key='bootstrap'").run();});session(res,memberId);send({ok:true});return;
    }
    if(route==='/api/auth/logout'&&method==='POST'){const t=req.headers.cookie?.match(new RegExp('(?:^|;\\s*)'+sessionCookie+'=([\\w-]+)'))?.[1];if(t)db.prepare('DELETE FROM sessions WHERE hash=?').run(digest(t));res.setHeader('Set-Cookie',`${sessionCookie}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`);send({ok:true});return;}
-   if(route==='/api/invites'&&method==='POST'){const m=user(req);if(m.role!=='owner')throw fail(403,'Nur der Workspace-Eigentümer kann einladen.');const v=parse(z.object({email:z.string().email().max(200)}),await readJSON(req));send({link:`${origin}/?invite=${createInvite(db,v.email)}`});return;}
+   if(route==='/api/invites'&&method==='POST'){const m=user(req);if(!['owner','admin'].includes(m.role))throw fail(403,'Nur Workspace-Administratoren können einladen.');const v=parse(z.object({email:z.string().email().max(200)}),await readJSON(req));send({link:`${origin}/?invite=${createInvite(db,v.email)}`});return;}
+   if(route==='/api/admin/members'&&method==='POST'){
+    const m=user(req);
+    if(!['owner','admin'].includes(m.role))throw fail(403,'Nur Workspace-Administratoren können Mitglieder verwalten.');
+    const v=parse(z.object({member:id,action:z.literal('promote-admin')}),await readJSON(req));
+    if(v.member===m.id)throw fail(403,'Die eigene Rolle kann hier nicht geändert werden.');
+    const target=db.prepare('SELECT id,role FROM members WHERE id=?').get(v.member);
+    if(!target)throw fail(404,'Mitglied fehlt.');
+    if(target.role!=='member')throw fail(409,'Nur bestehende Mitglieder können zu Co-Administratoren ernannt werden.');
+    const result=transaction(db,()=>{
+     const change=db.prepare("UPDATE members SET role='admin' WHERE id=? AND role='member'").run(v.member);
+     if(!change.changes)throw fail(409,'Mitglied wurde zwischenzeitlich geändert.');
+     record(m.id,'Co-Administrator ernannt');
+     return {ok:true};
+    });
+    send(result);return;
+   }
    if(route==='/api/runner/poll'&&method==='POST'){
     const d=device(req);db.prepare('UPDATE devices SET seen=? WHERE id=?').run(now(),d.id);
     // A lost acknowledgement must never execute a code job a second time.
