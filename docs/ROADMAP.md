@@ -26,8 +26,10 @@ ständige Agentenerklärung verständlich sein.
 Maßgeblich ist die folgende S-Reihenfolge. Die älteren P-/R-Pakete weiter unten
 bleiben Betriebs- und Pilotvorgeschichte, keine konkurrierenden aktiven Aufträge.
 Der Owner hat nach dem Plan die schrittweise Umsetzung beauftragt. Aktuell ist
-S1 im begrenzten unten beschriebenen Umfang im Kandidaten implementiert und lokal geprüft;
-die übrigen S-Pakete sind damit nicht als erledigt markiert.
+S1 und ein begrenzter S2-Projektstart im Kandidaten implementiert und lokal geprüft.
+S2 nutzt einen privaten Einrichtungsplan und einmaligen lokalen Helfer; ein signierter
+Ein-Klick-Installer und ein externes gemeinsames Remote für neue Startprojekte fehlen.
+S3–S5 bleiben offen. Nachweis im S2-Abschnitt der technischen Abnahme.
 
 Die persönliche Strecke bis Draft-PR und der erneute Live-Browserlauf sind
 belegt: [Pilotlauf](evidence/P3_FULL_FLOW_20261017.md),

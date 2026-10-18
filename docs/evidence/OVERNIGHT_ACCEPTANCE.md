@@ -194,3 +194,69 @@ Keine KI-Jobs, GitHub Actions, Merges, Deployments oder neuen Live-Konten.
 S1 ist in diesem begrenzten Umfang lokal abgenommen. Nächste Arbeit S2: Projektstart
 und Bereitschaft. GitHub-App/Issue-Sync, zentrale Linux-Worker und echter Markus-Pilot
 bleiben spätere Pakete; Rollout bleibt separat freizugeben.
+
+
+## S2 – Geführter Projektstart und persönliche Bereitschaft, 18.10.2026
+
+Status: **PASS im beschriebenen lokalen Umfang; nicht deployed.** Eigener Branch
+feat/studio-project-start auf dem vorhandenen Kandidaten; keine Änderung an main
+oder NetzKontor. S3–S5 bleiben eigenständige Pakete.
+
+Implementiert: Neuer Projektstart erfasst Ziel und Wahl zwischen vorhandenem Repo
+und neuem lokalem Startprojekt. Die Metadatenanlage ist idempotent (gleiche Anfrage
+kein doppeltes Projekt, widersprüchliche Wiederholung 409). Lokale Pfade/Befehle
+bleiben im privaten Download und werden nicht zum Projektanlage-Endpunkt gesendet.
+Ein lokaler Helfer prüft den bestehenden Git-Stamm/origin oder erstellt exklusiv
+einen neuen Ordner mit Repository, lokalem Bare-Remote, Startseite, echtem Test
+und statischem Build. Keine Paketinstallation, externes Repo oder Provideranlage.
+Bekannte eigene Test-/Buildbefehle werden erst durch spätere Runnerjobs ausgeführt.
+
+Zugang und vorhandene Projektfreigaben bleiben erhalten; private Sicherung vor
+atomarem Profilersatz, vorhandene Projektzuordnung und bestehender Zielordner
+werden nicht überschrieben. Neue Projektfreigabe: KI OFF, Publish OFF. Temporäre
+Profile/Sicherungen ebenfalls private.json; POSIX 0600, Windows erbt Ordner-ACL.
+Keine Sandbox oder vollständiger Sicherheits-Audit. Additive Tabellen
+project_starts und runner_project_state; alte Projekt-/Job-/Gerätdaten erhalten.
+
+Bereitschaft meldet getrennt eigenen PC, aktuelle Projektfreigabe, datierten
+Git-Lesecheck, persönliche Codex-Anmeldung und lokale Veröffentlichungserlaubnis.
+Runnerberichte enthalten nur Projekt-IDs und Fähigkeiten, keine Pfade/Befehle.
+Fremde Runnerberichte nicht lesbar; altes Meldeformat ohne neue Felder bleibt
+unbestätigt statt grün. Lokale Sperren bleiben im Runner maßgeblich. Bekannte
+Publish-Sperre deaktiviert den Button; Codex ohne eigene aktuelle Freigabe gesperrt.
+
+| Prüfung | Ergebnis / konkreter Beleg |
+| --- | --- |
+| Vollprüfung aktueller Source | PASS: 24 Tests, 23 bestanden, 1 POSIX-SKIP unter Windows, 0 Fehler; TypeScript, Build und Source Guard PASS. .studio/overnight-audit/verify-s2-final.log |
+| API / Zugriff / Wiederholung | PASS: keine Anmeldung 401, falsche Origin 403, idempotente Anlage, Konflikt 409, getrennte eigene/fremde Berichte, Legacy-Fallback. selfhost/project-start.test.mjs |
+| Helfer / bestehendes Repo | PASS: Registrierung und andere Freigaben byte-/inhaltserhalten, Sicherung, vorhandenes Ziel/Freigabe abgewiesen, falsches Studio und Nicht-Git abgewiesen, Vorschau außerhalb Kopie abgewiesen, bestehender Git-Stamm mit Vorschau angebunden. Derselbe Test |
+| Neuer echter Workflow | PASS: sichtbarer eigener Playwright/Brave, synthetisches Konto; Projekt über UI angelegt, Plan heruntergeladen, auf vorhandenen Fixture-Runner angewandt, gleicher Zugang nach Neustart, Git-Lesecheck, echte Arbeitskopie, 1/1 node:test, statische Vorschau |
+| Editor und neuer Stand | PASS: site/index.html im Studio gespeichert, erneut 1/1 Test, neue Vorschau zeigt „Gemeinsam startklar“. Keine Modellaufträge |
+| Bestehendes Repo im Assistenten | PASS: Test-/Previewargumente im Download, ungültiger relativer Ausgabeordner bereits im Formular abgewiesen |
+| Tatsächliche Sperren im UI | PASS: Codex-Start trotz Text deaktiviert, Publish gesperrt mit Erklärung; Legacy-Bericht bei ausgewähltem verbundenem PC bleibt unbestätigt |
+| Responsive Oberfläche | PASS: 390, 1024, 1440px ohne Seitenüberlauf; Mobilassistent scrollbar, visuell kein überlagerter Editor/Dateibaum. Screenshots s2-project-wizard-390.png, s2-ready-390/1024/1440.png |
+| Ausgepacktes Serverpaket | PASS: alle 702 Manifestdateien gehasht, Anmeldung, neuer Projektendpunkt, additive Tabellen/readiness und Frontend aus Archiv. .studio/overnight-audit/s2-release-smoke.log |
+
+Browserzusammenfassung: .studio/overnight-audit/s2-browser-result.json. Weitere
+Screenshots im selben ignorierten Ordner: s2-before-setup.png, s2-legacy-readiness.png
+und s2-real-preview.png (letzteres vor dem späteren Textedit). Private Konfigurationen,
+Downloads, Datenbanken und rohe Vorschau-URLs nicht versioniert. Der eingebettete
+Runner-Integrationstest entfernt ausschließlich im Testharness NODE_TEST_CONTEXT
+vor dem Kind-Testprozess und stellt es danach wieder her; ein echter Runner erbt
+diesen node:test-Sentinel nicht. Dadurch wird ein übersprungener rekursiver Test
+nicht irrtümlich als erfolgreicher Projektcheck gewertet.
+
+Verbleibende Lücken: **Einmaliger lokaler Helferbefehl und Runner-Neustart bleiben
+erforderlich**, kein signierter Ein-Klick-Installer. Eingeschränkter Pilotstarter
+akzeptiert bewusst kein Mehrprojektprofil; ergänztes Profil mit runner.mjs starten.
+Neues lokales Bare-Remote verbindet noch keinen zweiten physischen Rechner; dafür
+bestehendes gemeinsames Remote verwenden bzw. später S3. Git-Lesecheck beweist
+keine Schreibrechte, Konfiguration keine Testausführung. Tatsächliche Mac-Hardware,
+zwei Menschen in Schweiz/Thailand und externe OAuth-Anbieter NOT_TESTED/BLOCKED
+wie bisher; keine unabhängige menschliche Freigabe behauptet. Kein Live-Deployment,
+Merge, persönliches Runnerupdate, neuer KI-Auftrag oder GitHub-Actions-Lauf.
+
+Zusätzlicher S2-Fehlerfall PASS: Projektfreigabe in synthetischem Runnerbericht
+entfernt, bestehende Arbeitskopie blieb erhalten. Guide führt zum Ergänzen des
+vorhandenen Profils statt zur Neuregistrierung; Fortschritt zeigt Projektprüfung
+wieder als aktuellen Schritt. Ursprüngliche Fixture-Meldung danach wiederhergestellt.

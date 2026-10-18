@@ -40,9 +40,23 @@ Letzte Vollprüfung: 21 PASS, 1 POSIX-SKIP, 0 FAIL, TypeScript/Build/Guard PASS.
 Zwei Browserkonten, externer Edit/Restore, geteilter Text, Konflikt und drei Breiten
 geprüft. Noch nicht deployed. Details im letzten Abschnitt des Abnahmeberichts.
 
-Nächste Umsetzung S2: geführter Projektstart und persönliche Bereitschaft; vorhandene
-Runner wiederverwenden. Kein GitHub-App-/CI-/Deploymentumbau im selben Paket.
-S2 kann lokal ohne Markus fortgesetzt werden; echter Mac-/Fernpilot bleibt eigener Nachweis.
+S2 ist nun auf eigenem gestapeltem Branch `feat/studio-project-start` lokal geprüft
+(Basis bleibt der bestehende Kandidat, kein Merge nach main). Neuer geführter Start
+für vorhandenes Repo oder lokales Startprojekt, privater Plan und lokaler Helfer
+mit Profilsicherung und Wiederverwendung des Zugangs. KI/Publish für neue Projekte
+gesperrt; Online/Projekt/Git/KI/Veröffentlichung getrennt. Additive Tabellen
+project_starts und runner_project_state, keine vorhandenen Spalten/Zeilen ersetzt.
+24 Tests: 23 PASS, 1 POSIX-SKIP; TypeScript/Build/Guard PASS. Echter sichtbarer
+Fixture-Ablauf inklusive neuer Kopie, Edit/Save, 1/1 Test und geänderter statischer
+Vorschau PASS; 390/1024/1440px ohne Seitenüberlauf. Ausgepackter Runtime-Smoke PASS.
+Nachweis: letzter S2-Abschnitt in evidence/OVERNIGHT_ACCEPTANCE.md.
+
+Verbleibende Einstiegshürde: Plan einmal lokal mit project-setup.mjs anwenden und
+bestehenden Runner neu starten; kein Ein-Klick-Installer. Der beschränkte Pilotstarter
+akzeptiert weiterhin nur sein Pilotprojekt; ergänzte Profile explizit mit runner.mjs
+starten. Ein neues lokales Startprojekt hat noch kein externes gemeinsames Remote.
+Nicht deployed, persönlicher Live-Runner unverändert, kein KI-Auftrag oder Actions-Lauf.
+Nächstes Paket S3: GitHub-Verknüpfung/PR-Übergang; Mac/Fernpilot bleibt S5.
 
 ## Aktueller Abschluss der begrenzten technischen Abnahme
 

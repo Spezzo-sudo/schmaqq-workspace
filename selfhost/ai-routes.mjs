@@ -11,8 +11,12 @@ export function aiAccess(db,job){
 }
 export async function aiRoute({route,method,req,db,user,device,send,readJSON,parse}){
  if(route==='/api/runner/capabilities'&&method==='POST'){
-  const d=device(req),v=parse(z.object({models:z.array(model).max(30),status:z.enum(['disabled','unreachable','no-models','ready']),allowTeam:z.boolean(),projects:z.array(id).max(30),codex:z.enum(['disabled','not-connected','chatgpt'])}),await readJSON(req));
-  db.prepare('INSERT INTO ai_resources VALUES(?,?,?,?,?,?,?) ON CONFLICT(device) DO UPDATE SET models=excluded.models,status=excluded.status,allow_team=excluded.allow_team,projects=excluded.projects,codex=excluded.codex,updated=excluded.updated').run(d.id,JSON.stringify(v.models),v.status,Number(v.allowTeam),JSON.stringify(v.projects),v.codex,Date.now());send({ok:true});return true;
+  const d=device(req),v=parse(z.object({models:z.array(model).max(30),status:z.enum(['disabled','unreachable','no-models','ready']),allowTeam:z.boolean(),projects:z.array(id).max(30),codex:z.enum(['disabled','not-connected','chatgpt']),development:z.array(z.object({id,check:z.boolean(),preview:z.boolean(),allowCodex:z.boolean(),publish:z.boolean()})).max(30).optional()}),await readJSON(req));
+  transaction(db,()=>{
+   db.prepare('INSERT INTO ai_resources VALUES(?,?,?,?,?,?,?) ON CONFLICT(device) DO UPDATE SET models=excluded.models,status=excluded.status,allow_team=excluded.allow_team,projects=excluded.projects,codex=excluded.codex,updated=excluded.updated').run(d.id,JSON.stringify(v.models),v.status,Number(v.allowTeam),JSON.stringify(v.projects),v.codex,Date.now());
+   db.prepare('DELETE FROM runner_project_state WHERE device=?').run(d.id);
+   if(v.development)db.prepare('INSERT INTO runner_project_state VALUES(?,?,?)').run(d.id,JSON.stringify(v.development),Date.now());
+  });send({ok:true});return true;
  }
  if(route!=='/api/ai')return false;
  const m=user(req);

@@ -509,3 +509,44 @@ Dateien und Git-Historien bleiben erhalten. Neues Frontend und Backend müssen
 zusammen ausgerollt bzw. lokal zusammen gestartet werden. Alte laufende Server
 kennen die neuen Collaboration-Endpunkte nicht. Betreiber führen vor einem
 separat freigegebenen Live-Rollout ein konsistentes Backup aus.
+
+
+## Geführter Projektstart und persönliche Bereitschaft (S2, Kandidat)
+
+Unter Projekte → Neues Projekt werden Ziel und lokaler Einstieg gemeinsam erfasst.
+Es gibt zwei Wege: vorhandenen Git-Stammordner mit origin verwenden oder ein neues
+lokales Startprojekt mit Startseite, node:test und statischem Build anlegen.
+Ein neues Startprojekt hat zunächst nur ein lokales Bare-Remote; es ist dadurch
+noch nicht vom Rechner des Kollegen erreichbar. Gemeinsames externes Remote
+separat bereitstellen; keine automatische GitHub-Anlage oder Veröffentlichung.
+
+Der heruntergeladene Plan enthält lokale Pfade und gewählte Befehle, aber keine
+Runner-/Anbietertokens. Nur eigene bekannte Test-/Buildbefehle verwenden. Der
+Plan ändert allein noch keine lokalen Dateien; im aktuellen Quell-/Runnerpaket:
+
+```text
+node selfhost/project-setup.mjs --apply PFAD_ZUM_PLAN PFAD_ZUM_BESTEHENDEN_RUNNERPROFIL
+```
+
+Der Helfer erhält Zugang und bestehende Projekte, legt eine private Sicherung an,
+verweigert eine vorhandene Projektzuordnung und überschreibt keinen Zielordner.
+Neue Freigaben setzen allowCodex=false und publish=false. Bestehende Repositorys
+werden nur auf Git-Stamm und origin geprüft; keine Tests/Builds beim Einrichten.
+Vorschau ist optional als Build-Argumentliste und relativer Ausgabeordner möglich.
+Privates Runnerprofil außerhalb der Git-Arbeitskopien und gemeinsamer Ordner halten;
+POSIX-Dateien werden mit 0600 angelegt, unter Windows gilt die Ordner-ACL.
+Keine Sandbox für fremden Projektcode oder signierter Ein-Klick-Installer.
+
+Danach bisherigen Runner beenden und genau einmal mit ergänztem Profil starten:
+
+```text
+node selfhost/runner.mjs PFAD_ZUM_BESTEHENDEN_RUNNERPROFIL
+```
+
+Start-Pilot.command/pilot-runner bleiben bewusst auf das einzelne Pilotprojekt
+beschränkt und können ein erweitertes Mehrprojektprofil nicht starten. Kein
+neues Gerät registrieren. In Studio Git-Verbindung prüfen und eigene Kopie anlegen.
+Die Bereitschaft unterscheidet PC-Heartbeat, aktuelle Projektfreigabe, historischen
+Git-Lesecheck, persönliche KI und Veröffentlichung. Ein Git-Check beweist keine
+Schreibrechte. Alte Runner ohne Projektmeldung bleiben unbestätigt. Die Meldung
+ist eine Bedienhilfe; der Runner erzwingt weiterhin seine lokalen Freigaben.

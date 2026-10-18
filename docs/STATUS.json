@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "observed_on": "2026-10-17",
+  "observed_on": "2026-10-18",
   "product": "SCHMAQQ Studio",
   "purpose": "Gemeinsame Entwicklung digitaler Services durch zwei Personen mit eigenen KI-Konten",
   "application": {
@@ -56,25 +56,26 @@
     "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
   },
   "next_steps": [
-    "Close observed Studio-to-GitHub handoff gap: direct PR transition with explicit authorization and clear runner capability guidance; no deployment implied",
-    "Add bounded pilot CI in a separate implementation step; current Studio checks are local runner tests",
-    "Resume actual two-person pilot when second account/device available; not blocker for current workflow improvements"
+    "Review bounded S2 project-start candidate and remaining local command/restart onboarding friction",
+    "S3: validated PR transition and repository-scoped GitHub integration with explicit provider authorization",
+    "S4: isolated own-infrastructure checks without unnecessary GitHub Actions runs",
+    "S5: actual two-person Windows/macOS pilot and separately authorized release"
   ],
   "verification": {
     "command": "node selfhost/verify.mjs (Node 24)",
     "host": "Current Windows source; historical Linux evidence remains separately scoped",
     "result": "pass",
-    "backend_tests": 22,
+    "backend_tests": 24,
     "typescript": "pass",
     "frontend_build": "pass",
     "source_guard": "pass_known_patterns_not_complete_secret_audit",
-    "browser_acceptance": "Two synthetic browser contexts: source-bound tests/preview, external edit detected on explicit observation, restore, shared description, own-only edit, stale-save draft protection, 390/1024/1440px PASS",
-    "release_smoke": "PASS for current local runtime: new module dependencies, auth/schema and backup; no VPS deployment",
+    "browser_acceptance": "S1 two-context evidence retained; S2 visible synthetic project start/download/helper/restart/Git/worktree/editor/check/static preview PASS; 390/1024/1440px no page overflow",
+    "release_smoke": "PASS: current S2 extracted 702-file runtime, manifest/auth/new project route/readiness/schema/frontend; no deployment",
     "linux_current_candidate": "PASS at source 57c274c52fb4fd67ca9f9dc857a4456962806a18: fresh npm ci --ignore-scripts, 17 tests, TypeScript, build, extracted archive smoke and synthetic legacy upgrade; see docs/evidence/P1_CANDIDATE_LINUX_20261017.md",
     "github_ci": "not_configured; no Actions run requested",
     "production_deployment": "Authorized Hermes switch to source 4a0092be2d04a4b66aa1d200cf7c9f9c53c4c47d reported PASS; subsequent engineering read-only manifest/auth/UI/runner/retained-preview checks PASS",
     "notes": "POSIX skipped on Windows, all three new pilot policy tests passed on Linux. Actual Mac and two-human remote acceptance pending.",
-    "backend_passed": 21,
+    "backend_passed": 23,
     "backend_skipped": 1
   },
   "windows_pc_setup_r5a": {
@@ -208,8 +209,8 @@
   },
   "execution_plan": {
     "document": "docs/ROADMAP.md",
-    "active_package": "S2_next_after_local_S1_acceptance",
-    "next_action": "Implement guided local/existing project start and separate PC/Git/personal AI readiness; reuse current runners. External repository creation, provider installation and deployment remain separate gates.",
+    "active_package": "S2_locally_verified_not_deployed",
+    "next_action": "Review guided project start candidate; S3 repository-scoped GitHub/PR transition follows. Personal runner update and deployment remain separately authorized.",
     "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
     "deployment_authorized": false,
     "feature_expansion": "Follow S1-S5 in ROADMAP; reuse existing implementation. Additional providers, hosted IDE platforms and public compute remain deferred.",
@@ -219,7 +220,7 @@
     ],
     "deployment_authorization_scope": "Historical authorization covered only the completed operator switch; future deployment remains separately authorized.",
     "plan_updated_on": "2026-10-18",
-    "plan_state": "S1 locally verified in bounded scope; S2-S5 remain open",
+    "plan_state": "S1 and bounded S2 locally verified; S3-S5 remain open",
     "sequence": [
       "S1 coherent change overview",
       "S2 project start and personal readiness",
@@ -511,5 +512,34 @@
       "live_preview_process": "No stable static-build source proof; remains unverified"
     },
     "runner_package": "Built from clean source; module import PASS; not installed on personal live runner"
+  },
+  "s2_project_start": {
+    "state": "locally_verified_not_deployed",
+    "branch": "feat/studio-project-start",
+    "base": "fix/studio-first-workspace-layout",
+    "implemented": [
+      "Guided existing repository or new local starter project",
+      "Idempotent shared Studio project metadata; no local paths/commands sent to project-start endpoint",
+      "Private downloaded plan and local helper; existing token/projects retained and configuration backed up",
+      "Existing Git root/origin read check; optional known test and static-preview build commands",
+      "New local bare remote, real node:test and static build; no external repository creation",
+      "Separate own PC/project/Git/personal Codex/publication readiness; legacy reports remain unconfirmed",
+      "Known local publication denial disables publish action; model start needs current own Codex capability",
+      "Runtime and runner package module dependencies included"
+    ],
+    "verification": "24 tests: 23 PASS, 1 Windows POSIX SKIP, 0 FAIL; TypeScript/build/source guard PASS; visible synthetic browser workflow PASS; extracted runtime smoke PASS",
+    "log": ".studio/overnight-audit/verify-s2-final.log",
+    "browser_result": ".studio/overnight-audit/s2-browser-result.json",
+    "report": "docs/evidence/OVERNIGHT_ACCEPTANCE.md",
+    "remaining": [
+      "One local helper command and explicit existing-runner restart remain necessary; no signed one-click installer",
+      "New starter uses a local bare remote and is not yet shared across two physical PCs",
+      "Git read check is dated evidence, not proof of publish rights or executed tests",
+      "Current local source/runtime must be deployed together and personal runner updated separately",
+      "Actual macOS hardware, external OAuth and independent two-human remote acceptance not tested"
+    ],
+    "production_changed": false,
+    "model_jobs_started": 0,
+    "github_actions_started": 0
   }
 }

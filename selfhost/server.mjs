@@ -11,6 +11,7 @@ import {aiRoute,aiAccess} from './ai-routes.mjs';
 import {listWorkspaces,validScope,assertAvailable} from './workspaces.mjs';
 import {reviewState,completeReview} from './reviews.mjs';
 import {sourceEvidence} from './source-evidence.mjs';
+import {projectStartRoute,projectReadiness} from './project-start.mjs';
 import { openStore,digest,token,passwordHash,passwordValid,createInvite,transaction } from './store.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -50,6 +51,7 @@ export function createStudioServer({oidcProvider,githubProvider, demoMode=false,
    if(await oidcRoute({route,method,req,res,url,send}))return;
    if(await connectionRoute({route,method,req,res,url,send}))return;
    if(await collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
+   if(await projectStartRoute({route,method,req,db,user,send,readJSON,parse}))return;
    if(await aiRoute({route,method,req,db,user,device,send,readJSON,parse}))return;
    if(route==='/api/auth/session'){send({user:publicMember(user(req))});return;}
    if(route==='/api/auth/login'&&method==='POST'){
@@ -139,7 +141,7 @@ export function createStudioServer({oidcProvider,githubProvider, demoMode=false,
    }
    if(route==='/api/development'){
     const m=user(req);
-    if(method==='GET'){const devices=db.prepare('SELECT id,owner,name,seen,revoked FROM devices WHERE revoked=0').all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));send({devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all(),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)}))});return;}
+    if(method==='GET'){const devices=db.prepare('SELECT id,owner,name,seen,revoked FROM devices WHERE revoked=0').all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));send({devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all(),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)})),readiness:projectReadiness(db,m.id)});return;}
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     const v=await readJSON(req);
     if(v.action==='workspace'){

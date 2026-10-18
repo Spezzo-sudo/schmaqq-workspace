@@ -313,3 +313,17 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .change-caution details { margin-top: 8px; }
 .change-caution summary { cursor: pointer; }
 .change-caution details p { margin-top: 8px; }
+.project-readiness { margin: 24px 0; }
+.project-readiness h2 { font-size: 20px; margin-bottom: 16px; }
+.project-readiness dl { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr)); gap: 20px; }
+.project-readiness dt { color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+.project-readiness dd { margin: 0; font-size: 14px; line-height: 1.6; }
+.project-readiness small { display: block; margin-top: 7px; font-size: 12px; color: var(--muted); }
+.project-start { display: grid; gap: 18px; min-width: 0; }
+.project-start form,.project-location-fields { display: grid; gap: 16px; }
+.project-start label { display: grid; gap: 8px; font-size: 13px; }
+.project-start p { font-size: 13px; line-height: 1.75; color: var(--muted); }
+.project-start input,.project-start textarea,.project-start select { width: 100%; min-width: 0; }
+.project-start-steps { display: flex; flex-wrap: wrap; gap: 16px; list-style: none; padding: 0; font-size: 12px; }
+.project-location-fields details label { margin-top: 12px; }
+.project-local-next pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; border: 1px solid var(--line); margin: 14px 0; }
