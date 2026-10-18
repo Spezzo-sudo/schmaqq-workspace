@@ -2,7 +2,7 @@
 // No server deployment, production repo, token, or GitHub API capability.
 import {spawnSync} from 'node:child_process';
 import {createHash,randomUUID} from 'node:crypto';
-import {mkdirSync,readFileSync,writeFileSync,renameSync,realpathSync,lstatSync,existsSync,statSync,rmSync,mkdtempSync,readdirSync,openSync,fsyncSync,closeSync} from 'node:fs';
+import {mkdirSync,readFileSync,writeFileSync,renameSync,realpathSync,lstatSync,existsSync,statSync,rmSync,mkdtempSync,readdirSync,openSync,fsyncSync,closeSync,rmdirSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {validatePublisherRequest} from './publisher-contract.mjs';
@@ -184,5 +184,5 @@ export function publishLocalBundle({binding,request,fixtureRoot,bundlePath,onChe
  if(refAt(fixture,baseRef)!==base||refAt(fixture,featureRef)!==approved.commit)deny('Post-update Git references disagree.');
  journalWrite(journal,{status:'complete',requestHash,bundleHash,commit:approved.commit,base,branch:approved.branch},false);
  return Object.freeze({branch:approved.branch,commit:approved.commit,base,created:!journal.record,replayed:!!journal.record,recovered:!!journal.record});
- }finally{rmSync(lock,{recursive:false,force:true});}
+ }finally{rmdirSync(lock);}
 }
