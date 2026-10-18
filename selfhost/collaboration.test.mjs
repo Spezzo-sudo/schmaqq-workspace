@@ -39,6 +39,11 @@ test('parallel task ownership, durable task discussion and active workspace assi
   const reviewId=randomUUID();app.db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created,result) VALUES(?,?,?,?,?,?,?,?,?)').run(reviewId,owner.id,owner.device.id,'website','review',JSON.stringify({worktree:copy.data.id}),'completed',Date.now(),JSON.stringify({commit:'a'.repeat(40),diff:'diff --git a/file b/file\n+change',output:'private fixture detail'}));
   const withReview=(await request('/api/collaboration/task?id='+task,null,peer.cookie)).data;
   assert.equal(withReview.reviews[0].id,reviewId);assert.equal(withReview.reviews[0].state,'pending');assert.ok(!JSON.stringify(withReview.reviews).includes('private fixture detail'));
+  assert.equal(withReview.changes[0].workspace,copy.data.id);assert.equal(withReview.changes[0].review.id,reviewId);
+  assert.equal(withReview.changes[0].currentRevision,'unverified');assert.ok(!JSON.stringify(withReview.changes).includes('private fixture detail'));
+  const changeBoard=(await request('/api/collaboration?project=website',null,peer.cookie)).data;
+  assert.equal(changeBoard.changes[0].task,task);assert.equal(changeBoard.changes[0].review.commit,'a'.repeat(40));
+  assert.equal((await request('/api/collaboration?project=automation',null,peer.cookie)).data.changes.length,0);
   assert.equal((await request('/api/development/reviews',{id:randomUUID(),job:reviewId,commit:'a'.repeat(40),decision:'approved',body:'Geprüft'},peer.cookie)).status,200);
   assert.equal((await request('/api/collaboration/task?id='+task,null,owner.cookie)).data.reviews[0].state,'approved');
   assert.equal((await act(owner,'release',task)).status,409);

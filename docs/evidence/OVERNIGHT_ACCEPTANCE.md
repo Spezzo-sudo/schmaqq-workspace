@@ -102,3 +102,42 @@ live-tests.png, live-review.png, live-preview-390.png, live-preview-1440.png,
 live-preview-services-mobile.png, fixture-peer-review.png, fixture-task-comment.png.
 Keine Modelljobs, Git-Push-Aufträge, Merges oder Deployments. Persönlicher Runner
 unverändert; nur separate Fixture wurde für die Prüfung gestartet und beendet.
+
+## S1 – erster Umsetzungsabschnitt am 18.10.2026
+
+Nach Owner-Freigabe des Plans implementiert, noch nicht deployed.
+Die vorhandene Projektübersicht verbindet nun Aufgabe und persönliche Arbeitskopie
+mit letztem Testlauf, letzter Vorschau, lokalem Review und Branch-Übertragung.
+Zeit, Herkunft, gemeldeter Commit und nächster Schritt sind sichtbar. Alle
+Prüfstände bleiben als aufklappbare Historie erreichbar. Reload behält das Projekt.
+
+Der neue API-Lesestand enthält ausschließlich freigegebene Metadaten; keine Prompts,
+Dateiinhalte, Befehlsausgaben, private Dateinamen oder Preview-Capability-URLs.
+Zuordnung prüft Kopie, Person, Gerät und Projekt. Keine neue Datenmigration.
+
+Wichtige Grenze: normale Checks melden nur HEAD, obwohl Dateien uncommitted sein
+können. Vorschauen tragen keine Inhaltsrevision. Deshalb keine grüne aktuelle
+Freigabe: aktuelle Revision bleibt unbestätigt; bekannte spätere Saves/Agentenläufe
+markieren alte Ergebnisse. Auch eine fehlgeschlagene Agentenausführung kann Dateien
+verändert haben. Historische Commit-Freigaben bleiben historisch sichtbar.
+Nicht von Studio beobachtete externe Änderungen werden noch nicht erkannt.
+
+Verifikation des letzten Codebuilds: 21 Tests, davon 20 PASS, 1 POSIX-SKIP, 0 FAIL;
+Source Guard, TypeScript und Build PASS. Log: .studio/overnight-audit/verify-s1-final.log.
+Neue Regression prüft Statusfolgen, gleiche Zeitstempel, historische Freigaben,
+spätere Änderungen, falsche Projekt-/Ownerzuordnung und Redaktion. API-Integration
+prüft Teamzugriff und Projektfilter.
+
+Sichtbarer Playwright/Brave gegen vorhandene Loopback-Fixture, zwei echte synthetische
+Sitzungen und Runner: absichtlicher Checkfehler korrekt angezeigt; Datei danach
+bytegleich wiederhergestellt, Check und Preview erneut erfolgreich; alte Freigabe
+als nachträglich bearbeitet gekennzeichnet. Fremde Kopie hat keine Bearbeiten-Aktion;
+Prüfstand aus Aufgabe erreichbar. Projektwahl nach geladenem Reload für automation
+und website bestätigt. Keine erfassten JS-Pageerrors. 390/1024/1440px ohne Seitenüberlauf;
+mobile Ansicht im sichtbaren Vordergrund nach Layout-Transition visuell geprüft.
+Belege: .studio/s1-change-overview/result.json, failed-check.png, overview-final-390.png,
+overview-final-1440.png. Keine Live-Aufträge oder KI-Aufträge in diesem S1-Lauf.
+
+S1 insgesamt bleibt offen: belastbare Inhaltsrevisionen und eigene Änderungsbeschreibung/
+Kategorie folgen. S2–S5 nicht als erledigt ausgeben; keine automatische GitHub-Synchronisierung,
+keine zentralen VPS-Tests und kein Markus-Mac-Nachweis durch diese Änderung.

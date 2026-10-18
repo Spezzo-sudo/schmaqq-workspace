@@ -62,19 +62,19 @@
   ],
   "verification": {
     "command": "node selfhost/verify.mjs (Node 24)",
-    "host": "Windows current source; focused new pilot module tests additionally run on Linux",
+    "host": "Current Windows source; historical Linux evidence remains separately scoped",
     "result": "pass",
-    "backend_tests": 20,
+    "backend_tests": 21,
     "typescript": "pass",
     "frontend_build": "pass",
     "source_guard": "pass_known_patterns_not_complete_secret_audit",
-    "browser_acceptance": "Previous local two-context flow and current live own-account UI workflow PASS: comment, edit/save, actual diff/check/preview, immutable review, task link/reload, 390/1024/1440px; real second person pending",
+    "browser_acceptance": "S1 first slice: two separate fixture accounts, failed/pass check, preview evidence, historical review, own/peer actions, review navigation and project reload PASS; 390/1024/1440px without page overflow",
     "release_smoke": "pass: latest consolidated local runtime manifest, HTTP/auth, collaboration routes and task-comment backup",
     "linux_current_candidate": "PASS at source 57c274c52fb4fd67ca9f9dc857a4456962806a18: fresh npm ci --ignore-scripts, 17 tests, TypeScript, build, extracted archive smoke and synthetic legacy upgrade; see docs/evidence/P1_CANDIDATE_LINUX_20261017.md",
     "github_ci": "not_configured; no Actions run requested",
     "production_deployment": "Authorized Hermes switch to source 4a0092be2d04a4b66aa1d200cf7c9f9c53c4c47d reported PASS; subsequent engineering read-only manifest/auth/UI/runner/retained-preview checks PASS",
     "notes": "POSIX skipped on Windows, all three new pilot policy tests passed on Linux. Actual Mac and two-human remote acceptance pending.",
-    "backend_passed": 19,
+    "backend_passed": 20,
     "backend_skipped": 1
   },
   "windows_pc_setup_r5a": {
@@ -208,8 +208,8 @@
   },
   "execution_plan": {
     "document": "docs/ROADMAP.md",
-    "active_package": "S1_planned_not_implemented",
-    "next_action": "Implement the first bounded S1 slice from ROADMAP: connect task, own workspace and review evidence in the project overview; inspect actual code-state binding before claiming current tests. This turn records the plan only.",
+    "active_package": "S1_first_slice_locally_verified",
+    "next_action": "Continue S1 with reliable content revisions for checks/previews and external edits, then authored change category/description. Do not infer current-code approval from historical jobs.",
     "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
     "deployment_authorized": false,
     "feature_expansion": "Follow S1-S5 in ROADMAP; reuse existing implementation. Additional providers, hosted IDE platforms and public compute remain deferred.",
@@ -219,8 +219,14 @@
     ],
     "deployment_authorization_scope": "Historical authorization covered only the completed operator switch; future deployment remains separately authorized.",
     "plan_updated_on": "2026-10-18",
-    "plan_state": "documented; no application changes in planning step",
-    "sequence": ["S1 coherent change overview", "S2 project start and personal readiness", "S3 repository-scoped GitHub integration", "S4 isolated own-infrastructure checks", "S5 actual two-person acceptance and controlled release"],
+    "plan_state": "implementation authorized; first S1 slice complete locally, remaining S1-S5 not complete",
+    "sequence": [
+      "S1 coherent change overview",
+      "S2 project start and personal readiness",
+      "S3 repository-scoped GitHub integration",
+      "S4 isolated own-infrastructure checks",
+      "S5 actual two-person acceptance and controlled release"
+    ],
     "ci_policy": "Personal runners first; bounded isolated Linux worker later. No GitHub-hosted Actions by default; choose one CI implementation after evaluation.",
     "external_dependencies": "Actual Markus/macOS acceptance, GitHub App registration/installation and VPS worker setup are separate gates, not blockers for local S1/S2 work."
   },
@@ -464,5 +470,30 @@
     ],
     "report": "docs/evidence/OVERNIGHT_ACCEPTANCE.md",
     "application_changes": false
+  },
+  "s1_change_overview": {
+    "state": "first_slice_locally_verified_not_deployed",
+    "source": [
+      "selfhost/change-overview.mjs",
+      "app/change-overview.tsx",
+      "app/collaboration-board.tsx"
+    ],
+    "schema_migration": false,
+    "implemented": [
+      "Task/copy/evidence read model with metadata allowlist",
+      "Historical test/preview/review and publication distinctions",
+      "Known later edits mark evidence changed; current revision unverified",
+      "Role-appropriate next actions and review navigation",
+      "Development project selection survives reload"
+    ],
+    "verification": "20 PASS, 1 Windows POSIX SKIP; TypeScript, build, guard PASS; actual two-context browser acceptance",
+    "log": ".studio/overnight-audit/verify-s1-final.log",
+    "report": "docs/evidence/OVERNIGHT_ACCEPTANCE.md",
+    "remaining": [
+      "Content revision binding and external edit detection",
+      "Authored change category and description",
+      "S2-S5 according to ROADMAP"
+    ],
+    "production_changed": false
   }
 }

@@ -25,8 +25,9 @@ ständige Agentenerklärung verständlich sein.
 
 Maßgeblich ist die folgende S-Reihenfolge. Die älteren P-/R-Pakete weiter unten
 bleiben Betriebs- und Pilotvorgeschichte, keine konkurrierenden aktiven Aufträge.
-Der Owner möchte zunächst diesen konkreten Plan, danach dessen schrittweise
-Integration. Dieser Dokumentationsschritt implementiert noch keine Funktionen.
+Der Owner hat nach dem Plan die schrittweise Umsetzung beauftragt. Aktuell ist
+der erste begrenzte Teil von S1 im Kandidaten implementiert und lokal geprüft;
+die übrigen S-Pakete sind damit nicht als erledigt markiert.
 
 Die persönliche Strecke bis Draft-PR und der erneute Live-Browserlauf sind
 belegt: [Pilotlauf](evidence/P3_FULL_FLOW_20261017.md),
@@ -115,11 +116,19 @@ möglich; kein pauschales Warten auf alle S-Pakete für einen nötigen Patch.
 
 ### Unmittelbar nächste Codeänderung
 
-**S1, erster Teil:** Bestehende Projektübersicht um eine getestete Zuordnung von
-Aufgabe, eigener Kopie und letztem Prüfstand erweitern. Zunächst klären, welche
-vorhandenen Ergebnisfelder die Zustandsbindung wirklich tragen; fehlende Belege
-sichtbar lassen. Danach UI und gezielte Regressionen, vollständiger Check vor
-Codeübergabe. Kein GitHub-App-, CI- oder Deploymentumbau im selben Änderungspaket.
+**S1, erster Teil lokal umgesetzt:** Die Aufgabenübersicht zeigt pro verknüpfter
+Kopie Tests, Vorschau, Prüfstand, Branch-Veröffentlichung und den nächsten Schritt.
+Projektwahl bleibt nach Reload erhalten. Fehler/Abbrüche und bekannte spätere
+Bearbeitung sind sichtbar; aktuelle Dateirevision ausdrücklich unbestätigt.
+Nachweis: [S1-Abschnitt im Abnahmebericht](evidence/OVERNIGHT_ACCEPTANCE.md).
+Kein GitHub-App-, CI- oder Deploymentumbau im selben Änderungspaket.
+
+**Als Nächstes innerhalb S1:** Verlässliche Inhaltsrevision für Test-/Previewläufe
+einschließlich externer Änderungen konzipieren und im Runner nachweisen, danach
+bearbeitbare Änderungskategorie/-beschreibung ergänzen. Noch keine automatische
+Issue-Auflösung oder aktuelle Dateifreigabe aus historischen Ergebnissen ableiten.
+S2 startet nach der abgegrenzten S1-Abnahme; echte Provider- und VPS-Eingriffe bleiben
+separat freizugeben.
 
 Der Plan ist fertig, wenn jede Umsetzung einen beobachtbaren Nutzen, Scope und
 Abnahmekriterium aus dieser Reihenfolge hat. Ein Paket gilt erst mit echten

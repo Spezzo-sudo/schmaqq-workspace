@@ -289,3 +289,18 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .task-review-links { margin-top: 24px; }
 .task-review-links h3 { font-size: 15px; }
 .task-review-links .button { justify-self: start; margin-top: 6px; }
+
+.task-change-overviews { margin: 24px 0; }
+.task-change-overviews > h3 { font-size: 17px; margin-bottom: 10px; }
+.task-change-overviews > p { font-size: 12px; line-height: 1.7; }
+.change-overview { border: 1px solid var(--line); padding: 18px; margin-top: 16px; min-width: 0; overflow-wrap: anywhere; }
+.change-overview .section-title { margin-bottom: 10px; flex-wrap: wrap; }
+.change-overview h3 { font-size: 15px; line-height: 1.5; }
+.change-origin { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.change-facts { margin: 14px 0; }
+.change-facts > div { border-top: 1px solid var(--line); padding: 12px 0; }
+.change-facts dt { font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+.change-facts dd { margin: 0; font-size: 13px; line-height: 1.6; }
+.change-facts small { display: block; color: var(--muted); font-size: 11px; }
+.change-caution { border-left: 3px solid var(--ink); padding-left: 10px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.change-next { font-size: 13px; line-height: 1.7; margin-top: 14px; }

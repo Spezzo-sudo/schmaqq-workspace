@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {transaction} from './store.mjs';
 import {listWorkspaces} from './workspaces.mjs';
 import {reviewState} from './reviews.mjs';
+import {changeOverview} from './change-overview.mjs';
 
 const id=z.string().regex(/^[\w-]{1,100}$/);
 const fail=(status,message)=>Object.assign(new Error(message),{status});
@@ -18,13 +19,14 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   if(project!=='all'&&!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt fehlt.');
   const tasks=db.prepare(`SELECT t.*,(SELECT count(*) FROM task_comments c WHERE c.task=t.id) AS commentCount FROM tasks t WHERE (?='all' OR project=?) ORDER BY created DESC,id`).all(project,project);
   const workspaces=listWorkspaces(db).filter(w=>project==='all'||w.project===project);
-  send({tasks,workspaces});return true;
+  send({tasks,workspaces,changes:changeOverview(db,workspaces)});return true;
  }
  if(route==='/api/collaboration/task'&&method==='GET'){
   const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(parse(id,url.searchParams.get('id')));if(!task)throw fail(404,'Aufgabe fehlt.');
   const reviews=db.prepare("SELECT j.*,m.name AS ownerName FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree') JOIN members m ON m.id=j.owner WHERE w.task=? AND j.action IN ('review','submit') AND j.status='completed' ORDER BY j.created DESC,j.id").all(task.id).map(j=>({id:j.id,owner:j.owner,ownerName:j.ownerName,created:j.created,commit:JSON.parse(j.result??'{}').commit??'',state:reviewState(db,j)}));
   // This is the existing single private Studio team, not a public/tenant API.
-  send({task,reviews,comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces:taskWorkspaces(db,task.id)});return true;
+  const workspaces=taskWorkspaces(db,task.id);
+  send({task,reviews,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces});return true;
  }
  if(route!=='/api/collaboration/task'||method!=='POST')throw fail(405,'Methode nicht erlaubt.');
  const value=parse(z.discriminatedUnion('action',[

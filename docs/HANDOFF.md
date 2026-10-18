@@ -12,19 +12,25 @@ Workspace ist die universelle Arbeitsplattform für Menschen und Agenten; Studio
 
 ## Aktiver Umsetzungsplan vom 18.10.2026
 
-Owner wünscht zuerst einen klaren, integrierten Plan, danach schrittweise Codearbeit.
+Owner hat nach dem dokumentierten Plan die schrittweise Codearbeit beauftragt.
 Maßgeblich ist jetzt die S1–S5-Reihenfolge in [ROADMAP.md](ROADMAP.md):
 Änderungsansicht → Projektstart/Bereitschaft → GitHub-Verknüpfung → isolierte
 Linux-Prüfung → echter Zwei-Personen-Pilot und kontrollierter Release.
 Die nachfolgenden älteren P-/R-Prioritäten sind Hintergrund, keine parallelen Aufträge.
 
-Nächste Codeaufgabe: erster begrenzter Teil von S1. Bestehende Projektübersicht,
-Aufgaben, Kopien und Prüfstände zusammenführen; Codezustandsbindung prüfen und
-fehlende Belege sichtbar lassen. Keine vorweggenommenen grünen Tests für geänderte
-Dateien. Kein GitHub-App-/CI-/Deploymentumbau im selben Paket. S1/S2 funktionieren
-lokal ohne Markus; tatsächlicher Mac-/Fernpilot bleibt ein eigener Nachweis.
-Der Planungsschritt ändert nur Dokumentation, keine Anwendung. Kein neuer
-unveränderter Volltest erforderlich. Produktvision und bestehende Daten erhalten.
+Erster begrenzter Teil von S1 lokal umgesetzt: change-overview in selfhost/app
+verbindet bestehende Aufgaben/Kopien mit letztem Test, Vorschau, Review und
+Veröffentlichung. Metadaten ohne private Jobinhalte. Eigene/Team-Aktionen getrennt,
+Projektauswahl nach Reload erhalten. Vollprüfung 20 PASS, 1 POSIX-SKIP, 0 FAIL,
+TypeScript/Build/Guard PASS; zwei Browserkonten und drei Breiten geprüft.
+Noch nicht deployed. Details im S1-Abschnitt von evidence/OVERNIGHT_ACCEPTANCE.md.
+
+Aktuelle Dateirevision bleibt ausdrücklich unbestätigt: normale Checks tragen nur
+HEAD, Preview kein Inhaltsabbild als Revision. Bekannte spätere Bearbeitungen
+markieren historische Belege; externe Änderungen können nicht live erkannt werden.
+Nächste S1-Arbeit: belastbare Inhaltsrevision im Runner und danach Kategorie/Text
+für die Änderung. Kein GitHub-App-/CI-/Deploymentumbau im selben Paket. S1/S2 können
+lokal ohne Markus fortgesetzt werden; echter Mac-/Fernpilot bleibt eigener Nachweis.
 
 ## Aktueller Abschluss der begrenzten technischen Abnahme
 
