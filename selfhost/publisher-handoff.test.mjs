@@ -107,6 +107,11 @@ test('reviewed handoff: two identities, owned runner, exact commit, local Git bu
   assert.equal(takenBack.status,200);
   assert.equal(takenBack.data.state,'changes_requested');
   assert.equal((await upload()).status,409);
+  // A separate valid device cannot brute-force another owner's review indefinitely.
+  let throttled;
+  for(let i=0;i<34;i++)throttled=await upload(payload,db.data.token);
+  assert.equal(throttled.status,429);
+  assert.equal((await upload(payload,db.data.token)).status,429);
   app.db.prepare('UPDATE devices SET revoked=1 WHERE id=?').run(da.data.id);
   assert.equal((await upload()).status,401);
   assert.equal(await git(dir,'--git-dir',bare,'rev-parse','refs/heads/main'),base);
