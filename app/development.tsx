@@ -5,7 +5,7 @@ import DevelopmentGuide from './development-guide';
 import ProjectReadiness,{emptyReadiness,readinessFor,type Readiness} from './project-readiness';
 import ProjectStart from './project-start';
 import {developmentJob} from './development-request';
-import {ownTaskCopy} from './development-target';
+import {ownTaskCopy,preferredSoloWorkspace} from './development-target';
 import TeamWorkspaces,{type TeamWorkspace} from './team-workspaces';
 import SourceEditor from './source-editor';
 import CodeReview from './code-review';
@@ -66,6 +66,15 @@ export default function Development({projects,userId,initialProject,initialTask,
  const active=activeDevices.includes(device);
  useEffect(()=>{if(loaded&&worktree&&!workspaces.some(w=>w.id===worktree&&!w.archived))setWorktree('');},[workspaces,worktree,loaded]);
  useEffect(()=>{if(projects.length&&!projects.some(p=>p.id===project))setProject(projects[0].id);},[projects,project]);
+ const autoSelected=useRef(false);
+ useEffect(()=>{
+  if(!loaded||autoSelected.current||(initialProject&&projects.some(p=>p.id===initialProject))||initialTask||initialReview)return;
+  const preferred=preferredSoloWorkspace(workspaces,userId,projects.map(p=>p.id),ownDevices);
+  if(!preferred)return;
+  autoSelected.current=true;
+  setProject(preferred.project);setDevice(preferred.device);setWorktree(preferred.id);
+ },[loaded,initialProject,initialTask,initialReview,projects,workspaces,ownDevices,userId]);
+ 
  useEffect(()=>{if(loaded&&ownDevices.length&&!ownDevices.some(d=>d.id===device))setDevice((ownDevices.find(d=>Date.now()-d.seen<30000)??ownDevices[0]).id);},[devices,device,loaded]);
  useEffect(()=>{if(loaded&&copies.length&&!worktree){const copy=task?copies.find(w=>w.taskId===task):initialTask&&!targetInitialized.current?copies.find(w=>w.taskId===initialTask):copies[0];if(copy)setWorktree(copy.id);}},[workspaces,worktree,device,project,loaded,task,initialTask]);
  useEffect(()=>{if(!loaded||!device||!initialTask||targetInitialized.current)return;const target=taskList.find(t=>t.id===initialTask&&t.project===project);if(!target)return;const existing=ownTaskCopy(workspaces,userId,project,target.id);if(existing&&existing.device!==device){setDevice(existing.device);return;}setTask(target.id);setTitle(target.title);setWorktree(existing?.id??'');setShowNew(!existing);targetInitialized.current=true;},[loaded,device,initialTask,project,taskList,workspaces,userId]);
