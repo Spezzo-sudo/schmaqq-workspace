@@ -327,3 +327,10 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .project-start-steps { display: flex; flex-wrap: wrap; gap: 16px; list-style: none; padding: 0; font-size: 12px; }
 .project-location-fields details label { margin-top: 12px; }
 .project-local-next pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; border: 1px solid var(--line); margin: 14px 0; }
+
+/* PR16 usability: keep separate workflow steps and review explanation readable. */
+.workflow-stage-note,.review-explainer {font-size:12px;line-height:1.65;color:var(--muted);overflow-wrap:anywhere;}
+.workflow-stage-note {margin:8px 0 14px;border-left:3px solid var(--acid);padding:6px 0 6px 12px;}
+.review-explainer {margin:6px 0 14px;max-width:72ch;}
+.integration-panel .submission small {display:block;overflow-wrap:anywhere;line-height:1.6;}
+@media (max-width:640px) {.workflow-stage-note {margin-top:10px;} .integration-panel .submission {min-width:0;}}
