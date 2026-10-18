@@ -19,12 +19,23 @@ const submission=z.object({
 }).strict();
 
 export function createPublisherHandoffRoute({fixture,db,device,readJSON}){
+ const attempts=new Map(),active=new Set();
  return async function publisherHandoffRoute({route,method,req,send}){
   if(route!=='/api/runner/publisher-handoff')return false;
   // Disabled even for authenticated users on normal Studio deployments.
   if(!fixture)throw fail(404,'Schnittstelle nicht verfügbar.');
   if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
   const d=device(req); // Revoked, missing and forged bearer tokens are rejected.
+  const declared=Number(req.headers['content-length']);
+  if(Number.isFinite(declared)&&declared>7100000)throw fail(413,'Upload überschreitet die zulässige Grösse.');
+  // Per-device, process-local abuse throttle. A distributed publisher will need a shared store.
+  const now=Date.now(),previous=attempts.get(d.id);
+  const bucket=!previous||now-previous.start>=60000?{start:now,count:0}:previous;
+  if(++bucket.count>8)throw fail(429,'Bitte vor der nächsten Übergabe warten.');
+  attempts.set(d.id,bucket);
+  if(active.has(d.id))throw fail(409,'Eine Übergabe dieses Gerätes läuft bereits.');
+  active.add(d.id);
+  try{
   if(!req.headers['content-type']?.match(/^application\/json(?:\s*;|$)/i))throw fail(415,'JSON erforderlich.');
   let payload;
   try{payload=submission.parse(await readJSON(req,7100000));}
@@ -68,5 +79,6 @@ export function createPublisherHandoffRoute({fixture,db,device,readJSON}){
    send({ok:true,branch:outcome.branch,commit:outcome.commit,created:outcome.created,replayed:outcome.replayed});
   }finally{if(existsSync(temporary))unlinkSync(temporary);}
   return true;
+  }finally{active.delete(d.id);}
  };
 }
