@@ -47,9 +47,10 @@ function checked(fixture,...args){
  return r.stdout;
 }
 function refAt(fixture,ref){
- const r=git(fixture,'show-ref','--verify','--hash',ref);
- if(r.status===1)return null;
- if(r.status!==0||!SHA1.test(r.stdout))deny('Unable to read Git reference.');
+ const r=git(fixture,'for-each-ref','--format=%(objectname)',ref);
+ if(r.status!==0)deny('Unable to read Git reference.');
+ if(!r.stdout)return null;
+ if(!SHA1.test(r.stdout)||r.stdout.includes('\n'))deny('Git reference is invalid.');
  return r.stdout;
 }
 function objectExists(fixture,sha){return git(fixture,'cat-file','-e',sha+'^{commit}').status===0;}
