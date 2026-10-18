@@ -49,3 +49,69 @@ test('offline publisher denies main, wrong repository, changed base, escape bund
   assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
  }finally{rmSync(f.root,{recursive:true,force:true});}
 });
+
+
+test('journal resumes after interruption before Git ref creation, without modifying main',()=>{
+ const f=fixture();
+ try{
+  const args={binding:f.binding,request:f.request,fixtureRoot:f.root,bundlePath:f.bundle};
+  assert.throws(()=>publishLocalBundle({...args,onCheckpoint:stage=>{if(stage==='after-journal')throw Error('injected crash');}}),/injected crash/);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
+  assert.throws(()=>run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/studio/feature-a'));
+  const result=publishLocalBundle(args);
+  assert.equal(result.recovered,true);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/studio/feature-a'),f.commit);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
+ }finally{rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('journal resumes after committed Git ref without recreating it',()=>{
+ const f=fixture();
+ try{
+  const args={binding:f.binding,request:f.request,fixtureRoot:f.root,bundlePath:f.bundle};
+  assert.throws(()=>publishLocalBundle({...args,onCheckpoint:stage=>{if(stage==='after-ref')throw Error('injected crash after commit');}}),/injected crash/);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/studio/feature-a'),f.commit);
+  const result=publishLocalBundle(args);
+  assert.equal(result.recovered,true);
+  assert.equal(result.created,false);
+  assert.equal((publishLocalBundle(args)).replayed,true);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
+ }finally{rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('pending journal fails closed if an unknown ref appears before recovery',()=>{
+ const f=fixture();
+ try{
+  const args={binding:f.binding,request:f.request,fixtureRoot:f.root,bundlePath:f.bundle};
+  assert.throws(()=>publishLocalBundle({...args,onCheckpoint:stage=>{if(stage==='after-journal')throw Error('crash');}}));
+  run(f.root,'--git-dir',f.bare,'update-ref','refs/heads/studio/feature-a',f.base);
+  assert.throws(()=>publishLocalBundle(args),/unsafe state/);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
+ }finally{rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('quarantine refuses oversized Git blobs before writing a feature ref',()=>{
+ const f=fixture();
+ try{
+  writeFileSync(path.join(f.seed,'too-big.txt'),'x'.repeat(2200000));
+  run(f.seed,'add','too-big.txt');run(f.seed,'commit','--amend','--no-edit');
+  const commit=run(f.seed,'rev-parse','HEAD');
+  run(f.seed,'bundle','create','-f',f.bundle,'refs/heads/studio/feature-a','^main');
+  assert.throws(()=>publishLocalBundle({binding:f.binding,request:{...f.request,commit},fixtureRoot:f.root,bundlePath:f.bundle}),/Oversized Git blob|Large tree blob|Expanded Git objects/);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
+  assert.throws(()=>run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/studio/feature-a'));
+ }finally{rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('quarantine refuses Git trees containing symlinks',()=>{
+ const f=fixture();
+ try{
+  symlinkSync('file.txt',path.join(f.seed,'symlink.txt'));
+  run(f.seed,'add','symlink.txt');run(f.seed,'commit','--amend','--no-edit');
+  const commit=run(f.seed,'rev-parse','HEAD');
+  run(f.seed,'bundle','create','-f',f.bundle,'refs/heads/studio/feature-a','^main');
+  assert.throws(()=>publishLocalBundle({binding:f.binding,request:{...f.request,commit},fixtureRoot:f.root,bundlePath:f.bundle}),/Unsupported tree entry/);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
+  assert.throws(()=>run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/studio/feature-a'));
+ }finally{rmSync(f.root,{recursive:true,force:true});}
+});
