@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync,symlinkSync} from 'node:fs';
+import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync,symlinkSync,existsSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {execFileSync} from 'node:child_process';
+import {execFileSync,spawn} from 'node:child_process';
+import {setTimeout as delay} from 'node:timers/promises';
 import {publishLocalBundle} from './publisher-local.mjs';
 const run=(dir,...args)=>execFileSync('git',args,{cwd:dir,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
 function fixture(){
@@ -114,4 +115,53 @@ test('quarantine refuses Git trees containing symlinks',()=>{
   assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
   assert.throws(()=>run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/studio/feature-a'));
  }finally{rmSync(f.root,{recursive:true,force:true});}
+});
+
+
+async function waitForFile(file,child){
+ for(let i=0;i<120;i++){
+  if(existsSync(file))return;
+  if(child.exitCode!==null)throw new Error('Publisher worker exited before checkpoint: '+child.exitCode);
+  await delay(25);
+ }
+ throw new Error('Checkpoint not reached');
+}
+async function stopped(child){
+ if(child.exitCode!==null)return;
+ await new Promise(resolve=>{child.once('exit',resolve);child.kill('SIGKILL');});
+}
+test('real SIGKILL after journal: stale lock blocks other process until explicit operator cleanup; recovery preserves main',async()=>{
+ const f=fixture();
+ const descriptor=path.join(f.root,'descriptor.json'),checkpoint=path.join(f.root,'checkpoint'),out=path.join(f.root,'result.json');
+ const args={binding:f.binding,request:f.request,fixtureRoot:f.root,bundlePath:f.bundle};
+ writeFileSync(descriptor,JSON.stringify(args));
+ const child=spawn(process.execPath,[new URL('./publisher-process-worker.mjs',import.meta.url).pathname,descriptor,checkpoint,out,'after-journal'],{stdio:'ignore'});
+ try{
+  await waitForFile(checkpoint,child);
+  assert.throws(()=>publishLocalBundle(args),/Concurrent or interrupted publisher/);
+  await stopped(child);
+  assert.throws(()=>publishLocalBundle(args),/Concurrent or interrupted publisher/);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
+  // Operator observes dead PID/checkpoint before clearing the synthetic fixture lock.
+  rmSync(path.join(f.root,'publisher-exclusive.lock'),{recursive:true,force:true});
+  const recovered=publishLocalBundle(args);
+  assert.equal(recovered.recovered,true);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
+ }finally{await stopped(child);rmSync(f.root,{recursive:true,force:true});}
+});
+test('real SIGKILL after ref transaction: reconcile exact commit and preserve default branch',async()=>{
+ const f=fixture(),descriptor=path.join(f.root,'descriptor.json'),checkpoint=path.join(f.root,'checkpoint'),out=path.join(f.root,'result.json');
+ const args={binding:f.binding,request:f.request,fixtureRoot:f.root,bundlePath:f.bundle};
+ writeFileSync(descriptor,JSON.stringify(args));
+ const child=spawn(process.execPath,[new URL('./publisher-process-worker.mjs',import.meta.url).pathname,descriptor,checkpoint,out,'after-ref'],{stdio:'ignore'});
+ try{
+  await waitForFile(checkpoint,child);await stopped(child);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/studio/feature-a'),f.commit);
+  assert.throws(()=>publishLocalBundle(args),/Concurrent or interrupted publisher/);
+  rmSync(path.join(f.root,'publisher-exclusive.lock'),{recursive:true,force:true});
+  const recovered=publishLocalBundle(args);
+  assert.equal(recovered.recovered,true);
+  assert.equal(recovered.created,false);
+  assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
+ }finally{await stopped(child);rmSync(f.root,{recursive:true,force:true});}
 });
