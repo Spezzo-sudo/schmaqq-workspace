@@ -442,5 +442,22 @@
     "latest_log": ".studio/overnight-audit/verify-final.log",
     "browser": "Two synthetic contexts: concurrent claim, comments, editor conflict, failed check, cancellation, offline/reconnect, knowledge revision conflict; 8 views x 3 widths without page overflow",
     "fixes_deployed": false
+  },
+  "browser_recheck_20261018": {
+    "mode": "Visible own Playwright/Brave, live owner and separate synthetic local roles",
+    "live_members": 1,
+    "live_check": {
+      "pass": 3,
+      "fail": 0
+    },
+    "live_preview": "new build, navigation and desktop/mobile visible PASS",
+    "local_roles": "two separate identities/copies; self approval absent; peer changes request and approval PASS",
+    "editor": "fixture save and byte-identical restoration PASS; live read only",
+    "remaining": [
+      "Real Markus account and Mac not tested",
+      "Development project selector loses its selection on reload"
+    ],
+    "report": "docs/evidence/OVERNIGHT_ACCEPTANCE.md",
+    "application_changes": false
   }
 }

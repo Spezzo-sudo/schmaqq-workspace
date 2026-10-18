@@ -74,3 +74,31 @@ Matrix eingeordnet; NOT_TESTED/BLOCKED sind keine versteckten PASS. Keine
 unveränderten Wiederholungsprüfungen im nächsten Heartbeat. Neue Arbeit nur an
 konkreter Änderung oder verfügbarem Zugang. Der Auftrag zur Produktverbesserung
 bleibt bestehen; dies schließt die begrenzte Abnahme, nicht die Produktentwicklung.
+
+## Erneute sichtbare Browserprüfung am 18.10.2026
+
+Vom Owner nach externem Browserbericht ausdrücklich erneut beauftragt. Sichtbarer
+Playwright/Brave mit bestehender eigener autorisierter Sitzung; Live-Studio und
+lokale Zwei-Konten-Fixture getrennt. Kein Cloud-Browser behauptet.
+
+| Funktion | Tatsächliches Ergebnis |
+| --- | --- |
+| Live Team & Zugänge | Nur Marco sichtbar. Reales zweites Mitglied weiterhin nicht nachgewiesen. |
+| Live Pilot-Arbeitskopie | Vorhandene Kopie ausgewählt; site/index.html geladen, erwarteter Inhalt vorhanden. Live-Dateien nicht bearbeitet. |
+| Live Tests | Neu ausgeführter konfigurierter Check: 3 PASS, 0 FAIL. Keine GitHub-Actions-Ausführung. |
+| Live Prüfstand | Bestehender veröffentlichter Prüfstand: Commit und echter Diff im Dialog sichtbar; zweite Freigabe ausstehend. Keine neue Veröffentlichung. |
+| Live Vorschau | Neu gebaut und geöffnet; Startseite bei 390/1440px ohne Seitenüberlauf. Services-Link navigiert korrekt; mobile Services-Seite visuell geprüft. |
+| Lokale Dateibearbeitung | In eigener synthetischer Kopie geändert/gespeichert und anschließend bytegleich wiederhergestellt. |
+| Lokale Kontentrennung | Zwei getrennte Browserkontexte: eigenes Das-bist-du je Konto, zwei sichtbare Mitglieder, zweite eigene Arbeitskopie erstellt. |
+| Lokale Teamprüfung | Ersteller sieht ausschließlich Kommentar. Zweites Konto kann Änderungen anfordern und denselben Prüfstand freigeben. Beide Aktionen tatsächlich ausgeführt; synthetischer Rollentest, kein unabhängiger menschlicher Review. |
+| Kommentarentwurf | In Fixture über Team-Navigation und Rückkehr erhalten, anschließend als synthetischer Testkommentar gespeichert. |
+
+Zusätzliche Bedienlücke reproduziert: Projektauswahl innerhalb Entwicklung wird
+nach Reload auf die äußere Standardauswahl zurückgesetzt; erneute Wahl nötig.
+Ähnliche Demo-Initialen bleiben ein Anzeigeproblem; unterschiedliche Identitäten
+wurden in der Fixture bestätigt. In diesem Retest kein Anwendungscode geändert.
+Screenshots lokal ignoriert unter .studio/browser-recheck-20261018/: live-team.png,
+live-tests.png, live-review.png, live-preview-390.png, live-preview-1440.png,
+live-preview-services-mobile.png, fixture-peer-review.png, fixture-task-comment.png.
+Keine Modelljobs, Git-Push-Aufträge, Merges oder Deployments. Persönlicher Runner
+unverändert; nur separate Fixture wurde für die Prüfung gestartet und beendet.
