@@ -62,7 +62,9 @@ export function createPublisherHandoffRoute({fixture,db,device,readJSON}){
   const temporary=path.join(incoming,'handoff-'+randomUUID()+'.bundle');
   try{
    writeFileSync(temporary,bytes,{flag:'wx',mode:0o600});
-   const outcome=publishLocalBundle({binding:fixture.binding,request,fixtureRoot:fixture.fixtureRoot,bundlePath:temporary});
+   let outcome;
+   try{outcome=publishLocalBundle({binding:fixture.binding,request,fixtureRoot:fixture.fixtureRoot,bundlePath:temporary});}
+   catch(e){if(e.message?.startsWith('Local publisher rejected:'))throw fail(400,'Bundle oder Git-Referenz unzulässig.');throw e;}
    send({ok:true,branch:outcome.branch,commit:outcome.commit,created:outcome.created,replayed:outcome.replayed});
   }finally{if(existsSync(temporary))unlinkSync(temporary);}
   return true;
