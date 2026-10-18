@@ -260,3 +260,9 @@ Zusätzlicher S2-Fehlerfall PASS: Projektfreigabe in synthetischem Runnerbericht
 entfernt, bestehende Arbeitskopie blieb erhalten. Guide führt zum Ergänzen des
 vorhandenen Profils statt zur Neuregistrierung; Fortschritt zeigt Projektprüfung
 wieder als aktuellen Schritt. Ursprüngliche Fixture-Meldung danach wiederhergestellt.
+
+Finale Paketprüfung PASS: Serverarchiv aus aktuellem Quellstand ausgepackt,
+702 Manifestdateien und API/Schema/Frontend geprüft. Eigenständiges Runnerarchiv
+aus sauber committetem Quellstand: 10 Manifestdateien geprüft, project-setup samt
+vollständigem Importgraph geladen; kein Runner oder Modell gestartet. Logs:
+.studio/overnight-audit/s2-release-smoke.log und s2-runner-package-smoke.log.

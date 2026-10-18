@@ -540,6 +540,7 @@
     ],
     "production_changed": false,
     "model_jobs_started": 0,
-    "github_actions_started": 0
+    "github_actions_started": 0,
+    "runner_package": "PASS: clean committed source, extracted 10-file manifest and complete setup helper import graph; not installed on personal live runner"
   }
 }
