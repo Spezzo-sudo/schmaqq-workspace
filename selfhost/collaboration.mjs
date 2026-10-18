@@ -12,8 +12,19 @@ export function assertAssignment(db,task,assignee){
  if(taskWorkspaces(db,task).some(w=>w.owner!==assignee))throw fail(409,'Für diese Aufgabe ist noch ein Arbeitsbereich reserviert. Erst abstimmen und den Arbeitsbereich abschließen.');
 }
 export async function collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}){
- if(!['/api/collaboration','/api/collaboration/task'].includes(route))return false;
+ if(!['/api/collaboration','/api/collaboration/task','/api/collaboration/change'].includes(route))return false;
  const member=user(req);
+ if(route==='/api/collaboration/change'){
+  if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
+  const value=parse(z.object({workspace:id,revision:z.number().int().min(0),kind:z.enum(['unspecified','feature','fix','maintenance']),body:z.string().trim().max(4000)}),await readJSON(req));
+  transaction(db,()=>{
+   const workspace=db.prepare('SELECT j.owner FROM workspaces w JOIN jobs j ON j.id=w.job WHERE w.job=?').get(value.workspace);
+   if(!workspace)throw fail(404,'Arbeitskopie fehlt.');if(workspace.owner!==member.id)throw fail(403,'Nur die eigene Änderung kann beschrieben werden.');
+   const note=db.prepare('SELECT revision FROM change_notes WHERE workspace=?').get(value.workspace);
+   if((note?.revision??0)!==value.revision)throw fail(409,'Beschreibung inzwischen geändert. Dein Entwurf bleibt erhalten; öffne zum Vergleichen einen zweiten Tab.');
+   db.prepare('INSERT INTO change_notes(workspace,kind,body,revision,author,updated) VALUES(?,?,?,?,?,?) ON CONFLICT(workspace) DO UPDATE SET kind=excluded.kind,body=excluded.body,revision=excluded.revision,author=excluded.author,updated=excluded.updated').run(value.workspace,value.kind,value.body,value.revision+1,member.id,Date.now());
+  });send({ok:true});return true;
+ }
  if(route==='/api/collaboration'&&method==='GET'){
   const project=parse(id,url.searchParams.get('project')??'all');
   if(project!=='all'&&!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt fehlt.');

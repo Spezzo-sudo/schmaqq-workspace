@@ -40,5 +40,14 @@ test('change overview keeps failures and historical evidence honest without expo
   const safe=JSON.stringify(state());
   for(const marker of ['private-', 'prompt','url','diff','checks','content'])assert.ok(!safe.includes(marker),marker);
   assert.equal(state().currentRevision,'unverified'); // Never infer filesystem currency from job timestamps.
+  const proof=(revision)=>({revision:revision.repeat(64),observedAt:200});
+  job('check','completed',{commit:'b'.repeat(40),source:proof('1')});
+  assert.equal(state().check.freshness,'same');assert.equal(state().currentRevision,'observed');
+  job('status','completed',{source:proof('2')});
+  assert.equal(state().check.freshness,'changed');assert.equal(state().check.changedAfter,true);
+  job('status','completed',{source:proof('1')});
+  assert.equal(state().check.freshness,'same');assert.equal(state().check.changedAfter,false);
+  job('preview','completed',{source:{revision:null,observedAt:200,reason:'changed_during_run'}});
+  assert.equal(state().check.freshness,'unverified');assert.equal(state().currentRevision,'unverified');
  }finally{db.close();}
 });

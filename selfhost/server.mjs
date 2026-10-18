@@ -10,6 +10,7 @@ import { z } from 'zod';
 import {aiRoute,aiAccess} from './ai-routes.mjs';
 import {listWorkspaces,validScope,assertAvailable} from './workspaces.mjs';
 import {reviewState,completeReview} from './reviews.mjs';
+import {sourceEvidence} from './source-evidence.mjs';
 import { openStore,digest,token,passwordHash,passwordValid,createInvite,transaction } from './store.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -100,7 +101,7 @@ export function createStudioServer({oidcProvider,githubProvider, demoMode=false,
       for(const [name,value] of entries){if(!name||name.startsWith('/')||name.includes('\\')||name.split('/').some(p=>!p||p==='.'||p==='..')||/[\u0000-\u001f]/.test(name))throw fail(400,'Ungültiger Vorschau-Pfad.');bytes+=Buffer.from(value,'base64').length;}
       if(bytes>5000000)throw fail(413,'Vorschau darf höchstens 5 MB groß sein.');const previewId=token();
       transaction(db,()=>{db.prepare('INSERT INTO previews VALUES(?,?,?,?)').run(previewId,job.id,now(),JSON.stringify(bundle));db.prepare('DELETE FROM previews WHERE id NOT IN (SELECT id FROM previews ORDER BY created DESC LIMIT 10)').run();});
-      result={url:`${previewOrigin}/${previewId}/index.html`,scope:'shared',files:entries.length,bytes};
+      result={url:`${previewOrigin}/${previewId}/index.html`,scope:'shared',files:entries.length,bytes,source:sourceEvidence(result.source)};
      }
      const resultText=JSON.stringify(result);if(resultText.length>150000)throw fail(413,'Ergebnis zu groß.');
      db.prepare('UPDATE jobs SET status=?,result=?,lease=NULL WHERE id=?').run(job.status==='cancelling'?'cancelled':v.ok?'completed':'failed',resultText,job.id);

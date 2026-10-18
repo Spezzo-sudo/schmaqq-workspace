@@ -44,6 +44,14 @@ test('parallel task ownership, durable task discussion and active workspace assi
   const changeBoard=(await request('/api/collaboration?project=website',null,peer.cookie)).data;
   assert.equal(changeBoard.changes[0].task,task);assert.equal(changeBoard.changes[0].review.commit,'a'.repeat(40));
   assert.equal((await request('/api/collaboration?project=automation',null,peer.cookie)).data.changes.length,0);
+  const note={workspace:copy.data.id,revision:0,kind:'feature',body:'Neue gemeinsame Startseite; Anforderungen aus der Aufgabe umgesetzt.'};
+  assert.equal((await request('/api/collaboration/change',note,peer.cookie)).status,403);
+  assert.equal((await request('/api/collaboration/change',note,owner.cookie,'https://foreign.invalid')).status,403);
+  assert.equal((await request('/api/collaboration/change',note,owner.cookie)).status,200);
+  assert.equal((await request('/api/collaboration/change',{...note,body:'Stale overwrite'},owner.cookie)).status,409);
+  assert.equal((await request('/api/collaboration/task?id='+task,null,peer.cookie)).data.changes[0].note.body,note.body);
+  assert.equal((await request('/api/collaboration/change',{...note,revision:1,kind:'fix',body:'Korrigiert'},owner.cookie)).status,200);
+  assert.equal((await request('/api/collaboration/task?id='+task,null,peer.cookie)).data.changes[0].note.revision,2);
   assert.equal((await request('/api/development/reviews',{id:randomUUID(),job:reviewId,commit:'a'.repeat(40),decision:'approved',body:'Geprüft'},peer.cookie)).status,200);
   assert.equal((await request('/api/collaboration/task?id='+task,null,owner.cookie)).data.reviews[0].state,'approved');
   assert.equal((await act(owner,'release',task)).status,409);

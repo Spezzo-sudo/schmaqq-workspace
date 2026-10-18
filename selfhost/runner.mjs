@@ -7,6 +7,7 @@ import {aiCapabilities,runLocalAi} from './local-ai.mjs';
 import {command} from './process.mjs';
 import {allowedFile,readSource,saveSource} from './files.mjs';
 import {runCodex} from './codex-run.mjs';
+import {sourceRevision,stableSource} from './source-revision.mjs';
 export {command} from './process.mjs';
 export class LocalRunner{
  constructor(config){
@@ -58,27 +59,27 @@ export class LocalRunner{
    if(job.action==='files')return {files:tracked.slice(0,2000),truncated:tracked.length>2000};
    if(!tracked.includes(job.payload.file))throw new Error('Nur bereits in Git erfasste Dateien können geöffnet werden.');
    if(job.action==='read-file')return readSource(w.dir,job.payload.file);
-   return saveSource(w.dir,job.payload.file,job.payload.revision,job.payload.content);
+   return {...saveSource(w.dir,job.payload.file,job.payload.revision,job.payload.content),source:await sourceRevision(w.dir,control)};
   }
-  if(job.action==='status')return {branch:w.branch,status:await this.git(w.dir,'status','--short'),diff:(await this.git(w.dir,'diff','HEAD','--')).slice(0,50000),commit:await this.git(w.dir,'rev-parse','HEAD')};
-  if(job.action==='check')return {checks:await this.check(w.dir,p),commit:await this.git(w.dir,'rev-parse','HEAD')};
+  if(job.action==='status')return {branch:w.branch,status:await this.git(w.dir,'status','--short'),diff:(await this.git(w.dir,'diff','HEAD','--')).slice(0,50000),commit:await this.git(w.dir,'rev-parse','HEAD'),source:await sourceRevision(w.dir,control)};
+  if(job.action==='check'){const before=await sourceRevision(w.dir,control),checks=await this.check(w.dir,p);return {checks,commit:await this.git(w.dir,'rev-parse','HEAD'),source:stableSource(before,await sourceRevision(w.dir,control))};}
   if(['review','submit'].includes(job.action)){
    await this.git(w.dir,'add','--all');
    const staged=await this.git(w.dir,'diff','--cached','--name-only');if(staged)await this.git(w.dir,'commit','-m','Schmaqq Studio: Änderungen zur Prüfung');
-   const checks=await this.check(w.dir,p);if(await this.git(w.dir,'status','--porcelain'))throw new Error('Arbeitskopie hat sich während der Prüfung verändert. Bitte erneut prüfen und einreichen.');
+   const before=await sourceRevision(w.dir,control),checks=await this.check(w.dir,p);if(await this.git(w.dir,'status','--porcelain'))throw new Error('Arbeitskopie hat sich während der Prüfung verändert. Bitte erneut prüfen und einreichen.');
    const commit=await this.git(w.dir,'rev-parse','HEAD'),base=await this.git(w.dir,'merge-base','HEAD',`origin/${p.base}`);
    const diff=await this.git(w.dir,'diff','--no-ext-diff','--no-textconv','--no-color',base,commit,'--');
-   const result={checks,workflow:p.workflow??'direct',branch:w.branch,commit,base,diff:diff.slice(0,50000),diffTruncated:diff.length>=50000,published:job.action==='submit'};
+   const result={checks,workflow:p.workflow??'direct',branch:w.branch,commit,base,diff:diff.slice(0,50000),diffTruncated:diff.length>=50000,published:job.action==='submit',source:stableSource(before,await sourceRevision(w.dir,control))};
    if(job.action==='submit')await this.git(w.dir,'push','--set-upstream','origin',`HEAD:refs/heads/${w.branch}`);
    return result;
   }
   if(job.action==='preview'){
    if(p.preview?.build&&p.preview?.directory){
-    await this.execute(p.preview.build,w.dir);const output=path.resolve(w.dir,p.preview.directory),real=realpathSync(output),workspace=realpathSync(w.dir);
+    const before=await sourceRevision(w.dir,control);await this.execute(p.preview.build,w.dir);const output=path.resolve(w.dir,p.preview.directory),real=realpathSync(output),workspace=realpathSync(w.dir);
     if(!real.startsWith(workspace+path.sep)||real===workspace)throw new Error('Vorschau-Ausgabe muss innerhalb der Arbeitskopie liegen.');
     const files={};let bytes=0,count=0;
     function collect(dir){for(const item of readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,item.name);if(lstatSync(full).isSymbolicLink())throw new Error('Symlinks sind in Vorschauen nicht erlaubt.');if(item.isDirectory())collect(full);else{const data=readFileSync(full);bytes+=data.length;if(bytes>5000000||++count>500)throw new Error('Vorschau überschreitet 5 MB oder 500 Dateien.');files[path.relative(real,full).split(path.sep).join('/')]=data.toString('base64');}}}
-    collect(real);if(!files['index.html'])throw new Error('Gebauter Vorschau fehlt index.html.');return {previewBundle:files};
+    collect(real);if(!files['index.html'])throw new Error('Gebauter Vorschau fehlt index.html.');return {previewBundle:files,source:stableSource(before,await sourceRevision(w.dir,control))};
    }
    if(!p.preview?.argv||!p.preview?.url)throw new Error('Vorschau auf diesem PC noch nicht konfiguriert.');const u=new URL(p.preview.url);if(!['http:','https:'].includes(u.protocol))throw new Error('Ungültige Vorschau-Adresse.');
    const existing=this.previews.get(w.key);if(existing?.exitCode===null)return {url:p.preview.url,scope:'runner',alreadyRunning:true};

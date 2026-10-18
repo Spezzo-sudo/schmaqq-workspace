@@ -304,3 +304,12 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .change-facts small { display: block; color: var(--muted); font-size: 11px; }
 .change-caution { border-left: 3px solid var(--ink); padding-left: 10px; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .change-next { font-size: 13px; line-height: 1.7; margin-top: 14px; }
+.change-description { font-size: 13px; line-height: 1.7; margin: 14px 0; }
+.change-description p { white-space: pre-wrap; margin-top: 7px; }
+.change-description small { color: var(--muted); font-size: 11px; }
+.change-note-form { padding: 12px 0; }
+.change-note-form label { display: grid; gap: 8px; }
+.change-note-form .collaboration-task-actions { margin-top: 0; }
+.change-caution details { margin-top: 8px; }
+.change-caution summary { cursor: pointer; }
+.change-caution details p { margin-top: 8px; }
