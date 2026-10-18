@@ -96,7 +96,7 @@ test('quarantine refuses oversized Git blobs before writing a feature ref',()=>{
   writeFileSync(path.join(f.seed,'too-big.txt'),'x'.repeat(2200000));
   run(f.seed,'add','too-big.txt');run(f.seed,'commit','--amend','--no-edit');
   const commit=run(f.seed,'rev-parse','HEAD');
-  run(f.seed,'bundle','create','-f',f.bundle,'refs/heads/studio/feature-a','^main');
+  rmSync(f.bundle);run(f.seed,'bundle','create',f.bundle,'refs/heads/studio/feature-a','^main');
   assert.throws(()=>publishLocalBundle({binding:f.binding,request:{...f.request,commit},fixtureRoot:f.root,bundlePath:f.bundle}),/Oversized Git blob|Large tree blob|Expanded Git objects/);
   assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
   assert.throws(()=>run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/studio/feature-a'));
@@ -109,7 +109,7 @@ test('quarantine refuses Git trees containing symlinks',()=>{
   symlinkSync('file.txt',path.join(f.seed,'symlink.txt'));
   run(f.seed,'add','symlink.txt');run(f.seed,'commit','--amend','--no-edit');
   const commit=run(f.seed,'rev-parse','HEAD');
-  run(f.seed,'bundle','create','-f',f.bundle,'refs/heads/studio/feature-a','^main');
+  rmSync(f.bundle);run(f.seed,'bundle','create',f.bundle,'refs/heads/studio/feature-a','^main');
   assert.throws(()=>publishLocalBundle({binding:f.binding,request:{...f.request,commit},fixtureRoot:f.root,bundlePath:f.bundle}),/Unsupported tree entry/);
   assert.equal(run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/main'),f.base);
   assert.throws(()=>run(f.root,'--git-dir',f.bare,'rev-parse','refs/heads/studio/feature-a'));
