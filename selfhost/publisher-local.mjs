@@ -105,7 +105,7 @@ function checkObjects(fixture,quarantine,base,commit){
  const files=tree.split('\0').filter(Boolean);
  if(files.length>MAX_TREE_FILES)deny('Too many checked-out files.');
  for(const entry of files){
-  const match=entry.match(/^(100644|100755) blob ([a-f0-9]{40}) ([0-9]+)\t([\s\S]+)$/);
+  const match=entry.match(/^(100644|100755) blob ([a-f0-9]{40}) +([0-9]+)\t([\s\S]+)$/);
   if(!match)deny('Unsupported tree entry (symlink or submodule).');
   const p=match[4];
   if(p.startsWith('/')||p.includes('\\')||/[\x00-\x1f\x7f]/.test(p)||
