@@ -33,7 +33,7 @@ function git(fixture,...args){
  const env={
   PATH:process.env.PATH??'',HOME:fixture.root,TMPDIR:os.tmpdir(),
   GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:os.devNull,
-  GIT_TERMINAL_PROMPT:'0',GIT_NO_REPLACE_OBJECTS:'1',GIT_PROTOCOL_FROM_USER:'0',
+  GIT_TERMINAL_PROMPT:'0',GIT_NO_REPLACE_OBJECTS:'1',GIT_ALLOW_PROTOCOL:'file',
  };
  const p=spawnSync('git',['-c','core.hooksPath='+hooks,'--git-dir',fixture.bare,...args],{
   cwd:fixture.root,env,encoding:'utf8',timeout:30000,maxBuffer:128*1024,
