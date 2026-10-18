@@ -121,13 +121,13 @@ test('quarantine refuses Git trees containing symlinks',()=>{
 async function waitForFile(file,child){
  for(let i=0;i<120;i++){
   if(existsSync(file))return;
-  if(child.exitCode!==null)throw new Error('Publisher worker exited before checkpoint: '+child.exitCode);
+  if(child.exitCode!==null||child.signalCode!==null)throw new Error('Publisher worker exited before checkpoint: '+(child.exitCode??child.signalCode));
   await delay(25);
  }
  throw new Error('Checkpoint not reached');
 }
 async function stopped(child){
- if(child.exitCode!==null)return;
+ if(child.exitCode!==null||child.signalCode!==null)return;
  await new Promise(resolve=>{child.once('exit',resolve);child.kill('SIGKILL');});
 }
 test('real SIGKILL after journal: stale lock blocks other process until explicit operator cleanup; recovery preserves main',async()=>{
