@@ -4,6 +4,12 @@ Eigenständige Entwicklungsumgebung für die Zusammenarbeit an SCHMAQQ.
 Zentrale private Codebasis: [Spezzo-sudo/schmaqq-workspace](https://github.com/Spezzo-sudo/schmaqq-workspace).
 Der Code liegt direkt im Repository-Root. NetzKontor ist ein separates Projekt.
 
+**Stand 19.10.2026:** Production läuft auf dem freigegebenen R23-Commit aef64f85efeeb40f6c0f3a7dc43986a52a20f09f. GitHub main ist ein anderer Entwicklungsstand. R24-A enthält nur reviewpflichtige Verbesserungen und ist **nicht deployed**.
+
+- [Release-Herkunft und Sicherheitsgates](docs/RELEASE_PROVENANCE_POLICY.md)
+- [VPS-Umzug und Disaster-Recovery](docs/VPS_MIGRATION_RUNBOOK.md)
+- [Produktionsstatus und historische Nachweise](docs/STATUS.json)
+
 **Projektüberblick und verbindliche nächste Schritte:** [Gesamtplan](docs/ROADMAP.md).
 Nächster Meilenstein: Marco und Markus arbeiten parallel am selben Testprojekt,
 mit eigenen Kopien, Kommentaren, echten Tests, Vorschauen und gegenseitiger Prüfung.

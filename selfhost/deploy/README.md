@@ -1,18 +1,82 @@
-# Kleines Serverpaket
+# SCHMAQQ Studio — Betrieb des eigenständigen Node/SQLite-Release
 
-Dieses Paket enthält die fertig gebaute Oberfläche und den Node/SQLite-Server. Kein npm install, Docker-Build oder Projekt-Repository auf dem VPS nötig. Eine ausschliesslich für Studio bereitgestellte Node-Laufzeit >=24.15 muss am vorgegebenen Pfad vorhanden sein; die systemweite Node-v22-Installation bleibt unverändert. Die Runner bleiben auf den persönlichen PCs.
+Dieses Verzeichnis enthält die bestehende systemd-Vorlage, eine
+Beispielumgebung, den read-only Host-Preflight und ab R24-A einen
+unabhängigen Release-Verifier. **Keine Datei hier bewirkt selbst ein
+Production-Deployment.**
 
-Noch keine Installation durchführen, bevor bestehende Dienste, freie Ports, Node-Pfad, HTTPS-Proxy und Zieladressen geprüft wurden. Die beigefügte systemd-Datei ist eine Vorlage; sie ersetzt keinen bestehenden Webserver.
+## Bestehende Production und Versionen
 
-1. Vorhandenen VPS per SSH prüfen. `node selfhost/deploy/preflight.mjs /geplantes/ziel` meldet Node, SQLite, Speicher und Portverfügbarkeit; es verändert keine Dateien oder Dienste. Für das Ziel einen bereits vorhandenen Ordner wählen.
-2. Paket in ein neues Release-Verzeichnis unter `/opt/schmaqq-studio/releases/` entpacken. Den Dienstbenutzer `schmaqq-studio` ohne Login vorsehen. `/opt/schmaqq-studio/current` muss auf dieses Release zeigen.
-3. Env-Vorlage nach `/etc/schmaqq-studio.env` übernehmen und zwei tatsächliche HTTPS-Adressen setzen. Vorhandenen Reverse-Proxy gezielt um Studio → 127.0.0.1:4310 und Vorschau → 127.0.0.1:4311 ergänzen. Zertifikate müssen für beide Adressen gültig sein; der Studio-Proxy muss JSON-Anfragen bis 9 MB zulassen. Vorhandene schmaqq.com-Routen erhalten.
-4. Separates Node 24 am Pfad `/opt/schmaqq-studio/runtime/node/bin/node` nach Herkunfts-/SHA256-Prüfung und passender Berechtigung bereitstellen. Die systemd-Vorlage verwendet genau diesen Pfad; `/usr/bin/node` bleibt unberührt. Erst danach Service-Einrichtung zulassen. Der Dienst verwendet `/var/lib/schmaqq-studio` für SQLite, Setup-Link und Backups; dieser Pfad bleibt unabhängig vom Release bestehen. systemd legt ihn für den Dienst an.
-5. Nach bewusstem Einrichten und Start des Dienstes zuerst `/healthz`, beide HTTPS-Adressen und anschließend den ersten persönlichen Login prüfen. Der private Setup-Link liegt im Datenverzeichnis. Niemals in öffentliche Protokolle oder Git kopieren.
-6. Beide PCs mit dem HTTPS-Studio verbinden. Ein vollständiger Abnahmetest umfasst zwei persönliche Konten, getrennte Arbeitskopien, Tests, Teamprüfung, Runner-Neustart und Backup-Wiederherstellung in einer separaten Testinstanz.
+Am 19.10.2026 lief Studio auf R23
+`aef64f85efeeb40f6c0f3a7dc43986a52a20f09f`. Das bestehende R23-Archiv
+hat einen separat verifizierten SHA256 und ein 703-Dateien-Manifest, aber
+**noch keine eingebettete Git-Herkunftsdatei**. R24-A führt diese zusätzliche
+Provenienz für **künftige** Releases ein.
 
-R4-A-Nachweis vom 17.10.2026: Ein isoliert gebautes Release-Archiv (783465 Bytes; 697 Manifestdateien) wurde entpackt und mit `release-smoke.mjs` geprüft. Ein zusätzlicher Backup-/Restore-Probelauf bestätigte SQLite-Integrität, Fremdschlüssel und die Wiederherstellung von Mitglied, Projekt, Aufgabe und Dokument. Das ist **keine** Produktionsinstallation und ersetzt keinen Restore-Test unter dem späteren Dienstbenutzer.
+- Verbindliche Herkunftsregeln: `docs/RELEASE_PROVENANCE_POLICY.md`
+- Kontrollierter VPS-Umzug/Disaster Recovery:
+  `docs/VPS_MIGRATION_RUNBOOK.md`
+- Historische Abnahmeberichte: `docs/evidence/` sowie gesonderte
+  geschützte Hermes-Operator-Evidence.
 
-Backup: als Dienstbenutzer mit `STUDIO_DATA_DIR=/var/lib/schmaqq-studio node selfhost/backup.mjs /var/lib/schmaqq-studio/backups/EINDEUTIG.sqlite` einen konsistenten SQLite-Snapshot erstellen und geschützt außerhalb dieses Servers sichern. Vor einem Update ein Backup erstellen. Ein älteres Programmrelease nur mit kompatiblem Datenbankschema verwenden; ein Rollback darf keine neueren Teamdaten überschreiben.
+## Vorprüfung (read-only)
 
-MemoryMax=256M und CPUQuota=50% sind zunächst Ressourcengrenzen für das kleine Dashboard, keine zugesicherte Kapazität. Unter echtem Zwei-Personen-Betrieb beobachten und bei Bedarf anpassen. Git, Codex, Tests und Projekt-Builds laufen auf den PCs.
+1. Die tatsächlichen bereits laufenden Dienste, Ports, DNS/Traefik,
+   TLS, Systemressourcen und Servicekonten inventarisieren. **Nichts
+   unter fremder Domain verändern.**
+2. Die benötigte dedizierte Node-Laufzeit >=24.15 verifizieren;
+   systemweite Node-Installation nicht ungeprüft überschreiben.
+3. Den Host-Preflight ausführen (Zielordner muss schon bestehen):
+
+       node selfhost/deploy/preflight.mjs /existing/target
+
+4. Exaktes freigegebenes Release-Archiv, Quelle und Manifest prüfen
+   (Beispiel für einen **neuen** R24-A-artigen Kandidaten):
+
+       node selfhost/deploy/verify-release.mjs \
+         --release /path/to/unpacked \
+         --source FULL_APPROVED_GIT_SHA \
+         --archive /path/to/candidate.tar.gz \
+         --archive-sha256 FULL_APPROVED_ARCHIVE_SHA256
+
+   R23 benötigt zusätzlich explizite `--allow-legacy`-Prüfung mit dem
+   vertrauenswürdig gepinnten Archivhash. Ein solches Ergebnis ist **kein**
+   unabhängiger Git-Provenienznachweis.
+
+## Geplantes Releasepaket (separates Owner-GO erforderlich)
+
+- Nur die fertig gebaute Oberfläche und die zur Ausführung erforderlichen
+  Module, Node-Abhängigkeiten und Deploy-Vorlagen installieren; kein
+  `npm install` oder Docker-Build auf dem Produktionshost erforderlich.
+- Neue Releases unter `/opt/schmaqq-studio/releases/<SHA>` erhalten,
+  vorhandene Releases niemals überschreiben.
+- Dienstbenutzer `schmaqq-studio`, Daten in `/var/lib/schmaqq-studio`,
+  Konfiguration unter `/etc/schmaqq-studio.env` getrennt halten.
+- Studio an Loopback 4310, Preview an Loopback 4311; über getrennte
+  HTTPS-Origins mit gültigen Zertifikaten und geeignetem Proxy führen.
+  JSON-Limit derzeit bis 9 MB, so weit die genehmigten Routen es erfordern.
+- Den atomaren Release-Symlink-Wechsel und einen Neustart **nur des
+  freigegebenen Dienstes** mit Backup, Datenintegritäts-/Restore-Tests,
+  Authentifizierungsprüfung und Rollback nach aktuellem Hermes-Runbook
+  ausführen. Die Vorlagen sind kein universeller Deployment-Automat.
+- GitHub-Merge und Production-Deployment sind verschiedene Aktionen.
+
+## Sicheres Backup
+
+Das Script `selfhost/backup.mjs` führt einen konsistenten SQLite-Snapshot
+mittels `VACUUM INTO` aus, verweigert vorhandene Zielpfade, setzt `0600`
+und prüft Datenbankintegrität/Fremdschlüssel:
+
+    STUDIO_DATA_DIR=/var/lib/schmaqq-studio \
+      /opt/schmaqq-studio/runtime/node/bin/node \
+      selfhost/backup.mjs /protected/new/backup.sqlite
+
+**Achtung:** Das ist nur die SQLite-Datei. Ein vollständiger Recovery-Plan
+sichert zusätzlich alle übrigen persistenten Dateien, geschützte
+Umgebungs-/Unit-Metadaten und eine verschlüsselte Kopie **ausserhalb** des VPS.
+Ein bereits laufendes Release darf ohne Owner-GO weder gestoppt noch
+zurückgerollt werden.
+
+Die aktuellen Template-Grenzen `MemoryMax=256M` und `CPUQuota=50%`
+sind keine Kapazitätsgarantie. Git, Codex und Build-/Test-Aufträge bleiben
+vorerst auf den jeweiligen privaten Runner-PCs.

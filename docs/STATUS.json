@@ -2,6 +2,25 @@
   "schema": 1,
   "observed_on": "2026-10-19",
   "product": "SCHMAQQ Studio",
+  "current_production_r23_2026_10_19": {
+    "source_commit": "aef64f85efeeb40f6c0f3a7dc43986a52a20f09f",
+    "archive_sha256": "1a927d7eba4d5becf749401baaf2ab5f02cd8e004577258c9a3cd069331e6768",
+    "manifest_files": 703,
+    "deployment": "Hermes reported PASS; independent read-only symlink/service/HTTPS/manifest PASS",
+    "source_of_truth_warning": "GitHub main diverges; default branch is not deployed Production",
+    "db_evidence": "Hermes privileged DB integrity/FK and backup/restore reported PASS, not independently re-run",
+    "browser_evidence": "Anonymous Production Playwright 16/16 PASS; isolated two-account browser regression 9/9 PASS",
+    "not_yet_verified": [
+      "Authenticated two-account Production collaboration",
+      "Encrypted offsite copy and automatic restore/retention",
+      "VPS-to-VPS migration"
+    ],
+    "r24_a_status": "Review-only; not merged and not deployed",
+    "runbooks": [
+      "docs/RELEASE_PROVENANCE_POLICY.md",
+      "docs/VPS_MIGRATION_RUNBOOK.md"
+    ]
+  },
   "purpose": "Gemeinsame Entwicklung digitaler Services durch zwei Personen mit eigenen KI-Konten",
   "application": {
     "entry": "studio/main.tsx",

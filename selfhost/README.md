@@ -323,7 +323,7 @@ Nur der Eigentümer kann einen Arbeitsbereich bearbeiten oder abschließen. Lauf
 
 Nach `npm run studio:build` erzeugt `npm run studio:release` ein eigenes datiertes Verzeichnis und tar.gz unter `.studio/releases`. Es enthält nur die gebaute Oberfläche, benötigte Servermodule, Zod und Einrichtungsvorlagen. Keine persönlichen Konten, Gerätetokens, lokalen Profile, Git-Repositories oder vorhandenen Datenbanken werden kopiert. Anleitung und lesender Vorabcheck liegen unter `selfhost/deploy`.
 
-`STUDIO_DATA_DIR` legt das dauerhafte Serverdatenverzeichnis fest, unabhängig vom Programmrelease. Die Bereitstellung, TLS-Einrichtung und Ressourcenprüfung auf dem echten Hostinger-VPS sind noch ausstehend.
+`STUDIO_DATA_DIR` legt das dauerhafte Serverdatenverzeichnis fest, unabhängig vom Programmrelease. Die damalige R4-Planung ist historisch: R23 wurde am 19.10.2026 auf dem VPS ausgerollt und mit separat geschützten Hermes-Nachweisen geprüft. Für einen späteren VPS-Umzug gelten die dokumentierten Release- und Disaster-Recovery-Gates. Keine automatische Freigabe.
 
 
 ## Lokaler Zwei-Personen-Probelauf ohne VPS
