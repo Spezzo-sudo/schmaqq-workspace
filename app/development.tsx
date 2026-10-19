@@ -20,6 +20,19 @@ export default function Development({projects,userId,canInvite=false,initialProj
  const [devices,setDevices]=useState<Device[]>([]),[jobs,setJobs]=useState<Job[]>([]),[project,setProject]=useState(initialProject??projects[0]?.id??''),[device,setDevice]=useState(''),[worktree,setWorktree]=useState(''),[error,setError]=useState(''),[pending,setPending]=useState(false),[showSetup,setShowSetup]=useState(false),[config,setConfig]=useState(''),[invitation,setInvitation]=useState(''),[prompt,setPrompt]=useState(''),[detail,setDetail]=useState<Job|null>(null),[events,setEvents]=useState<{seq:number;type:string;text:string;created:number}[]>([]),[followup,setFollowup]=useState(''),[detailData,setDetailData]=useState<Job|null>(null),[profile,setProfile]=useState<LocalProfile|null>(null),[issue,setIssue]=useState(''),[workspaces,setWorkspaces]=useState<TeamWorkspace[]>([]),[taskList,setTaskList]=useState<{id:string;project:string;title:string;assignee:string|null;status:string}[]>([]),[task,setTask]=useState(''),[title,setTitle]=useState(''),[scope,setScope]=useState(''),[activeDevices,setActiveDevices]=useState<string[]>([]),[loaded,setLoaded]=useState(false),[showNew,setShowNew]=useState(false),[opening,setOpening]=useState('');
  const [readiness,setReadiness]=useState<Readiness>(emptyReadiness),[showProjectSetup,setShowProjectSetup]=useState(false);
  const [detailError,setDetailError]=useState('');
+ // Restore the project selected by browser Back/Forward even while mounted.
+ // The URL without a project represents the default development context.
+ // Once the existing-workspace recommendation chooses a default, preserve it
+ // for Back/Forward while the pane remains mounted.
+ const implicitProject=useRef('');
+ const routeProject=initialProject??(implicitProject.current||projects[0]?.id||'');
+ useEffect(()=>{
+  if(project===routeProject)return;
+  setProject(routeProject);
+  // A restored project must not reuse the prior project's workspace or task.
+  // Unsaved source drafts are preserved by the existing in-memory draft store.
+  setWorktree('');setTask('');
+ },[routeProject]);
  const reviewOpened=useRef(false);
  const dialogRef=useRef<HTMLElement|null>(null),detailTrigger=useRef<HTMLElement|null>(null);
  useEffect(()=>{
@@ -74,6 +87,7 @@ export default function Development({projects,userId,canInvite=false,initialProj
   const preferred=preferredSoloWorkspace(workspaces,userId,projects.map(p=>p.id),ownDevices);
   if(!preferred)return;
   autoSelected.current=true;
+  implicitProject.current=preferred.project;
   setProject(preferred.project);setDevice(preferred.device);setWorktree(preferred.id);
  },[loaded,initialProject,initialTask,initialReview,projects,workspaces,ownDevices,userId]);
  

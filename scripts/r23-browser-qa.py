@@ -109,6 +109,109 @@ def main():
 
         verify("B01-back-forward", history, page)
 
+        def project_context_back():
+            nav.get_by_role("button", name="Entwicklung").click()
+            selector = page.locator(".dev-controls select").first
+            expect(selector).to_be_visible()
+            original = selector.input_value()
+            projects = selector.locator("option").evaluate_all(
+                "(options) => options.map(option => option.value)"
+            )
+            assert len(projects) >= 2, "At least two demo projects are needed"
+            alternative = next(value for value in projects if value != original)
+            original_url = page.url
+            selector.select_option(alternative)
+            page.wait_for_function(
+                "(value) => new URLSearchParams(location.search).get('project') === value",
+                arg=alternative
+            )
+            expect(selector).to_have_value(alternative)
+            page.go_back(wait_until="domcontentloaded")
+            expect(page).to_have_url(original_url)
+            expect(selector).to_have_value(original)
+            page.go_forward(wait_until="domcontentloaded")
+            expect(selector).to_have_value(alternative)
+            assert new_route_project(page) == alternative
+            page.screenshot(path=str(OUT / "b01-project-context-restored.png"))
+            # Leave the next QA scenario in the original project context.
+            page.go_back(wait_until="domcontentloaded")
+            expect(page).to_have_url(original_url)
+            expect(selector).to_have_value(original)
+
+        def new_route_project(browser_page):
+            return browser_page.evaluate(
+                "new URLSearchParams(location.search).get('project')"
+            )
+
+        verify("B01-project-context-back-forward", project_context_back, page)
+
+        def history_unchanged_state():
+            nav.get_by_role("button", name="Projekte").click()
+            expect(page.get_by_role("heading", name="Unsere Projekte")).to_be_visible()
+            original_url = page.url
+            # A browser History entry with unchanged view/project must not
+            # poison the next *real* Studio navigation.
+            page.evaluate("""() => {
+                const url = new URL(location.href);
+                url.searchParams.set('temporary-history-test', '1');
+                history.pushState({browserQa: true}, '', url);
+            }""")
+            assert "temporary-history-test=1" in page.url
+            page.go_back(wait_until="domcontentloaded")
+            expect(page).to_have_url(original_url)
+            nav.get_by_role("button", name="Team & Zugänge").click()
+            expected_team = original_url.replace("view=projects", "view=team", 1)
+            expect(page).to_have_url(expected_team)
+            expect(page.get_by_role("heading", name="Unser Team")).to_be_visible()
+            page.go_back(wait_until="domcontentloaded")
+            expect(page).to_have_url(original_url)
+            expect(page.get_by_role("heading", name="Unsere Projekte")).to_be_visible()
+            page.go_forward(wait_until="domcontentloaded")
+            expect(page).to_have_url(expected_team)
+            page.screenshot(path=str(OUT / "b01-unchanged-history-recovery.png"))
+
+        verify("B01-unchanged-state-history", history_unchanged_state, page)
+
+        def unsaved_draft_history():
+            nav.get_by_role("button", name="Entwicklung").click()
+            editor = page.locator(".source-editor")
+            expect(editor).to_be_visible(timeout=16000)
+            editor.get_by_role("button", name="Dateien laden").click()
+            file_button = editor.locator(".source-file-list").get_by_role(
+                "button", name="site/index.html"
+            )
+            expect(file_button).to_be_visible(timeout=20000)
+            file_button.click()
+            field = editor.get_by_role("textbox", name="Dateiinhalt")
+            expect(field).to_be_visible(timeout=20000)
+            original_text = field.input_value()
+            marker = "<!-- R23 unsaved browser-history regression -->"
+            new_text = original_text + "\n" + marker
+            field.fill(new_text)
+            expect(editor.get_by_text("Ungespeicherter Entwurf.", exact=False)).to_be_visible()
+            selector = page.locator(".dev-controls select").first
+            original_project = selector.input_value()
+            alternatives = selector.locator("option").evaluate_all(
+                "(nodes) => nodes.map(node => node.value)"
+            )
+            alternative = next(pid for pid in alternatives if pid != original_project)
+            initial_url = page.url
+            selector.select_option(alternative)
+            expect(page.locator(".source-code")).to_have_count(0)
+            page.go_back(wait_until="domcontentloaded")
+            expect(page).to_have_url(initial_url)
+            expect(selector).to_have_value(original_project)
+            restored = page.locator(".source-editor").get_by_role(
+                "textbox", name="Dateiinhalt"
+            )
+            expect(restored).to_be_visible(timeout=18000)
+            expect(restored).to_have_value(new_text)
+            expect(page.get_by_text("Ungespeicherter Entwurf in diesem Tab erhalten.")).to_be_visible()
+            page.screenshot(path=str(OUT / "b01-draft-restored-after-back.png"))
+            # This scenario intentionally NEVER writes the altered draft to disk.
+
+        verify("B01-unsaved-draft-retained", unsaved_draft_history, page)
+
         def mobile():
             page.set_viewport_size({"width": 390, "height": 844})
             toggle = page.locator("button.mobile-toggle")
@@ -175,6 +278,11 @@ def main():
 
         def review():
             nav.get_by_role("button", name="Entwicklung").click()
+            project_picker = page.locator(".dev-controls select").first
+            expect(project_picker).to_be_visible()
+            # Fixture job belongs to the website project; tests must not depend
+            # on the project selected by an earlier navigation scenario.
+            project_picker.select_option("website")
             submission = page.locator("#team-review .submission").filter(has_text="studio/r23-fixture")
             expect(submission).to_be_visible(timeout=12000)
             submission.get_by_role("button", name="Ansehen").click()

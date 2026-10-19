@@ -553,10 +553,10 @@
       "B04 mobile navigation accessibility",
       "B05 project search empty state"
     ],
-    "browser_acceptance": "6/6 Playwright scenarios PASS (including GitHub status refreshing, mismatched base, fork and provider errors), isolated 127.0.0.1:4320, no production login",
+    "browser_acceptance": "9/9 Playwright regression cases PASS on isolated demo (including B01-A, B01-B and unsaved source-editor draft restoration); production UI not retested",
     "github_transition": "Read-only PR mapping verifies repo, configured target branch, source branch and exact SHA; fork PRs explicitly unsupported; results over 100 entries unverified; manually and automatically refreshed (30s while visible); GitHub CI/reviews/branch protection not verified",
     "github_permissions": "Existing identity-only read:user OAuth is insufficient; repository access NOT configured",
-    "release": "Not approved for deployment. No application push, merge, provider change or production mutation",
+    "release": "Draft-PR #21 includes the R23 code and the separately approved B01 follow-up; not approved for merge or deployment; no production/provider mutation",
     "remaining": [
       "private provider onboarding with explicit authorization",
       "real Windows and macOS two-person acceptance",
@@ -564,13 +564,30 @@
     ],
     "release_smoke": "PASS: new read-only GitHub PR module included; 703-file manifest, isolated HTTP, auth, workspace, backup PASS",
     "r23_review_fixes": {
-      "source": "Unpushed local changes after Draft PR #21 review",
+      "source": "Two review fixes commits were pushed: c775cda and 7e5e17b; additional B01 follow-up is local and unpushed",
       "unit_and_api_tests": "6/6 PASS",
       "full_backend_tests": "31/31 PASS",
-      "browser_tests": "6/6 PASS",
+      "browser_tests": "9/9 PASS for current LOCAL candidate",
       "typescript_build_source_guard": "PASS",
       "production_changed": false,
-      "github_pushed": false
+      "github_pushed": true
+    },
+    "r23_b01_followup": {
+      "state": "draft_pr_21_review_pending",
+      "basis_commit": "7e5e17b612cce7edc1f74d6b70e67827964a3612",
+      "findings": [
+        "B01-A: development project context not restored on browser back",
+        "B01-B: sticky history popstate suppression flag"
+      ],
+      "source_files": [
+        "app/workspace.tsx",
+        "app/development.tsx",
+        "scripts/r23-browser-qa.py"
+      ],
+      "browser_tests": "9/9 PASS, including unsaved draft restoration with no disk save",
+      "github_push_approved": true,
+      "production_deployment_approved": false,
+      "github_pushed": true
     }
   }
 }

@@ -24,10 +24,12 @@ export default function Workspace({user,selfHosted=false,demoMode=false}:{user:C
  const [developmentTarget,setDevelopmentTarget]=useState<{project:string;task?:string;review?:string}|null>(null),[commentDrafts,setCommentDrafts]=useState<Record<string,string>>({});
  const hasComments=Object.values(commentDrafts).some(text=>text.trim());
  useEffect(()=>{if(!hasComments)return;const warn=(e:BeforeUnloadEvent)=>{e.preventDefault();e.returnValue='';};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[hasComments]);
- const routeInitialized=useRef(false),restoringHistory=useRef(false);
+ const routeInitialized=useRef(false);
  useEffect(()=>{
   if(!selfHosted)return;
-  if(restoringHistory.current){restoringHistory.current=false;return;}
+  // Compare the actual URL with React state. popstate already changed the URL:
+  // no push is needed when both match, including history entries that only
+  // differ by unrelated query parameters.
   const url=new URL(location.href);
   const currentView=url.searchParams.get('view')??'overview',currentProject=url.searchParams.get('project')??'all';
   if(routeInitialized.current&&currentView===view&&currentProject===selected)return;
@@ -39,7 +41,6 @@ export default function Workspace({user,selfHosted=false,demoMode=false}:{user:C
  useEffect(()=>{
   if(!selfHosted)return;
   const restore=()=>{
-   restoringHistory.current=true;
    const params=new URLSearchParams(location.search),requested=params.get('view');
    setView(requested&&nav.some(n=>n[0]===requested)?requested:'overview');
    setSelected(params.get('project')??'all');
