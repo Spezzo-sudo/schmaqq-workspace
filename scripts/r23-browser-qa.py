@@ -159,7 +159,18 @@ def main():
         page.route("**/api/development", list_handler)
         page.route("**/api/development/job?*", detail_handler)
         page.route("**/api/development/reviews?*", lambda route: route.fulfill(json={"state": "pending", "entries": []}))
-        page.route("**/api/development/github-pr?*", lambda route: route.fulfill(json={"state": "local_only", "commit": "a"*40, "branch": "studio/r23-fixture", "mergeReady": False}))
+        pr_mock = {"state": "local_only", "commit": "a"*40, "branch": "studio/r23-fixture", "mergeReady": False}
+        pr_http = {"status": 200}
+        pr_calls = []
+
+        def github_pr_handler(route):
+            pr_calls.append(route.request.url)
+            if pr_http["status"] != 200:
+                route.fulfill(status=pr_http["status"], json={"error": "Simulated provider problem"})
+            else:
+                route.fulfill(json=dict(pr_mock))
+
+        page.route("**/api/development/github-pr?*", github_pr_handler)
         page.route("**/api/development/events?*", lambda route: route.fulfill(json={"events": []}))
 
         def review():
@@ -184,6 +195,61 @@ def main():
             page.screenshot(path=str(OUT / "b03-loaded.png"))
 
         verify("B03-review-loading", review, page)
+
+        def github_status():
+            section = page.locator("section.github-pr-status")
+            refresh = section.get_by_role("button", name="GitHub-Status erneut prüfen")
+            expect(refresh).to_be_enabled()
+            expect(section.get_by_text("Letzter Prüfversuch:", exact=False)).to_be_visible()
+            valid = {"repository": "Spezzo-sudo/schmaqq-studio-pilot",
+                     "branch": "studio/r23-fixture", "commit": "a"*40,
+                     "headCommit": "a"*40, "expectedBase": "main",
+                     "actualBase": "main", "number": 42,
+                     "url": "https://github.com/Spezzo-sudo/schmaqq-studio-pilot/pull/42",
+                     "mergeReady": False, "ci": "not_verified", "reviews": "not_verified"}
+            pr_mock.update(valid)
+            pr_mock["state"] = "matched"
+            refresh.click()
+            expect(section.get_by_text("GitHub-PR und lokaler Prüfcommit stimmen überein.")).to_be_visible()
+            expect(section.get_by_role("link", name="PR #42 in GitHub öffnen")).to_be_visible()
+
+            # Force push: previous matched result must disappear during refresh.
+            pr_mock.update({"state": "stale_commit", "headCommit": "b"*40})
+            refresh.click()
+            expect(section.get_by_text("Der PR verweist auf einen anderen Commit.", exact=False)).to_be_visible()
+            expect(section.get_by_text("Erwarteter Commit:", exact=False)).to_be_visible()
+            assert section.get_by_text("GitHub-PR und lokaler Prüfcommit stimmen überein.").count() == 0
+
+            pr_mock.update({"state": "target_mismatch", "headCommit": "a"*40,
+                            "actualBase": "experimental"})
+            refresh.click()
+            expect(section.get_by_text("Der PR zielt auf einen anderen Branch", exact=False)).to_be_visible()
+            expect(section.get_by_text("Erwarteter Zielbranch:", exact=False)).to_be_visible()
+
+            pr_mock["state"] = "unsupported_fork"
+            refresh.click()
+            expect(section.get_by_text("Dieser PR verwendet einen Fork.", exact=False)).to_be_visible()
+
+            pr_mock["state"] = "listing_incomplete"
+            refresh.click()
+            expect(section.get_by_text("Die GitHub-PR-Liste ist unvollständig.", exact=False)).to_be_visible()
+
+            pr_http["status"] = 503
+            refresh.click()
+            expect(section.get_by_text("GitHub-PR-Zustand konnte nicht geprüft werden.")).to_be_visible()
+            assert section.get_by_text("GitHub-PR und lokaler Prüfcommit stimmen überein.").count() == 0
+            pr_http["status"] = 200
+
+            # Visibility changes cause another check, not an indefinitely cached status.
+            pr_mock["state"] = "matched"
+            previous = len(pr_calls)
+            page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+            expect(section.get_by_text("GitHub-PR und lokaler Prüfcommit stimmen überein.")).to_be_visible()
+            assert len(pr_calls) > previous
+            assert len(pr_calls) >= 8
+            page.screenshot(path=str(OUT / "r23-github-status-refresh.png"))
+
+        verify("R23-github-status-ui", github_status, page)
         context.close()
         browser.close()
 

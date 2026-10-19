@@ -553,8 +553,8 @@
       "B04 mobile navigation accessibility",
       "B05 project search empty state"
     ],
-    "browser_acceptance": "5 of 5 Playwright scenarios PASS in isolated 127.0.0.1:4320 demo; no personal production login",
-    "github_transition": "Read-only PR URL/branch/exact SHA lookup behind optional operator-configured GitHub read-only credential and project allowlist; no actual private GitHub PR read, CI, required reviews or branch protection attested",
+    "browser_acceptance": "6/6 Playwright scenarios PASS (including GitHub status refreshing, mismatched base, fork and provider errors), isolated 127.0.0.1:4320, no production login",
+    "github_transition": "Read-only PR mapping verifies repo, configured target branch, source branch and exact SHA; fork PRs explicitly unsupported; results over 100 entries unverified; manually and automatically refreshed (30s while visible); GitHub CI/reviews/branch protection not verified",
     "github_permissions": "Existing identity-only read:user OAuth is insufficient; repository access NOT configured",
     "release": "Not approved for deployment. No application push, merge, provider change or production mutation",
     "remaining": [
@@ -562,6 +562,15 @@
       "real Windows and macOS two-person acceptance",
       "personal Codex consent and assignments"
     ],
-    "release_smoke": "PASS: new read-only GitHub PR module included; 703-file manifest, isolated HTTP, auth, workspace, backup PASS"
+    "release_smoke": "PASS: new read-only GitHub PR module included; 703-file manifest, isolated HTTP, auth, workspace, backup PASS",
+    "r23_review_fixes": {
+      "source": "Unpushed local changes after Draft PR #21 review",
+      "unit_and_api_tests": "6/6 PASS",
+      "full_backend_tests": "31/31 PASS",
+      "browser_tests": "6/6 PASS",
+      "typescript_build_source_guard": "PASS",
+      "production_changed": false,
+      "github_pushed": false
+    }
   }
 }
