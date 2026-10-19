@@ -29,6 +29,8 @@ Status: **separater Draft-Kandidat; nicht gemergt, nicht deployed**.
   ungültiges Encoding, Hardlinks, veraltete Revision: Ablehnung.
 - Positivtest: eine über 34 KB grosse Quelldatei wird gelesen und
   revisionssicher gespeichert.
+- Server verweigert auch bei weniger als 65'536 JavaScript-Zeichen
+  tatsächliche UTF-8-Payloads über 64 KiB **vor** Auftragserstellung.
 - Vollständiger API-Test: rund 48 KB Text werden vom angemeldeten
   Browser zur Jobwarteschlange übertragen; 65'537 Zeichen werden
   abgewiesen; 65'536 stark escapte Zeichen können als Dateilese-Ergebnis

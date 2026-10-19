@@ -70,6 +70,15 @@ test('Studio HTTP job contract supports 48 KB files and bounded escaped reads', 
     }, user.cookie);
     assert.equal(rejected.status, 400);
 
+    // Unicode code points can exceed the runner's byte bound while remaining
+    // below Zod's JavaScript-character limit; reject *before* queueing a job.
+    const unicodeTooLarge = await post('/api/development', {
+      action: 'job', operation: 'save-file', project: 'website', device: device.data.id,
+      worktree: prepare.data.id, file: 'app/workspace.tsx',
+      content: '😀'.repeat(17000), revision: 'f'.repeat(64)
+    }, user.cookie);
+    assert.equal(unicodeTooLarge.status, 413);
+
     const reading = await post('/api/development', {
       action: 'job', operation: 'read-file', project: 'website', device: device.data.id,
       worktree: prepare.data.id, file: 'app/workspace.tsx'

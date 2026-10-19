@@ -194,6 +194,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     if(['files','read-file','save-file'].includes(value.operation)){
      if(value.operation!=='files'&&!value.file)throw fail(400,'Dateipfad fehlt.');
      if(value.operation==='save-file'&&(value.content===undefined||!value.revision))throw fail(400,'Dateistand fehlt.');
+     if(value.operation==='save-file'&&Buffer.byteLength(value.content,'utf8')>65536)throw fail(413,'UTF-8-Datei ist größer als 64 KiB.');
      if(db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device))throw fail(409,'Bitte den laufenden Auftrag zuerst beenden lassen.');
      payload={...payload,file:value.file,revision:value.revision,content:value.content};
     }
