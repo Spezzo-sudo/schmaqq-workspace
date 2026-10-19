@@ -348,3 +348,9 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .github-pr-status p {font-size:12px;line-height:1.7;margin:10px 0;overflow-wrap:anywhere;}
 .github-pr-status a {text-decoration:underline;text-underline-offset:3px;font-size:12px;overflow-wrap:anywhere;}
 .github-pr-status code {overflow-wrap:anywhere;}
+
+/* Mobile users should reach the working sign-in form before the brand story. */
+@media (max-width: 720px) {
+  .studio-entry-layout .login-card { order: -1; }
+  .studio-entry-story { order: 1; }
+}
