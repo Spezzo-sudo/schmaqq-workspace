@@ -13,7 +13,7 @@ Original handoff expected current Production source `4a0092be2d04a4b66aa1d200cf7
 - Proposed R23 source: `aef64f85efeeb40f6c0f3a7dc43986a52a20f09f`.
 - GitHub compare `a4dfdfef...aef64f85...`: **ahead 3; behind 0; merge base exactly PR18**, 14 changed files. No source-history rebase required.
 - R23 is the *stacked* Draft PR #21, not a direct change from `main`. PR #20 records audit findings; PR #19 concerns the separate PR17 pilot lane.
-- Operator-reported candidate artifact integrity: archive SHA256 PASS, 703/703 manifest entries and 703/703 manifest hashes PASS. **Exact archive SHA256 digest and filesystem path were not supplied in the blockage report**: operator must obtain/verify them afresh rather than guess.
+- Independently re-verified R23 original archive: `/home/dc-remote/schmaqq-studio-r23-local-20261019/.studio/releases/2026-10-19T19-42-54-083Z.tar.gz`, SHA256 `1a927d7eba4d5becf749401baaf2ab5f02cd8e004577258c9a3cd069331e6768`. Manifest and tar file content 703/703 PASS. Exact archive must be checked again under deployment lock before any Production switch.
 - R23 local acceptance documentation reports 31 backend tests, TypeScript/build/source guard PASS, 9 Chromium browser checks PASS, extracted release smoke PASS, under isolated conditions. **Not a new Production acceptance or independent runtime verification.**
 - R23 GitHub PR inspection is optional, read-only and disabled until dedicated project repository mapping and minimal read-only token are separately authorized. No CI/review/merge gate is thereby bypassed.
 
@@ -40,10 +40,10 @@ Only after precheck passes: request explicit owner authorization naming exact ar
 ## Current decision
 
 `R23_HANDOFF_SOURCE_RECONCILED=PASS` (GitHub ancestry only).
-`R23_LIVE_PRECHECK=NOT_RUN`.
-`R23_BACKUP_RESTORE=NOT_RUN`.
+`R23_LIVE_PRECHECK=PARTIAL_PASS_NONPRIVILEGED` (see `docs/R23_PRODUCTION_PREFLIGHT_EVIDENCE_2026-10-19.md`; live DB remains inaccessible).
+`R23_BACKUP_RESTORE=NOT_RUN_PRIVILEGED_REQUIRED`.
 `R23_OWNER_PRODUCTION_GO=NOT_GRANTED`.
 `R23_DEPLOYED=NO`.
-`FINAL=PREPARED_ONLY_BLOCKED_PENDING_GATES`.
+`FINAL=PRECHECK_PARTIAL_PASS_BLOCKED_PRIVILEGED_DB_BACKUP_AND_OWNER_GO`.
 
-Source references: GitHub Draft PR #21, Audit Draft PR #20, `docs/R23_LOCAL_ACCEPTANCE.md` at R23 candidate source, and user-supplied privileged operator blocked-run report. This documentation intentionally does **not** mutate an active handoff or downgrade its stale-current safety guard.
+Source references: GitHub Draft PR #21, Audit Draft PR #20, `docs/R23_LOCAL_ACCEPTANCE.md` at R23 candidate source, and user-supplied privileged operator blocked-run report. Additional fresh runtime observations are recorded in `docs/R23_PRODUCTION_PREFLIGHT_EVIDENCE_2026-10-19.md`. This documentation intentionally does **not** mutate an active handoff or downgrade its stale-current safety guard.
