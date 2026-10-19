@@ -7,7 +7,9 @@ if [[ ${1:-} != --apply || $# != 4 || ! ${2:-} =~ ^[0-9a-f]{40}$ || ! ${4:-} =~ 
  echo 'Usage: PILOT_PROMOTE.sh --apply <commit-sha40> <release-tar-gz-absolute-path> <archive-sha256>' >&2
  exit 2
 fi
-case "$3" in /home/dc-remote/*) ;; *) echo 'ABORT: release must be in approved staging path' >&2; exit 2;; esac
+case "$3" in /home/dc-remote/schmaqq-pr*-runtime-candidate-*/studio-runtime.tar.gz) ;; *) echo 'ABORT: release path must match immutable candidate directory' >&2; exit 2;; esac
+[[ ! -L "$3" ]] || { echo 'ABORT: symlink archive forbidden' >&2; exit 2; }
+[[ $(stat -c %u "$3") == 1001 ]] || { echo 'ABORT: expected candidate file owner' >&2; exit 2; }
 service=schmaqq-studio-pr17.service
 host=studio-pr17.schmaqq.com
 asset=studio-pr17-assets.schmaqq.com
@@ -41,21 +43,36 @@ chmod 700 "$backupdir"
 stage=$(mktemp -d "$releases/.incoming.XXXXXXXX")
 cleanup(){ rm -rf -- "$stage"; }
 trap cleanup EXIT
+python3 - "$source" <<'PYARCHIVE'
+import pathlib,sys,tarfile
+archive=sys.argv[1]
+with tarfile.open(archive,'r:gz') as tf:
+ members=tf.getmembers()
+ assert len(members)<=1200 and members
+ for m in members:
+  p=pathlib.PurePosixPath(m.name)
+  assert not p.is_absolute() and '..' not in p.parts
+  assert m.isfile() or m.isdir(),f'Unsafe archive entry: {m.name}'
+  assert m.size<50_000_000
+ print('PILOT_ARCHIVE_ENTRY_TYPES=PASS')
+PYARCHIVE
 tar -xzf "$source" -C "$stage" --no-same-owner --no-same-permissions
 python3 - "$stage" <<'PY'
 import hashlib,json,pathlib,sys
 folder=pathlib.Path(sys.argv[1]); manifest=json.loads((folder/'release-manifest.json').read_text())
-assert len(manifest['files'])==702
+assert 50<=len(manifest['files'])<=1000
 for entry in manifest['files']:
  p=pathlib.PurePosixPath(entry['path'])
  assert not p.is_absolute() and '..' not in p.parts
  actual=(folder/p).read_bytes()
  assert len(actual)==entry['bytes']
  assert hashlib.sha256(actual).hexdigest()==entry['sha256']
-print('PILOT_RELEASE_MANIFEST=702/702 PASS')
+print(f"PILOT_RELEASE_MANIFEST={len(manifest['files'])}/{len(manifest['files'])} PASS")
 PY
 test -f "$stage/studio-dist/index.html"
 test -f "$stage/selfhost/server.mjs"
+find "$stage" -type d -exec chmod 755 {} +
+find "$stage" -type f -exec chmod 644 {} +
 python3 - "$data/studio.sqlite" "$backupdir/pre-$version.sqlite" <<'PY'
 import sqlite3,sys
 source=sqlite3.connect('file:'+sys.argv[1]+'?mode=ro',uri=True)
@@ -72,23 +89,28 @@ prev=''
 legacy=false
 if [[ -L "$active" ]]; then prev=$(readlink -f "$active"); else prev=$old_release; legacy=true; fi
 switched=false
+stopped=false
 rollback(){
- trap - ERR
  echo 'PILOT_PROMOTION_FAILED: restoring previous runtime' >&2
  systemctl stop "$service" || true
- if [[ "$switched" == true || ! -e "$active" ]]; then
-  if [[ -L "$active" ]]; then rm -f "$active"; fi
-  if [[ "$legacy" == true ]]; then
-   if [[ -d "$old_release" ]]; then mv "$old_release" "$active"; fi
-  else
-   ln -s "$prev" "$active"
+ if [[ "$stopped" == true ]]; then
+  if [[ "$switched" == true || ! -e "$active" ]]; then
+   if [[ -L "$active" ]]; then rm -f "$active"; fi
+   if [[ "$legacy" == true ]]; then
+    if [[ -d "$old_release" ]]; then mv "$old_release" "$active"; fi
+   else
+    ln -s "$prev" "$active"
+   fi
   fi
  fi
  systemctl start "$service" || true
  echo 'PILOT_ROLLBACK_CODE_RESTORED; sqlite backup retained; data not automatically overwritten' >&2
 }
-trap rollback ERR
+trap 'rc=$?; trap - EXIT; if ((rc != 0)) && [[ "$stopped" == true || "$switched" == true ]]; then rollback; fi; exit $rc' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 systemctl stop "$service"
+stopped=true
 if [[ -L "$active" ]]; then rm "$active"; else mv "$active" "$old_release"; fi
 ln -s "$new" "$active"
 switched=true
@@ -104,5 +126,5 @@ done
 [[ $(curl -sS --max-time 7 -o /dev/null -w '%{http_code}' "https://$host/") == 401 ]]
 [[ $(curl -sS --max-time 7 -o /dev/null -w '%{http_code}' "https://$asset/") == 401 ]]
 [[ $(systemctl is-active "$service") == active ]]
-trap - ERR
+trap - EXIT INT TERM
 printf 'PILOT_PROMOTION=PASS\nSOURCE=%s\nPREVIOUS_RUNTIME=%s\nBACKUP=%s\n' "$version" "$prev" "$backupdir/pre-$version.sqlite"
