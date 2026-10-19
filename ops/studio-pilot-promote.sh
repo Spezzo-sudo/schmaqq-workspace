@@ -109,8 +109,9 @@ rollback(){
 trap 'rc=$?; trap - EXIT; if ((rc != 0)) && [[ "$stopped" == true || "$switched" == true ]]; then rollback; fi; exit $rc' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
-systemctl stop "$service"
+trap 'exit 129' HUP
 stopped=true
+systemctl stop "$service"
 if [[ -L "$active" ]]; then rm "$active"; else mv "$active" "$old_release"; fi
 ln -s "$new" "$active"
 switched=true
@@ -126,5 +127,5 @@ done
 [[ $(curl -sS --max-time 7 -o /dev/null -w '%{http_code}' "https://$host/") == 401 ]]
 [[ $(curl -sS --max-time 7 -o /dev/null -w '%{http_code}' "https://$asset/") == 401 ]]
 [[ $(systemctl is-active "$service") == active ]]
-trap - EXIT INT TERM
+trap - EXIT INT TERM HUP
 printf 'PILOT_PROMOTION=PASS\nSOURCE=%s\nPREVIOUS_RUNTIME=%s\nBACKUP=%s\n' "$version" "$prev" "$backupdir/pre-$version.sqlite"
