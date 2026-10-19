@@ -29,6 +29,11 @@ try {
   if (realpathSync(parent) !== parent) {
     throw new Error('Backup destination parent must not contain symlinks.');
   }
+  // Do not allow another Unix account to race the backup filename or
+  // replace it through a group/world-writable destination directory.
+  if ((statSync(parent).mode & 0o022) !== 0) {
+    throw new Error('Backup destination parent must not be group/world writable.');
+  }
   if (existsIncludingDanglingSymlink(destination)) {
     throw new Error('Backup destination appeared during validation.');
   }

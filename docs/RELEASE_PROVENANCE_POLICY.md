@@ -28,7 +28,9 @@ Dieses Dokument ergänzt die bestehenden Owner-GO- und Hermes-Sicherheitsgates.
    Metadaten werden selbst im Manifest gehasht und im Archiv mitgeliefert.
 3. Das Release enthält einen vollständigen SHA256-/Längen-Manifestnachweis.
    Jedes zusätzliche, fehlende oder unerwartete File sowie Symlinks schlagen
-   beim unabhängigen Verifier fehl.
+   beim unabhängigen Verifier fehl. Der Verifier vergleicht zusätzlich die
+   **Inhalte der gepinnten TAR-Datei mit dem entpackten Verzeichnis**;
+   zwei separat gültige, aber verschiedene Payloads sind keine Freigabe.
 4. Der unabhängige Verifier erwartet **immer** den expliziten Quellcommit.
    Bei neuem Format muss dieser mit den eingebetteten Metadaten übereinstimmen.
 5. Das Archiv besitzt zusätzlich einen **eigenen** SHA256-Wert. Nur der

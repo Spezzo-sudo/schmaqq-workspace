@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {gunzipSync} from 'node:zlib';
 import {createReadStream, lstatSync, readFileSync, readdirSync, realpathSync, statSync} from 'node:fs';
 import {basename, join, resolve, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -34,6 +35,56 @@ async function hashFile(pathname) {
   const hash = createHash('sha256');
   for await (const chunk of createReadStream(pathname)) hash.update(chunk);
   return hash.digest('hex');
+}
+
+// Compare the pinned .tar.gz CONTENT to the verified directory. Independent
+// hash checks alone do not prove that the two release representations match.
+function verifyArchivePayload(archivePath, listed, manifestPath) {
+  const compressed = readFileSync(archivePath);
+  const buffer = gunzipSync(compressed, {maxOutputLength: 256 * 1024 * 1024});
+  const seen = new Set();
+  const all = new Map(listed);
+  const manifestBuffer = readFileSync(manifestPath);
+  all.set('release-manifest.json', {
+    bytes: manifestBuffer.length,
+    sha256: createHash('sha256').update(manifestBuffer).digest('hex')
+  });
+  let offset = 0;
+  while (offset + 512 <= buffer.length) {
+    const header = buffer.subarray(offset, offset + 512);
+    if (header.every(value => value === 0)) break;
+    const namePart = bytes => bytes.toString('utf8', 0, bytes.indexOf(0) < 0 ? bytes.length : bytes.indexOf(0));
+    const pathName = namePart(header.subarray(0, 100));
+    const prefix = namePart(header.subarray(345, 500));
+    const pathInArchive = (prefix ? prefix + '/' : '') + pathName;
+    const name = pathInArchive.startsWith('./') ? pathInArchive.slice(2) : pathInArchive;
+    const sizeText = namePart(header.subarray(124, 136)).trim();
+    if (!/^[0-7]+$/.test(sizeText)) refuse('unsupported tar member size');
+    const size = parseInt(sizeText, 8);
+    const type = header[156];
+    if (!Number.isSafeInteger(size) || size < 0 ||
+        offset + 512 + size > buffer.length) refuse('truncated tar member');
+    const start = offset + 512;
+    if (type === 48 || type === 0) {
+      if (!name || !all.has(name) || seen.has(name)) refuse('unexpected or repeated tar entry');
+      const file = all.get(name);
+      if (size !== file.bytes ||
+          createHash('sha256').update(buffer.subarray(start, start + size)).digest('hex') !== file.sha256) {
+        refuse('tar member differs from release directory: ' + name);
+      }
+      seen.add(name);
+    } else if (type === 53) {
+      // Directory headers have no contents, but may not escape the release.
+      const dir = name.endsWith('/') ? name.slice(0, -1) : name;
+      if (size !== 0 || dir.startsWith('/') || dir.split('/').includes('..') ||
+          dir.includes(String.fromCharCode(92))) refuse('unsafe archive directory');
+    } else {
+      // Deliberately fail closed for links and unrecognised tar extensions.
+      refuse('unsupported tar entry type');
+    }
+    offset = start + Math.ceil(size / 512) * 512;
+  }
+  if (seen.size !== all.size) refuse('archive lacks one or more release files');
 }
 
 export async function verifyRelease({
@@ -100,6 +151,7 @@ export async function verifyRelease({
     if (!lstatSync(archivePath).isFile()) refuse('archive must be a regular file, not a symlink');
     verifiedArchive = await hashFile(archivePath);
     if (verifiedArchive !== archiveSha256) refuse('release archive SHA256 mismatch');
+    verifyArchivePayload(archivePath, listed, join(root, 'release-manifest.json'));
   }
 
   return {

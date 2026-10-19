@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
 import {mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -73,7 +74,7 @@ test('old R23-style manifests fail without explicitly pinned legacy archive', as
 test('legacy archive can be checked but source remains externally attested', async t => {
   const f = fixture(t, true);
   const archive = path.join(f.folder, 'fixture.tar.gz');
-  writeFileSync(archive, Buffer.from('opaque external archive fixture'));
+  execFileSync('tar', ['-czf', archive, '-C', f.directory, '.']);
   const archiveSha256 = sha(readFileSync(archive));
   const result = await verifyRelease({
     directory: f.directory, expectedSource: commit, archive, archiveSha256, allowLegacy: true
@@ -88,4 +89,26 @@ test('rejects a mismatched archive digest', async t => {
   await assert.rejects(verifyRelease({
     directory: f.directory, expectedSource: commit, archive, archiveSha256: '0'.repeat(64)
   }), /archive SHA256 mismatch/);
+});
+
+test('rejects a valid extracted release paired with a different pinned archive', async t => {
+  const original = fixture(t);
+  const changed = fixture(t);
+  const htmlPath = path.join(changed.directory, 'studio-dist/index.html');
+  const altered = '<h1>Different release</h1>';
+  writeFileSync(htmlPath, altered);
+  const manifestPath = path.join(changed.directory, 'release-manifest.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  const entry = manifest.files.find(file => file.path === 'studio-dist/index.html');
+  entry.bytes = Buffer.byteLength(altered);
+  entry.sha256 = sha(altered);
+  writeFileSync(manifestPath, JSON.stringify(manifest));
+
+  const archive = path.join(original.folder, 'original.tar.gz');
+  execFileSync('tar', ['-czf', archive, '-C', original.directory, '.']);
+  const archiveSha256 = sha(readFileSync(archive));
+
+  await assert.rejects(verifyRelease({
+    directory: changed.directory, expectedSource: commit, archive, archiveSha256
+  }), /tar member differs/);
 });

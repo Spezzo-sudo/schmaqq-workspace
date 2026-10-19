@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync, spawnSync} from 'node:child_process';
 import {DatabaseSync} from 'node:sqlite';
-import {mkdtempSync, mkdirSync, rmSync, statSync, symlinkSync, writeFileSync} from 'node:fs';
+import {mkdtempSync, mkdirSync, rmSync, statSync, chmodSync, symlinkSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import {fileURLToPath} from 'node:url';
@@ -88,4 +88,14 @@ test('refuses to create an unverified backup when foreign keys are broken', t =>
   const result = run(root, path.join(root, 'invalid-backup.sqlite'));
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /validation failed/);
+});
+
+test('rejects a writable shared destination directory', t => {
+  const root = fixture(t);
+  const shared = path.join(root, 'shared');
+  mkdirSync(shared);
+  chmodSync(shared, 0o777);
+  const result = run(root, path.join(shared, 'snapshot.sqlite'));
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /group\/world writable/);
 });
