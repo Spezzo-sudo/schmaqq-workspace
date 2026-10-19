@@ -334,3 +334,17 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .review-explainer {margin:6px 0 14px;max-width:72ch;}
 .integration-panel .submission small {display:block;overflow-wrap:anywhere;line-height:1.6;}
 @media (max-width:640px) {.workflow-stage-note {margin-top:10px;} .integration-panel .submission {min-width:0;}}
+
+/* R23: hide the off-canvas mobile navigation from keyboard focus while closed. */
+@media(max-width:640px){
+ .sidebar{visibility:hidden;}
+ .sidebar.mobile-open{visibility:visible;}
+}
+.project-search-empty{grid-column:1/-1;padding:38px 20px;border:1px dashed var(--line-strong);background:var(--paper-light);border-radius:12px;}
+
+/* R23 read-only GitHub bridge - explicitly not an automated publish/merge gate. */
+.github-pr-status {border-top:1px solid var(--line);margin-top:20px;padding-top:18px;}
+.github-pr-status h3 {font-size:14px;line-height:1.4;}
+.github-pr-status p {font-size:12px;line-height:1.7;margin:10px 0;overflow-wrap:anywhere;}
+.github-pr-status a {text-decoration:underline;text-underline-offset:3px;font-size:12px;overflow-wrap:anywhere;}
+.github-pr-status code {overflow-wrap:anywhere;}

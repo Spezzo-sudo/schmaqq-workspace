@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "observed_on": "2026-10-18",
+  "observed_on": "2026-10-19",
   "product": "SCHMAQQ Studio",
   "purpose": "Gemeinsame Entwicklung digitaler Services durch zwei Personen mit eigenen KI-Konten",
   "application": {
@@ -542,5 +542,26 @@
     "model_jobs_started": 0,
     "github_actions_started": 0,
     "runner_package": "PASS: clean committed source, extracted 10-file manifest and complete setup helper import graph; not installed on personal live runner"
+  },
+  "r23_local_candidate": {
+    "state": "locally_verified_not_deployed",
+    "basis": "Production PR18 checkout in isolated Linux worktree",
+    "ui_fixes": [
+      "B01 browser history",
+      "B02 modal keyboard focus",
+      "B03 review loading",
+      "B04 mobile navigation accessibility",
+      "B05 project search empty state"
+    ],
+    "browser_acceptance": "5 of 5 Playwright scenarios PASS in isolated 127.0.0.1:4320 demo; no personal production login",
+    "github_transition": "Read-only PR URL/branch/exact SHA lookup behind optional operator-configured GitHub read-only credential and project allowlist; no actual private GitHub PR read, CI, required reviews or branch protection attested",
+    "github_permissions": "Existing identity-only read:user OAuth is insufficient; repository access NOT configured",
+    "release": "Not approved for deployment. No application push, merge, provider change or production mutation",
+    "remaining": [
+      "private provider onboarding with explicit authorization",
+      "real Windows and macOS two-person acceptance",
+      "personal Codex consent and assignments"
+    ],
+    "release_smoke": "PASS: new read-only GitHub PR module included; 703-file manifest, isolated HTTP, auth, workspace, backup PASS"
   }
 }

@@ -3,11 +3,36 @@ import {useEffect,useState} from 'react';
 
 type Entry={id:string;commitSha:string;reviewer:string;name:string;decision:string;body:string;created:number};
 type State={state:string;entries:Entry[]};
+type GithubPR={state:string;repository?:string;commit?:string;branch?:string;number?:number;url?:string;headCommit?:string;ci?:string;reviews?:string;mergeReady:false};
+const githubLabels:Record<string,string>={
+ local_only:'Dieser Prüfstand ist lokal. Es wurde kein GitHub-PR verifiziert.',
+ not_configured:'GitHub-PR-Lesezugriff ist noch nicht eingerichtet. Die persönliche GitHub-Anmeldung bestätigt nur die Identität.',
+ not_found:'Für diesen Branch wurde im freigegebenen Repository kein PR gefunden.',
+ stale_commit:'Der PR verweist auf einen anderen Commit. Die Studio-Prüfung gilt nicht für den geänderten GitHub-Stand.',
+ matched:'GitHub-PR und lokaler Prüfcommit stimmen überein.',
+ already_merged:'Der PR wurde auf GitHub bereits zusammengeführt.',
+ closed:'Der PR ist geschlossen.',
+ provider_unavailable:'GitHub-PR konnte momentan nicht sicher geprüft werden.',
+ invalid_result:'Ungültiger Branch-/Commitnachweis für den PR-Abgleich.',
+ not_ready:'Der Prüfstand ist noch nicht abgeschlossen.',
+ not_required:'Für diesen Stand ist kein GitHub-PR-Workflow konfiguriert.'
+};
 const labels:Record<string,string>={pending:'Zweite Prüfung ausstehend',approved:'Von zweiter Person freigegeben',changes_requested:'Änderungen angefordert',unavailable:'Noch kein prüfbarer Stand'};
 const decisions:Record<string,string>={approved:'Freigegeben',changes:'Änderungen angefordert',comment:'Kommentar'};
 
 export default function CodeReview({jobId,owner,userId,result,onChange}:{jobId:string;owner:string;userId:string;result:Record<string,unknown>;onChange:()=>void}){
  const [data,setData]=useState<State>({state:'pending',entries:[]}),[body,setBody]=useState(''),[decision,setDecision]=useState('comment'),[pending,setPending]=useState(false),[error,setError]=useState('');
+ const [github,setGithub]=useState<GithubPR|null>(null),[githubError,setGithubError]=useState(''),[githubLoading,setGithubLoading]=useState(false);
+ useEffect(()=>{
+  if(result.workflow!=='pull-request')return;
+  let alive=true;setGithub(null);setGithubError('');setGithubLoading(true);
+  fetch('/api/development/github-pr?job='+encodeURIComponent(jobId),{cache:'no-store'})
+   .then(async response=>{if(!response.ok)throw new Error('GitHub-Status konnte nicht geladen werden.');return response.json() as Promise<GithubPR>;})
+   .then(value=>{if(alive)setGithub(value);})
+   .catch(()=>{if(alive)setGithubError('GitHub-PR-Zustand konnte nicht geprüft werden.');})
+   .finally(()=>{if(alive)setGithubLoading(false);});
+  return()=>{alive=false;};
+ },[jobId,result.workflow]);
  const commit=typeof result.commit==='string'?result.commit:'',diff=typeof result.diff==='string'?result.diff:'';
  const complete=typeof result.diff==='string'&&result.diffTruncated!==true&&diff.length<50000;
  useEffect(()=>{let alive=true;const load=async()=>{if(document.hidden)return;try{const r=await fetch('/api/development/reviews?job='+encodeURIComponent(jobId));if(!r.ok)throw new Error('Prüfverlauf konnte nicht geladen werden.');const value=await r.json() as State;if(alive)setData(value);}catch(e){if(alive)setError(e instanceof Error?e.message:'Verbindungsfehler.');}};load();const timer=setInterval(load,10000);document.addEventListener('visibilitychange',load);return()=>{alive=false;clearInterval(timer);document.removeEventListener('visibilitychange',load)};},[jobId]);
@@ -20,6 +45,11 @@ export default function CodeReview({jobId,owner,userId,result,onChange}:{jobId:s
  <form onSubmit={async e=>{e.preventDefault();setPending(true);setError('');try{const r=await fetch('/api/development/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:crypto.randomUUID(),job:jobId,commit,decision,body})});const value=await r.json() as {error?:string};if(!r.ok)throw new Error(value.error??'Rückmeldung fehlgeschlagen.');const updated=await fetch('/api/development/reviews?job='+encodeURIComponent(jobId));if(updated.ok)setData(await updated.json() as State);setBody('');onChange();}catch(e){setError(e instanceof Error?e.message:'Rückmeldung fehlgeschlagen.');}finally{setPending(false);}}}>
  <label>Deine Rückmeldung<select aria-label="Art der Codeprüfung" value={decision} onChange={e=>setDecision(e.target.value)}><option value="comment">Kommentar</option>{owner!==userId&&<><option value="changes">Änderungen anfordern</option><option value="approved" disabled={!complete}>Diesen Stand freigeben</option></>}</select></label>
  <textarea aria-label="Rückmeldung zum Code" placeholder="Was passt, was soll geändert werden?" value={body} maxLength={4000} onChange={e=>setBody(e.target.value)}/>{owner===userId&&<p className="muted">Die zweite Person übernimmt die Freigabe deiner Änderungen.</p>}{error&&<p role="alert" className="form-error">{error}</p>}<button className="button primary" disabled={pending||(!body.trim()&&decision!=='approved')||(decision==='approved'&&!complete)}>Rückmeldung speichern</button></form>
- {result.workflow==='pull-request'&&<p className="muted">Die Studio-Prüfung ersetzt keinen GitHub-Pull-Request, keine CI und keine dort erforderliche Review.</p>}
+ {result.workflow==='pull-request'&&<section className="github-pr-status" aria-label="GitHub-Pull-Request-Zuordnung"><h3>GitHub-Übergang · nur lesend</h3>
+ {githubLoading?<p role="status">PR-Zuordnung wird gelesen …</p>:<p role={githubError?'alert':'status'}>{githubError||(githubLabels[github?.state??'']??'PR-Zustand nicht bestätigt.')}</p>}
+ {github?.url&&<a href={github.url} target="_blank" rel="noopener noreferrer">PR #{github.number} in GitHub öffnen</a>}
+ {github?.state==='stale_commit'&&<p>Erwarteter Commit: <code>{github.commit}</code>. GitHub-HEAD: <code>{github.headCommit}</code>.</p>}
+ <p className="muted">CI, GitHub-Reviews und Branchschutz sind hier noch nicht attestiert. Eine Studio-Freigabe bewirkt weder Push noch GitHub-Merge.</p>
+ </section>}
  </section>;
 }

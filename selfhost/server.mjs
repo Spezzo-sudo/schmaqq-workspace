@@ -10,6 +10,7 @@ import { z } from 'zod';
 import {aiRoute,aiAccess} from './ai-routes.mjs';
 import {listWorkspaces,validScope,assertAvailable} from './workspaces.mjs';
 import {reviewState,completeReview} from './reviews.mjs';
+import {createPullRequestReader,configuredRepos} from './github-pr-status.mjs';
 import {sourceEvidence} from './source-evidence.mjs';
 import {projectStartRoute,projectReadiness} from './project-start.mjs';
 import { openStore,digest,token,passwordHash,passwordValid,createInvite,transaction } from './store.mjs';
@@ -29,7 +30,7 @@ const actions=z.discriminatedUnion('action',[
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
 function parse(schema,data){const r=schema.safeParse(data);if(!r.success)throw fail(400,'Bitte Eingaben prüfen.');return r.data;}
-export function createStudioServer({oidcProvider,githubProvider, demoMode=false,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist')}={}){
+export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist')}={}){
  if(!/^[a-z_]{1,60}$/.test(sessionCookie))throw new Error('Ungültiger Sitzungsname.');
  if(new URL(origin).origin===new URL(previewOrigin).origin)throw new Error('Studio und Vorschau benötigen unterschiedliche Origins.');
  const db=openStore(filename),secure=new URL(origin).protocol==='https:';const rate=new Map();
@@ -40,6 +41,9 @@ export function createStudioServer({oidcProvider,githubProvider, demoMode=false,
  function record(author,message){db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(uuid(),author,message,now());}
  const oidcRoute=createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,provider:demoMode?null:oidcProvider});
  const connectionRoute=createConnectionRoutes({db,origin,sessionCookie,user,provider:demoMode?null:githubProvider});
+ // Identity-only OAuth is not a repository permission. PR inspection requires
+ // a separate optional, operator-configured read-only credential and project allowlist.
+ const inspectPullRequest=pullRequestReader??createPullRequestReader({repositories:demoMode?{}:configuredRepos(process.env.STUDIO_GITHUB_PROJECT_REPOS),readToken:demoMode?'':process.env.STUDIO_GITHUB_PR_READ_TOKEN??''});
  const server=http.createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');
   const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
@@ -126,6 +130,14 @@ export function createStudioServer({oidcProvider,githubProvider, demoMode=false,
     if(existing){if(existing.job!==v.job||existing.reviewer!==m.id||existing.commit_sha!==v.commit||existing.decision!==v.decision||existing.body!==v.body)throw fail(409,'Diese Rückmeldung wurde bereits anders gespeichert.');}
     else db.prepare('INSERT INTO code_reviews(id,job,commit_sha,reviewer,decision,body,created) VALUES(?,?,?,?,?,?,?)').run(v.id,job.id,v.commit,m.id,v.decision,v.body,now());
     send({ok:true,state:reviewState(db,job)});return;
+   }
+   if(route==='/api/development/github-pr'){
+    if(method!=='GET')throw fail(405,'Methode nicht erlaubt.');
+    user(req);
+    const jid=parse(id,url.searchParams.get('job'));
+    const job=db.prepare("SELECT id,owner,project,action,status,result FROM jobs WHERE id=? AND action IN ('review','submit')").get(jid);
+    if(!job)throw fail(404,'Prüfauftrag fehlt.');
+    send(await inspectPullRequest(job));return;
    }
    if(route==='/api/development/job'&&method==='GET'){
     const m=user(req);const jid=parse(id,url.searchParams.get('id'));

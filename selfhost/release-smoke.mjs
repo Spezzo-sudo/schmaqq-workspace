@@ -17,6 +17,7 @@ try{
  assert.ok(existsSync(path.join(data,'studio.sqlite')));assert.ok(!existsSync(path.join(release,'.studio')));
  const html=await (await fetch(origin)).text();assert.match(html,/<script/);const asset=html.match(/src="([^"]+\.js)"/)[1];assert.equal((await fetch(new URL(asset,origin))).status,200);
  assert.equal((await fetch(origin+'/api/development')).status,401);
+ assert.equal((await fetch(origin+'/api/development/github-pr?job=none')).status,401);
  const setup=new URL(readFileSync(path.join(data,'setup-link.txt'),'utf8')).searchParams.get('setup');
  const response=await fetch(origin+'/api/auth/bootstrap',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({setup,email:'smoke@fixture.invalid',name:'Release test',password:'fixture-password-12345'})});assert.equal(response.status,200);
  const cookie=response.headers.get('set-cookie').split(';')[0];const state=await (await fetch(origin+'/api/development',{headers:{Cookie:cookie}})).json();assert.deepEqual(state.workspaces,[]);assert.deepEqual(state.activeDeviceIds,[]);
