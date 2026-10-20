@@ -164,6 +164,25 @@ Studio-Server eingebunden. Auf einem kleinen VPS wird SQLite für zwei Benutzer
 verwendet; vor einer späteren größeren Installation muss die Datenhaltung
 erneut bewertet werden.
 
+### Login-Schutz hinter dem Reverse-Proxy
+
+Die Passwortanmeldung zählt pro normalisierter Konto-E-Mail maximal zwölf
+Versuche pro Minute, zusätzlich zur quellbezogenen Begrenzung. Ohne weitere
+Konfiguration wird **kein** vom Browser gelieferter X-Forwarded-For-Header
+vertraut. Eine einzelne Proxy-Socket-Adresse erhält dann einen höheren
+Sicherheitsgrenzwert von 240 Versuchen/Minute, sodass normale getrennte
+Studio-Konten sich nicht schon nach zwölf Fehlversuchen gegenseitig blockieren.
+
+Ein betreiberseitig geprüftes Traefik-Setup kann optional ausschliesslich
+die **exakte direkte Proxy-Peer-IP** in STUDIO_TRUSTED_PROXY_IPS
+kommagetrennt freigeben, zum Beispiel nur dann 127.0.0.1, wenn Traefik
+tatsächlich unter dieser Adresse mit Node verbunden ist. Traefik muss
+die Client-IP verlässlich an den Forwarded-Header **anhängen oder diesen
+ersetzen**. Ungeprüfte Proxy-Ketten, pauschale Docker-Subnetze oder
+CIDR-Bereiche nicht freigeben. Bei Unsicherheit das Setting leer lassen.
+Siehe docs/R24_G1_LOGIN_SECURITY.md. Kein Konfigurationswechsel erfolgt
+automatisch durch den Quellcode.
+
 ## Tests und Backups
 
 ```text

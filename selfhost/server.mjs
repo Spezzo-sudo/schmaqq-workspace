@@ -14,6 +14,7 @@ import {createPullRequestReader,configuredRepos} from './github-pr-status.mjs';
 import {sourceEvidence} from './source-evidence.mjs';
 import {projectStartRoute,projectReadiness} from './project-start.mjs';
 import {createAuthHttpRoute} from './auth-http.mjs';
+import {createLoginLimiter} from './login-rate-limit.mjs';
 import {createWorkspaceHttpRoute} from './workspace-http.mjs';
 import { openStore,digest,token,transaction } from './store.mjs';
 
@@ -24,9 +25,11 @@ const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
 function parse(schema,data){const r=schema.safeParse(data);if(!r.success)throw fail(400,'Bitte Eingaben prüfen.');return r.data;}
-export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist')}={}){
+export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??''}={}){
  if(!/^[a-z_]{1,60}$/.test(sessionCookie))throw new Error('Ungültiger Sitzungsname.');
  if(new URL(origin).origin===new URL(previewOrigin).origin)throw new Error('Studio und Vorschau benötigen unterschiedliche Origins.');
+ // Reject unsafe proxy trust settings before opening the SQLite store.
+ const loginLimiter=createLoginLimiter({trustedProxyIps,now});
  const db=openStore(filename),secure=new URL(origin).protocol==='https:';
  function user(req){const cookie=req.headers.cookie?.match(new RegExp('(?:^|;\\s*)'+sessionCookie+'=([\\w-]+)'))?.[1];if(!cookie)throw fail(401,'Bitte anmelden.');const m=db.prepare('SELECT members.* FROM sessions JOIN members ON member=members.id WHERE hash=? AND expires>?').get(digest(cookie),now());if(!m)throw fail(401,'Bitte erneut anmelden.');return m;}
  function device(req){const t=req.headers.authorization?.match(/^Bearer ([\w-]+)$/)?.[1];if(!t)throw fail(401,'Geräteanmeldung fehlt.');const d=db.prepare('SELECT * FROM devices WHERE hash=? AND revoked=0').get(digest(t));if(!d)throw fail(401,'Gerätezugang ungültig.');return d;}
@@ -36,7 +39,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  const connectionRoute=createConnectionRoutes({db,origin,sessionCookie,user,provider:demoMode?null:githubProvider});
  // Route modules share the host's request parsing and origin/CSRF boundary.
  const authHttpRoute=createAuthHttpRoute({
-  db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now
+  db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now,loginLimiter
  });
  const workspaceHttpRoute=createWorkspaceHttpRoute({
   db,user,readJSON,parse,record,fail

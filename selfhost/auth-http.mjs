@@ -5,9 +5,9 @@ import { digest, passwordHash, passwordValid, createInvite, transaction } from '
  * Cookie-session and invitation HTTP routes.
  *
  * The host server still supplies strict JSON/Origin checks before invoking
- * these routes. Keep the existing per-socket throttling semantics unchanged
- * while separating handler ownership; proxy-aware rate limits need a distinct
- * security change with explicit negative regression tests.
+ * these routes. Rate limiting uses a separate per-account cap and a bounded
+ * per-source cap. Forwarded addresses are ignored unless an exact trusted
+ * socket proxy was configured by the operator.
  */
 export function createAuthHttpRoute({
   db,
@@ -19,9 +19,9 @@ export function createAuthHttpRoute({
   parse,
   fail,
   uuid,
-  now
+  now,
+  loginLimiter
 }) {
-  const rate = new Map();
   const text = z.string().trim().min(1).max(160);
   const publicMember = member => ({
     id: member.id,
@@ -44,20 +44,15 @@ export function createAuthHttpRoute({
       return true;
     }
     if (route === '/api/auth/login' && method === 'POST') {
-      const key = req.socket.remoteAddress;
-      let bucket = rate.get(key);
-      if (!bucket || bucket.until < now()) {
-        bucket = {
-          n: 0,
-          until: now() + 60000
-        };
-        rate.set(key, bucket);
-      }
-      if (++bucket.n > 12) throw fail(429, 'Bitte eine Minute warten.');
+      // Socket/IP rate is checked before parsing the body so malformed JSON
+      // cannot bypass the shared traffic limit. The per-account cap is
+      // checked afterwards to avoid blocking different users behind Traefik.
+      if (!loginLimiter.consumeSource(req)) throw fail(429, 'Bitte eine Minute warten.');
       const v = parse(z.object({
         email: z.string().email().max(200),
         password: z.string().min(1).max(200)
       }), await readJSON(req));
+      if (!loginLimiter.consumeAccount(v.email)) throw fail(429, 'Bitte eine Minute warten.');
       const m = db.prepare('SELECT * FROM members WHERE email=?').get(v.email.toLowerCase());
       if (!m || !passwordValid(v.password, m.password)) throw fail(401, 'E-Mail oder Passwort stimmen nicht.');
       session(res, m.id);
