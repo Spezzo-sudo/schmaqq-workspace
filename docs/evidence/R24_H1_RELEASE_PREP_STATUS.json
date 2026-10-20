@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "project": "SCHMAQQ Studio",
+  "date": "2026-10-20",
+  "milestone": "R24-H1",
+  "sourceBase": "a414e69e53f17c25ebb69911c24d9d992481d154",
+  "productionSourceVerified": "aef64f85efeeb40f6c0f3a7dc43986a52a20f09f",
+  "observedProduction": {
+    "httpsHealth": "PASS_200_TLS",
+    "mainService": "ACTIVE",
+    "pr16": "ACTIVE",
+    "pr17": "ACTIVE",
+    "dataDirectory": "/var/lib/schmaqq-studio",
+    "dataDirectoryPrivate": true,
+    "dataDirectoryReadAccess": "DENIED_TO_DC_REMOTE",
+    "productionDbSchemaInspection": "NOT_EXECUTED_PRIVILEGE_REQUIRED",
+    "productionDbBackup": "NOT_EXECUTED_PRIVILEGE_REQUIRED",
+    "productionDbRestore": "NOT_EXECUTED_PRIVILEGE_REQUIRED"
+  },
+  "candidateTests": {
+    "newSyntheticRestoreTests": "7/7_PASS",
+    "totalBackendTestsBeforeFinalCommit": "88/88_PASS",
+    "typescript": "PASS_BEFORE_FINAL_COMMIT",
+    "vite": "PASS_BEFORE_FINAL_COMMIT",
+    "finalHeadReleaseManifest": "PENDING_FINAL_COMMIT"
+  },
+  "releaseGates": {
+    "schema": "BLOCKED_HERMES_PENDING",
+    "localBackup": "BLOCKED_HERMES_PENDING",
+    "offlineRestore": "BLOCKED_HERMES_PENDING",
+    "rootConfigRecoveryKit": "BLOCKED_HERMES_PENDING",
+    "proxyRoute": "PASS_HERMES",
+    "trustedForwardedHeaders": "UNVERIFIED_DO_NOT_ENABLE",
+    "githubActions": "BLOCKED_BILLING",
+    "deployment": "NO_GO"
+  },
+  "authorizedActions": "SCHEMA_READ_ONLY_PLUS_NEW_PROTECTED_LOCAL_BACKUP_AND_OFFLINE_RESTORE",
+  "forbiddenActions": "LIVE_DB_SCHEMA_WRITE_OR_DEPLOY_OR_MERGE_OR_SERVICES_RESTART",
+  "offsiteBackups": "DEFERRED_AT_OWNER_REQUEST",
+  "secretsInEvidence": false
+}

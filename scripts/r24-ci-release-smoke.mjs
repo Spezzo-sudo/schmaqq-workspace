@@ -51,6 +51,7 @@ try {
     'selfhost/workspace-http.mjs',
     'selfhost/backup.mjs',
     'selfhost/deploy/schema-migration.mjs',
+    'selfhost/deploy/r24-local-backup.mjs',
     'selfhost/deploy/schema-baseline.v0.json'
   ]) assert.ok(entries.has(filename),'Required runtime file missing: '+filename);
 
