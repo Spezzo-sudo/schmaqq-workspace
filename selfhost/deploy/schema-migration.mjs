@@ -13,7 +13,7 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {inspectSchema} from './schema-preflight.mjs';
+import {inspectSchema,resolveExpectedSchema} from './schema-preflight.mjs';
 
 const BASELINE_FILE = fileURLToPath(new URL('./schema-baseline.v0.json', import.meta.url));
 const TEST_MARKER = '.schmaqq-migration-test-copy';
@@ -78,7 +78,8 @@ function inspectVersionOne(filename) {
       row.type + ':' + row.name,
       {type: row.type, name: row.name, table: row.tbl_name, sqlHash: sqlHash(row.sql)}
     ]));
-    const expected = new Map(base.objects.map(row => [row.type + ':' + row.name, row]));
+    const resolved=resolveExpectedSchema(base,actual);
+    const expected=resolved.expected;
     expected.set('table:schema_migrations', {
       type: 'table', name: 'schema_migrations', table: 'schema_migrations',
       sqlHash: sqlHash(CREATE_LEDGER)
@@ -94,7 +95,7 @@ function inspectVersionOne(filename) {
     }
 
     // Recheck columns and FK definitions; comparing only table names is not enough.
-    for (const [name, structure] of Object.entries(base.tables)) {
+    for (const [name, structure] of Object.entries(resolved.tables)) {
       if (!/^[a-z_]+$/.test(name)) refused('invalid trusted baseline identifier');
       if (!actual.has('table:' + name)) continue;
       const columns = db.prepare('PRAGMA table_info("' + name + '")').all().map(

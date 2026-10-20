@@ -1,0 +1,224 @@
+{
+  "format": 1,
+  "profile": "R23-v0-auth-extensions",
+  "sourceCommit": "aef64f85efeeb40f6c0f3a7dc43986a52a20f09f",
+  "sourceModules": [
+    "selfhost/oidc.mjs",
+    "selfhost/connections.mjs"
+  ],
+  "note": "Generated only from R23-auth-route SQLite creation on a synthetic fixture; exact hash, cols and FKs required.",
+  "objects": [
+    {
+      "type": "table",
+      "name": "github_attempts",
+      "table": "github_attempts",
+      "sqlHash": "52be9e0a0904e8eaf6bf14322c7b0a07ae778b21e40abaf262baf743ca668303"
+    },
+    {
+      "type": "table",
+      "name": "github_connections",
+      "table": "github_connections",
+      "sqlHash": "c4f4a84e74e58a9a3ccdc7c66087565dedc7044d1f51f98447c54a8a0503baad"
+    },
+    {
+      "type": "table",
+      "name": "oidc_attempts",
+      "table": "oidc_attempts",
+      "sqlHash": "eeb0f57cdc0ba88919b7582eef20d5dd432552e2fc9e8e0e84e339e6bf9e7d13"
+    },
+    {
+      "type": "table",
+      "name": "oidc_identities",
+      "table": "oidc_identities",
+      "sqlHash": "365244b083db8e3f61c6dc2bb897d6ca880cf174e53f33cf79004cb6eae8e1fe"
+    }
+  ],
+  "tables": {
+    "github_attempts": {
+      "columns": [
+        {
+          "name": "hash",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "browser",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "member",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "session_hash",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "verifier",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "expires",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "claimed",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "parent": "members",
+          "from": "member",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ]
+    },
+    "github_connections": {
+      "columns": [
+        {
+          "name": "member",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "subject",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "login",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "verified",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "parent": "members",
+          "from": "member",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ]
+    },
+    "oidc_attempts": {
+      "columns": [
+        {
+          "name": "hash",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "browser",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "data",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "expires",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": []
+    },
+    "oidc_identities": {
+      "columns": [
+        {
+          "name": "issuer",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "client",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "name": "subject",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 3
+        },
+        {
+          "name": "member",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "parent": "members",
+          "from": "member",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ]
+    }
+  }
+}

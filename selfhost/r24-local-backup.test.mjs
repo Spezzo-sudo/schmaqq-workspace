@@ -3,22 +3,30 @@ import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {DatabaseSync} from 'node:sqlite';
 import {
-  chmodSync,existsSync,mkdtempSync,readFileSync,readdirSync,rmSync,
+  chmodSync,existsSync,mkdirSync,mkdtempSync,readFileSync,readdirSync,rmSync,
   statSync,symlinkSync,writeFileSync
 } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {openStore} from './store.mjs';
+import {createOidcRoutes} from './oidc.mjs';
+import {createConnectionRoutes} from './connections.mjs';
 
 // Match the private umask of the real Studio systemd service.
 process.umask(0o077);
 const script=fileURLToPath(new URL('./deploy/r24-local-backup.mjs',import.meta.url));
-function fixture(t,{bootstrap=false}={}){
+function fixture(t,{bootstrap=false,auth=false}={}){
   const root=mkdtempSync(path.join(os.tmpdir(),'schmaqq-r24h1-fixture-'));
   t.after(()=>rmSync(root,{recursive:true,force:true}));
   const dbFile=path.join(root,'studio.sqlite');
   const db=openStore(dbFile);
+  if(auth){
+    const config={db,origin:'http://127.0.0.1:55812',
+      sessionCookie:'isolated_fixture',provider:null};
+    createOidcRoutes(config);
+    createConnectionRoutes(config);
+  }
   db.prepare(
     'INSERT INTO members(id,name,email,password,role,seen) VALUES(?,?,?,?,?,?)'
   ).run('synthetic','QA-only','solo@fixture.invalid','no-password-real','owner',12345);
@@ -142,6 +150,92 @@ test('nonprivate setup-link permissions are rejected before backup',t=>{
   const result=run(root);
   assert.equal(result.status,1);
   assert.match(result.stderr,/private permissions/);
+  assert.equal(existsSync(path.join(root,'backups')),false);
+});
+
+test('legacy restore-test directories and backups 0755 are preserved while snapshot succeeds with release gate blocked',t=>{
+  const root=fixture(t,{bootstrap:true});
+  const backups=path.join(root,'backups');
+  mkdirSync(backups,{mode:0o700});
+  chmodSync(backups,0o755);
+  const r1=path.join(root,'restore-test');
+  const r2=path.join(root,'restore-tests');
+  mkdirSync(r1,{mode:0o700});
+  mkdirSync(r2,{mode:0o700});
+  writeFileSync(path.join(r1,'test-evidence.txt'),'HISTORIC-SNAPSHOT-CONTENT',
+    {mode:0o600});
+  writeFileSync(path.join(r2,'test-evidence.txt'),'HISTORIC-P2-RESTORE-CONTENT',
+    {mode:0o600});
+  const result=run(root);
+  assert.equal(result.status,2,result.stderr);
+  const summary=JSON.parse(result.stdout);
+  assert.equal(summary.restore,'PASS');
+  assert.equal(summary.liveSchemaGate,'PASS');
+  assert.equal(summary.restoredSchemaGate,'PASS');
+  assert.equal(summary.r24StoreRestoreCompatibility,'PASS');
+  assert.equal(summary.studioStateInventoryGate,'BLOCKED_OPERATOR_REVIEW');
+  assert.equal(summary.legacyRestoreDirsPreserved,2);
+  assert.equal(summary.legacyBackupParentNonPrivate,true);
+  assert.equal(summary.releaseSchemaGate,'BLOCKED');
+  const bundle=latestBundle(root);
+  assert.equal(statSync(bundle).mode&0o777,0o700);
+  assert.equal(statSync(path.join(bundle,'studio.sqlite')).mode&0o777,0o600);
+  assert.equal(statSync(backups).mode&0o777,0o755);
+  assert.equal(readFileSync(path.join(r1,'test-evidence.txt'),'utf8'),
+    'HISTORIC-SNAPSHOT-CONTENT');
+  assert.equal(readFileSync(path.join(r2,'test-evidence.txt'),'utf8'),
+    'HISTORIC-P2-RESTORE-CONTENT');
+  const report=JSON.parse(readFileSync(
+    path.join(bundle,'local-backup-verification.private.json'),'utf8'));
+  assert.equal(report.studioStateInventoryGate,'BLOCKED_OPERATOR_REVIEW');
+  assert.deepEqual(report.historicalRestoreDirectoriesPreserved,
+    ['restore-test','restore-tests']);
+  assert.equal(report.restoreVerification.status,'PASS');
+  assert.equal(report.restoreVerification.r24StoreStartupOnDisposableRestore,'PASS');
+});
+
+test('full authentic R23 auth schema can be restored with exact v0 structure and zero migration',t=>{
+  const root=fixture(t,{auth:true});
+  const result=run(root);
+  assert.equal(result.status,0,result.stderr);
+  const summary=JSON.parse(result.stdout);
+  assert.equal(summary.liveSchemaGate,'PASS');
+  assert.equal(summary.restoredSchemaGate,'PASS');
+  assert.equal(summary.migrationPlan,'READY');
+  assert.equal(summary.r24StoreRestoreCompatibility,'PASS');
+  assert.equal(summary.releaseSchemaGate,'PASS');
+  const bundle=latestBundle(root);
+  const snapshot=path.join(bundle,'studio.sqlite');
+  const db=new DatabaseSync(snapshot,{readOnly:true});
+  try{
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version,0);
+    for(const name of ['github_attempts','github_connections',
+      'oidc_attempts','oidc_identities']){
+      assert.equal(db.prepare(
+        "SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name=?"
+      ).get(name).n,1,name);
+    }
+  }finally{db.close();}
+});
+
+test('existing backups directory group or world writable is refused with no snapshot',t=>{
+  const root=fixture(t);
+  const backups=path.join(root,'backups');
+  mkdirSync(backups,{mode:0o700});
+  chmodSync(backups,0o777);
+  const result=run(root);
+  assert.equal(result.status,1);
+  assert.match(result.stderr,/group or world writable/);
+  assert.equal(readdirSync(backups).length,0);
+  assert.equal(statSync(backups).mode&0o777,0o777);
+});
+
+test('legacy restore-test symlink is blocked and never followed',t=>{
+  const root=fixture(t);
+  symlinkSync(path.join(root,'missing'),path.join(root,'restore-test'));
+  const result=run(root);
+  assert.equal(result.status,1);
+  assert.match(result.stderr,/real directory/);
   assert.equal(existsSync(path.join(root,'backups')),false);
 });
 

@@ -5,7 +5,65 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const defaultBaseline = fileURLToPath(new URL('./schema-baseline.v0.json', import.meta.url));
+const authExtensionFile = fileURLToPath(new URL('./schema-auth-extension.v0.json', import.meta.url));
 const sqlHash = sql => createHash('sha256').update((sql ?? '').replace(/\s+/g, ' ').trim()).digest('hex');
+
+/**
+ * R23 always creates these four optional/authentication tables in the
+ * HTTP route initializers, not in openStore(). A standalone openStore()
+ * synthetic fixture has the core schema only; a real R23 server has the
+ * complete auth quartet. Accept either COMPLETE signed-off schema
+ * fingerprint, but never a partial set, name-only match or unknown object.
+ *
+ * The immutable JSON fingerprint was generated from the exact R23
+ * oidc.mjs/connections.mjs SQL under SQLite on a synthetic fixture.
+ * This is a pure read-only expected-schema resolver.
+ */
+export function resolveExpectedSchema(base, actual) {
+  const optional = JSON.parse(readFileSync(authExtensionFile,'utf8'));
+  if(optional.format!==1 ||
+     optional.sourceCommit!=='aef64f85efeeb40f6c0f3a7dc43986a52a20f09f' ||
+     optional.profile!=='R23-v0-auth-extensions' ||
+     !Array.isArray(optional.objects) || optional.objects.length!==4 ||
+     Object.keys(optional.tables??{}).length!==4 ||
+     optional.objects.some(obj=>obj.type!=='table' ||
+       !/^(github_attempts|github_connections|oidc_attempts|oidc_identities)$/.test(obj.name))) {
+    throw new Error('Unrecognized pinned R23 authentication schema fingerprint.');
+  }
+  const expected=new Map(base.objects.map(item=>[item.type+':'+item.name,item]));
+  const authKeys=optional.objects.map(x=>x.type+':'+x.name);
+  const pinnedNames=['github_attempts','github_connections',
+    'oidc_attempts','oidc_identities'];
+  const observedNames=optional.objects.map(x=>x.name).sort();
+  const tableNames=Object.keys(optional.tables).sort();
+  if(new Set(authKeys).size!==4 ||
+     JSON.stringify(observedNames)!==JSON.stringify(pinnedNames) ||
+     JSON.stringify(tableNames)!==JSON.stringify(pinnedNames) ||
+     optional.objects.some(x=>x.table!==x.name ||
+       !/^[a-f0-9]{64}$/.test(x.sqlHash)) ||
+     pinnedNames.some(name=>{
+       const structure=optional.tables[name];
+       return !structure || !Array.isArray(structure.columns) ||
+         !Array.isArray(structure.foreignKeys);
+     }) ||
+     authKeys.some(k=>expected.has(k))) {
+    throw new Error('Invalid or overlapping pinned R23 schema objects.');
+  }
+  const seen=authKeys.filter(x=>actual.has(x));
+  const profile=seen.length===0?'R23-v0-core-only':
+    seen.length===4?'R23-v0-with-complete-auth':'R23-v0-partial-auth-BLOCKED';
+  const complete=seen.length===4;
+  if(complete){
+    for(const obj of optional.objects)expected.set(obj.type+':'+obj.name,obj);
+  }
+  return {
+    expected,
+    tables:complete?{...base.tables,...optional.tables}:base.tables,
+    profile,
+    completeAuthExtension:complete
+  };
+}
+
 
 export function inspectSchema(filename, baselineFile = defaultBaseline) {
   // This check must never call openStore(): openStore() creates tables and
@@ -30,16 +88,15 @@ export function inspectSchema(filename, baselineFile = defaultBaseline) {
     const actual = new Map(objects.map(({type,name,tbl_name,sql}) => [
       type + ':' + name, {type, name, table:tbl_name, sqlHash:sqlHash(sql)}
     ]));
-    const expected = new Map(baseline.objects.map(object => [
-      object.type + ':' + object.name, object
-    ]));
+    const resolved=resolveExpectedSchema(baseline,actual);
+    const expected=resolved.expected;
     const missingObjects = [...expected.keys()].filter(name => !actual.has(name));
     const unexpectedObjects = [...actual.keys()].filter(name => !expected.has(name));
     const differentObjects = [...expected.keys()].filter(name => actual.has(name) &&
       JSON.stringify(actual.get(name)) !== JSON.stringify(expected.get(name)));
 
     const tableDifferences = [];
-    for (const [name, structure] of Object.entries(baseline.tables)) {
+    for (const [name, structure] of Object.entries(resolved.tables)) {
       if (!actual.has('table:' + name)) continue;
       if (!/^[a-z_]+$/.test(name)) throw new Error('Malformed trusted baseline table identifier.');
       const cols = db.prepare('PRAGMA table_info("' + name + '")').all().map(
@@ -62,6 +119,7 @@ export function inspectSchema(filename, baselineFile = defaultBaseline) {
     return {
       status: clean ? 'PASS' : 'BLOCKED',
       schema: 'R23-unversioned-v0',
+      schemaProfile: resolved.profile,
       userVersion: version,
       expectedVersion: baseline.userVersion,
       integrity: integrity.length === 1 && integrity[0].integrity_check === 'ok' ? 'ok' : 'failed',

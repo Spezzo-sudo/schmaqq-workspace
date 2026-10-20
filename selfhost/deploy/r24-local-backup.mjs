@@ -37,6 +37,30 @@ function assertPrivateDirectory(location) {
   assert.equal(info.mode & 0o077,0,
     'State and backup directories must not be accessible to other users.');
 }
+/**
+ * Existing historic child directories can be 0755 while the Studio
+ * StateDirectory itself is 0700. The parent is the real confidentiality
+ * boundary: another Unix user cannot traverse to a child with a looser
+ * mode. This check never chmods or relabels those old directories.
+ *
+ * Restrict to canonical, same-owner, non-writable child directories.
+ * Newly created backup/restore bundles remain strictly 0700/0600.
+ */
+function inspectProtectedExistingChild(parent, name) {
+  const dir=path.join(parent,name);
+  const ancestor=lstatSync(parent);
+  const info=lstatSync(dir);
+  assert.ok(info.isDirectory() && !info.isSymbolicLink(),
+    'Known recovery artifact must be a real directory.');
+  assert.equal(realpathSync(dir),dir,'Linked recovery directories are refused.');
+  assert.equal(info.uid,ancestor.uid,
+    'Recovery directory owner must match the private Studio state owner.');
+  assert.equal(info.gid,ancestor.gid,
+    'Recovery directory group must match the private Studio state group.');
+  assert.equal(info.mode & 0o022,0,
+    'Existing recovery directories must not be group or world writable.');
+  return {privateMode:(info.mode & 0o077)===0,mode:(info.mode&0o777).toString(8)};
+}
 function assertPrivateFile(filename) {
   const info=lstatSync(filename);
   assert.ok(info.isFile() && !info.isSymbolicLink() && info.nlink===1,
@@ -76,21 +100,38 @@ function sqliteRead(filename) {
 function knownStateOnly(dataDir) {
   const allowed=new Set([
     'studio.sqlite','studio.sqlite-wal','studio.sqlite-shm',
-    'studio.sqlite-journal','setup-link.txt','backups'
+    'studio.sqlite-journal','setup-link.txt','backups',
+    // The names are known from historic Hermes recovery runs, but the
+    // contents are never read/copied/removed by the live-state backup.
+    'restore-test','restore-tests'
   ]);
   const entries=readdirSync(dataDir);
   const unknown=entries.filter(x=>!allowed.has(x));
   assert.equal(unknown.length,0,
     'Unaccounted-for persistent state entries: stop; review private inventory before claiming completeness.');
+  const legacyRestoreDirs=[];
+  let legacyBackupParentNonPrivate=false;
   for(const entry of entries){
     if(entry==='backups'){
-      assertPrivateDirectory(path.join(dataDir,'backups'));
+      const info=inspectProtectedExistingChild(dataDir,'backups');
+      legacyBackupParentNonPrivate=!info.privateMode;
+    }else if(entry==='restore-test'||entry==='restore-tests'){
+      inspectProtectedExistingChild(dataDir,entry);
+      legacyRestoreDirs.push(entry);
     }else{
       assertPrivateFile(path.join(dataDir,entry));
     }
   }
   assert.ok(entries.includes('studio.sqlite'),'Missing source Studio database.');
-  return {bootstrapPresent:entries.includes('setup-link.txt')};
+  return {
+    bootstrapPresent:entries.includes('setup-link.txt'),
+    legacyRestoreDirs:legacyRestoreDirs.sort(),
+    legacyBackupParentNonPrivate,
+    // Existing historical restore directories are preserved, not declared
+    // part of the live service recovery kit without operator inventory.
+    status:legacyRestoreDirs.length||legacyBackupParentNonPrivate ?
+      'BLOCKED_OPERATOR_REVIEW':'PASS'
+  };
 }
 function statusOnly(filename) {
   try{
@@ -124,8 +165,12 @@ async function main(){
   const preflight=statusOnly(source);
 
   const parent=path.join(dataDir,'backups');
-  if(existsSync(parent))assertPrivateDirectory(parent);
-  else {
+  if(existsSync(parent)){
+    // Old backups/ can be 0755 under the already-private 0700 StateDir.
+    // Never change the old directory permissions implicitly. The newly
+    // minted bundle MUST be private regardless of this legacy parent.
+    inspectProtectedExistingChild(dataDir,'backups');
+  }else{
     mkdirSync(parent,{mode:0o700});
     assertPrivateDirectory(parent);
   }
@@ -168,6 +213,10 @@ async function main(){
   const finalInventory=knownStateOnly(dataDir);
   assert.equal(finalInventory.bootstrapPresent,inventory.bootstrapPresent,
     'Bootstrap recovery file appeared or disappeared during snapshot.');
+  assert.deepEqual(finalInventory.legacyRestoreDirs,inventory.legacyRestoreDirs,
+    'Historical restore inventory changed during snapshot.');
+  assert.equal(finalInventory.status,inventory.status,
+    'Recovery directory permissions or scope changed during snapshot.');
 
   // Physical restoration, in a separate private directory. No application
   // server is started and no actual user/session data leaves the server.
@@ -213,7 +262,8 @@ async function main(){
       appStoreCompatibility='PASS';
     }
     const releaseReady=preflight.status==='PASS' &&
-      snapshotSchema.status==='PASS' && plan.status==='READY';
+      snapshotSchema.status==='PASS' && plan.status==='READY' &&
+      finalInventory.status==='PASS';
 
     rmSync(restore,{recursive:true,force:true});
     assert.equal(existsSync(restore),false,'Private restore-check data not removed.');
@@ -222,6 +272,10 @@ async function main(){
       scope:'studio-state-directory-only',
       createdUtc:new Date().toISOString(),
       backupDataFiles:copiedFiles,
+      historicalRestoreDirectoriesPreserved:inventory.legacyRestoreDirs,
+      historicalRestoreContentsReviewed:false,
+      legacyBackupParentNonPrivate:inventory.legacyBackupParentNonPrivate,
+      studioStateInventoryGate:finalInventory.status,
       sourceDatabaseMutated:false,
       sourceSchema:preflight,
       snapshotSchema,
@@ -261,6 +315,9 @@ async function main(){
       restoredSchemaGate:snapshotSchema.status,
       migrationPlan:plan.status,
       r24StoreRestoreCompatibility:appStoreCompatibility,
+      studioStateInventoryGate:finalInventory.status,
+      legacyRestoreDirsPreserved:inventory.legacyRestoreDirs.length,
+      legacyBackupParentNonPrivate:inventory.legacyBackupParentNonPrivate,
       releaseSchemaGate:report.releaseSchemaGate,
       completeHostRecovery:'NOT_VERIFIED',
       productionDataChanged:false

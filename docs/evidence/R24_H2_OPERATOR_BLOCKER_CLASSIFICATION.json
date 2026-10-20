@@ -1,0 +1,67 @@
+{
+  "format": 1,
+  "date": "2026-10-20",
+  "project": "SCHMAQQ Studio",
+  "candidate": "R24-H2",
+  "productionBaselineSHA": "aef64f85efeeb40f6c0f3a7dc43986a52a20f09f",
+  "baseCandidateSHA": "91d08b27afd33216ea3cce6e2a9d8dd99f9a83ee",
+  "sourceOfActualProductionFindings": "owner-forwarded Hermes H1 report; no privileged access by this engineering session",
+  "productionSchemaFactsReported": {
+    "userVersion": 0,
+    "integrityCheck": "ok",
+    "foreignKeyFailures": 0,
+    "authTablesPresent": [
+      "github_attempts",
+      "github_connections",
+      "oidc_attempts",
+      "oidc_identities"
+    ],
+    "shaAndColumnFingerprintAgainstR23": "NOT_YET_CHECKED_ON_REAL_DB"
+  },
+  "authExtensionSource": {
+    "moduleNames": [
+      "selfhost/oidc.mjs",
+      "selfhost/connections.mjs"
+    ],
+    "relationshipToPinnedR23": "unchanged Git-tracked source",
+    "objectCount": 4,
+    "verificationPolicy": "exact sqlite_master SQL SHA256, table_info, foreign_key_list; all-or-none; no unknown extras"
+  },
+  "stateInventoryReported": {
+    "rootPrivate": true,
+    "legacyNames": [
+      "restore-test",
+      "restore-tests"
+    ],
+    "preexistingBackupParentMode": "0755",
+    "backupParentUnderPrivateAncestor": "0700",
+    "legacyContentsAndPermissions": "UNVERIFIED",
+    "operatorDataCleanup": "FORBIDDEN_WITHOUT_SEPARATE_APPROVAL"
+  },
+  "h2SafeBehavior": {
+    "canMakeNewPrivateSnapshotIfExactNamesAndReadOnlyMetadataPolicyPass": true,
+    "existingArtifactsPreserved": true,
+    "preexistingPermsChanged": false,
+    "newBundlesPrivate": "0700 directories / 0600 files",
+    "partialSuccessExitCode": 2,
+    "releaseGateOnLegacyArtifacts": "BLOCKED_OPERATOR_REVIEW"
+  },
+  "syntheticTests": {
+    "authFingerprint": "10/10 PASS",
+    "backupAndRestore": "11/11 PASS",
+    "fullBackendSuite": "102/102 PASS in isolated candidate worktree",
+    "sourceGuard": "PASS",
+    "typescript": "PASS",
+    "vite": "PASS",
+    "exactCommittedHead": "PENDING_COMMIT"
+  },
+  "prod": {
+    "liveDBModified": false,
+    "newBackupCreatedByThisAgent": false,
+    "deployed": false,
+    "merged": false
+  },
+  "githubActions": "BLOCKED_BILLING",
+  "trustedProxyIps": "UNSET_REQUIRED",
+  "offsiteBackup": "DEFERRED_BY_OWNER"
+}
