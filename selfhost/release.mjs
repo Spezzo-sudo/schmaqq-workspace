@@ -43,7 +43,7 @@ function copy(source, dest = source) {
 for (const file of [
   'server', 'store', 'reviews', 'workspaces', 'admin', 'backup', 'ai-routes',
   'oidc', 'connections', 'collaboration', 'change-overview', 'source-evidence',
-  'project-start', 'github-pr-status'
+  'project-start', 'github-pr-status', 'auth-http', 'workspace-http'
 ]) copy('selfhost/' + file + '.mjs');
 copy('studio-dist');
 copy('node_modules/zod');

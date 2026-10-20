@@ -1,7 +1,7 @@
 import http from 'node:http';
 import {createOidcRoutes} from './oidc.mjs';
 import {createConnectionRoutes} from './connections.mjs';
-import {collaborationRoute,assertAssignment} from './collaboration.mjs';
+import {collaborationRoute} from './collaboration.mjs';
 import { readFileSync,writeFileSync,existsSync,statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,34 +13,34 @@ import {reviewState,completeReview} from './reviews.mjs';
 import {createPullRequestReader,configuredRepos} from './github-pr-status.mjs';
 import {sourceEvidence} from './source-evidence.mjs';
 import {projectStartRoute,projectReadiness} from './project-start.mjs';
-import { openStore,digest,token,passwordHash,passwordValid,createInvite,transaction } from './store.mjs';
+import {createAuthHttpRoute} from './auth-http.mjs';
+import {createWorkspaceHttpRoute} from './workspace-http.mjs';
+import { openStore,digest,token,transaction } from './store.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dataDir=path.resolve(process.env.STUDIO_DATA_DIR??path.join(root,'.studio'));
 const uuid=()=>randomUUID(),now=()=>Date.now();
-const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$/),body=z.string().trim().max(12000);
-const actions=z.discriminatedUnion('action',[
- z.object({action:z.literal('project'),title:text,description:body,color:z.enum(['sage','sand','blue','violet','rose']),stage:z.enum(['Im Aufbau','In Entwicklung','Verfügbar'])}),
- z.object({action:z.literal('task'),project:id,title:text,description:body,priority:z.enum(['Normal','Hoch']),assignee:id.nullable()}),
- z.object({action:z.literal('status'),id,status:z.enum(['todo','doing','review','done'])}),
- z.object({action:z.literal('assign'),id,assignee:id.nullable()}),
- z.object({action:z.literal('message'),id,channel:id,body:z.string().trim().min(1).max(4000)}),
- z.object({action:z.literal('document'),id:id.optional(),title:text,body,revision:z.number().int().positive().optional()})]);
-
+const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$/);
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
 function parse(schema,data){const r=schema.safeParse(data);if(!r.success)throw fail(400,'Bitte Eingaben prüfen.');return r.data;}
 export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist')}={}){
  if(!/^[a-z_]{1,60}$/.test(sessionCookie))throw new Error('Ungültiger Sitzungsname.');
  if(new URL(origin).origin===new URL(previewOrigin).origin)throw new Error('Studio und Vorschau benötigen unterschiedliche Origins.');
- const db=openStore(filename),secure=new URL(origin).protocol==='https:';const rate=new Map();
- function publicMember(m){return {id:m.id,name:m.name,email:m.email,seen:m.seen,role:m.role};}
+ const db=openStore(filename),secure=new URL(origin).protocol==='https:';
  function user(req){const cookie=req.headers.cookie?.match(new RegExp('(?:^|;\\s*)'+sessionCookie+'=([\\w-]+)'))?.[1];if(!cookie)throw fail(401,'Bitte anmelden.');const m=db.prepare('SELECT members.* FROM sessions JOIN members ON member=members.id WHERE hash=? AND expires>?').get(digest(cookie),now());if(!m)throw fail(401,'Bitte erneut anmelden.');return m;}
  function device(req){const t=req.headers.authorization?.match(/^Bearer ([\w-]+)$/)?.[1];if(!t)throw fail(401,'Geräteanmeldung fehlt.');const d=db.prepare('SELECT * FROM devices WHERE hash=? AND revoked=0').get(digest(t));if(!d)throw fail(401,'Gerätezugang ungültig.');return d;}
  function session(res,member){const t=token();db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(digest(t),member,now()+7*86400000);res.setHeader('Set-Cookie',`${sessionCookie}=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800${secure?'; Secure':''}`);}
  function record(author,message){db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(uuid(),author,message,now());}
  const oidcRoute=createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,provider:demoMode?null:oidcProvider});
  const connectionRoute=createConnectionRoutes({db,origin,sessionCookie,user,provider:demoMode?null:githubProvider});
+ // Route modules share the host's request parsing and origin/CSRF boundary.
+ const authHttpRoute=createAuthHttpRoute({
+  db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now
+ });
+ const workspaceHttpRoute=createWorkspaceHttpRoute({
+  db,user,readJSON,parse,record,fail
+ });
  // Identity-only OAuth is not a repository permission. PR inspection requires
  // a separate optional, operator-configured read-only credential and project allowlist.
  const inspectPullRequest=pullRequestReader??createPullRequestReader({repositories:demoMode?{}:configuredRepos(process.env.STUDIO_GITHUB_PROJECT_REPOS),readToken:demoMode?'':process.env.STUDIO_GITHUB_PR_READ_TOKEN??''});
@@ -57,27 +57,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(await collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
    if(await projectStartRoute({route,method,req,db,user,send,readJSON,parse}))return;
    if(await aiRoute({route,method,req,db,user,device,send,readJSON,parse}))return;
-   if(route==='/api/auth/session'){send({user:publicMember(user(req))});return;}
-   if(route==='/api/auth/login'&&method==='POST'){
-    const key=req.socket.remoteAddress;let bucket=rate.get(key);if(!bucket||bucket.until<now()){bucket={n:0,until:now()+60000};rate.set(key,bucket);}if(++bucket.n>12)throw fail(429,'Bitte eine Minute warten.');
-    const v=parse(z.object({email:z.string().email().max(200),password:z.string().min(1).max(200)}),await readJSON(req));const m=db.prepare('SELECT * FROM members WHERE email=?').get(v.email.toLowerCase());
-    if(!m||!passwordValid(v.password,m.password))throw fail(401,'E-Mail oder Passwort stimmen nicht.');session(res,m.id);send({ok:true});return;
-   }
-   if(route==='/api/auth/register'&&method==='POST'){
-    const v=parse(z.object({invite:z.string().min(20).max(100),name:text,password:z.string().min(12).max(200)}),await readJSON(req));
-    const invite=db.prepare('SELECT * FROM invites WHERE hash=? AND expires>?').get(digest(v.invite),now());if(!invite)throw fail(403,'Einladung ungültig oder abgelaufen.');
-    if(db.prepare('SELECT id FROM members WHERE email=?').get(invite.email))throw fail(409,'Dieses Konto existiert bereits.');const memberId=uuid(),hash=passwordHash(v.password);
-    transaction(db,()=>{if(!db.prepare('DELETE FROM invites WHERE hash=?').run(invite.hash).changes)throw fail(409,'Einladung bereits verwendet.');db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(memberId,v.name,invite.email,hash,invite.role,now());});session(res,memberId);send({ok:true});return;
-   }
-   if(route==='/api/auth/bootstrap'&&method==='POST'){
-    const v=parse(z.object({setup:z.string().min(20).max(100),email:z.string().email().max(200),name:text,password:z.string().min(12).max(200)}),await readJSON(req));
-    const expected=db.prepare("SELECT value FROM workspace_meta WHERE key='bootstrap'").get();
-    if(!expected||expected.value!==digest(v.setup)||db.prepare('SELECT id FROM members LIMIT 1').get())throw fail(403,'Einrichtungslink ungültig oder bereits verwendet.');
-    const memberId=uuid(),hash=passwordHash(v.password);
-    transaction(db,()=>{if(db.prepare('SELECT id FROM members LIMIT 1').get())throw fail(409,'Workspace bereits eingerichtet.');db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(memberId,v.name,v.email.toLowerCase(),hash,'owner',now());db.prepare("DELETE FROM workspace_meta WHERE key='bootstrap'").run();});session(res,memberId);send({ok:true});return;
-   }
-   if(route==='/api/auth/logout'&&method==='POST'){const t=req.headers.cookie?.match(new RegExp('(?:^|;\\s*)'+sessionCookie+'=([\\w-]+)'))?.[1];if(t)db.prepare('DELETE FROM sessions WHERE hash=?').run(digest(t));res.setHeader('Set-Cookie',`${sessionCookie}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`);send({ok:true});return;}
-   if(route==='/api/invites'&&method==='POST'){const m=user(req);if(m.role!=='owner')throw fail(403,'Nur der Workspace-Eigentümer kann einladen.');const v=parse(z.object({email:z.string().email().max(200)}),await readJSON(req));send({link:`${origin}/?invite=${createInvite(db,v.email)}`});return;}
+   if(await authHttpRoute({route,method,req,res,send}))return;
    if(route==='/api/runner/poll'&&method==='POST'){
     const d=device(req);db.prepare('UPDATE devices SET seen=? WHERE id=?').run(now(),d.id);
     // A lost acknowledgement must never execute a code job a second time.
@@ -210,18 +190,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      }
     });send({ok:true,id:jid});return;
    }
-   if(route==='/api/workspace'){
-    const m=user(req);db.prepare('UPDATE members SET seen=? WHERE id=?').run(now(),m.id);
-    if(method==='GET'){send({projects:db.prepare('SELECT * FROM projects ORDER BY created,id').all(),tasks:db.prepare('SELECT * FROM tasks ORDER BY created DESC').all(),members:db.prepare('SELECT id,name,email,role,seen FROM members ORDER BY name').all(),messages:db.prepare('SELECT * FROM (SELECT * FROM messages ORDER BY created DESC LIMIT 500) ORDER BY created').all(),documents:db.prepare('SELECT * FROM documents ORDER BY updated DESC').all(),activities:db.prepare('SELECT * FROM activities ORDER BY created DESC LIMIT 30').all()});return;}
-    const v=parse(actions,await readJSON(req));
-    if(v.action==='project')db.prepare('INSERT INTO projects VALUES(?,?,?,?,?,?)').run(uuid(),v.title,v.description,v.color,v.stage,now());
-    else if(v.action==='task'){if(!db.prepare('SELECT id FROM projects WHERE id=?').get(v.project))throw fail(404,'Projekt fehlt.');if(v.assignee&&!db.prepare('SELECT id FROM members WHERE id=?').get(v.assignee))throw fail(400,'Mitglied fehlt.');db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(uuid(),v.project,v.title,v.description,'todo',v.priority,v.assignee,now());}
-    else if(v.action==='status'||v.action==='assign'){if(v.action==='assign'&&v.assignee&&!db.prepare('SELECT id FROM members WHERE id=?').get(v.assignee))throw fail(400,'Mitglied fehlt.');if(v.action==='assign')assertAssignment(db,v.id,v.assignee);const r=v.action==='status'?db.prepare('UPDATE tasks SET status=? WHERE id=?').run(v.status,v.id):db.prepare('UPDATE tasks SET assignee=? WHERE id=?').run(v.assignee,v.id);if(!r.changes)throw fail(404,'Aufgabe fehlt.');}
-    else if(v.action==='message'){if(v.channel!=='general'&&!db.prepare('SELECT id FROM projects WHERE id=?').get(v.channel))throw fail(404,'Raum fehlt.');db.prepare('INSERT OR IGNORE INTO messages VALUES(?,?,?,?,?)').run(v.id,v.channel,m.id,v.body,now());}
-    else if(v.id){if(!db.prepare('UPDATE documents SET title=?,body=?,author=?,updated=?,revision=revision+1 WHERE id=? AND revision=?').run(v.title,v.body,m.id,now(),v.id,v.revision??0).changes)throw fail(409,'Dokument inzwischen geändert. Entwurf kopieren und neu laden.');}
-    else db.prepare('INSERT INTO documents VALUES(?,?,?,?,1,?)').run(uuid(),v.title,v.body,m.id,now());
-    if(v.action!=='message')record(m.id,`${v.action==='project'?'Projekt':v.action==='task'?'Aufgabe':v.action==='document'?'Dokument':'Aufgabenstatus'} aktualisiert`);send({ok:true});return;
-   }
+   if(await workspaceHttpRoute({route,method,req,send}))return;
    if(route.startsWith('/api/'))throw fail(404,'Schnittstelle nicht gefunden.');
    if(method!=='GET'&&method!=='HEAD')throw fail(405,'Methode nicht erlaubt.');
    const filename=path.resolve(staticDir,'.'+decodeURIComponent(route));if(!filename.startsWith(path.resolve(staticDir)+path.sep)&&filename!==path.resolve(staticDir))throw fail(403,'Ungültiger Pfad.');
