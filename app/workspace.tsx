@@ -114,6 +114,7 @@ export default function Workspace({user,selfHosted=false,demoMode=false}:{user:C
   demoMode={demoMode} selfHosted={selfHosted} view={view}
   activeCount={active.length} projects={data.projects} user={user}
   hasComments={hasComments} onNavigate={go}
+  onCloseMobile={()=>{setMobile(false);requestAnimationFrame(()=>mobileToggleRef.current?.focus());}}
   onCreateProject={()=>openModal('project')}
   onSelectProject={id=>{setSelected(id);setDevelopmentTarget(null);go(selfHosted?'overview':'tasks')}}
   onError={setError}

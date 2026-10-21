@@ -336,9 +336,13 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 @media (max-width:640px) {.workflow-stage-note {margin-top:10px;} .integration-panel .submission {min-width:0;}}
 
 /* R23: hide the off-canvas mobile navigation from keyboard focus while closed. */
+.sidebar-mobile-close{display:none}
 @media(max-width:640px){
- .sidebar{visibility:hidden;}
- .sidebar.mobile-open{visibility:visible;}
+ .sidebar{visibility:hidden}
+ .sidebar.mobile-open{visibility:visible}
+ .sidebar.mobile-open .studio-sidebar-brand{padding-right:48px}
+ .sidebar.mobile-open .sidebar-mobile-close{display:grid;place-items:center;position:absolute;top:14px;right:12px;z-index:3;width:44px;height:44px;border:1px solid var(--line-strong);border-radius:12px;background:var(--paper-light);color:var(--ink);cursor:pointer}
+ .sidebar.mobile-open .sidebar-mobile-close:focus-visible{outline:3px solid var(--acid);outline-offset:2px}
 }
 .project-search-empty{grid-column:1/-1;padding:38px 20px;border:1px dashed var(--line-strong);background:var(--paper-light);border-radius:12px;}
 
