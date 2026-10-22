@@ -1,16 +1,16 @@
 'use client';
 import {useState} from 'react';
 import type {TeamWorkspace} from './team-workspaces';
+import {jobStateLabel} from './workflow-terms';
 
 type Evidence={id:string;status:string;created:number;commit:string|null;changedAfter:boolean;freshness?:'same'|'changed'|'unverified';state?:string;published?:boolean};
 type Note={kind:string;body:string;revision:number;author:string|null;updated:number|null};
 export type ChangeSummary={workspace:string;task:string|null;project:string;check:Evidence|null;preview:Evidence|null;review:Evidence|null;publication:Evidence|null;currentRevision:'observed'|'unverified';observation?:{revision:string|null;observedAt:number;valid:boolean}|null;observationJob?:{status:string;created:number}|null;note?:Note};
-const states:Record<string,string>={queued:'Wartet auf PC',running:'Läuft',completed:'Erfolgreich beendet',failed:'Fehlgeschlagen',interrupted:'Unterbrochen',cancelled:'Abgebrochen',cancelling:'Wird gestoppt'};
 const reviewStates:Record<string,string>={approved:'Für diesen Commit freigegeben',changes_requested:'Änderungen angefordert',pending:'Zweite Prüfung ausstehend',unavailable:'Kein prüfbarer Stand'};
 const date=(value:number)=>new Date(value).toLocaleString('de-DE',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
 const kinds:Record<string,string>={unspecified:'Noch nicht eingeordnet',feature:'Neue Funktion',fix:'Fehlerbehebung',maintenance:'Wartung / Verbesserung'};
 const binding=(e:Evidence)=>e.freshness==='same'?'Entspricht dem letzten Dateiabgleich':e.freshness==='changed'?'Weicht vom letzten Dateiabgleich ab':'Dateizuordnung nicht belegt';
-export function checkLabel(change:ChangeSummary){const check=change.check;return !check?'Noch kein Testlauf':check.status==='completed'?(check.changedAfter?'Letzter Test bestanden · danach Änderungen':'Letzter Test bestanden'):states[check.status]??'Status unbekannt';}
+export function checkLabel(change:ChangeSummary){const check=change.check;return !check?'Noch kein Testlauf':check.status==='completed'?(check.changedAfter?'Letzter Test bestanden · danach Änderungen':'Letzter Test bestanden'):jobStateLabel(check.status);}
 export default function ChangeOverview({copy,change,userId,onReview,onWork,onChange}:{copy:TeamWorkspace;change?:ChangeSummary;userId:string;onReview:(id:string)=>void;onWork:()=>void;onChange:()=>Promise<void>}){
  const own=copy.owner===userId,review=change?.review,published=change?.publication?.published===true;
  const [editing,setEditing]=useState(false),[kind,setKind]=useState('unspecified'),[body,setBody]=useState(''),[revision,setRevision]=useState(0),[pending,setPending]=useState(false),[error,setError]=useState('');
@@ -36,7 +36,7 @@ export default function ChangeOverview({copy,change,userId,onReview,onWork,onCha
   {error&&<p className="form-error" role="alert">{error}</p>}
   <dl className="change-facts">
    <div><dt>Letzter Testlauf</dt><dd>{change?checkLabel(change):'Noch kein Nachweis'}{change?.check&&<><small>{date(change.check.created)} · persönlicher Runner</small><small>{change.check.commit?`Gemeldeter Commit ${change.check.commit.slice(0,10)}`:'Codezustand nicht belegt'}</small><small>{binding(change.check)}</small></>}</dd></div>
-   <div><dt>Letzte Vorschau</dt><dd>{change?.preview?<>{states[change.preview.status]??'Status unbekannt'}{change.preview.changedAfter?' · danach Änderungen':''}<small>{date(change.preview.created)} · damaliger Stand</small><small>{binding(change.preview)}</small></>:'Noch nicht erstellt'}</dd></div>
+   <div><dt>Letzte Vorschau</dt><dd>{change?.preview?<>{jobStateLabel(change.preview.status)}{change.preview.changedAfter?' · danach Änderungen':''}<small>{date(change.preview.created)} · damaliger Stand</small><small>{binding(change.preview)}</small></>:'Noch nicht erstellt'}</dd></div>
    <div><dt>Teamprüfung</dt><dd>{review?<>{reviewStates[review.state??'unavailable']??'Status unbekannt'}{review.changedAfter?' · danach Änderungen':''}<small>{review.commit?`Commit ${review.commit.slice(0,10)}`:'Commit nicht belegt'} · {date(review.created)}</small><small>{binding(review)}</small></>:'Noch kein Prüfstand'}</dd></div>
    <div><dt>Veröffentlichung</dt><dd>{published?<>Branch zum Git-Remote übertragen<small>{change?.publication?.commit?`Commit ${change.publication.commit.slice(0,10)}`:'Commit nicht belegt'} · PR, Merge und Live-Status unbestätigt</small></>:'Keine Branch-Veröffentlichung belegt'}{copy.branch&&<small className="change-branch">{copy.branch}</small>}</dd></div>
   </dl>

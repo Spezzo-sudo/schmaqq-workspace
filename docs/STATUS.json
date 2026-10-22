@@ -1,4 +1,18 @@
 {
+  "ux_phase_a0_terms_20261023": {
+    "state": "local_ui_text_change_focused_checks_pass_not_browser_verified",
+    "branch": "local/studio-a0-terms-20261023",
+    "base": "local/studio-use-candidate-20261022",
+    "change": "One visible term per concept in app/workflow-terms.ts: shared job action/state and copy state labels; Arbeitskopie replaces Arbeitsbereich in app views; review action labelled Prüfstand erstellen; failed job state labelled Fehlgeschlagen everywhere. No backend, API or logic change.",
+    "focused_tests": "8 PASS, 0 FAIL: workflow-terms, change-overview, development-target, editor-drafts",
+    "typescript": "PASS",
+    "frontend_build": "PASS",
+    "source_guard": "PASS",
+    "full_backend_suite": "NOT_RUN",
+    "browser_acceptance": "NOT_RUN",
+    "remaining": "Backend error messages still say Arbeitsbereich; glossary not yet shown in UI; Phase A packages A1-A6 follow",
+    "production_changed": false
+  },
   "standalone_local_browser_20261022": {
     "state": "local_standalone_edge_qwen_three_repeats_verified",
     "direct_completion": "--job: one completion JSON and matching process exitcode; closes own browser; no detached launch or MCP required",
