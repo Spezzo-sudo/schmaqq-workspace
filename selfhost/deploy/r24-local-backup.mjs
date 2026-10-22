@@ -24,6 +24,7 @@ import {fileURLToPath} from 'node:url';
 import {inspectSchema} from './schema-preflight.mjs';
 import {planMigrations} from './schema-migration.mjs';
 import {openStore} from '../store.mjs';
+import {assertLinuxOperator} from './operator-platform.mjs';
 
 const scriptFile=fileURLToPath(import.meta.url);
 const backupScript=fileURLToPath(new URL('../backup.mjs',import.meta.url));
@@ -156,6 +157,7 @@ async function main(){
   }
   // Use the supplied existing, canonical data directory. Do not follow an
   // operator-supplied symlink and do not guess the actual Production path.
+  assertLinuxOperator();
   const dataDir=path.resolve(args[1]);
   assertPrivateDirectory(dataDir);
   const inventory=knownStateOnly(dataDir);

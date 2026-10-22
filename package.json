@@ -20,7 +20,8 @@
     "studio:runner": "node selfhost/runner.mjs",
     "studio:test": "node --test selfhost/*.test.mjs",
     "studio:verify": "node selfhost/verify.mjs",
-    "studio:source-guard": "node selfhost/source-guard.mjs"
+    "studio:source-guard": "node selfhost/source-guard.mjs",
+    "studio:verify:local": "node selfhost/verify.mjs --local"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

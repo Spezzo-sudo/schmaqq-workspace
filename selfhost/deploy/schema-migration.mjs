@@ -14,6 +14,12 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {inspectSchema,resolveExpectedSchema} from './schema-preflight.mjs';
+import {assertPrivatePath} from '../private-path.mjs';
+
+function isPrivatePath(location) {
+  try { assertPrivatePath(location); return true; }
+  catch { return false; }
+}
 
 const BASELINE_FILE = fileURLToPath(new URL('./schema-baseline.v0.json', import.meta.url));
 const TEST_MARKER = '.schmaqq-migration-test-copy';
@@ -187,7 +193,7 @@ function assertSyntheticTestCopy(filename) {
     refused('write execution is restricted to isolated synthetic test fixtures');
   }
   const stat = statSync(realParent);
-  if (!stat.isDirectory() || (stat.mode & 0o077) !== 0) {
+  if (!stat.isDirectory() || !isPrivatePath(realParent)) {
     refused('fixture directory permissions are not private');
   }
   const dbFile = lstatSync(full);
@@ -197,7 +203,7 @@ function assertSyntheticTestCopy(filename) {
   const markerPath = path.join(realParent, TEST_MARKER);
   const marker = lstatSync(markerPath);
   if (!marker.isFile() || marker.isSymbolicLink() ||
-      (marker.mode & 0o077) !== 0 ||
+      !isPrivatePath(markerPath) ||
       readFileSync(markerPath,'utf8').trim() !== TEST_MARKER_CONTENT) {
     refused('explicit private synthetic-copy marker required');
   }

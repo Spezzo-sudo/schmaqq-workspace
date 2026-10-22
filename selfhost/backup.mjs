@@ -1,6 +1,7 @@
 import {DatabaseSync} from 'node:sqlite';
 import {existsSync, chmodSync, lstatSync, mkdirSync, realpathSync, statSync} from 'node:fs';
 import path from 'node:path';
+import {assertPrivatePath, protectNewPrivatePath} from './private-path.mjs';
 
 const dataDir = path.resolve(process.env.STUDIO_DATA_DIR ?? '.studio');
 const source = path.join(dataDir, 'studio.sqlite');
@@ -25,13 +26,17 @@ if (existsIncludingDanglingSymlink(destination)) {
 const priorUmask = process.umask(0o077);
 try {
   const parent = path.dirname(destination);
+  const parentExisted = existsIncludingDanglingSymlink(parent);
   mkdirSync(parent, {recursive: true, mode: 0o700});
   if (realpathSync(parent) !== parent) {
     throw new Error('Backup destination parent must not contain symlinks.');
   }
   // Do not allow another Unix account to race the backup filename or
   // replace it through a group/world-writable destination directory.
-  if ((statSync(parent).mode & 0o022) !== 0) {
+  if (process.platform === 'win32') {
+    if (!parentExisted) protectNewPrivatePath(parent);
+    assertPrivatePath(parent);
+  } else if ((statSync(parent).mode & 0o022) !== 0) {
     throw new Error('Backup destination parent must not be group/world writable.');
   }
   if (existsIncludingDanglingSymlink(destination)) {
@@ -44,6 +49,7 @@ try {
   try {db.prepare('VACUUM INTO ?').run(destination);}
   finally {db.close();}
   chmodSync(destination, 0o600);
+  if (process.platform === 'win32') protectNewPrivatePath(destination);
 
   const check = new DatabaseSync(destination, {readOnly: true});
   let integrity;
@@ -55,11 +61,13 @@ try {
   if (integrity.length !== 1 || integrity[0].integrity_check !== 'ok' || foreignKeys.length !== 0) {
     throw new Error('Backup validation failed; retain evidence but do not restore this snapshot.');
   }
-  if ((statSync(destination).mode & 0o077) !== 0) {
+  if (process.platform === 'win32') assertPrivatePath(destination);
+  else if ((statSync(destination).mode & 0o077) !== 0) {
     throw new Error('Backup snapshot permissions are not private.');
   }
   console.log(JSON.stringify({
-    backup: destination, integrity: 'ok', foreignKeyFailures: 0, mode: '0600'
+    backup: destination, integrity: 'ok', foreignKeyFailures: 0,
+    mode: process.platform === 'win32' ? 'windows-private-dacl' : '0600'
   }));
 } finally {
   process.umask(priorUmask);

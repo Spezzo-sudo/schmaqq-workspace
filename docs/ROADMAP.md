@@ -31,6 +31,13 @@ S2 nutzt einen privaten Einrichtungsplan und einmaligen lokalen Helfer; ein sign
 Ein-Klick-Installer und ein externes gemeinsames Remote für neue Startprojekte fehlen.
 S3–S5 bleiben offen. Nachweis im S2-Abschnitt der technischen Abnahme.
 
+**Owner-Steuerung und technischer Nachweis vom 22.10.2026:** Zwei aktive Rollen
+wurden mit zwei Testkonten, einem Windows-Laptop-Runner und einem isolierten
+Linux-VPS-Runner technisch abgenommen. Markus/macOS ist dafür kein Blocker.
+Aufgaben bis gegenseitige Prüfstände sowie Grenzen und Reconnect sind im
+[Zwei-Host-Bericht](TWO_HOST_PILOT_PLAN.md) belegt. Persönliche Alltagsabnahme und
+ein separat freigegebener Nutzungskandidat folgen; kein Production-Rollout daraus.
+
 Die persönliche Strecke bis Draft-PR und der erneute Live-Browserlauf sind
 belegt: [Pilotlauf](evidence/P3_FULL_FLOW_20261017.md),
 [Abnahme einschließlich Retest](evidence/OVERNIGHT_ACCEPTANCE.md). Live wurden
@@ -81,8 +88,10 @@ ehrlich kennzeichnen. Keine Kopie von GitHub und keine neue Ausführungsplattfor
 | **S5 – Zwei-Personen-Abnahme und kontrollierter Release** | Marco/Markus, eigene Studio-/GitHub-Konten, Windows/Mac, zwei parallele Aufgaben, Rückfragen, Tests, Vorschauen, gegenseitige Prüfung und PR. Bewusste Überschneidung gemeinsam auflösen. | Beide wiederholen Ablauf mit integrierter Führung; keine gemeinsamen Credentials. Änderungen nach Review verlangen neue Prüfung. Daten und Entwürfe bleiben erhalten. Konkreter geprüfter Kandidat, Backup/Restore und Rückweg vor separat freigegebenem Dienstwechsel. Kein automatischer Merge/Deploy. |
 
 S1/S2 können ohne Markus und ohne neue Providerregistrierung umgesetzt werden.
-Markus' persönlicher Einstieg wird vorbereitet und sobald verfügbar geprüft;
-sein Fehlen blockiert S5, nicht die davor liegende Engineering-Arbeit.
+Markus' persönlicher Einstieg wird vorbereitet und sobald verfügbar geprüft.
+Der technische Zwei-Rollen-Nachweis ist mit Windows/Linux erbracht; persönliche
+Alltagsabnahme und kontrollierter Release bleiben offen. Marcos Einstieg braucht
+Markus' Mac nicht. Der konkrete Restweg steht in [GETTING_TO_DAILY_USE.md](GETTING_TO_DAILY_USE.md).
 Die vorhandenen vier Sicherheits-/Bedienkorrekturen gehören vor einer nächsten
 Freigabe in den geprüften Kandidaten. Dringende separate Fehlerbehebung bleibt
 möglich; kein pauschales Warten auf alle S-Pakete für einen nötigen Patch.

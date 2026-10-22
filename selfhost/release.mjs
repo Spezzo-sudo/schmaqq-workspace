@@ -41,7 +41,7 @@ function copy(source, dest = source) {
   });
 }
 for (const file of [
-  'server', 'store', 'reviews', 'workspaces', 'admin', 'backup', 'ai-routes',
+  'server', 'store', 'reviews', 'workspaces', 'admin', 'backup', 'private-path', 'ai-routes',
   'oidc', 'connections', 'collaboration', 'change-overview', 'source-evidence',
   'project-start', 'github-pr-status', 'auth-http', 'workspace-http', 'login-rate-limit'
 ]) copy('selfhost/' + file + '.mjs');

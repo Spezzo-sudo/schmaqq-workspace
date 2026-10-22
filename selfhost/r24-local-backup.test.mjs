@@ -12,6 +12,8 @@ import {fileURLToPath} from 'node:url';
 import {openStore} from './store.mjs';
 import {createOidcRoutes} from './oidc.mjs';
 import {createConnectionRoutes} from './connections.mjs';
+import {linuxOperatorSupported, linuxOperatorRequirement} from './deploy/operator-platform.mjs';
+const operatorTest = (name, fn) => test(name, {skip:linuxOperatorSupported ? false : linuxOperatorRequirement}, fn);
 
 // Match the private umask of the real Studio systemd service.
 process.umask(0o077);
@@ -62,7 +64,7 @@ function inspectSnapshot(bundle){
     };
   }finally{db.close();}
 }
-test('consistent WAL-aware backup is physically restored and retains known state',t=>{
+operatorTest('consistent WAL-aware backup is physically restored and retains known state',t=>{
   const root=fixture(t,{bootstrap:true});
   const db=new DatabaseSync(path.join(root,'studio.sqlite'));
   db.exec('PRAGMA journal_mode=WAL;');
@@ -101,7 +103,7 @@ test('consistent WAL-aware backup is physically restored and retains known state
     'Temporary restored SQLite files must be removed.');
 });
 
-test('backup without bootstrap is complete for known SQLite-only state',t=>{
+operatorTest('backup without bootstrap is complete for known SQLite-only state',t=>{
   const root=fixture(t);
   const result=run(root);
   assert.equal(result.status,0,result.stderr);
@@ -110,7 +112,7 @@ test('backup without bootstrap is complete for known SQLite-only state',t=>{
     {member:1,documents:1,activities:0,version:0});
 });
 
-test('schema drift preserves a restorable backup but blocks release readiness',t=>{
+operatorTest('schema drift preserves a restorable backup but blocks release readiness',t=>{
   const root=fixture(t);
   const db=new DatabaseSync(path.join(root,'studio.sqlite'));
   db.exec('DROP INDEX messages_channel;');
@@ -125,7 +127,7 @@ test('schema drift preserves a restorable backup but blocks release readiness',t
   assert.equal(existsSync(path.join(root,'studio.sqlite')),true);
 });
 
-test('unexpected state files prevent claiming a full state backup',t=>{
+operatorTest('unexpected state files prevent claiming a full state backup',t=>{
   const root=fixture(t);
   writeFileSync(path.join(root,'other-important-state.txt'),'test',
     {mode:0o600});
@@ -135,7 +137,7 @@ test('unexpected state files prevent claiming a full state backup',t=>{
   assert.equal(existsSync(path.join(root,'backups')),false);
 });
 
-test('symlinked recovery files are rejected',t=>{
+operatorTest('symlinked recovery files are rejected',t=>{
   const root=fixture(t);
   symlinkSync(path.join(root,'missing-secret'),path.join(root,'setup-link.txt'));
   const result=run(root);
@@ -144,7 +146,7 @@ test('symlinked recovery files are rejected',t=>{
   assert.equal(existsSync(path.join(root,'backups')),false);
 });
 
-test('nonprivate setup-link permissions are rejected before backup',t=>{
+operatorTest('nonprivate setup-link permissions are rejected before backup',t=>{
   const root=fixture(t,{bootstrap:true});
   chmodSync(path.join(root,'setup-link.txt'),0o644);
   const result=run(root);
@@ -153,7 +155,7 @@ test('nonprivate setup-link permissions are rejected before backup',t=>{
   assert.equal(existsSync(path.join(root,'backups')),false);
 });
 
-test('legacy restore-test directories and backups 0755 are preserved while snapshot succeeds with release gate blocked',t=>{
+operatorTest('legacy restore-test directories and backups 0755 are preserved while snapshot succeeds with release gate blocked',t=>{
   const root=fixture(t,{bootstrap:true});
   const backups=path.join(root,'backups');
   mkdirSync(backups,{mode:0o700});
@@ -194,7 +196,7 @@ test('legacy restore-test directories and backups 0755 are preserved while snaps
   assert.equal(report.restoreVerification.r24StoreStartupOnDisposableRestore,'PASS');
 });
 
-test('full authentic R23 auth schema can be restored with exact v0 structure and zero migration',t=>{
+operatorTest('full authentic R23 auth schema can be restored with exact v0 structure and zero migration',t=>{
   const root=fixture(t,{auth:true});
   const result=run(root);
   assert.equal(result.status,0,result.stderr);
@@ -218,7 +220,7 @@ test('full authentic R23 auth schema can be restored with exact v0 structure and
   }finally{db.close();}
 });
 
-test('existing backups directory group or world writable is refused with no snapshot',t=>{
+operatorTest('existing backups directory group or world writable is refused with no snapshot',t=>{
   const root=fixture(t);
   const backups=path.join(root,'backups');
   mkdirSync(backups,{mode:0o700});
@@ -230,7 +232,7 @@ test('existing backups directory group or world writable is refused with no snap
   assert.equal(statSync(backups).mode&0o777,0o777);
 });
 
-test('legacy restore-test symlink is blocked and never followed',t=>{
+operatorTest('legacy restore-test symlink is blocked and never followed',t=>{
   const root=fixture(t);
   symlinkSync(path.join(root,'missing'),path.join(root,'restore-test'));
   const result=run(root);

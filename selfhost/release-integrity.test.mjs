@@ -56,7 +56,8 @@ test('rejects an unexpected file not covered by manifest', async t => {
 });
 test('rejects symlinks inside a release directory', async t => {
   const f = fixture(t);
-  symlinkSync(path.join(f.directory, 'studio-dist/index.html'), path.join(f.directory, 'link.txt'));
+  symlinkSync(path.join(f.directory, process.platform === 'win32' ? 'studio-dist' : 'studio-dist/index.html'),
+    path.join(f.directory, 'link.txt'), process.platform === 'win32' ? 'junction' : 'file');
   await assert.rejects(verifyRelease({directory: f.directory, expectedSource: commit}), /symlinks/);
 });
 test('rejects duplicate manifest paths', async t => {

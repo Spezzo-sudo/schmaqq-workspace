@@ -1,4 +1,121 @@
 {
+  "standalone_local_browser_20261022": {
+    "state": "local_standalone_edge_qwen_three_repeats_verified",
+    "direct_completion": "--job: one completion JSON and matching process exitcode; closes own browser; no detached launch or MCP required",
+    "direct_job_acceptance": "20261022T155844735891Z-54625b54: visible user-session PASS, exit0,17.257s,four local clicks,browser_closed=true; prior STEP_LIMIT returned exit3 correctly",
+    "failure_states": "ERROR/START_ERROR/GOAL_NOT_VERIFIED/APPLICATION_ERROR/NO_ACTION_TARGETS exit1; STEP_LIMIT exit3; TIME_LIMIT exit4; ABORTED exit130",
+    "visible_fixture_fix": "exact two synthetic worktrees trusted only in owned demo/runner process environment after sandbox-to-user ownership refusal; no global Git or ACL changes",
+    "navigation_guard": "phase-specific click targets prevent observed backtracking after confirmed own task/files load",
+    "job_focused_checks": "8 new plus19 existing contract tests passed; one visible model acceptance separately recorded",
+    "measured_repeats": "3/3 PASS; 25.975/27.182/20.911s; 5/6/5 local model calls; one redundant files reload",
+    "gpu_measurement": "71 nvidia-smi samples; peaks99/100/100percent; max7760MiB; not per-process billing",
+    "measurement_evidence": ".studio/local-intelligence/browser-measurements/20261022T142042432815Z-800f9cbf/summary.json",
+    "entry": "../Qwen-Browsertest.cmd",
+    "source": "scripts/local_browser_standalone.py",
+    "documentation": "docs/LOCAL_BROWSER_HELPER.md",
+    "scope": "fixed read-only synthetic localhost4360 example; ten decisions/180seconds; own temporary Edge profile",
+    "codex_or_cua_runtime_dependency": false,
+    "inference": "existing local Qwen only; no cloud model calls in test program; no measured subscription savings",
+    "full_studio_regression_for_this_addition": "NOT_RUN; previous full check predates this addition",
+    "production_changed": false
+  },
+  "local_browser_helper_20261022": {
+    "state": "bounded_local_qwen_cua_prototype_browser_verified_uncommitted",
+    "documentation": "docs/LOCAL_BROWSER_HELPER.md",
+    "scope": "synthetic localhost4360; ordered overview/task/own-copy/files/open-file route; read-only",
+    "browser_evidence": ".studio/local-intelligence/browser/20261022T134255963798Z-82c87d29/browser-result.json",
+    "decision_control": "five actual Qwen choices in bounded CUA batch; deterministic runner wait, editor focus and independent result verification",
+    "vision": "separate final screenshot description; AX used for accepted actions; combined-image control attempts failed",
+    "requires_active_codex_cua_session": true,
+    "standalone_worker_available": false,
+    "quota_savings": "NOT_MEASURED",
+    "focused_checks": "11 Python and 8 JavaScript synthetic contract tests passed; actual browser route separately verified",
+    "production_changed": false
+  },
+  "local_workflow_entry_20261022": {
+    "state": "local_ui_change_browser_verified_uncommitted",
+    "documentation": "docs/evidence/LOCAL_WORKFLOW_ENTRY_20261022.md",
+    "change": "View changes reset page scroll; direct editor entry in development controls and own-copy resume; no automatic file jobs",
+    "browser": "Own isolated synthetic demo: task to own copy, file list/read, draft retained across navigation, save, actual check and built preview; desktop 1280 and mobile 390 with no horizontal overflow",
+    "qwen_use": "One actual image analysis; empty file list observed, unsupported required-path interpretation rejected against source; no measured quota/time savings claim",
+    "final_check_evidence": "Parent workspace local-evidence/2026-10-22_Workflow-Einstieg.json links the actual original final check and browser evidence",
+    "production_changed": false
+  },
+  "local_intelligence_20261022": {
+    "state": "local_qwen35_text_code_vision_smoke_verified_uncommitted",
+    "documentation": "docs/LOCAL_INTELLIGENCE.md",
+    "ai_enabled_by_default": false,
+    "workflow": "existing deterministic check helper plus bounded log parsing and advisory report; original exitcode retained",
+    "context": "reuses existing external brain.py; short Markdown plus source packet",
+    "benchmark": "12 synthetic cases; existing model plus two explicit comparison profiles; no inference run",
+    "downloads": "COMPLETED; both candidate manifests and all new blobs SHA256-verified; separate runtime archive SHA256-verified and extracted; local-evidence/local-intelligence-setup-20261022.json in parent workspace",
+    "runtime": "Default Qwen3.5 uses separate v0.30.0 with same-archive MSVC DLLs beside llama-server; system DLLs and old stable install metadata unchanged",
+    "live_model_tests": "Three bounded synthetic text/code/image cases PASS; actual supplied crash PNG read via image CLI; not a full quality comparison",
+    "model_evidence": ".studio/local-intelligence/qwen35-verification/20261022T084432641568Z-c05aa728/summary.json",
+    "gpu_evidence": ".studio/local-intelligence/qwen35-gpu/20261022T084558410845Z-e5f36055/loaded.json; exactly one model, size_vram == size == 6677961113, context 8192",
+    "selected_model": "qwen3.5:9b-q4_K_M; one loaded model and one parallel inference; per-call AI opt-in retained",
+    "lightweight_regressions": "15 Local Intelligence + 6 lifecycle/setup + 21 check-helper tests PASS after default switch",
+    "real_local_check_20261022": "PASS; source guard, 121 backend tests: 100 pass, 0 fail, 21 explicit platform skips; TypeScript and frontend build PASS; original exitcode 0; AI disabled",
+    "real_local_check_evidence": ".studio/local-checks/20261022T082726Z-710ff80c8d054b9285a7993cbc2a79ee/summary.json; full run before final model-profile/installer/doc changes; final verification recorded in parent local-evidence/2026-10-22_Qwen35-Einrichtung.json",
+    "real_check_environment": "Sandbox process cancellation stalled; owned run stopped and own stale lock safely removed; focused process tests 3 PASS and full local check PASS outside sandbox",
+    "non_llm_acceptance": "PASS; real subprocess chain with labelled synthetic success/failure tests, original CLI exitcodes 0/1, reports, secret masking and original knowledge source validation",
+    "non_llm_evidence": ".studio/local-intelligence/acceptance/20261022T062724030799Z-706c0107/acceptance.json",
+    "background_services_or_schedules_added": false,
+    "production_changes": false
+  },
+  "local_checks_and_llm_20261021": {
+    "state": "local_windows_setup_uncommitted",
+    "documentation": "docs/LOCAL_CHECKS_AND_LLM.md",
+    "check_command": "npm run studio:check:local",
+    "reports": ".studio/local-checks/<UTC-UUID>/summary.json",
+    "model": "qwen2.5-coder:14b Q4_K_M",
+    "runtime": "Ollama 0.13.5 pinned after 0.40.7 CUDA discovery failure",
+    "hardware_observed": "Ryzen 9 5900HX; 64 GiB RAM; RTX 3080 Laptop 16 GiB VRAM",
+    "gpu_inference": "PASS; model size_vram equals size, 10863650816 bytes at 8192 context",
+    "automation_regressions": "42/42 PASS including real process-tree/timeout checks, lock retention, reject-only HTTP guard and parallel advisory analysis",
+    "parallel_browser_and_gpu_analysis": "PASS; unchanged RC1 browser package and explicitly selected historical error log; source unchanged during run",
+    "local_lifecycle": "PASS; stop/start/probe/actual outbound refusal/status; ready=true",
+    "model_role": "bounded advisory log analysis; UNREVIEWED; no shell or code-write tools",
+    "parallelism": "standalone analysis can run beside Codex/checks; one test-job lock and one model inference at a time",
+    "outbound_control": "remote host allowlist localhost and reject-only local HTTP guard; actual Ollama registry request refused; no forwarding",
+    "cloud_flag_caveat": "0.13.5 does not implement native OLLAMA_NO_CLOUD; effective restriction uses the separately verified guard",
+    "backend_evidence": "121 tests: 100 pass, 0 fail, 21 explicit skips; TypeScript and build pass",
+    "browser_evidence": "18 real Edge/Playwright checks pass on manifest-verified unchanged RC1 runtime; not a package of current uncommitted source",
+    "linux_verification": "NOT_VERIFIED",
+    "quota_savings": "not yet measured; repeatable tests themselves require no LLM",
+    "paid_model_apis": "NONE",
+    "production_changes": false
+  },
+  "windows_local_portability_20261021": {
+    "state": "local_uncommitted_review_only",
+    "documentation": "docs/WINDOWS_LOCAL_DEVELOPMENT.md",
+    "native_access_controls": "POSIX modes on Unix; verified owner/DACL on Windows for local backups and synthetic migration fixtures",
+    "focused_backup_migration_release_tests": "31/31 PASS before final full verification",
+    "previous_windows_backend_before_platform_contract": {
+      "tests": 117,
+      "passed": 95,
+      "failed": 21,
+      "skipped": 1
+    },
+    "full_windows_backend": {
+      "tests": 121,
+      "passed": 100,
+      "failed": 0,
+      "skipped": 21
+    },
+    "linux_operator_tests_not_run": "20 tests explicitly report Linux required / NOT VERIFIED; original Linux assertions retained",
+    "platform_refusal_regressions": "4/4 PASS including real H2/H3/release CLI refusal before state changes",
+    "local_command": "npm run studio:verify:local",
+    "full_verification": "INCOMPLETE on Windows; strict studio:verify retains nonzero exit for missing Linux proof",
+    "existing_skip": "POSIX pilot-runner permission test on Windows",
+    "typescript": "PASS",
+    "studio_build": "PASS",
+    "browser_runtime_regressions": "4/4 PASS: explicit Node selection, real process lifecycle, read-only SQLite URI and cleanup",
+    "rc1_package_browser": "18/18 PASS using ported test against freshly rebuilt and manifest-verified unchanged RC1 package, 714 files; not an artifact of the uncommitted changes",
+    "linux_operator_verification": "NOT_RUN; local WSL not installed; no Linux or Production PASS claimed",
+    "push_merge_deployment": "NONE",
+    "production_changed": false
+  },
   "schema": 1,
   "observed_on": "2026-10-19",
   "product": "SCHMAQQ Studio",
@@ -63,7 +180,7 @@
   "environments": {
     "personal_local": "127.0.0.1:4310: legacy local installation; consolidated candidate is tested separately on 4340/4341",
     "isolated_demo": "127.0.0.1:4320; zwei Testkonten und lokale Runner",
-    "vps": "Live Studio active on candidate source 4a0092be2d04a4b66aa1d200cf7c9f9c53c4c47d; 699-file manifest and retained owner session/runner/preview directly checked after authorized operator switch. See docs/evidence/P2_SWITCH_ACCEPTANCE_20261017.md.",
+    "vps": "2026-10-22 read-only pre/post two-host-test: Production remains R23, active/running, NRestarts0; same current symlink target before and after; historical P2 switch evidence is retained separately. Diagnostic test used a separate dc-remote directory and was stopped/cleaned; see docs/TWO_HOST_PILOT_PLAN.md.",
     "github": "Private zentrale Codebasis Spezzo-sudo/schmaqq-workspace, Remote-Branch main, Code im Repository-Root",
     "local_parallel_pilot": "127.0.0.1:4340; preview 4341; isolated fixture with two test accounts and runners; manual process, no autostart"
   },
@@ -74,11 +191,36 @@
     "logo_blob": "5b114714317156d559e0df88a0460ff5d608b9cd",
     "note": "Originale Vektorpfade, lokale React-Wellenanimation; keine vollständige Kopie des Website-Header-Moduls"
   },
+  "two_host_pilot_20261022": {
+    "state": "technical_two_host_acceptance_pass_diagnostic_snapshot_not_deployed",
+    "plan": "docs/TWO_HOST_PILOT_PLAN.md",
+    "technical_scope": "Laptop plus isolated Linux VPS role; two synthetic accounts/devices/copies, concurrent checks, previews and mutual review; Markus/macOS not required for this technical test",
+    "snapshot_sha256": "f282b77f3518c2f1230133aa26e22713c67c7c2d9ca2d1f3964387f0edf1227c",
+    "snapshot_bytes": 1193169,
+    "snapshot_files": 728,
+    "verified": "Two visible browser contexts, two synthetic users and actual Windows/Linux runners: linked task ownership/discussion/worktrees, independent editor saves, simultaneous checks, actual host outputs, built previews with matching checked revisions, mutual exact-commit approval, self/foreign-device/overlap rejection, new commit needs new approval, offline and same-device/copy/content reconnect; desktop1440/mobile390; no browser page errors",
+    "payload_authorization": "Owner explicitly approved this documented internal snapshot and VPS destination after initial automatic review rejection; no transfer workaround used",
+    "source_uploaded": true,
+    "two_host_acceptance": "PASS; resumed test after test-URL, task-selection/task-metadata and duplicate-heading locator corrections; no application code changed in this test package",
+    "concurrent_check_overlap_ms": 4162,
+    "active_task_linked_workspaces": 2,
+    "archived_initial_fixture_workspaces": 2,
+    "runner_reconnect": "50seconds SIGSTOP/SIGCONT of owned Linux runner; offline shown; same process/device/copy/content after resume",
+    "temporary_remote_ssh_key": "REMOVED after completion; generated local SSH keys also removed",
+    "test_processes_and_ports": "STOPPED; graceful VPS shutdown; all three remote and local forwarded ports closed",
+    "production_changed": false,
+    "production_post_cleanup": "active/running; NRestarts0; no Production data or ENV read",
+    "evidence": ".studio/two-host-pilot-20261022/result.json",
+    "independent_evidence": ".studio/two-host-pilot-20261022/independent-evidence-final.json",
+    "cleanup_evidence": ".studio/two-host-pilot-20261022/cleanup-result.json",
+    "remaining": "Personal real-work usage acceptance and candidate consolidation/review; no general macOS or two-human acceptance inferred; no Production rollout authorized"
+  },
   "next_steps": [
+    "Use the verified two-host workflow for a small real-work acceptance; consolidate and review the dirty candidate before any separately authorized rollout; Markus/macOS onboarding follows independently",
     "Review bounded S2 project-start candidate and remaining local command/restart onboarding friction",
     "S3: validated PR transition and repository-scoped GitHub integration with explicit provider authorization",
     "S4: isolated own-infrastructure checks without unnecessary GitHub Actions runs",
-    "S5: actual two-person Windows/macOS pilot and separately authorized release"
+    "S5: personal real-work acceptance; technical laptop/Linux two-role pilot passed, macOS onboarding later; separately authorized release"
   ],
   "verification": {
     "command": "node selfhost/verify.mjs (Node 24)",
@@ -560,7 +702,26 @@
     "production_changed": false,
     "model_jobs_started": 0,
     "github_actions_started": 0,
-    "runner_package": "PASS: clean committed source, extracted 10-file manifest and complete setup helper import graph; not installed on personal live runner"
+    "runner_package": "PASS: clean committed source, extracted 10-file manifest and complete setup helper import graph; not installed on personal live runner",
+    "onboarding_ui_followup": {
+      "state": "local_uncommitted_visible_ui_verified",
+      "source_branch": "local/windows-setup-20261021",
+      "change": "Project setup now gives ordered local steps, explains which source folder/profile to use, offers copy buttons for apply/restart commands, and requires a fresh readiness report plus Git read check before claiming ready",
+      "focused_tests": "selfhost/project-start.test.mjs: 2 PASS; TypeScript PASS; frontend build PASS",
+      "visible_workflow": "2026-10-22: fresh isolated synthetic database/profile; actual downloaded plan applied by CLI exit0; backup, token and existing project retained; real runner restart with same device; visible Git inspection, worktree, edit/save confirmed on disk, 1 actual node:test PASS, built preview with changed heading and same tested source revision; desktop1440/mobile390; no page errors; owned processes stopped",
+      "git_identity_help": {
+        "state": "local_uncommitted_visible_browser_verified",
+        "change": "Failed identity probe offers repository-scoped --local command templates, copy confirmation and explicit retry bound to the own inspected project/device; successful retry removes help; no automatic configuration mutation",
+        "verification": "Local verification:121 backend tests,100 PASS,0 FAIL,21 explicit platform skips; source guard,TypeScript,build PASS. Visible Edge:7 acceptance stages PASS; desktop1440/mobile390; actual copied commands executed only in synthetic repository, same-project/device retry and readiness verified, no runner restart, no page errors; owned processes stopped",
+        "evidence": ".studio/git-identity-help-20261022/run-02/result.json",
+        "local_verify_log": ".studio/git-identity-help-20261022/verify.log",
+        "remaining": "Personal real-project and macOS use; Linux operator verification; no deployment"
+      },
+      "acceptance_report": "docs/evidence/LOCAL_PROJECT_START_20261022.md",
+      "local_evidence": ".studio/project-start-full-20261022/run-03/result.json",
+      "acceptance_caveats": "Resumed after locator, sandbox process cleanup and Windows test-file decoding issues; missing Git author identity correctly blocked readiness, then configured only in synthetic repository with git config --local; not one uninterrupted successful run; not a personal/live runner or macOS acceptance",
+      "production_changed": false
+    }
   },
   "r23_local_candidate": {
     "state": "locally_verified_not_deployed",
@@ -608,5 +769,43 @@
       "production_deployment_approved": false,
       "github_pushed": true
     }
+  },
+  "use_candidate_20261022": {
+    "state": "product_candidate_with_github_handoff",
+    "branch": "local/studio-use-candidate-20261022",
+    "directory": "../schmaqq-studio-use-candidate",
+    "local_checks": {
+      "backend_pass": 100,
+      "backend_fail": 0,
+      "linux_platform_skips": 21,
+      "source_guard": "PASS",
+      "typescript": "PASS",
+      "frontend_build": "PASS"
+    },
+    "visible_edge": {
+      "status": "PASS",
+      "steps": 7,
+      "mobile_width": 390,
+      "own_processes_stopped": true
+    },
+    "two_host_snapshot_comparison": {
+      "runtime_modules_identical": 44,
+      "browser_files_identical": 8
+    },
+    "release_approved": false,
+    "production_changed": false,
+    "next": "Personal real project and runner onboarding, actual task and resume acceptance; exact candidate release/recovery and any service switch separately",
+    "evidence": ".studio/use-candidate-20261022/",
+    "daily_use_plan": "docs/GETTING_TO_DAILY_USE.md",
+    "publication": {
+      "repository": "Spezzo-sudo/schmaqq-workspace",
+      "branch": "local/studio-use-candidate-20261022",
+      "entry": "START_HERE.md",
+      "commit_identity": "authenticated GitHub account",
+      "main_merged": false,
+      "production_deployed": false,
+      "note": "Read actual branch head from GitHub; no current commit SHA maintained in permanent prose."
+    },
+    "portable_evidence": "docs/evidence/USE_CANDIDATE_20261022.json"
   }
 }

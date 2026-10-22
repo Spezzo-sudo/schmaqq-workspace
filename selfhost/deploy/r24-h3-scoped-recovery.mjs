@@ -17,6 +17,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {inspectSchema} from './schema-preflight.mjs';
 import {planMigrations} from './schema-migration.mjs';
+import {assertLinuxOperator} from './operator-platform.mjs';
 
 const HISTORICAL=['backups','restore-test','restore-tests'];
 const KNOWN_LIVE=new Set([
@@ -80,6 +81,7 @@ function safeJSON(file,owner,maxBytes=65536) {
  * This is NOT a content-integrity proof for historical backups.
  */
 export function inventoryHistoricalTrees(dataDir){
+  assertLinuxOperator();
   check(path.isAbsolute(dataDir),'ABSOLUTE_STATE_PATH_REQUIRED');
   const root=path.resolve(dataDir);
   check(root===dataDir,'CANONICAL_STATE_PATH_REQUIRED');
@@ -212,6 +214,7 @@ export function compareAttestation(review,expected){
 }
 
 export async function verifyExistingH2Backup({dataDir,backupId,sourceSha,attestationFile}){
+  assertLinuxOperator();
   check(gitShaRe.test(sourceSha),'SOURCE_COMMIT_INVALID');
   check(/^r24-h1-[A-Za-z0-9_-]{4,64}$/.test(backupId),
     'BACKUP_ID_INVALID');

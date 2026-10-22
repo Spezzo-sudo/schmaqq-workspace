@@ -10,6 +10,10 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {verifyRelease} from '../selfhost/deploy/verify-release.mjs';
+import {assertLinuxOperator} from '../selfhost/deploy/operator-platform.mjs';
+
+// A successful Windows UI/backup smoke is not a Linux release-recovery proof.
+assertLinuxOperator();
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 

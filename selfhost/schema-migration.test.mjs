@@ -5,17 +5,20 @@ import {DatabaseSync} from 'node:sqlite';
 import {fileURLToPath} from 'node:url';
 import {
   mkdtempSync, writeFileSync, rmSync, existsSync,
-  chmodSync, symlinkSync, statSync, readFileSync
+  chmodSync, symlinkSync, linkSync, statSync, readFileSync
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {openStore} from './store.mjs';
 import {applyToSyntheticTestCopy,planMigrations,migrations} from './deploy/schema-migration.mjs';
+import {protectNewPrivatePath} from './private-path.mjs';
+import {exposeFixture} from './private-path-test-support.mjs';
 
 const script = fileURLToPath(new URL('./deploy/schema-migration.mjs',import.meta.url));
 
 function fixture(t, {marker = true} = {}) {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'schmaqq-migration-fixture-'));
+  protectNewPrivatePath(dir);
   t.after(() => rmSync(dir, {force:true,recursive:true}));
   if (marker) {
     writeFileSync(path.join(dir,'.schmaqq-migration-test-copy'),
@@ -158,14 +161,15 @@ test('test-copy executor refuses an unmarked database',t=>{
 test('test-copy executor refuses a linked database path',t=>{
   const {filename,dir}=fixture(t);
   const link=path.join(dir,'linked.sqlite');
-  symlinkSync(filename,link);
+  if(process.platform === 'win32') linkSync(filename,link);
+  else symlinkSync(filename,link);
   assert.throws(()=>applyToSyntheticTestCopy(link),/test database/);
   assert.equal(state(filename).version,0);
 });
 
 test('test-copy executor refuses directory whose marker is publicly readable',t=>{
   const {filename,dir}=fixture(t);
-  chmodSync(path.join(dir,'.schmaqq-migration-test-copy'),0o644);
+  exposeFixture(path.join(dir,'.schmaqq-migration-test-copy'),0o644);
   assert.throws(()=>applyToSyntheticTestCopy(filename),/private synthetic-copy marker/);
   assert.equal(state(filename).version,0);
 });

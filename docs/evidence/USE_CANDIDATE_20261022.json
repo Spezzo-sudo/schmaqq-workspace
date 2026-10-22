@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-22",
+  "kind": "sanitized_summary_of_tests_actually_run_locally",
+  "branch": "local/studio-use-candidate-20261022",
+  "scope": "Product code unchanged after local checks; subsequent changes are handoff documentation only. This file records previous executions, not a new execution by a reader.",
+  "backend": {
+    "pass": 100,
+    "fail": 0,
+    "linux_specific_skips": 21
+  },
+  "source_guard": "PASS",
+  "typescript": "PASS",
+  "frontend_build": "PASS",
+  "browser_runtime_regressions": {
+    "pass": 14,
+    "fail": 0
+  },
+  "visible_edge": {
+    "status": "PASS",
+    "steps": [
+      "visible-login",
+      "missing-identity-shows-context-help-and-not-ready",
+      "copy-button-copies-both-local-command-templates",
+      "help-mobile390-no-overflow",
+      "displayed-commands-executed-author-identity-stored-only-in-fixture-repository",
+      "same-project-device-retry-succeeds-help-disappears-no-runner-restart",
+      "readiness-updated-no-browser-errors"
+    ],
+    "page_errors": [],
+    "owned_processes_stopped": true
+  },
+  "pilot_byte_comparison": {
+    "runtime_modules_compared": 44,
+    "runtime_differences": [],
+    "browser_build_files_compared": 8,
+    "browser_build_differences": []
+  },
+  "test_attempts": "Initial browser started before frontend build, cleanup blocked by sandbox; owned process removed. Initial full check process test blocked by sandbox; stopped only owned test tree. Elevated verification used a per-process safe.directory for the sandbox-owned worktree. Final full check and visible browser passed.",
+  "linux_operator_recovery": "NOT_VERIFIED_BY_WINDOWS_CHECK",
+  "release_approved": false,
+  "production_changed": false,
+  "raw_evidence": "Local original repository .studio/use-candidate-20261022; excluded from GitHub together with private fixtures and credentials.",
+  "open": [
+    "Exact candidate Linux operator/recovery and release evidence before any separately authorized rollout",
+    "Personal real project and runner onboarding, actual task and resume acceptance",
+    "S3 GitHub integration and S4 persistent central checks for broader scope"
+  ]
+}

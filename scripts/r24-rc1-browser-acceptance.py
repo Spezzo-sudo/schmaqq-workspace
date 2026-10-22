@@ -6,21 +6,20 @@ No persistent external state: all synthetic data stays under a private temp path
 Requires: pip playwright and a locally installed Chromium.
 """
 import argparse
+from contextlib import closing
 import json
 import os
 import pathlib
 import shutil
-import signal
 import socket
 import sqlite3
-import subprocess
 import tempfile
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 
-from playwright.sync_api import sync_playwright
+from r24_browser_runtime import resolve_node, start_server, stop_server, protect_temp
 
 def require(predicate, title):
     if not predicate:
@@ -47,13 +46,15 @@ def request(base, route, payload=None):
         return error.code, {}
 
 def table_value(db_path, query, params=()):
-    with sqlite3.connect(f"file:{urllib.parse.quote(str(db_path))}?mode=ro", uri=True) as db:
+    with closing(sqlite3.connect(db_path.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         return db.execute(query, params).fetchone()
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--release-dir", required=True)
     parser.add_argument("--expected-sha", required=True)
+    parser.add_argument("--node", help="Explicit absolute Node executable (required on Windows)")
+    parser.add_argument("--browser-channel", choices=["chrome", "msedge"])
     args = parser.parse_args()
     release = pathlib.Path(args.release_dir).resolve(strict=True)
     require(release.is_dir(), "release_dir_invalid")
@@ -62,35 +63,34 @@ def main():
     require(attestation["sourceCommit"] == args.expected_sha, "release_source_sha_mismatch")
     require(len(args.expected_sha) == 40, "source_sha_invalid")
 
+    node = resolve_node(args.node)
+    from playwright.sync_api import sync_playwright
     data_dir = pathlib.Path(tempfile.mkdtemp(prefix="schmaqq-rc1-ui-"))
-    data_dir.chmod(0o700)
-    app_port, preview_port = free_port(), free_port()
-    require(app_port != preview_port, "test_ports_collision")
-    origin = f"http://127.0.0.1:{app_port}"
-
-    env = {name: value for name, value in os.environ.items()
-           if not (name.startswith(("STUDIO_", "GITHUB_", "OPENAI_", "GH_"))
-                   or name in ("NODE_OPTIONS", "NODE_PATH", "HTTP_PROXY",
-                               "HTTPS_PROXY", "ALL_PROXY", "NODE_EXTRA_CA_CERTS"))}
-    env.update({
-        "STUDIO_DATA_DIR": str(data_dir),
-        "STUDIO_ORIGIN": origin,
-        "STUDIO_PREVIEW_ORIGIN": f"http://127.0.0.1:{preview_port}",
-        "STUDIO_BIND": "127.0.0.1",
-        "PORT": str(app_port),
-        "STUDIO_PREVIEW_PORT": str(preview_port),
-        "NODE_ENV": "production",
-        "STUDIO_TRUSTED_PROXY_IPS": "",
-    })
-    node = "/opt/schmaqq-studio/runtime/node/bin/node"
-    require(pathlib.Path(node).is_file(), "pinned_node_runtime_missing")
-    child = subprocess.Popen([node, "selfhost/server.mjs"], cwd=release,
-                             env=env, stdout=subprocess.DEVNULL,
-                             stderr=subprocess.DEVNULL, start_new_session=True)
+    child = None
     results = []
     errors = []
-    started = time.monotonic()
     try:
+        protect_temp(node, data_dir)
+        app_port, preview_port = free_port(), free_port()
+        require(app_port != preview_port, "test_ports_collision")
+        origin = f"http://127.0.0.1:{app_port}"
+
+        env = {name: value for name, value in os.environ.items()
+               if not (name.upper().startswith(("STUDIO_", "GITHUB_", "OPENAI_", "GH_"))
+                       or name.upper() in ("NODE_OPTIONS", "NODE_PATH", "HTTP_PROXY",
+                                   "HTTPS_PROXY", "ALL_PROXY", "NODE_EXTRA_CA_CERTS"))}
+        env.update({
+            "STUDIO_DATA_DIR": str(data_dir),
+            "STUDIO_ORIGIN": origin,
+            "STUDIO_PREVIEW_ORIGIN": f"http://127.0.0.1:{preview_port}",
+            "STUDIO_BIND": "127.0.0.1",
+            "PORT": str(app_port),
+            "STUDIO_PREVIEW_PORT": str(preview_port),
+            "NODE_ENV": "production",
+            "STUDIO_TRUSTED_PROXY_IPS": "",
+        })
+        child = start_server(node, release, env)
+        started = time.monotonic()
         ready = False
         while time.monotonic() - started < 15:
             if child.poll() is not None:
@@ -124,13 +124,16 @@ def main():
         require(status == 200, "isolated_bootstrap_failed")
         # Login is tested visibly, not via an injected cookie.
         with sync_playwright() as playwright:
-            chromium = (shutil.which('google-chrome') or
-                        shutil.which('chromium-browser') or
-                        playwright.chromium.executable_path)
-            require(pathlib.Path(chromium).is_file(), 'chromium_binary_missing')
-            browser = playwright.chromium.launch(headless=True,
-                executable_path=chromium,
-                args=["--no-sandbox", "--disable-dev-shm-usage"])
+            launch = {"headless": True}
+            if args.browser_channel:
+                launch["channel"] = args.browser_channel
+            else:
+                chromium = (shutil.which('google-chrome') or
+                            shutil.which('chromium-browser') or
+                            playwright.chromium.executable_path)
+                require(pathlib.Path(chromium).is_file(), 'chromium_binary_missing')
+                launch["executable_path"] = chromium
+            browser = playwright.chromium.launch(**launch)
             try:
                 context = browser.new_context(viewport={"width": 1440, "height": 900})
                 page = context.new_page()
@@ -234,29 +237,25 @@ def main():
                 mark("16-logout-revokes-session",
                      page.request.get(origin + "/api/auth/session").status == 401)
                 mark("17-no-browser-uncaught-errors", len(errors) == 0)
-                with sqlite3.connect(data_dir / "studio.sqlite") as db:
+                with closing(sqlite3.connect(data_dir / "studio.sqlite")) as db:
                     integrity = db.execute("PRAGMA integrity_check").fetchone()[0]
                     fk_failures = len(db.execute("PRAGMA foreign_key_check").fetchall())
                 mark("18-sqlite-integrity-and-fk", integrity == "ok" and fk_failures == 0)
             finally:
                 browser.close()
-        print(json.dumps({
-            "result": "PASS", "sourceSha": args.expected_sha,
-            "isolation": "private-temp-only-no-real-users-or-providers",
-            "browser": "Chromium headless (desktop and mobile)",
-            "checksPassed": len(results), "checks": results,
-            "uncaughtExceptions": len(errors),
-            "productionChanged": False
-        }, indent=2))
     finally:
-        if child.poll() is None:
-            os.killpg(child.pid, signal.SIGTERM)
-            try:
-                child.wait(timeout=6)
-            except subprocess.TimeoutExpired:
-                os.killpg(child.pid, signal.SIGKILL)
-                child.wait(timeout=5)
+        # Never remove data while the server may still be using it.
+        if child is not None:
+            stop_server(child)
         shutil.rmtree(data_dir)
+    print(json.dumps({
+        "result": "PASS", "sourceSha": args.expected_sha,
+        "isolation": "private-temp-only-no-real-users-or-providers",
+        "browser": "Chromium headless (desktop and mobile)",
+        "checksPassed": len(results), "checks": results,
+        "uncaughtExceptions": len(errors),
+        "productionChanged": False
+    }, indent=2))
 
 if __name__ == "__main__":
     main()

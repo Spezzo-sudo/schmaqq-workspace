@@ -1,5 +1,223 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
+## Aktuell: Produktkandidat für GitHub und neuen Chat
+
+Die Produktänderungen liegen zusätzlich in `../schmaqq-studio-use-candidate`
+auf `local/studio-use-candidate-20261022`. Originalarbeitsverzeichnis und Index
+wurden erhalten. Das Paket enthält Produktoberfläche, Windows-Portabilität,
+feste Tests und zugehörige Dokumentation; keine neuen Qwen-/Modell-/Browserhelfer.
+Eine `node_modules`-Junction verwendet die bereits vorhandenen Abhängigkeiten.
+
+Tatsächlich neu geprüft: lokale Gesamtprüfung 100 PASS, 0 FAIL, 21 ausdrücklich
+als Linux-spezifisch ausgelassene Tests, Source Guard, TypeScript und Build PASS.
+Sichtbarer frischer Edge-Lauf mit synthetischen Daten: 7 Schritte PASS, Desktop
+und 390px Mobilbreite, keine Browserfehler, eigene Prozesse beendet. Der erste
+Browserversuch lief vor Fertigstellung des Builds und schlug deshalb fehl;
+Sandbox-Prozessbereinigung war gesperrt. Der eigene Prozess wurde gezielt
+beendet. Die Gesamtprüfung wurde nach Diagnose des blockierten Prozess-Tests
+mit lokalen Prozessrechten wiederholt; Git-Ausnahme galt nur im Testprozess.
+Globale Git-Konfiguration wurde nicht geändert.
+
+Vergleich mit dem tatsächlich durchgespielten Zwei-Host-Snapshot: 44/44
+Laufzeitmodule und 8/8 gebaute Oberflächendateien bytegleich. Das ersetzt keinen
+Linux-Release-/Recovery-Nachweis für ein neu gebautes Archiv. Der Owner hat
+die GitHub-Sicherung des eigenen Kandidatenbranches ausdrücklich beauftragt.
+Die Commit-Metadaten werden über das angemeldete GitHub-Konto gesetzt.
+Einstieg: [START_HERE.md](../START_HERE.md); portable Testzusammenfassung:
+[evidence/USE_CANDIDATE_20261022.json](evidence/USE_CANDIDATE_20261022.json).
+Der Branch ist kein Live-Release; kein Merge oder Dienstwechsel daraus.
+
+Der konkrete Weg zum Alltag steht in [GETTING_TO_DAILY_USE.md](GETTING_TO_DAILY_USE.md).
+Nächste Schritte: Kandidaten festhalten, persönliche Projekt-/Runner-Einrichtung,
+eine echte Aufgabe mit Tests, Vorschau und Wiederaufnahme vollständig erledigen.
+GitHub-Vollintegration und dauerhafte zentrale Prüfung bleiben eigene Pakete.
+Lokale Originalnachweise: `.studio/use-candidate-20261022/` im ursprünglichen
+Repository. Die externe Arbeitsbasis ist hier nicht beschreibbar; diese Notiz
+ist ein Vorschlag zur späteren geprüften Übernahme, keine automatische Ablage.
+
+## Aktuell: Zwei-Host-Pilot technisch bestanden
+
+Nach ausdrücklicher Freigabe des dokumentierten Payloads/Ziels wurde der aktuelle
+diagnostische Snapshot auf dem VPS verifiziert und isoliert getestet. Sichtbarer
+Edge mit zwei Testkonten; tatsächliche Runner auf Windows-Laptop und Linux-VPS.
+Aufgabenübernahme, Rückfragen, eigene verknüpfte Kopien, Edit/Save, gleichzeitig
+laufende echte Checks, gebaute Vorschauen und gegenseitige Commitfreigaben PASS.
+Überschneidung, fremder Geräteauftrag und Selbstfreigabe abgewiesen. Neuer Commit
+verlangt neue Freigabe. Offline-/Reconnect-Test erhält Gerät, Kopie und Datei.
+
+Der Lauf wurde nach Korrekturen am Testablauf fortgesetzt; kein fehlerfreier
+Einzellauf behauptet. Zwei anfänglich unverknüpfte Fixture-Kopien sind archiviert
+erhalten, die zwei aktiven Kopien nachweislich mit den Aufgaben verknüpft. Details
+und Originalbelege in [TWO_HOST_PILOT_PLAN.md](TWO_HOST_PILOT_PLAN.md).
+
+Alle eigenen Testprozesse und Tunnel beendet, lokale und entfernte Testports
+geschlossen, temporärer SSH-Zugang und lokale Schlüssel entfernt. Production
+unverändert auf R23, active/running, NRestarts=0. Keine Modelljobs, kein Push,
+Merge oder Production-Deployment. Markus/macOS ist für diesen technischen
+Nachweis kein Blocker. Offen bleiben persönliche Alltagsabnahme und die separate
+Konsolidierung/Freigabe eines tatsächlichen Nutzungskandidaten aus dem Dirty-Stand.
+
+## Aktuell: Hilfe bei fehlender Git-Autorenidentität
+
+Ein abgeschlossener Git-Check mit fehlender lokaler Identität zeigt jetzt eine
+konkrete Anleitung mit kopierbaren `git -C ... config --local`-Befehlen. Pfad,
+Name und E-Mail bleiben bewusst vom Nutzer einzutragen; der Unterordner
+`repository` beim lokalen Startprojekt wird erklärt. Erneute Prüfung bleibt an
+Projekt/PC des angezeigten eigenen Auftrags gebunden; offline oder bei laufendem
+Auftrag ist der Knopf gesperrt. Kein automatischer Konfigurationsschreibzugriff.
+
+Lokale Gesamtprüfung: 121 Backendtests, 100 PASS, 0 FAIL, 21 explizite Plattform-
+Skips; Source Guard, TypeScript und Build PASS. Sichtbarer isolierter Edge-Test:
+fehlende Identität, Kopieren, tatsächliche lokale Befehlsausführung, erfolgreicher
+erneuter Check, ausgeblendete Hilfe und aktualisierte Bereitschaft PASS. Desktop
+1440 und Mobil 390 geprüft. Windows-CRLF im Clipboard-Test berücksichtigt.
+Keine persönlichen Runner oder globalen Git-Einstellungen geändert. Belege im
+[Abnahmebericht](evidence/LOCAL_PROJECT_START_20261022.md#git-autorenhilfe).
+
+## Aktuell: lokaler Projektstart verständlicher fortsetzen
+
+Die geführte Einrichtung erklärt nach dem Plan-Download jetzt die drei lokalen
+Schritte, benennt Quellordner und vorhandenes Runnerprofil, bietet Kopierknöpfe
+für Einrichtungs- und Neustartbefehl und verweist erst danach auf Bereitschaft und
+Git-Lesecheck. Gezielt zuvor geprüft: Projektstart-API 2/2, TypeScript und Build PASS.
+Am 22.10.2026 anschließend vollständig mit neuen isolierten Testdaten geprüft:
+Browser-Projektstart und echter Plan-Download, Helfer-CLI, Profilsicherung,
+Runnerneustart mit demselben Gerätezugang, Arbeitskopie, Edit/Save, echter Test
+(1 PASS, 0 FAIL) und gebaute Vorschau derselben Dateirevision. Sichtbarer Edge,
+1440/390px; eigene Prozesse beendet. Der Ablauf wurde nach Test-/Umgebungsfehlern
+fortgesetzt, kein fehlerfreier Einzellauf. Fehlende Git-Identität wird korrekt als
+nicht bereit angezeigt; nur das neue Testrepository erhielt lokale Autorenangaben.
+Persönliche Runner und Production unverändert. Belege und Grenzen:
+[Lokaler Projektstart](evidence/LOCAL_PROJECT_START_20261022.md).
+
+## Aktuell: automatischer Testauftrag mit direkter Abschlussmeldung
+
+`scripts/local_browser_standalone.py --enable-ai --job` als direkten Prozess
+ausführen und dessen Ende abwarten. Eine kompakte JSON-Werkzeugantwort und
+`completion.json` liefern Erfolg/Fehler/Schrittgrenze/Zeitgrenze/Abbruch mit
+entsprechendem Exitcode. Automatisches Fenster schließt; manueller --keep-open-
+Modus bleibt getrennt. Kein neuer MCP-Dienst. 27 gezielte Prüfungen bestanden.
+Zusätzlicher Befund der sichtbaren Wiederholung: Git-Besitzerabweichung zwischen
+Sandbox-/Benutzerkonto blockierte die alte synthetische Arbeitskopie. Nur die
+ignorierte isolierte Fixture erhält prozessbezogene Freigaben für ihre zwei
+Testkopien; globale Einstellungen unverändert. Sichtbare Editorfehler werden
+jetzt unmittelbar gemeldet (APPLICATION_ERROR), statt Qwen weiter warten zu lassen.
+Beobachtete Navigationsschleife durch phasenabhängige Klickgrenzen verhindert;
+keine Behauptung allgemeiner Qwen-Zuverlässigkeit. Anleitung:
+[Lokaler Browserhelfer](LOCAL_BROWSER_HELPER.md).
+
+## Aktuell: eigenständiges lokales Qwen-Browserfenster
+
+Begrenzte Messung ergänzt: drei echte Wiederholungen PASS in 21–27 Sekunden,
+5/6/5 lokale Modellaufrufe, GPU-Spitzen 99/100/100 Prozent (71 Messpunkte).
+Starter `../Qwen-Browsertest-Messen.cmd`, Bericht und Roh-CSV unter
+`.studio/local-intelligence/browser-measurements/20261022T142042432815Z-800f9cbf/`.
+Ein redundantes Dateiladen bleibt sichtbar; keine allgemeine Browserkompetenz
+oder gemessene Abo-Prozentersparnis daraus ableiten.
+
+`../Qwen-Browsertest.cmd` verwendet `scripts/local_browser_standalone.py` mit
+vorhandener Playwright-/Edge-Installation und lokalem Qwen. Keine CUA-/Codex-
+Sitzung im Testprogramm nötig. Begrenzter lesender Fall auf synthetischer Demo
+Port 4360, eigenes flüchtiges Browserprofil. Berichte liegen im ausgegebenen
+`.studio/local-intelligence/browser/<Lauf>/report.md`. Kein allgemeiner
+Browseragent und keine gemessene Prozentersparnis. Siehe den neuen Einstieg in
+[Lokaler Browserhelfer](LOCAL_BROWSER_HELPER.md).
+
+## Aktuell: begrenzter lokaler Qwen-Browserhelfer
+
+Qwen hat in einer aktiven CUA-Sitzung fünf echte Navigationsentscheidungen bis
+zum sichtbaren Datei-Editor selbst gewählt; Route und Ergebnis unabhängig geprüft.
+Dateibrücke und Executor sind in `scripts/local_browser_worker.py` und
+`scripts/local_browser_bridge.mjs`. Nur synthetische Demo auf Port 4360, lesender
+fester Fall, kein eigenständiger Browserdienst. Screenshots als Beleg, separate
+lokale Bildbeschreibung; keine allgemeine visuelle Steuerung oder Limitersparnis
+behaupten. Anleitung und Grenzen: [Lokaler Browserhelfer](LOCAL_BROWSER_HELPER.md).
+
+## Aktuell: erster echter Entwicklungsdurchlauf mit Qwen-Vorauswertung
+
+Lokale Hürde im Ablauf Aufgabe → eigene Kopie → Änderung prüfen behoben:
+Ansichtswechsel beginnen oben; „Dateien bearbeiten“ führt vom Arbeitsbereich
+direkt zum Editor und fokussiert den vorhandenen Ladebutton. Auch „Weiterarbeiten“
+an einer eigenen Kopie springt zum Editor. Dateiaufträge bleiben ausdrücklich.
+Keine Backend-/Berechtigungsänderung und keine automatische Veröffentlichung.
+
+Mit einer neu angelegten isolierten Demo sichtbar durchlaufen: Aufgabe wählen,
+eigene Kopie, Datei laden/öffnen, Entwurf beim Bereichswechsel erhalten, speichern,
+echte Beispieltests und gebaute Vorschau. Desktop 1280 und Mobil 390 geprüft,
+kein horizontaler Überlauf. Qwen-Bildaussagen wurden gegen UI und Source geprüft;
+die falsche Deutung des Suchfilters als Pflichtpfad wurde verworfen.
+Abnahme und Grenzen: [Lokaler Workflow-Einstieg](evidence/LOCAL_WORKFLOW_ENTRY_20261022.md).
+Nächster Entwicklungsschritt: verbleibende S2-Bereitschaft und S3-PR-Übergang anhand
+des vorhandenen Plans konkretisieren; kein Provider-/Serverauftrag daraus ableiten.
+
+## Aktuell: Qwen3.5 als lokaler Standard
+
+Am 22.10.2026 ausdrücklich freigegebene Modelltests: Qwen3.5 9B Q4_K_M mit
+Ollama v0.30.0 funktioniert für begrenzte Text-, Code- und Bildaufgaben. Standard
+in `config/local-intelligence.json`; Lifecycle und alter Checkhelfer lesen dieselbe
+Auswahl. Höchstens ein geladenes Modell, keine automatische Inferenz oder Autostart.
+`Start-Lokale-KI.cmd` wählt die neue separate Laufzeit; Alternativen bleiben Dateien.
+
+Der Windows-Absturz war in der systemweiten C++-Bibliothek `msvcp140.dll` verortet.
+Lokale, zum selben offiziellen Archiv gehörende MSVC-DLLs neben `llama-server.exe`
+beheben den reproduzierten Startfehler. Keine Systembibliothek geändert. Installer
+und Hashnachweise bilden die lokale Ergänzung ab; eigene Controller-Kinder öffnen
+bei nativen Abstürzen keine Fehlerdialoge mehr, melden aber weiterhin Fehler.
+v0.17.5 passt nicht zum aktuellen getrennten Qwen3.5-Modell/Projektor-Format.
+
+42 gezielte Regressionen PASS. Drei echte synthetische Modellfälle PASS,
+einschließlich Bildtext/Statusfarben und leerem Array; zusätzlich echter übergebener
+Absturz-Screenshot über `image --enable-ai` ausgelesen. Antworten bleiben UNREVIEWED:
+der kleine Codefall zeigt teils unpräzise Erläuterungen trotz korrekter Kernkorrektur.
+Kein umfassender Vergleich, keine Aussage über fehlerfreie Codequalität.
+Nachweise und Bedienung: [Local Intelligence](LOCAL_INTELLIGENCE.md).
+Abschlussbeleg im übergeordneten Arbeitsbereich:
+`local-evidence/2026-10-22_Qwen35-Einrichtung.json`.
+
+## Vorbereitungsstand vor der Modellfreigabe (historisch)
+
+Neuer opt-in Ablauf mit `Studio-Bereitschaft.cmd`, `Studio-Kontext.cmd`,
+`Studio-Workflow.cmd` und `Studio-Fehler-Auswerten.cmd`. Echte Prüfungen bleiben
+im vorhandenen Helfer; ergänzende Hypothesen verändern dessen Exitcode nicht.
+KI standardmässig deaktiviert. Vergleichsmodelle und separate Runtime werden nur
+durch den ausdrücklich gestarteten Dateidownload eingerichtet. Keine heutigen
+Modell-/GPU-/Studio-Testläufe daraus ableiten. Anleitung und manuelle Abnahme:
+[Local Intelligence](LOCAL_INTELLIGENCE.md).
+
+Am 22.10.2026 wurde der neue Ablauf ohne LLM geprüft: 11 eigene und 21 bestehende
+Helfer-Regressionen PASS; echte Python-Unterprozesse mit synthetischem Erfolg und
+absichtlichem Fehler behielten Exitcodes 0/1 bis zum Zusatzbericht. Kontextpaket
+und Originalquellenvalidierung PASS. Dabei wurden zwei Logmaskierungsfehler
+behoben: vollständig maskierte zitierte/JSON-Credentials und erhaltene Logzeilen
+bei mehrzeiligen Schlüsselblöcken. Wiederholen ohne Modelle:
+`../.local-tools/python/python.exe -B scripts/verify_local_intelligence.py`.
+Dies ist keine Studio-Produkt-, Build-, GPU- oder Modellqualitätsabnahme.
+
+Danach am 22.10.2026 echter Windows-Studio-Prüflauf ohne LLM: Source Guard PASS,
+121 Backendtests (100 PASS, 0 FAIL, 21 begründete Skips), TypeScript und Build PASS,
+originaler Exitcode 0, erfasster Quellstand während des Laufs unverändert.
+Die Sandbox behinderte den Prozessabbruchtest; außerhalb der Sandbox bestanden
+zuerst dessen 3 Prüfungen und anschließend der volle lokale Ablauf. Der neue
+synthetische PEM-Test wird zur Laufzeit zusammengesetzt, damit der Secret-Scanner
+keinen Schlüsselkopf im Quelltext sieht; Schutzregeln unverändert. Nach dem Lauf
+unterstützt der Zusatzreport auch Node-Spec-Testzahlen (12 Python-Regressionen PASS,
+Original-Log erneut verarbeitet). Keine Änderung an Backend-/Frontend-Quellen.
+Nachweis: `.studio/local-checks/20261022T073825Z-e7d7cda027bc4a21b291b7e858dd0805/summary.json`.
+Linux-Operator, Browser und Modellqualität bleiben getrennt ungeprüft.
+
+## Lokaler Windows-Prüfweg und Modellhelfer
+
+Für wiederholbare lokale Prüfungen `npm.cmd run studio:check:local` verwenden.
+Der Helfer sammelt Logs, Exitcodes und den erfassten Quellstand unter
+`.studio/local-checks/`. Der lokale Qwen2.5-Coder-14B-Helfer kann ein ausgewähltes
+älteres Fehlerlog parallel zu einem Testjob oder zur Codex-Arbeit analysieren;
+seine Ausgabe bleibt `UNREVIEWED`, echte Testresultate gelten separat.
+Aufrufe, Installation und Grenzen: [Lokale Checks und LLM](LOCAL_CHECKS_AND_LLM.md).
+Feste Tests brauchen keine Modellaufrufe. Bei schwierigen/umfangreichen Logs
+zuerst eine begrenzte lokale Vorauswertung erwägen und deren Aussagen prüfen.
+Keine Änderung persönlicher Runnerprofile oder Live-Anbindung daraus ableiten.
+Windows-PASS ersetzt weiterhin keinen Linux-Operator- oder Release-Nachweis.
+
 Wir bauen eine echte gemeinsame Entwicklungsumgebung für Marco in der Schweiz
 und Markus in Thailand. Beide verwenden ihre eigenen ChatGPT-Konten. GitHub
 bewahrt Code und Review; der vorhandene Hostinger-VPS betreibt bereits

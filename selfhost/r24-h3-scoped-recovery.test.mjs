@@ -12,6 +12,8 @@ import {fileURLToPath} from 'node:url';
 import {openStore} from './store.mjs';
 import {createOidcRoutes} from './oidc.mjs';
 import {createConnectionRoutes} from './connections.mjs';
+import {linuxOperatorSupported, linuxOperatorRequirement} from './deploy/operator-platform.mjs';
+const operatorTest = (name, fn) => test(name, {skip:linuxOperatorSupported ? false : linuxOperatorRequirement}, fn);
 import {
   inventoryHistoricalTrees, compareAttestation, verifyExistingH2Backup
 } from './deploy/r24-h3-scoped-recovery.mjs';
@@ -76,7 +78,7 @@ function rootReview(expected){
     privateRootKitOperatorChecked:true
   };
 }
-test('H3 independently rehashes existing authentic R23 H2 backup and respects blocked historic gate',async t=>{
+operatorTest('H3 independently rehashes existing authentic R23 H2 backup and respects blocked historic gate',async t=>{
   const root=fixture(t);
   const {backupId,status}=createH2Bundle(root);
   const dir=path.join(root,'backups',backupId);
@@ -97,7 +99,7 @@ test('H3 independently rehashes existing authentic R23 H2 backup and respects bl
   assert.equal(readFileSync(path.join(root,'restore-test','fixture.txt'),'utf8'),
     'HISTORIC_FIXTURE_DO_NOT_USE_AS_PRODUCTION');
 });
-test('read-only CLI uses exit 2 for protected backup with pending operator review',t=>{
+operatorTest('read-only CLI uses exit 2 for protected backup with pending operator review',t=>{
   const root=fixture(t);
   const {backupId}=createH2Bundle(root);
   const proc=spawnSync(process.execPath,
@@ -110,16 +112,12 @@ test('read-only CLI uses exit 2 for protected backup with pending operator revie
   assert.equal(outcome.createsNewSnapshot,false);
   assert.equal(readdirSync(path.join(root,'backups')).length,1);
 });
-test('pure operator attestation comparison requires every evidence binding',async t=>{
-  const root=fixture(t);
-  const {backupId}=createH2Bundle(root);
-  const result=await verifyExistingH2Backup(args(root,backupId));
+test('pure operator attestation comparison requires every evidence binding',()=>{
   const expected={
-    sourceSha:candidateSha,backupId,
-    snapshotSha256:result.recalculatedSnapshotSha256,
-    h2PrivateReportSha256:result.h2PrivateReportSha256,
-    historicalInventorySha256:result.historicalInventorySha256,
-    legacyRoots:result.legacyRoots
+    sourceSha:candidateSha,backupId:'r24-h1-comparison',
+    snapshotSha256:'a'.repeat(64),h2PrivateReportSha256:'b'.repeat(64),
+    historicalInventorySha256:'c'.repeat(64),
+    legacyRoots:['backups','restore-test','restore-tests']
   };
   const review=rootReview(expected);
   assert.equal(compareAttestation(review,expected),true);
@@ -145,7 +143,7 @@ test('stale or future review never satisfies the scope gate',()=>{
   review.reviewedUtc=new Date(Date.now()+3600000).toISOString();
   assert.throws(()=>compareAttestation(review,expected),/REVIEW_STALE_OR_FUTURE/);
 });
-test('non-root-created self-attestation cannot approve archived data',async t=>{
+operatorTest('non-root-created self-attestation cannot approve archived data',async t=>{
   const root=fixture(t);
   const {backupId}=createH2Bundle(root);
   const temp=mkdtempSync(path.join(os.tmpdir(),'schmaqq-h3-local-review-'));
@@ -158,7 +156,7 @@ test('non-root-created self-attestation cannot approve archived data',async t=>{
     /ROOT_ATTESTATION_PARENT_REQUIRED|ROOT_ATTESTATION_REQUIRED|ATTESTATION_RACE/
   );
 });
-test('historical inventory digest binds to exact archived topology and modes',t=>{
+operatorTest('historical inventory digest binds to exact archived topology and modes',t=>{
   const root=fixture(t);
   const first=inventoryHistoricalTrees(root);
   const again=inventoryHistoricalTrees(root);
@@ -167,20 +165,20 @@ test('historical inventory digest binds to exact archived topology and modes',t=
   const changed=inventoryHistoricalTrees(root);
   assert.notEqual(first.fingerprint,changed.fingerprint);
 });
-test('unrecognized root-state entry blocks recovery classification',async t=>{
+operatorTest('unrecognized root-state entry blocks recovery classification',async t=>{
   const root=fixture(t);
   const {backupId}=createH2Bundle(root);
   writeFileSync(path.join(root,'unknown-risk.bin'),'new unknown state',
     {mode:0o600});
   await assert.rejects(verifyExistingH2Backup(args(root,backupId)),/UNKNOWN_STATE_ENTRY/);
 });
-test('symlink in historic archive blocks H3 inventory instead of following it',t=>{
+operatorTest('symlink in historic archive blocks H3 inventory instead of following it',t=>{
   const root=fixture(t);
   symlinkSync(path.join(root,'studio.sqlite'),
     path.join(root,'restore-tests','unsafe-link'));
   assert.throws(()=>inventoryHistoricalTrees(root),/SYMLINK_REFUSED/);
 });
-test('hardlinked historic files are refused even when inside private dir',t=>{
+operatorTest('hardlinked historic files are refused even when inside private dir',t=>{
   const root=fixture(t);
   const original=path.join(root,'restore-test','fixture.txt');
   const link=path.join(root,'restore-test','copy');
@@ -188,13 +186,13 @@ test('hardlinked historic files are refused even when inside private dir',t=>{
   linkSync(original,link);
   assert.throws(()=>inventoryHistoricalTrees(root),/HISTORICAL_HARDLINK_REFUSED/);
 });
-test('writable legacy backup parent is blocked by H3 without chmod',t=>{
+operatorTest('writable legacy backup parent is blocked by H3 without chmod',t=>{
   const root=fixture(t);
   chmodSync(path.join(root,'backups'),0o777);
   assert.throws(()=>inventoryHistoricalTrees(root),/HISTORICAL_WRITABLE_SHARED|WRITABLE_SHARED_DIRECTORY/);
   assert.equal(statSync(path.join(root,'backups')).mode&0o777,0o777);
 });
-test('mismatch between claimed private H2 report and snapshot prevents PASS',async t=>{
+operatorTest('mismatch between claimed private H2 report and snapshot prevents PASS',async t=>{
   const root=fixture(t);
   const {backupId}=createH2Bundle(root);
   const reportFile=path.join(root,'backups',backupId,
@@ -205,7 +203,7 @@ test('mismatch between claimed private H2 report and snapshot prevents PASS',asy
   await assert.rejects(verifyExistingH2Backup(args(root,backupId)),
     /H2_SNAPSHOT_HASH_MISMATCH/);
 });
-test('H2 physical-restore fail cannot be reclassified as scoped PASS',async t=>{
+operatorTest('H2 physical-restore fail cannot be reclassified as scoped PASS',async t=>{
   const root=fixture(t);
   const {backupId}=createH2Bundle(root);
   const reportFile=path.join(root,'backups',backupId,

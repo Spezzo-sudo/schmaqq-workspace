@@ -1,5 +1,8 @@
 # SCHMAQQ Studio
 
+Aktueller Einstieg und Übergabe für einen neuen Chat: [START_HERE.md](START_HERE.md).
+Der Produktkandidat liegt auf `local/studio-use-candidate-20261022`.
+
 Eigenständige Entwicklungsumgebung für die Zusammenarbeit an SCHMAQQ.
 Zentrale private Codebasis: [Spezzo-sudo/schmaqq-workspace](https://github.com/Spezzo-sudo/schmaqq-workspace).
 Der Code liegt direkt im Repository-Root. NetzKontor ist ein separates Projekt.
@@ -53,6 +56,9 @@ Starter-Paket ersetzt diese Voraussetzung nicht.
 [Übergabe für neue Chats](docs/HANDOFF.md), [Hermes-Betriebsauftrag](docs/HERMES_HANDOFF.md).
 
 Node.js >=24.15.0, Git und Python 3. Im Studio-Verzeichnis:
+
+Unter Windows ist `npm run studio:verify:local` der lokale Prüfweg.
+Linux-Recovery bleibt separat nachzuweisen. Details: [Windows-Prüfung](docs/WINDOWS_LOCAL_DEVELOPMENT.md).
 
 ```sh
 npm ci --no-audit --no-fund

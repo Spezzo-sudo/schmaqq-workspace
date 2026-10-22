@@ -13,6 +13,8 @@ import type {Project,Task,Member,Doc,Data} from './workspace-model';
 export default function Workspace({user,selfHosted=false,demoMode=false}:{user:ChatGPTUser;selfHosted?:boolean;demoMode?:boolean}){
  const [data,setData]=useState<Data>(empty),[view,setView]=useState(()=>{const requested=selfHosted?new URLSearchParams(location.search).get('view'):null;return requested&&nav.some(n=>n[0]===requested)?requested:'overview';}),[selected,setSelected]=useState(()=>selfHosted?new URLSearchParams(location.search).get('project')??'all':'all'),[search,setSearch]=useState(''),[modal,setModal]=useState<'task'|'project'|'document'|null>(null),[editDoc,setEditDoc]=useState<Doc|null>(null),[error,setError]=useState(''),[toast,setToast]=useState(''),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[synced,setSynced]=useState(false),[channel,setChannel]=useState('general'),[message,setMessage]=useState(''),[mobile,setMobile]=useState(false),[mine,setMine]=useState(false),[prompt,setPrompt]=useState('');
  const [developmentTarget,setDevelopmentTarget]=useState<{project:string;task?:string;review?:string}|null>(null),[commentDrafts,setCommentDrafts]=useState<Record<string,string>>({});
+ // A new view starts at its heading; live refreshes and editor updates do not move it.
+ useEffect(()=>{window.scrollTo({top:0,left:0,behavior:'instant'});},[view]);
  const hasComments=Object.values(commentDrafts).some(text=>text.trim());
  useEffect(()=>{if(!hasComments)return;const warn=(e:BeforeUnloadEvent)=>{e.preventDefault();e.returnValue='';};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[hasComments]);
  const routeInitialized=useRef(false);

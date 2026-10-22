@@ -6,11 +6,14 @@ import {mkdtempSync, mkdirSync, rmSync, statSync, chmodSync, symlinkSync, writeF
 import path from 'node:path';
 import os from 'node:os';
 import {fileURLToPath} from 'node:url';
+import {assertPrivatePath, protectNewPrivatePath} from './private-path.mjs';
+import {exposeFixture} from './private-path-test-support.mjs';
 
 const backupScript = fileURLToPath(new URL('./backup.mjs', import.meta.url));
 
 function fixture(t) {
   const root = mkdtempSync(path.join(os.tmpdir(), 'schmaqq-backup-'));
+  protectNewPrivatePath(root);
   t.after(() => rmSync(root, {recursive: true, force: true}));
   const db = new DatabaseSync(path.join(root, 'studio.sqlite'));
   db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;' +
@@ -37,6 +40,7 @@ test('consistent SQLite snapshot has private permissions and intact data', t => 
   const info = JSON.parse(result.stdout);
   assert.equal(info.integrity, 'ok');
   assert.equal(info.foreignKeyFailures, 0);
+  assertPrivatePath(dest);
   if (process.platform !== 'win32') {
     assert.equal(statSync(dest).mode & 0o777, 0o600);
     assert.equal(statSync(path.dirname(dest)).mode & 0o777, 0o700);
@@ -64,7 +68,8 @@ test('refuses a database self-overwrite', t => {
 test('rejects destination symbolic links, including dangling links', t => {
   const root = fixture(t);
   const dest = path.join(root, 'backup-link.sqlite');
-  symlinkSync(path.join(root, 'absent.sqlite'), dest);
+  symlinkSync(process.platform === 'win32' ? root : path.join(root, 'absent.sqlite'), dest,
+    process.platform === 'win32' ? 'junction' : 'file');
   const result = run(root, dest);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /already exists/);
@@ -74,7 +79,7 @@ test('rejects a symlinked destination parent', t => {
   const privateDir = path.join(root, 'private');
   mkdirSync(privateDir, {mode: 0o700});
   const link = path.join(root, 'alias');
-  symlinkSync(privateDir, link, 'dir');
+  symlinkSync(privateDir, link, process.platform === 'win32' ? 'junction' : 'dir');
   const result = run(root, path.join(link, 'backup.sqlite'));
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /symlinks/);
@@ -94,8 +99,8 @@ test('rejects a writable shared destination directory', t => {
   const root = fixture(t);
   const shared = path.join(root, 'shared');
   mkdirSync(shared);
-  chmodSync(shared, 0o777);
+  exposeFixture(shared);
   const result = run(root, path.join(shared, 'snapshot.sqlite'));
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /group\/world writable/);
+  assert.match(result.stderr, /group\/world writable|Private Windows DACL/);
 });
