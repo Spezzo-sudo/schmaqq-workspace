@@ -1,6 +1,6 @@
 {
   "ux_phase_a0_terms_20261023": {
-    "state": "local_ui_text_change_focused_checks_pass_not_browser_verified",
+    "state": "local_ui_text_change_browser_verified",
     "branch": "local/studio-a0-terms-20261023",
     "base": "local/studio-use-candidate-20261022",
     "change": "One visible term per concept in app/workflow-terms.ts: shared job action/state and copy state labels; Arbeitskopie replaces Arbeitsbereich in app views; review action labelled Prüfstand erstellen; failed job state labelled Fehlgeschlagen everywhere. No backend, API or logic change.",
@@ -9,7 +9,8 @@
     "frontend_build": "PASS",
     "source_guard": "PASS",
     "full_backend_suite": "NOT_RUN",
-    "browser_acceptance": "NOT_RUN",
+    "browser_acceptance": "2026-10-23 PASS: fresh isolated demo on 127.0.0.1:4390/4391 with own temp data, one synthetic account and real runner; copy creation, actual check and built preview; history, result dialog, task card and change overview show shared labels (Fehlgeschlagen, Erfolgreich abgeschlossen, Arbeitskopie: Bereit); desktop 1024 and mobile 390 without horizontal overflow; own processes stopped, existing demo on 4320/4321 untouched",
+    "browser_finding_fixed": "Missing space in collaboration board copy line (Bereit ·PC) introduced by A0; corrected and focused tests/TypeScript re-run PASS",
     "remaining": "Backend error messages still say Arbeitsbereich; glossary not yet shown in UI; Phase A packages A1-A6 follow",
     "production_changed": false
   },
