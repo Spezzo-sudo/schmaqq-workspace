@@ -8,7 +8,7 @@ import { initials, short } from './workspace-model';
 import { activeNav, navGroups } from './navigation';
 import type { Project } from './workspace-model';
 import type { ChatGPTUser } from './chatgpt-auth';
-export const workspaceNav = [['overview', 'Übersicht', LayoutDashboard], ['projects', 'Projekte', FolderKanban], ['tasks', 'Aufgaben', CheckCheck], ['chat', 'Team-Chat', MessagesSquare], ['docs', 'Wissen', FileText], ['team', 'Team & Zugänge', Users], ['development', 'Entwicklung', GitBranch], ['setup', 'Einrichtung', Wrench], ['models', 'Verbindungen', Sparkles], ['ai', 'KI-Arbeitsplatz', Sparkles]] as const;
+export const workspaceNav = [['overview', 'Übersicht', LayoutDashboard], ['projects', 'Projekte', FolderKanban], ['tasks', 'Aufgaben', CheckCheck], ['chat', 'Team-Chat', MessagesSquare], ['docs', 'Wissen', FileText], ['team', 'Team & Zugänge', Users], ['development', 'Weitere Werkzeuge', GitBranch], ['setup', 'Einrichtung', Wrench], ['models', 'Verbindungen', Sparkles], ['ai', 'KI-Arbeitsplatz', Sparkles]] as const;
 type SidebarProps = {
   sidebarRef: RefObject<HTMLElement | null>;
   modalOpen: boolean;

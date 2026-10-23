@@ -1,5 +1,39 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
+
+## 23.10.2026: Aufgabenorientierung E1–E8 lokal umgesetzt und geprüft
+
+Der freie Rundgang wurde mit Owner-GO umgesetzt: Aufgabenmodus strikt an passende
+Kopien gebunden, historische Prüfstände mit deutlicher Aktualitätswarnung,
+Speichern vor Prüfen auch in der Kopfzeile, stabile Reiter-/Dialogrückwege,
+einheitlicher Einstieg über Aufgabentitel aus Übersicht, Board und Teamkarte.
+Einrichtung führt zu Aufgaben; projektweite Funktionen bleiben unter „Weitere
+Werkzeuge“. Ziel, Metadaten und Hilfen aufklappbar, nur eine Speicherleiste.
+
+Selbst ausgeführt: finaler lokaler Gesamtcheck 147 PASS, 0 FAIL, 21 Linux-Skips;
+Source Guard/TypeScript/Build PASS. Zusätzlich interaktiver eigener Browserlauf
+auf 1280x900 und 390x844 mit bestehenden Testidentitäten: echter Dateisave,
+Testlauf, gebaute Vorschau und lokaler Prüfstand; Entwurf und Reiter erhalten,
+Warnung vor historischer Freigabe auch nach neuerem Prüfstand korrekt. Editor
+im gemessenen Bearbeitungszustand ab ca. 689 statt 1239 px. Details, Testanläufe,
+Grenzen und Abnahme: [Aufgabenorientierung](evidence/UX_ORIENTATION_20261023.md).
+Der frühere Audit unten bleibt als Befund vor diesen Korrekturen erhalten.
+
+Nächster Schritt: Owner führt eine kleine Aufgabe ohne Klickanweisungen aus und
+nimmt sie später wieder auf. E9 Einladungsverwaltung und E10 Anmeldung bleiben
+separat; Ersteinrichtung/Kopienanlage weiterhin technisch. Keine unabhängige
+menschliche Bedienfreigabe, keine Linux-/Betriebsfreigabe. Kein Push/Deployment.
+
+## 23.10.2026: freier UX-Rundgang – Bedienabnahme weiterhin offen
+
+Nach dem technischen P1-Abschluss wurde die Oberfläche persönlich über die
+interaktive Browsersteuerung erkundet (kein vorgegebenes Ablaufskript).
+Dabei wurden Aufgaben-/Kopien-Kontextfehler, fehlende Aktualitätswarnung im
+historischen Prüfstand und weitere Orientierungsbrüche beobachtet. Prioritäten,
+Reproduktion und Screenshotverweise: [Freier UX-Rundgang](evidence/UX_EXPLORATORY_REVIEW_20261023.md).
+Kein Produktcode geändert. Nächster Schritt zuerst Aufgabenbindung und historische
+Prüfstandsdarstellung; die technische P1-Abnahme ist keine vollständige UX-Freigabe.
+
 ## 23.10.2026: vier P1-Korrekturen nach dem UX-Umbau abgeschlossen
 
 Auf `local/studio-a0-terms-20261023` wurden die zwei übernommenen uncommitteten
@@ -17,7 +51,9 @@ isolierten Testkopie. Eigene Prozesse beendet, ursprüngliche Testdaten per Hash
 unverändert. Nachweis und Grenzen: [UX-P1-Abschluss](evidence/UX_P1_COMPLETION_20261023.md).
 Historische Statusfelder weiter unten sind keine neu ausgeführten Tests.
 
-Nächster Schritt: Owner wiederholt eine kleine Aufgabe ohne Klickanweisungen.
+Damals vorgesehener nächster Schritt: Owner wiederholt eine kleine Aufgabe ohne
+Klickanweisungen. Nach dem oben dokumentierten freien Rundgang zuerst dessen
+P1-Fundstellen beheben; der menschliche Wiederholungstest bleibt danach offen.
 Die technische Abnahme ersetzt diese noch offene Bedienabnahme nicht.
 
 ## Aktuell: Produktkandidat für GitHub und neuen Chat

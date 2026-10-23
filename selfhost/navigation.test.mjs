@@ -12,8 +12,9 @@ test('every sidebar entry belongs to exactly one group',()=>{
  assert.equal(new Set(grouped).size,grouped.length);
 });
 
-test('the task workspace highlights the overview entry',()=>{
- assert.equal(activeNav('task'),'overview');
+test('the task workspace highlights tasks; technical tools remain a separate settings entry',()=>{
+ assert.equal(activeNav('task'),'tasks');
+ assert.ok(navGroups.find(g=>g.id==='settings').views.includes('development'));
  assert.equal(activeNav('setup'),'setup');
 });
 

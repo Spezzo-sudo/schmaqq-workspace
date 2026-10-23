@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ownTaskCopy,preferredSoloWorkspace} from '../app/development-target.ts';
+import {ownTaskCopy,preferredSoloWorkspace,selectableCopies} from '../app/development-target.ts';
+
+test('focused task selection excludes unrelated copies and keeps full tools project-wide',()=>{
+ const copy={id:'own',owner:'marco',project:'p',device:'pc',taskId:'task',status:'completed',archived:0,revoked:0};
+ const copies=[copy,{...copy,id:'other-task',taskId:'different'},{...copy,id:'unassigned',taskId:null},
+  ...[{owner:'markus'},{project:'other'},{device:'other'},{status:'running'},{archived:1},{revoked:1}].map((value,i)=>({...copy,id:'excluded'+i,...value}))];
+ assert.deepEqual(selectableCopies(copies,'marco','p','pc','task').map(c=>c.id),['own']);
+ assert.deepEqual(selectableCopies(copies,'marco','p','pc','missing'),[]);
+ assert.deepEqual(selectableCopies(copies,'marco','p','pc').map(c=>c.id),['own','other-task','unassigned']);
+});
 
 test('task navigation resumes its existing own copy even when a different device is preferred online',()=>{
  const saved={id:'saved-copy',owner:'marco',project:'website',taskId:'homepage',status:'completed',archived:0,revoked:0,device:'original-offline-pc'};

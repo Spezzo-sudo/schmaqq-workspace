@@ -3,7 +3,7 @@
  * development guide (personal setup) and the change overview (one copy).
  * It only reads already loaded state; it never starts jobs or grants rights.
  */
-export type StepAction='connect-pc'|'reconnect-pc'|'configure-project'|'inspect-git'|'create-copy'|'wait'|'run-check'|'run-preview'|'observe'|'create-review'|'request-review'|'open-review'|'review-feedback'|'publish'|'edit'|'none';
+export type StepAction='connect-pc'|'reconnect-pc'|'configure-project'|'inspect-git'|'create-copy'|'wait'|'run-check'|'run-preview'|'observe'|'create-review'|'request-review'|'open-review'|'review-feedback'|'publish'|'edit'|'save'|'none';
 export type StepStage='pc'|'project'|'copy'|'work'|'review'|'done';
 export type NextStep={stage:StepStage;action:StepAction;title:string;reason:string;tone:'info'|'warning'|'error';cautions:string[]};
 
@@ -11,7 +11,7 @@ export type SetupInput={hasDevice:boolean;online:boolean;projectStatus:'configur
 export type CopyInput={status:string;own:boolean;online:boolean;revoked?:boolean;archived?:boolean};
 export type Evidence={status:string;changedAfter:boolean;freshness?:'same'|'changed'|'unverified';state?:string;published?:boolean}|null|undefined;
 export type EvidenceInput={check?:Evidence;preview?:Evidence;review?:Evidence;published?:boolean;observed?:boolean;observing?:boolean;previewConfigured?:boolean};
-export type StepInput={setup?:SetupInput;hasCopy?:boolean;copy?:CopyInput;active?:boolean;reviewCount?:number;evidence?:EvidenceInput};
+export type StepInput={setup?:SetupInput;hasCopy?:boolean;copy?:CopyInput;active?:boolean;dirty?:boolean;reviewCount?:number;evidence?:EvidenceInput};
 
 const running=['queued','running','cancelling'],failed=['failed','interrupted','cancelled'];
 const failureLabel:Record<string,string>={failed:'fehlgeschlagen',interrupted:'unterbrochen',cancelled:'abgebrochen'};
@@ -79,6 +79,7 @@ function evidenceStep(own:boolean,e:EvidenceInput,cautions:string[]):NextStep{
 
 export function nextStep(input:StepInput):NextStep{
  const cautions:string[]=[];
+ if(input.dirty&&input.copy?.own)return step('work','save','Änderung zuerst speichern.','Tests, Vorschau und Prüfstand verwenden den gespeicherten Stand. Dein Entwurf bleibt bis zum Speichern in diesem Tab.','warning');
  const hasCopy=input.hasCopy??!!input.copy;
  if(input.setup){const s=setupStep(input.setup,hasCopy,cautions);if(s)return s;}
  if(input.copy){const s=copyStep(input.copy);if(s)return {...s,cautions:[...cautions,...s.cautions]};}
@@ -114,7 +115,7 @@ export function workActionState({dirty,canSave,canRun,saving=false,loading=false
 /** The one editor bar button to highlight: saving a draft first, otherwise the next step's job. */
 export type BarAction='save'|'changes'|'check'|'preview'|'review';
 export function recommendedBarAction(action:StepAction|undefined,dirty:boolean):BarAction|null{
- if(dirty)return 'save';
+ if(dirty||action==='save')return 'save';
  const operation=action?stepJobs[action]?.operation:undefined;
  return operation==='check'||operation==='preview'||operation==='review'?operation:operation==='status'?'changes':null;
 }

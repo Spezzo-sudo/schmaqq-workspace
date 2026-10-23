@@ -1,4 +1,31 @@
 {
+  "ux_orientation_20261023": {
+    "state": "local_orientation_package_verified_owner_acceptance_open",
+    "scope": "Exploratory audit E1/E2 fixed first, then E3-E8 orientation: task-bound copies, explicit historical review freshness, draft-aware next step, consistent task title destinations, stable tabs/dialog return and compact editor. E9 invitations and E10 login recovery remain separate.",
+    "change": "Focused development only offers and executes its task copies; prepare binds its task. Selected copy/editor state reaches the header. Reviews open as overlays without remounting the editor or changing the tab, read exact-job current file binding through the existing authenticated API, and retain commit-bound votes. Tab routes survive reload/back/forward. Setup goes to tasks; full tools remain under settings. Requirements/help/recovery actions collapsible; one save bar; file chooser on demand.",
+    "focused_tests": "30 PASS including task-copy exclusion, exact historical source binding, draft priority, tab routing and navigation.",
+    "local_check": "Final node selfhost/verify.mjs --local: exit0, 168 tests, 147 PASS, 0 FAIL, 21 explicit Linux skips; source guard, TypeScript and build PASS.",
+    "visible_browser": "Personally operated interactive browser with existing Marco session on isolated loopback4394/4395. Desktop1280x900/mobile390x844. Wrong-task copy unavailable; historical review warning before and after newer review; draft retained after review dialog; tab close/reload/back/forward correct; overview/kanban/team title routes aligned; requirement toggle and setup-to-tasks observed; saved synthetic heading, actual test, built preview in new tab, new local review with its own successful test. No peer approval or publication. Editor measured about689px from page start vs earlier1239px in the specified editing state; no horizontal overflow there.",
+    "verification_environment": "Initial sandboxed verification stalled at existing owned-process cancellation fixture and was stopped by exact owned process tree. Native verification first hit Git ownership check; rerun used process-scoped safe.directory only. No global config changes.",
+    "evidence": "docs/evidence/UX_ORIENTATION_20261023.md",
+    "private_logs": ".studio/orientation-verify-final-20261023.log and .studio/orientation-*.png; never commit private fixture, profiles or screenshots.",
+    "limits": "Independent owner usability acceptance still open. First project/copy setup still technical. E9/E10 and Linux/operator/release approval remain separate. No production change, paid API or credentials change.",
+    "production_changed": false,
+    "release_approved": false,
+    "next": "Owner performs one small task unaided, including reopening it later; record remaining orientation problems rather than guiding each click.",
+    "cleanup": "Confirmed zero pending jobs; exact own server/runner stopped; no listeners on4394/4395; own tabs closed and viewport override reset. Escape restored focus to evidence review button."
+  },
+  "ux_exploratory_review_20261023": {
+    "state": "review_complete_findings_open_no_product_change",
+    "method": "Interactive browser actions selected from current AX and screenshots, no predetermined browser script; owner logged in manually, then one existing synthetic Marco session explored. Default window, desktop1280 and mobile390.",
+    "findings": "P1: task workspace allows selecting another task's own copy while keeping original task header; historical review dialog omits current-copy changed warning. P2: unsaved draft contradicts header next step; title clicks differ between board and overview; review close/reload loses evidence tab; mobile editor below first screen (about1239px); parallel full/task workflows; task description hidden in discussion. Team invite placement and login recovery remain separate issues.",
+    "positive": "Continue action opens correct task; auto-open scoped file; unsaved draft retained across tabs and unsafe checks disabled; current evidence detects changed files; actual preview build/tab/return works; mobile menu opens/closes.",
+    "evidence": "docs/evidence/UX_EXPLORATORY_REVIEW_20261023.md",
+    "tests": "No repeated full suite. One real preview build plus automatically triggered file-read jobs; no file save or new review. This exploratory audit does not replace the earlier technical P1 tests or owner's unaided acceptance.",
+    "product_code_changed": false,
+    "production_changed": false,
+    "next": "Fix task/copy context binding and clearly distinguish historical review from current work, then consolidate orientation. No automatic implementation or release approval from this report."
+  },
   "ux_p1_completion_20261023": {
     "state": "local_candidate_verified_not_deployed",
     "branch": "local/studio-a0-terms-20261023",

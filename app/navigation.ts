@@ -3,13 +3,13 @@
  * sidebar; this file only decides grouping, order and which entry is active.
  */
 export const navGroups=[
- {id:'work',label:'ARBEITEN',views:['overview','projects','tasks','development']},
+ {id:'work',label:'ARBEITEN',views:['overview','projects','tasks']},
  {id:'team',label:'TEAM',views:['chat','docs','team']},
- {id:'settings',label:'EINSTELLUNGEN',views:['setup','models','ai']}
+ {id:'settings',label:'EINSTELLUNGEN',views:['setup','models','ai','development']}
 ] as const;
 
 /** Views without an own entry highlight the entry they belong to. */
-export function activeNav(view:string){return view==='task'?'overview':view;}
+export function activeNav(view:string){return view==='task'?'tasks':view;}
 
 type ContinueTask={id:string;project:string;title:string;status:string;assignee:string|null};
 const order:Record<string,number>={doing:0,review:1,todo:2};

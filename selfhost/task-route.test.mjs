@@ -5,6 +5,25 @@ import {nextStep,taskProgress,taskStages,stepTab,requestedChanges} from '../app/
 
 const views=['overview','projects','development'];
 
+test('task tab survives reload and history while other views drop stale tabs',()=>{
+ for(const tab of ['discussion','evidence','history']){
+  const route={view:'task',project:'p',task:'t',tab};
+  assert.deepEqual(readRoute(writeRoute(new URL('http://studio.test/'),route).search,views),route);
+ }
+ assert.equal(readRoute('?view=task&project=p&task=t&tab=unknown',views).tab,undefined);
+ assert.equal(writeRoute(new URL('http://studio.test/?tab=evidence'),{view:'overview',project:'all',task:''}).searchParams.has('tab'),false);
+});
+
+test('unsaved task draft takes priority over saved tests, reviews and running jobs',()=>{
+ const copy={status:'completed',own:true,online:true};
+ const passed={status:'completed',changedAfter:false,freshness:'same'};
+ for(const evidence of [{},{check:passed},{check:passed,review:{...passed,state:'approved'}}]){
+  assert.equal(nextStep({copy,dirty:true,active:true,evidence}).action,'save');
+  assert.equal(stepTab('save'),'edit');
+ }
+ assert.notEqual(nextStep({copy:{...copy,own:false},dirty:true,evidence:{}}).action,'save');
+});
+
 test('task route needs task and project; unknown views fall back to the overview',()=>{
  assert.deepEqual(readRoute('?view=task&project=website&task=t1',views),{view:'task',project:'website',task:'t1'});
  assert.deepEqual(readRoute('?view=task&task=t1',views),{view:'overview',project:'all',task:''});

@@ -1,5 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
+import {reviewFreshness,type ReviewFreshness} from './review-context';
+import type {ChangeSummary} from './change-overview';
 
 type Entry={id:string;commitSha:string;reviewer:string;name:string;decision:string;body:string;created:number};
 type State={state:string;entries:Entry[]};
@@ -24,10 +26,24 @@ const githubLabels:Record<string,string>={
 const labels:Record<string,string>={pending:'Zweite Prüfung ausstehend',approved:'Von zweiter Person freigegeben',changes_requested:'Änderungen angefordert',unavailable:'Noch kein prüfbarer Stand'};
 const decisions:Record<string,string>={approved:'Freigegeben',changes:'Änderungen angefordert',comment:'Kommentar'};
 
-export default function CodeReview({jobId,owner,userId,result,onChange}:{jobId:string;owner:string;userId:string;result:Record<string,unknown>;onChange:()=>void}){
+export default function CodeReview({jobId,owner,userId,result,project,worktree,onChange}:{jobId:string;owner:string;userId:string;result:Record<string,unknown>;project:string;worktree?:string;onChange:()=>void}){
  const [data,setData]=useState<State>({state:'pending',entries:[]}),[body,setBody]=useState(''),[decision,setDecision]=useState('comment'),[pending,setPending]=useState(false),[error,setError]=useState('');
  const [github,setGithub]=useState<GithubPR|null>(null),[githubError,setGithubError]=useState(''),[githubLoading,setGithubLoading]=useState(false);
  const [githubCheckedAt,setGithubCheckedAt]=useState<number|null>(null),[githubRefresh,setGithubRefresh]=useState(0);
+ const [freshness,setFreshness]=useState<ReviewFreshness>('unverified');
+ const sourceRevision=result.source&&typeof result.source==='object'&&'revision' in result.source&&typeof result.source.revision==='string'?result.source.revision:null;
+ useEffect(()=>{
+  let alive=true;const controller=new AbortController();setFreshness('unverified');
+  const load=async()=>{try{
+   const response=await fetch('/api/collaboration?project='+encodeURIComponent(project),{cache:'no-store',signal:controller.signal});
+   if(!response.ok)throw new Error('Dateistand unbekannt');
+   const value=await response.json() as {changes?:ChangeSummary[]};
+   if(alive)setFreshness(reviewFreshness(jobId,{revision:sourceRevision},value.changes?.find(c=>c.workspace===worktree)));
+  }catch{if(alive)setFreshness('unverified');}};
+  void load();const timer=setInterval(()=>{if(!document.hidden)void load();},5000);
+  document.addEventListener('visibilitychange',load);
+  return()=>{alive=false;controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',load);};
+ },[jobId,project,worktree,sourceRevision]);
  useEffect(()=>{
   if(result.workflow!=='pull-request')return;
   let alive=true,request:AbortController|null=null;
@@ -57,7 +73,9 @@ export default function CodeReview({jobId,owner,userId,result,onChange}:{jobId:s
  const complete=typeof result.diff==='string'&&result.diffTruncated!==true&&diff.length<50000;
  useEffect(()=>{let alive=true;const load=async()=>{if(document.hidden)return;try{const r=await fetch('/api/development/reviews?job='+encodeURIComponent(jobId));if(!r.ok)throw new Error('Prüfverlauf konnte nicht geladen werden.');const value=await r.json() as State;if(alive)setData(value);}catch(e){if(alive)setError(e instanceof Error?e.message:'Verbindungsfehler.');}};load();const timer=setInterval(load,10000);document.addEventListener('visibilitychange',load);return()=>{alive=false;clearInterval(timer);document.removeEventListener('visibilitychange',load)};},[jobId]);
  let oldLine=0,newLine=0;
- return <section className="code-review" aria-label="Gemeinsame Codeprüfung"><div className="review-identity"><span className="label sage">{labels[data.state]??data.state}</span><p><strong>Geprüfter Commit</strong> <code>{commit}</code></p><small>{result.published===true?'Branch veröffentlicht':'Lokaler Prüfstand · noch nicht veröffentlicht'} · Die Rückmeldung gilt genau für diesen Prüfauftrag.</small></div>
+ return <section className="code-review" aria-label="Gemeinsame Codeprüfung"><div className="review-identity">
+ <div className={`review-current-context ${freshness}`} role="status"><strong>{freshness==='changed'?'Älterer Prüfstand – danach weitergearbeitet':freshness==='same'?'Passt zum zuletzt abgeglichenen Dateistand':'Aktualität der Arbeitskopie nicht bestätigt'}</strong><p>{freshness==='changed'?'Die aktuelle Arbeitskopie wurde seit diesem Prüfstand geändert. Eine hier gespeicherte Freigabe gilt ausschliesslich für den unten genannten Stand.':freshness==='same'?'Der letzte Dateiabgleich passt zu diesem Prüfstand. Externe Änderungen nach dem Abgleich sind möglich.':'Die Zuordnung zur heutigen Arbeitskopie ist unbekannt. Dieser Prüfstand und seine Freigaben gelten ausschliesslich für den unten genannten Stand.'}</p></div>
+ <span className={`label ${freshness==='same'&&data.state==='approved'?'sage':'neutral'}`}>{labels[data.state]??data.state} · nur dieser Prüfstand</span><p><strong>Geprüfter Commit</strong> <code>{commit}</code></p><small>{result.published===true?'Branch veröffentlicht':'Lokaler Prüfstand · noch nicht veröffentlicht'} · Die Rückmeldung gilt genau für diesen Prüfauftrag.</small></div>
  <h3>Testergebnis</h3><pre className="dev-output">{String(result.checks??'Kein Testergebnis verfügbar.')}</pre>
  <h3>Codeänderungen</h3><p className="review-explainer">Prüfe die Änderungen und die Tests für genau diesen Commit. Erst danach unten eine Rückmeldung speichern. Die Freigabe veröffentlicht noch keinen Branch.</p>{!complete&&<p className="form-error" role="alert">Die Änderung ist zu groß für eine vollständige Anzeige. Eine Freigabe im Studio ist für diesen Stand gesperrt.</p>}
  <div className="review-diff" role="region" aria-label="Änderungen im Code" tabIndex={0}>{diff?diff.split('\n').map((line,index)=>{const hunk=line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);if(hunk){oldLine=Number(hunk[1]);newLine=Number(hunk[2]);}const meta=hunk||/^(diff |index |--- |\+\+\+ |new file |deleted file |Binary |rename |similarity )/.test(line),add=!meta&&line.startsWith('+'),remove=!meta&&line.startsWith('-'),content=!meta&&(add||remove||line.startsWith(' '));const old=content&&!add?oldLine++:'',next=content&&!remove?newLine++:'';return <div key={index} className={`diff-line ${meta?'meta':add?'add':remove?'remove':''}`}><span aria-hidden="true">{old}</span><span aria-hidden="true">{next}</span><code>{line||' '}</code></div>}):<p>Keine Codeänderungen gegenüber der gemeinsamen Basis.</p>}</div>

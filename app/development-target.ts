@@ -1,5 +1,10 @@
 type TaskCopy={id:string;owner:string;project:string;taskId:string|null;status:string;archived:number;revoked:number;device:string};
 
+/** The task workspace must never offer or execute work in a different task's copy. */
+export function selectableCopies<T extends TaskCopy>(copies:T[],owner:string,project:string,device:string,task?:string):T[]{
+ return copies.filter(copy=>copy.owner===owner&&copy.project===project&&copy.device===device&&copy.status==='completed'&&!copy.archived&&!copy.revoked&&(!task||copy.taskId===task));
+}
+
 export function ownTaskCopy<T extends TaskCopy>(copies:T[],owner:string,project:string,task:string):T|undefined{
  return copies.find(copy=>copy.owner===owner&&copy.project===project&&copy.taskId===task&&copy.status==='completed'&&!copy.archived&&!copy.revoked);
 }
