@@ -434,6 +434,10 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .setup-step .button {justify-self:start;}
 .setup-link {font-size:13px;margin:12px 0 18px;color:var(--muted);}
 
+/* UX A6: suggested task status after a review, applied only by an explicit click. */
+.status-suggestion {display:grid;gap:8px;justify-items:start;border-left:3px solid var(--line-strong);padding:6px 0 6px 12px;margin-top:4px;}
+.status-suggestion small {color:var(--muted);font-size:12px;line-height:1.6;}
+
 /* Mobile users should reach the working sign-in form before the brand story. */
 @media (max-width: 720px) {
   .studio-entry-layout .login-card { order: -1; }

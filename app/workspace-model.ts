@@ -60,7 +60,8 @@ export const empty: Data = {
   documents: [],
   activities: []
 };
-export const statuses = [['todo', 'Offen'], ['doing', 'In Arbeit'], ['review', 'Review'], ['done', 'Erledigt']];
+/** Task status labels for the kanban, the project board and the task workspace. */
+export const statuses = [['todo', 'Offen'], ['doing', 'In Arbeit'], ['review', 'Zur Prüfung'], ['done', 'Erledigt']];
 export type Route = { view: string; project: string; task: string };
 /** Read view, project and task from the URL. The task workspace needs both a task and its project. */
 export function readRoute(search: string, views: readonly string[]): Route {

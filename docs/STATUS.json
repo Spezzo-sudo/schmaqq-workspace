@@ -1,4 +1,15 @@
 {
+  "ux_phase_a6_status_suggestion_20261023": {
+    "state": "local_ui_change_full_local_check_and_browser_verified_uncommitted",
+    "branch": "local/studio-a0-terms-20261023",
+    "change": "After a current, completed review of the own copy, the task workspace header and the project board task panel offer one explicit button: Aufgabe auf „Zur Prüfung“ setzen (task open or in progress, review pending) or Aufgabe zurück auf „In Arbeit“ setzen (task under review, changes requested). Pure statusSuggestion() in workflow-step; app/status-suggestion.tsx uses the existing collaboration status action. No automatic status change, no suggestion for teammates, after approval or for changed/failed reviews. Task status labels unified in workspace-model (Offen, In Arbeit, Zur Prüfung, Erledigt) for kanban, board and task workspace; the board previously used its own table and the kanban said Review.",
+    "focused_tests": "status-suggestion 5 tests PASS (suggestion rules, explicit-click wording, single status label table)",
+    "full_local_check": "studio:verify:local PASS after final change: source guard; 151 backend tests, 130 pass, 0 fail, 21 explicit Linux skips; TypeScript; build",
+    "browser_acceptance": "2026-10-23 PASS on fresh isolated demo 127.0.0.1:4390 with real runner: Prüfstand from the editor bar, suggestion appears in the task workspace; status stayed doing in UI and API for 15 s; click set review in UI and API and removed the suggestion; board task panel shows the same suggestion after resetting the status and applies it; labels Zur Prüfung in task header, board card, board status select and kanban column; mobile 390 without horizontal overflow. Pane hidden, clicks in page context. Own processes stopped",
+    "not_browser_verified": "The changes-requested path needs a second account; covered by unit tests only",
+    "observation": "A review job runs the tests itself but does not count as a check job, so the next step still asks for a separate test run after a Prüfstand without one; existing evidence semantics, not changed",
+    "production_changed": false
+  },
   "ux_phase_a5_setup_checklist_20261023": {
     "state": "local_ui_change_full_local_check_and_browser_verified_uncommitted",
     "branch": "local/studio-a0-terms-20261023",

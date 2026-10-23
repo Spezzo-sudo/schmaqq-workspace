@@ -5,7 +5,8 @@ import Development from './development';
 import ChangeOverview,{type ChangeSummary} from './change-overview';
 import TaskDiscussion,{type TaskComment} from './task-discussion';
 import type {TeamWorkspace} from './team-workspaces';
-import {nextStep,stepTab,taskProgress,taskStages,type NextStep} from './workflow-step';
+import {nextStep,statusSuggestion,stepTab,taskProgress,taskStages,type NextStep} from './workflow-step';
+import StatusSuggestionBox from './status-suggestion';
 import {statuses} from './workspace-model';
 
 type Task={id:string;project:string;title:string;description:string;status:string;priority:string;assignee:string|null};
@@ -30,6 +31,11 @@ export default function TaskWorkspace({userId,projects,members,projectId,taskId,
   :{stage:'copy',action:'none',title:'Die zuständige Person hat noch keine Arbeitskopie.',reason:'Fragen und Hinweise gehören in die Diskussion.',tone:'info',cautions:[]};
  const progress=next?taskProgress(next,!!copy&&copy.status==='completed'):0;
  function openReview(id:string){setReview(id);setTab('edit');}
+ const suggestion=task?statusSuggestion({taskStatus:task.status,own:!!own&&copy===own,review:change?.review}):null;
+ async function setStatus(status:string){
+  const r=await fetch('/api/collaboration/task',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'status',task:taskId,status})});const d=await r.json() as {error?:string};if(!r.ok)throw new Error(d.error??'Status konnte nicht geändert werden.');
+  await load();await onChanged();
+ }
  if(error&&!detail)return <section className="panel task-workspace-missing"><h1>Aufgabe nicht verfügbar</h1><p className="form-error" role="alert">{error}</p><button className="button" onClick={onOverview}><ArrowLeft size={15}/> Zur Projektübersicht</button></section>;
  return <div className="task-workspace">
   <button className="text-button back-to-project" onClick={onOverview}><ArrowLeft size={15}/> Projektübersicht</button>
@@ -39,6 +45,7 @@ export default function TaskWorkspace({userId,projects,members,projectId,taskId,
    {task&&<p className="task-workspace-meta">Zuständig: <strong>{person(task.assignee)}</strong> · Status: <strong>{statuses.find(s=>s[0]===task.status)?.[1]??task.status}</strong>{copy&&<> · Arbeitskopie: <strong>{copy.title}</strong> auf {copy.deviceName} · {copy.revoked?'PC-Zugang widerrufen':Date.now()-copy.seen<30000?'PC verbunden':'PC nicht verbunden'}</>}</p>}
    <ol className="task-progress" aria-label="Fortschritt der Aufgabe">{taskStages.map((label,index)=><li key={label} aria-current={index===progress?'step':undefined} className={index<progress?'reached':index===progress?'current':''}><span>{index<progress?'✓':index+1}</span>{label}</li>)}</ol>
    {next&&<div className={`task-next ${next.tone}`}><div><strong>Nächster Schritt:</strong> {next.title}<br/><small>{next.reason}</small>{next.cautions.map(text=><small key={text}><br/>{text}</small>)}</div>{stepTab(next.action)!==tab&&next.action!=='wait'&&<button className="button" onClick={()=>setTab(stepTab(next.action))}>{tabs.find(t=>t[0]===stepTab(next.action))?.[1]} öffnen <ArrowRight size={15}/></button>}</div>}
+   <StatusSuggestionBox suggestion={suggestion} onApply={setStatus}/>
   </header>
   <div className="task-tabs" role="tablist" aria-label="Bereiche der Aufgabe">{tabs.map(([key,label])=><button key={key} role="tab" id={'task-tab-'+key} aria-selected={tab===key} aria-controls={'task-panel-'+key} className={tab===key?'active':''} onClick={()=>setTab(key)}>{label}{key==='discussion'&&detail?` (${detail.comments.length})`:''}</button>)}</div>
   {error&&<p className="form-error" role="alert">{error} Der angezeigte Stand kann veraltet sein.</p>}

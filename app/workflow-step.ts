@@ -114,6 +114,18 @@ export function taskProgress(step:NextStep,hasCopy:boolean){
  return step.stage==='done'?4:step.stage==='review'?3:step.stage==='copy'?1:2;
 }
 
+/**
+ * Suggested task status after a review, offered to the owner of the copy as one
+ * explicit button. Nothing changes the task status automatically.
+ */
+export type StatusSuggestion={status:'review'|'doing';label:string;reason:string};
+export function statusSuggestion({taskStatus,own,review}:{taskStatus:string;own:boolean;review?:Evidence}):StatusSuggestion|null{
+ if(!own||!review||review.status!=='completed'||review.changedAfter)return null;
+ if(review.state==='pending'&&(taskStatus==='todo'||taskStatus==='doing'))return {status:'review',label:'Aufgabe auf „Zur Prüfung“ setzen',reason:'Dein Prüfstand für den aktuellen Stand wartet auf die zweite Person. Der Aufgabenstatus ändert sich nur mit diesem Klick.'};
+ if(review.state==='changes_requested'&&taskStatus==='review')return {status:'doing',label:'Aufgabe zurück auf „In Arbeit“ setzen',reason:'Für deinen Prüfstand wurden Änderungen angefordert. Der Aufgabenstatus ändert sich nur mit diesem Klick.'};
+ return null;
+}
+
 /** Which task workspace tab moves the next step forward. */
 export function stepTab(action:StepAction):'edit'|'discussion'|'evidence'{
  if(action==='open-review'||action==='request-review'||action==='publish')return 'evidence';
