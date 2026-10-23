@@ -1,4 +1,16 @@
 {
+  "ux_phase_a4_task_workspace_20261023": {
+    "state": "local_ui_change_full_local_check_and_browser_verified_uncommitted",
+    "branch": "local/studio-a0-terms-20261023",
+    "change": "Task workspace view (?view=task&project=&task=, app/task-workspace.tsx): header with project, task, assignee, status, copy and PC state; five-stage progress and next step from workflow-step with a button to the matching tab; tabs Bearbeiten (Development in focused mode with editor bar and inline results), Diskussion (shared app/task-discussion.tsx), Nachweise (change overviews and review links opening the review dialog) and Verlauf (jobs of this task's copies, read-only file listings/openings left out). Editor stays mounted across tabs. Board Weiterarbeiten, Im Arbeitsplatz weiterarbeiten and In eigener Kopie weiterarbeiten open the task workspace; other tasks get Arbeitsplatz öffnen. Route read/write helpers in workspace-model; back/forward and reload restore the task. Source editor remembers only the path of the last opened file per copy in localStorage and reopens it. Full development view unchanged.",
+    "fixes_during_browser_check": "History tab unmounted the editor (now hidden instead); copy-creating job missing from task history; long breadcrumb pushed top actions out at 390px (ellipsis, project crumb hidden on mobile, compact tabs)",
+    "focused_tests": "task-route 4 tests (route parsing/writing, progress, step tab) PASS; workflow-step and workflow-terms PASS",
+    "full_local_check": "studio:verify:local PASS after final change: source guard; 141 backend tests, 120 pass, 0 fail, 21 explicit Linux skips; TypeScript; build",
+    "browser_acceptance": "2026-10-23 PASS on fresh isolated demo 127.0.0.1:4390 with real runner: board Weiterarbeiten opens task workspace with breadcrumb, progress and next step; full-view panels absent; editor draft survives switching to Diskussion, comment sent there and visible on the board; save and tests from the bar update header next step and progress; Nachweise shows evidence and opens the review dialog; Verlauf lists only this task's jobs incl. copy creation; reload reopens task and last file; back/forward restore board and task; full development view unchanged; desktop 1280 and mobile 390 without horizontal overflow in all tabs. Pane was hidden, so clicks were dispatched in page context and checks read from the DOM; hidden-pane timer throttling delayed editor polling. Own processes stopped",
+    "observations": "After a Prüfstand of a changed file the server evidence marks the earlier test as changed, so the next step asks to test again; backend evidence behaviour, not changed here",
+    "known_limits": "No new sidebar entry; task workspace reached from the board or URL; development view and review links on the board still exist unchanged",
+    "production_changed": false
+  },
   "ux_phase_a3_editor_action_bar_20261023": {
     "state": "local_ui_change_full_local_check_and_browser_verified_uncommitted",
     "branch": "local/studio-a0-terms-20261023",

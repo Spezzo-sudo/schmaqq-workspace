@@ -107,5 +107,19 @@ export function workActionState({dirty,canSave,canRun}:{dirty:boolean;canSave:bo
   note:dirty?'Erst speichern: Tests, Vorschau und Prüfstand prüfen den gespeicherten Stand.':null};
 }
 
+/** Task workspace progress: 0 Aufgabe, 1 Arbeitskopie, 2 Ändern & testen, 3 Prüfstand, 4 Freigabe. */
+export const taskStages=['Aufgabe','Arbeitskopie','Ändern & testen','Prüfstand','Freigabe'];
+export function taskProgress(step:NextStep,hasCopy:boolean){
+ if(!hasCopy)return 1;
+ return step.stage==='done'?4:step.stage==='review'?3:step.stage==='copy'?1:2;
+}
+
+/** Which task workspace tab moves the next step forward. */
+export function stepTab(action:StepAction):'edit'|'discussion'|'evidence'{
+ if(action==='open-review'||action==='request-review'||action==='publish')return 'evidence';
+ if(action==='review-feedback'||action==='none')return 'discussion';
+ return 'edit';
+}
+
 /** Guide position: 0 PC, 1 project/Git/copy, 2 develop and verify. */
 export function guideIndex(stage:StepStage){return stage==='pc'?0:stage==='project'||stage==='copy'?1:2;}

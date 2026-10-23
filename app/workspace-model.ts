@@ -61,6 +61,20 @@ export const empty: Data = {
   activities: []
 };
 export const statuses = [['todo', 'Offen'], ['doing', 'In Arbeit'], ['review', 'Review'], ['done', 'Erledigt']];
+export type Route = { view: string; project: string; task: string };
+/** Read view, project and task from the URL. The task workspace needs both a task and its project. */
+export function readRoute(search: string, views: readonly string[]): Route {
+  const params = new URLSearchParams(search), requested = params.get('view') ?? '', project = params.get('project') ?? 'all', task = params.get('task') ?? '';
+  if (requested === 'task') return task && project !== 'all' ? { view: 'task', project, task } : { view: 'overview', project, task: '' };
+  return { view: views.includes(requested) ? requested : 'overview', project, task: '' };
+}
+/** Write a route into an existing URL; unrelated query parameters stay. */
+export function writeRoute(url: URL, { view, project, task }: Route) {
+  url.searchParams.set('view', view);
+  if (project !== 'all') url.searchParams.set('project', project); else url.searchParams.delete('project');
+  if (view === 'task' && task) url.searchParams.set('task', task); else url.searchParams.delete('task');
+  return url;
+}
 export function initials(name: string) {
   return name.split(/\s|@/).filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase();
 }
