@@ -1,4 +1,15 @@
 {
+  "ux_phase_a1_next_step_20261023": {
+    "state": "local_ui_logic_change_full_local_check_and_browser_verified_uncommitted",
+    "branch": "local/studio-a0-terms-20261023",
+    "change": "Shared pure nextStep() in app/workflow-step.ts used by development guide and change overview: missing/offline/revoked PC, missing or unconfirmed project setup, Git inspection running/failed, copy creation states, running jobs and observations, missing/running/failed/unknown/stale tests, unverified file binding (one observation, then explicit caution), review lifecycle, stale or failed preview as non-blocking caution. Teammates only get open-review or waiting steps. A0 follow-up: copyStateLabel names failed, cancelled and cancelling creations and unknown states.",
+    "behaviour_changes": "Guide plural Prüfstände corrected; failed Git inspection now asks for a repeated check instead of a plain first check; change overview shows reason and cautions under the next step; no new buttons, routes, jobs or permissions",
+    "focused_tests": "workflow-step 9 and workflow-terms 4 tests PASS",
+    "full_local_check": "studio:verify:local PASS: source guard; 134 backend tests, 113 pass, 0 fail, 21 explicit Linux skips; TypeScript; build",
+    "browser_acceptance": "2026-10-23 PASS on fresh isolated demo 127.0.0.1:4390 with real runner: guide ready/running/offline, change overview no test -> test passed -> review pending -> own PC offline; desktop 1280 and mobile 390 without horizontal overflow; own processes stopped, existing demo on 4320/4321 untouched. Clicks partly dispatched in page context because the hidden pane did not render input",
+    "known_limits": "Backend lists only queued/running/completed/interrupted copies, so failed or cancelled creations are not shown as copies; development guide has no change evidence and stays on the setup level; next step is still text in the change overview, not an action button",
+    "production_changed": false
+  },
   "ux_phase_a0_terms_20261023": {
     "state": "local_ui_text_change_browser_verified",
     "branch": "local/studio-a0-terms-20261023",

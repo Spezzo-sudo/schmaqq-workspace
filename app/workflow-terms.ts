@@ -52,11 +52,18 @@ export function jobStateLabel(status: string) {
   return jobStates[status] ?? 'Status unbekannt';
 }
 
-/** Label for the creation state of an Arbeitskopie. */
+const copyStates: Record<string, string> = {
+  queued: 'Wartet auf PC',
+  running: 'Wird erstellt',
+  completed: 'Bereit',
+  failed: 'Erstellung fehlgeschlagen',
+  interrupted: 'Erstellung unterbrochen',
+  cancelled: 'Erstellung abgebrochen',
+  cancelling: 'Erstellung wird abgebrochen'
+};
+
+/** Label for the creation state of an Arbeitskopie; unknown states never read as progress. */
 export function copyStateLabel(status: string, archived = false) {
   if (archived) return 'Abgeschlossen';
-  if (status === 'completed') return 'Bereit';
-  if (status === 'interrupted') return 'Erstellung unterbrochen';
-  if (status === 'queued') return 'Wartet auf PC';
-  return 'Wird erstellt';
+  return copyStates[status] ?? 'Status unbekannt';
 }

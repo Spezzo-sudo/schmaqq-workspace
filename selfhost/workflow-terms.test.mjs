@@ -22,12 +22,17 @@ test('job states use one label per state and failures never read as success',()=
  assert.equal(jobStateLabel('unexpected'),'Status unbekannt');
 });
 
-test('copy states distinguish ready, interrupted and archived copies',()=>{
+test('copy states distinguish ready, failed, cancelled, interrupted and archived copies',()=>{
  assert.equal(copyStateLabel('completed'),'Bereit');
  assert.equal(copyStateLabel('completed',true),'Abgeschlossen');
  assert.equal(copyStateLabel('interrupted'),'Erstellung unterbrochen');
  assert.equal(copyStateLabel('queued'),'Wartet auf PC');
  assert.equal(copyStateLabel('running'),'Wird erstellt');
+ assert.equal(copyStateLabel('failed'),'Erstellung fehlgeschlagen');
+ assert.equal(copyStateLabel('cancelled'),'Erstellung abgebrochen');
+ assert.equal(copyStateLabel('cancelling'),'Erstellung wird abgebrochen');
+ assert.equal(copyStateLabel('unexpected'),'Status unbekannt');
+ for(const status of jobStatuses.filter(s=>s!=='queued'&&s!=='running'))assert.notEqual(copyStateLabel(status),'Wird erstellt',status);
 });
 
 test('visible app texts use one term per concept and no local state tables',()=>{

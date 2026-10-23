@@ -2,6 +2,7 @@
 import {useState} from 'react';
 import type {TeamWorkspace} from './team-workspaces';
 import {jobStateLabel} from './workflow-terms';
+import {nextStep} from './workflow-step';
 
 type Evidence={id:string;status:string;created:number;commit:string|null;changedAfter:boolean;freshness?:'same'|'changed'|'unverified';state?:string;published?:boolean};
 type Note={kind:string;body:string;revision:number;author:string|null;updated:number|null};
@@ -16,16 +17,8 @@ export default function ChangeOverview({copy,change,userId,onReview,onWork,onCha
  const [editing,setEditing]=useState(false),[kind,setKind]=useState('unspecified'),[body,setBody]=useState(''),[revision,setRevision]=useState(0),[pending,setPending]=useState(false),[error,setError]=useState('');
  const observation=change?.observation,observing=['queued','running','cancelling'].includes(change?.observationJob?.status??'');
  async function post(route:string,payload:unknown){setPending(true);setError('');try{const response=await fetch(route,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const result=await response.json() as {error?:string};if(!response.ok)throw new Error(result.error??'Änderung fehlgeschlagen.');await onChange();return true;}catch(e){setError(e instanceof Error?e.message:'Verbindung fehlgeschlagen.');return false;}finally{setPending(false);}}
- let next='Aufgabe und Anforderungen abstimmen.';
- if(copy.status!=='completed')next='Arbeitskopie vorbereiten oder unterbrochenen Start prüfen.';
- else if(own){
-  if(copy.revoked||Date.now()-copy.seen>=30000)next='Deinen PC wieder verbinden, um weiterzuarbeiten.';
-  else if(!change?.check||change.check.changedAfter||change.check.status!=='completed')next='Änderungen ansehen und Tests ausführen.';
-  else if(!review||review.changedAfter)next='Aktuellen Stand zur Teamprüfung einreichen.';
-  else if(review.state==='changes_requested')next='Rückmeldung lesen und Änderungen abstimmen.';
-  else if(review.state!=='approved')next='Zweite Person um Prüfung dieses Commits bitten.';
-  else next=published?'PR und gemeinsame Übernahme prüfen.':'Freigegebenen Stand prüfen und bei Bedarf veröffentlichen.';
- }else if(review)next=review.changedAfter?'Neueren Prüfstand bei der zuständigen Person anfordern.':review.state==='approved'?'Freigabe und weitere Schritte gemeinsam abstimmen.':'Prüfstand öffnen und Rückmeldung geben.';
+ const next=nextStep({copy:{status:copy.status,own,online:Date.now()-copy.seen<30000,revoked:!!copy.revoked,archived:!!copy.archived},
+  evidence:{check:change?.check,preview:change?.preview,review,published,observed:change?.currentRevision==='observed',observing}});
  return <article className="change-overview" aria-label={`Änderungsstand: ${copy.title}`}>
   <div className="section-title"><h3>{copy.title}</h3><span className="label neutral">{own?'Deine Kopie':'Teamkopie'}</span></div>
   <p className="change-origin">{copy.ownerName} · {copy.deviceName}{copy.issue?` · GitHub-Issue #${copy.issue}`:''}</p>
@@ -41,7 +34,7 @@ export default function ChangeOverview({copy,change,userId,onReview,onWork,onCha
    <div><dt>Veröffentlichung</dt><dd>{published?<>Branch zum Git-Remote übertragen<small>{change?.publication?.commit?`Commit ${change.publication.commit.slice(0,10)}`:'Commit nicht belegt'} · PR, Merge und Live-Status unbestätigt</small></>:'Keine Branch-Veröffentlichung belegt'}{copy.branch&&<small className="change-branch">{copy.branch}</small>}</dd></div>
   </dl>
   <div className="change-caution"><p>{observing?'Dateiabgleich läuft auf deinem PC.':change?.observationJob?.status==='failed'?'Letzter Dateiabgleich fehlgeschlagen.':observation?.valid&&observation.revision?`Letzter Dateiabgleich: ${date(observation.observedAt)}. Seitdem sind weitere Änderungen möglich.`:'Dateistand nicht bestätigt. Neuer Runner-Abgleich erforderlich.'}</p><details><summary>Was wird abgeglichen?</summary><p>Versionierte und neue, nicht ignorierte Dateien. Ignorierte Dateien, Abhängigkeiten und Umgebungsdaten sind nicht belegt. Der Abgleich ist eine Momentaufnahme; es gibt keine dauerhafte Überwachung externer Änderungen. Ältere Runner liefern gegebenenfalls noch keinen Dateinachweis.</p></details></div>
-  <p className="change-next"><strong>{own?'Dein nächster Schritt':'Im Team als Nächstes'}:</strong> {next}</p>
+  <p className="change-next"><strong>{own?'Dein nächster Schritt':'Im Team als Nächstes'}:</strong> {next.title}<br/><small>{next.reason}</small></p>{next.cautions.map(text=><p key={text} className="muted">{text}</p>)}
   <div className="collaboration-task-actions">{own&&!copy.archived&&<button className="button" disabled={pending||observing||copy.status!=='completed'||!!copy.revoked||Date.now()-copy.seen>=30000} onClick={()=>void post('/api/development',{action:'job',operation:'status',device:copy.device,project:copy.project,worktree:copy.id,...(copy.issue?{issue:copy.issue}:{})})}>Dateistand abgleichen</button>}{review&&<button className="button" onClick={()=>onReview(review.id)}>Prüfstand öffnen</button>}{own&&!copy.archived&&<button className="button" onClick={onWork}>In eigener Kopie weiterarbeiten</button>}</div>
  </article>;
 }
