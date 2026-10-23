@@ -7,7 +7,7 @@ import {copyStateLabel} from './workflow-terms';
 import TaskDiscussion,{type TaskComment} from './task-discussion';
 import StatusSuggestionBox from './status-suggestion';
 import {nextStep,statusSuggestion} from './workflow-step';
-import {continueTasks} from './navigation';
+import {continueTasks,pendingReviews} from './navigation';
 import {statuses} from './workspace-model';
 
 type Task={id:string;project:string;title:string;description:string;status:string;priority:string;assignee:string|null;commentCount?:number};
@@ -49,6 +49,7 @@ export default function CollaborationBoard({userId,projects,members,project,onPr
  const openCopies=workspaces.filter(w=>!w.archived),visibleTasks=tasks.filter(t=>(!mine||t.assignee===userId)&&(showDone||t.status!=='done'));
  const current=projects.find(p=>p.id===project);
  const mineOpen=continueTasks(tasks,userId);
+ const waitingReviews=pendingReviews(tasks,workspaces,changes,userId);
  function continueStep(t:Task){
   const copy=openCopies.find(w=>w.taskId===t.id&&w.owner===userId);
   if(!copy)return 'Arbeitskopie für diese Aufgabe erstellen.';
@@ -62,7 +63,7 @@ export default function CollaborationBoard({userId,projects,members,project,onPr
    })}</section>;
  return <>
   <div className="page-heading"><div><div className="eyebrow">EUER PROJEKT. EURE GEMEINSAME ARBEIT.</div><h1>Zusammen arbeiten<span className="green-dot">.</span></h1><p>Aufgaben aufteilen, parallel entwickeln und Entscheidungen direkt am Thema festhalten.</p></div><button className="button primary keep-label" onClick={onCreate}><Plus size={17}/> Neue Aufgabe</button></div>
-  {loaded&&<section className="panel continue-card" aria-label="Weitermachen"><div className="section-title"><h2>Weitermachen</h2>{!!mineOpen.length&&<span className="muted">{mineOpen.length===1?'Deine offene Aufgabe':'Deine offenen Aufgaben'}</span>}</div>{mineOpen.length?<ul>{mineOpen.map(t=><li key={t.id}><div><strong>{t.title}</strong><small>{projects.find(p=>p.id===t.project)?.title??'Projekt'} · {statuses.find(s=>s[0]===t.status)?.[1]??t.status}</small><span>Nächster Schritt: {continueStep(t)}</span></div><button className="button primary" onClick={()=>onOpenTask(t)}>Weiterarbeiten <ArrowRight size={15}/></button></li>)}</ul>:<p className="muted">Du hast gerade keine eigene offene Aufgabe. Übernimm unten eine Aufgabe oder lege mit „Neue Aufgabe“ eine an.</p>}</section>}
+  {loaded&&<section className="panel continue-card" aria-label="Weitermachen"><div className="section-title"><h2>Weitermachen</h2>{!!mineOpen.length&&<span className="muted">{mineOpen.length===1?'Deine offene Aufgabe':'Deine offenen Aufgaben'}</span>}</div>{mineOpen.length?<ul>{mineOpen.map(t=><li key={t.id}><div><strong>{t.title}</strong><small>{projects.find(p=>p.id===t.project)?.title??'Projekt'} · {statuses.find(s=>s[0]===t.status)?.[1]??t.status}</small><span>Nächster Schritt: {continueStep(t)}</span></div><button className="button primary" onClick={()=>onOpenTask(t)}>Weiterarbeiten <ArrowRight size={15}/></button></li>)}</ul>:<p className="muted">Du hast gerade keine eigene offene Aufgabe. Übernimm unten eine Aufgabe oder lege mit „Neue Aufgabe“ eine an.</p>}{!!waitingReviews.length&&<section aria-label="Wartende Teamprüfungen"><h3>Prüfung wartet auf dich</h3><ul>{waitingReviews.map(item=><li key={item.review}><div><strong>{item.task.title}</strong><small>{projects.find(p=>p.id===item.task.project)?.title}</small><span>Eine andere Person hat einen aktuellen Stand zur Prüfung bereitgestellt.</span></div><button className="button primary" onClick={()=>onDevelop(item.task,item.review)}>Prüfen <ArrowRight size={15}/></button></li>)}</ul></section>}</section>}
   <section className="panel project-context"><label>Gemeinsames Projekt<select aria-label="Gemeinsames Projekt" value={project} onChange={e=>onProject(e.target.value)}><option value="all">Alle Projekte</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label><div><h2>{current?.title??'Eure Projekte im Überblick'}</h2><p>{current?.description||'Wählt ein Projekt, um Aufgaben, Diskussionen und Arbeitskopien gemeinsam zu überblicken.'}</p></div></section>
   {error&&<p className="form-error" role="alert">{error} Der angezeigte Stand kann veraltet sein.</p>}
   {!loaded?<p role="status">Gemeinsamer Projektstand wird geladen …</p>:<>

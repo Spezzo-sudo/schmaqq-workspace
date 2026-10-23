@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readRoute,writeRoute} from '../app/workspace-model.ts';
-import {nextStep,taskProgress,taskStages,stepTab} from '../app/workflow-step.ts';
+import {nextStep,taskProgress,taskStages,stepTab,requestedChanges} from '../app/workflow-step.ts';
 
 const views=['overview','projects','development'];
 
@@ -42,5 +42,16 @@ test('each next step points to the tab where it can be done',()=>{
  assert.equal(stepTab('reconnect-pc'),'edit');
  assert.equal(stepTab('open-review'),'evidence');
  assert.equal(stepTab('request-review'),'evidence');
- assert.equal(stepTab('review-feedback'),'discussion');
+ assert.equal(stepTab('review-feedback'),'evidence');
+});
+
+
+test('feedback follows current peer decisions on the exact commit, not comments or superseded votes',()=>{
+ const entry=(id,reviewer,decision,commitSha='current')=>({id,reviewer,name:reviewer,decision,commitSha,body:id,created:1});
+ const entries=[entry('old','peer','changes','old'),entry('self','owner','changes'),entry('fix','peer','changes'),entry('comment','peer','comment')];
+ assert.deepEqual(requestedChanges(entries,'current','owner').map(e=>e.id),['fix']);
+ entries.push(entry('approved','peer','approved'));
+ assert.deepEqual(requestedChanges(entries,'current','owner'),[]);
+ entries.push(entry('other-fix','other','changes'));
+ assert.deepEqual(requestedChanges(entries,'current','owner').map(e=>e.id),['other-fix']);
 });

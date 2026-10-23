@@ -17,7 +17,8 @@ test('change overview keeps failures and historical evidence honest without expo
   const check=job('check','completed',{checks:'private-output',commit:'a'.repeat(40)});
   job('preview','completed',{url:'https://preview.invalid/private-capability',previewBundle:{'private-file':'private-bytes'}});
   const review=job('review','completed',{commit:'a'.repeat(40),diff:'private-diff',checks:'private-checks',published:false});
-  assert.equal(state().check.id,check);assert.equal(state().check.changedAfter,false);assert.equal(state().review.state,'pending');
+  assert.equal(state().check.id,review);assert.equal(state().check.via,'review');assert.equal(state().check.changedAfter,false);assert.equal(state().review.state,'pending');
+  assert.notEqual(check,review); // The review re-ran the tests on its commit and replaces the older check.
   db.prepare('INSERT INTO code_reviews(id,job,commit_sha,reviewer,decision,body,created) VALUES(?,?,?,?,?,?,?)').run('approval',review,'a'.repeat(40),'peer','approved','private-review-body',100);
   assert.equal(state().review.state,'approved');
   // Same timestamp, later row: successful file save invalidates older evidence.
@@ -49,5 +50,29 @@ test('change overview keeps failures and historical evidence honest without expo
   assert.equal(state().check.freshness,'same');assert.equal(state().check.changedAfter,false);
   job('preview','completed',{source:{revision:null,observedAt:200,reason:'changed_during_run'}});
   assert.equal(state().check.freshness,'unverified');assert.equal(state().currentRevision,'unverified');
+ }finally{db.close();}
+});
+
+test('review test evidence is revision-bound and a failed later review cannot become a passing test',()=>{
+ const db=openStore(':memory:');
+ try{
+  db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run('owner','Owner','owner@fixture.invalid','unused','member',0);
+  db.prepare('INSERT INTO devices(id,owner,name,hash) VALUES(?,?,?,?)').run('pc','owner','PC','unused');
+  const copy={id:'copy',owner:'owner',device:'pc',project:'website',taskId:null};
+  let created=0;
+  const job=(id,action,status,revision)=>db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created,result) VALUES(?,?,?,?,?,?,?,?,?)').run(id,'owner','pc','website',action,JSON.stringify({worktree:'copy'}),status,++created,JSON.stringify({commit:'a'.repeat(40),source:{revision:revision.repeat(64),observedAt:created}}));
+  const state=()=>changeOverview(db,[copy])[0];
+  job('review','review','completed','1');
+  assert.equal(state().check.via,'review');assert.equal(state().check.freshness,'same');
+  job('changed','status','completed','2');
+  assert.equal(state().check.changedAfter,true);
+  job('failed-review','review','failed','2');
+  assert.equal(state().check.id,'review');assert.equal(state().check.changedAfter,true);
+  job('new-test','check','completed','2');
+  assert.equal(state().check.id,'new-test');assert.equal(state().check.via,undefined);
+  job('published','submit','completed','2');
+  assert.equal(state().check.id,'published');assert.equal(state().check.via,'review');assert.equal(state().check.freshness,'same');
+  job('failed-test','check','failed','2');
+  assert.equal(state().check.status,'failed');
  }finally{db.close();}
 });

@@ -1,4 +1,18 @@
 {
+  "ux_p1_completion_20261023": {
+    "state": "local_candidate_verified_not_deployed",
+    "branch": "local/studio-a0-terms-20261023",
+    "change": "Completed the four P1 follow-ups: successful review/submit jobs also supply revision-bound test evidence; task header receives the same preview capability as inline results; current requested changes are read through the existing authenticated review endpoint and shown at the task with a direct exact-review link; current pending peer reviews appear in the start page continue card. No auth, schema, runner execution or publication policy change.",
+    "regressions": "Added exact-revision review-test provenance, failed later review/test, current-commit latest peer decisions, superseded votes/comments and pending peer queue filtering tests.",
+    "full_local_check": "Executed studio:verify:local equivalent node selfhost/verify.mjs --local: PASS exit0; source guard; 164 backend tests, 143 PASS, 0 FAIL, 21 explicit Linux skips; TypeScript; frontend build.",
+    "visible_browser": "Executed headful Edge with two separate contexts using existing synthetic accounts and one existing device registration in a copied private fixture. Real task-linked Git worktree, save, node:test, built preview and committed review. All four P1 cases PASS; review counted as latest test with same source revision; self-approval 403 and anonymous feedback read 401; superseded feedback/approved review removed; later file save invalidated evidence. Desktop1280 and mobile390 screenshots inspected; no page errors or horizontal overflow; own test processes stopped; original fixture hashes unchanged.",
+    "attempts": "First browser attempt stopped on a copied historical scope reservation. Only the new fixture's historical copies were archived; second attempt passed. No uninterrupted first-attempt PASS claimed. TypeScript nullability error corrected before browser and final verification.",
+    "evidence": "docs/evidence/UX_P1_COMPLETION_20261023.md",
+    "private_raw_evidence": ".studio/ux-p1-20261023/",
+    "remaining": "Owner's unaided usability acceptance of the new interface; broader onboarding, mobile density and existing full development view remain separate. No independent human peer acceptance or exact candidate Linux release/recovery proof.",
+    "production_changed": false,
+    "release_approved": false
+  },
   "ux_c3_language_hierarchy_20261023": {
     "state": "local_ui_change_full_local_check_and_visible_browser_verified_uncommitted",
     "branch": "local/studio-a0-terms-20261023",

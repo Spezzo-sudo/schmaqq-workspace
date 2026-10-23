@@ -140,9 +140,17 @@ export function statusSuggestion({taskStatus,own,review}:{taskStatus:string;own:
 
 /** Which task workspace tab moves the next step forward. */
 export function stepTab(action:StepAction):'edit'|'discussion'|'evidence'{
- if(action==='open-review'||action==='request-review'||action==='publish')return 'evidence';
- if(action==='review-feedback'||action==='none')return 'discussion';
+ if(action==='open-review'||action==='request-review'||action==='review-feedback'||action==='publish')return 'evidence';
+ if(action==='none')return 'discussion';
  return 'edit';
+}
+
+export type ReviewEntry={id:string;commitSha:string;reviewer:string;name:string;decision:string;body:string;created:number};
+/** API entries are in vote sequence order. Comments never supersede a decision. */
+export function requestedChanges(entries:ReviewEntry[],commit:string,owner:string){
+ const latest=new Map<string,ReviewEntry>();
+ for(const entry of entries)if(entry.commitSha===commit&&entry.reviewer!==owner&&entry.decision!=='comment')latest.set(entry.reviewer,entry);
+ return [...latest.values()].filter(entry=>entry.decision==='changes');
 }
 
 /** Guide position: 0 PC, 1 project/Git/copy, 2 develop and verify. */

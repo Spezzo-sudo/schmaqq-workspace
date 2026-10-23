@@ -24,7 +24,8 @@ export function changeOverview(db,workspaces){
    };
   };
   return {workspace:w.id,task:w.taskId,project:w.project,
-   check:evidence(jobs.find(j=>j.action==='check')),
+   // A completed review or submit ran the configured tests on exactly its committed state.
+   check:(job=>!job?null:{...evidence(job),...(job.action==='check'?{}:{via:'review'})})(jobs.find(j=>j.action==='check'||['review','submit'].includes(j.action)&&j.status==='completed')),
    preview:evidence(jobs.find(j=>j.action==='preview')),
    review:evidence(jobs.find(j=>['review','submit'].includes(j.action)&&j.status==='completed')),
    publication:evidence(jobs.find(j=>j.action==='submit'&&j.status==='completed')),

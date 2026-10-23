@@ -20,7 +20,7 @@ import WorkActions from './work-actions';
 import type {ChangeSummary} from './change-overview';
 import type {Project,Device,Job} from './development-model';
 /** mode "focused" is the task workspace: one task, its copy and history, without project-wide panels. */
-export default function Development({projects,userId,canInvite=false,initialProject,initialTask,initialReview,onOverview,onProjectChange,mode='full',panel='edit',onOpenSetup,recommendedAction}:{projects:Project[];userId:string;canInvite?:boolean;initialProject?:string;initialTask?:string;initialReview?:string;onOverview?:()=>void;onProjectChange?:(id:string)=>void;mode?:'full'|'focused';panel?:'edit'|'history';onOpenSetup?:()=>void;recommendedAction?:StepAction}){
+export default function Development({projects,userId,canInvite=false,initialProject,initialTask,initialReview,onOverview,onProjectChange,mode='full',panel='edit',onOpenSetup,recommendedAction,onPreviewConfigured}:{projects:Project[];userId:string;canInvite?:boolean;initialProject?:string;initialTask?:string;initialReview?:string;onOverview?:()=>void;onProjectChange?:(id:string)=>void;mode?:'full'|'focused';panel?:'edit'|'history';onOpenSetup?:()=>void;recommendedAction?:StepAction;onPreviewConfigured?:(configured:boolean)=>void}){
  const focused=mode==='focused',showEdit=!focused||panel==='edit',showHistory=!focused||panel==='history';
  const [devices,setDevices]=useState<Device[]>([]),[jobs,setJobs]=useState<Job[]>([]),[project,setProject]=useState(initialProject??projects[0]?.id??''),[device,setDevice]=useState(''),[worktree,setWorktree]=useState(''),[error,setError]=useState(''),[pending,setPending]=useState(false),[showSetup,setShowSetup]=useState(false),[invitation,setInvitation]=useState(''),[prompt,setPrompt]=useState(''),[detail,setDetail]=useState<Job|null>(null),[outcome,setOutcome]=useState<Job|null>(null),[followup,setFollowup]=useState(''),[issue,setIssue]=useState(''),[workspaces,setWorkspaces]=useState<TeamWorkspace[]>([]),[taskList,setTaskList]=useState<{id:string;project:string;title:string;assignee:string|null;status:string}[]>([]),[task,setTask]=useState(''),[title,setTitle]=useState(''),[scope,setScope]=useState(''),[activeDevices,setActiveDevices]=useState<string[]>([]),[loaded,setLoaded]=useState(false),[showNew,setShowNew]=useState(false),[opening,setOpening]=useState('');
  const [readiness,setReadiness]=useState<Readiness>(emptyReadiness),[showProjectSetup,setShowProjectSetup]=useState(false);
@@ -106,6 +106,8 @@ export default function Development({projects,userId,canInvite=false,initialProj
  const reviewCount=submissions.filter(j=>j.owner!==userId&&j.reviewState!=='approved').length;
  const online=!!ownDevices.find(d=>d.id===device&&Date.now()-d.seen<30000);
  const personal=readinessFor(readiness,device,project);
+ // The task header decides its next step with the same preview capability as the result panel.
+ useEffect(()=>{onPreviewConfigured?.(!!personal.cap?.preview);},[personal.cap?.preview,onPreviewConfigured]);
  // Opening or listing files is a job too, but it is not "work" the person started.
  const activeWork=active&&jobs.some(j=>j.device===device&&['queued','running','cancelling'].includes(j.status)&&!['files','read-file','save-file'].includes(j.action));
  const setup=setupSteps({hasDevice:ownDevices.length>0,online,projectStatus:personal.projectStatus,inspection:personal.inspection?{status:personal.inspection.status,ready:!!personal.inspection.ready}:null,

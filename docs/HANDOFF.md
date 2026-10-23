@@ -1,5 +1,25 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
+## 23.10.2026: vier P1-Korrekturen nach dem UX-Umbau abgeschlossen
+
+Auf `local/studio-a0-terms-20261023` wurden die zwei übernommenen uncommitteten
+Korrekturen vervollständigt und zwei fehlende Wege ergänzt: Prüfstand zählt als
+tatsächlicher revisionsgebundener Testlauf; Kopfzeile und Ergebnis kennen dieselbe
+Vorschaufähigkeit; angeforderte Änderungen erscheinen direkt bei der Aufgabe mit
+Link zum exakten Prüfstand; wartende aktuelle Fremdprüfstände stehen auf der
+Startseite. Bestehende Berechtigungen und getrennte Veröffentlichungsaktionen
+bleiben erhalten. Kein Push, Merge, Deployment oder Eingriff am VPS.
+
+Selbst ausgeführt: lokaler Gesamtcheck 143 PASS, 0 FAIL, 21 Linux-Skips,
+Source Guard/TypeScript/Build PASS. Sichtbarer Zwei-Rollen-Edge-Test mit echten
+lokalen Jobs bei 1280/390px PASS, nach Diagnose einer alten Reservierung in der
+isolierten Testkopie. Eigene Prozesse beendet, ursprüngliche Testdaten per Hash
+unverändert. Nachweis und Grenzen: [UX-P1-Abschluss](evidence/UX_P1_COMPLETION_20261023.md).
+Historische Statusfelder weiter unten sind keine neu ausgeführten Tests.
+
+Nächster Schritt: Owner wiederholt eine kleine Aufgabe ohne Klickanweisungen.
+Die technische Abnahme ersetzt diese noch offene Bedienabnahme nicht.
+
 ## Aktuell: Produktkandidat für GitHub und neuen Chat
 
 Die Produktänderungen liegen zusätzlich in `../schmaqq-studio-use-candidate`
