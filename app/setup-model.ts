@@ -9,6 +9,12 @@ export type SetupInput={hasDevice:boolean;online:boolean;revoked?:boolean;projec
 
 const running=['queued','running','cancelling'];
 
+/** Check marks of the development guide, taken from the same setup state as the checklist. */
+export function guideReached(result:ReturnType<typeof setupSteps>){
+ const done=(id:string)=>result.steps.find(s=>s.id===id)?.state==='done';
+ return [done('pc'),done('project')&&done('git')] as const;
+}
+
 export function setupSteps(i:SetupInput){
  const pc:SetupStep=!i.hasDevice?{id:'pc',label:'PC verbinden',state:'todo',required:true,detail:'Dein PC führt Dateien, Tests und Vorschauen aus. Lege einmal einen Runner-Zugang an und starte den Runner auf deinem PC.'}
   :i.revoked?{id:'pc',label:'PC verbinden',state:'attention',required:true,detail:'Der Zugang dieses PCs wurde widerrufen. Verbinde den PC neu; gespeicherte Dateien bleiben erhalten.'}

@@ -116,7 +116,7 @@ test('editor bar: an unsaved draft blocks tests, preview and review but not savi
  assert.match(dirty.note,/Erst speichern/);
  const clean=workActionState({dirty:false,canSave:false,canRun:true});
  assert.deepEqual([clean.save,clean.changes,clean.check,clean.preview,clean.review],[false,true,true,true,true]);
- assert.equal(clean.note,null);
+ assert.doesNotMatch(clean.note,/Erst speichern/);
  const offline=workActionState({dirty:false,canSave:false,canRun:false});
  assert.ok(!offline.changes&&!offline.check&&!offline.preview&&!offline.review);
 });

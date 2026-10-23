@@ -1,4 +1,15 @@
 {
+  "ux_c1_workspace_editor_20261023": {
+    "state": "local_ui_change_full_local_check_and_visible_browser_verified_uncommitted",
+    "branch": "local/studio-a0-terms-20261023",
+    "source": "Visible UX walkthrough 2026-10-23, findings 1-3",
+    "change": "Task workspace: editor first, old numbering (1./2./Schritt 2 von 3) removed, copy selection, Git check, publishing and Codex collapsed under Weitere Aktionen. Editor: soft line wrap on by default with toggle, files of the task's planned area first and the rest collapsed, open file marked, a single task file opens automatically, plain-language texts (no UTF-8/Runner). Status: editor bar shows Speichert only while saving and Datei wird geladen while opening (workActionState note), automatic file jobs no longer count as Dein PC arbeitet am Auftrag, development guide check marks come from the setup checklist (guideReached) with a hint while setup is incomplete, page button reads Einrichtung once a PC exists. Pure helpers in app/editor-files.ts.",
+    "focused_tests": "editor-files 4 tests (scope grouping, auto open, honest bar note, guide marks) PASS; workflow-step and setup-model PASS",
+    "full_local_check": "studio:verify:local PASS after final change: source guard; 155 backend tests, 134 pass, 0 fail, 21 explicit Linux skips; TypeScript; build",
+    "browser_acceptance": "2026-10-23 visible pane, fresh isolated demo 127.0.0.1:4390 with real runner, screenshots: task workspace shows editor directly below tabs at 1280x800; bar reads Speichern with Datei wird geladen while opening, Speichert … only while saving; task file opens automatically, marked, other files collapsed (3); wrapped HTML shows the heading; draft blocks tests; tests from the bar show the inline result in the editor; Weitere Aktionen reveals copy, publishing and Codex; full development view: marks PC done and Projekt & Git open, consistent with setup 3 of 4, button Einrichtung; mobile 390: editor below tabs, file and wrapped content on one screen, no horizontal overflow. Own processes stopped",
+    "known_limits": "Full development view keeps its numbered layout; mobile header still pushes the textarea about 1.4 screens down; walkthrough points 4-8 (start page, navigation, language, step texts, visual hierarchy) open",
+    "production_changed": false
+  },
   "ux_phase_a6_status_suggestion_20261023": {
     "state": "local_ui_change_full_local_check_and_browser_verified_uncommitted",
     "branch": "local/studio-a0-terms-20261023",

@@ -100,11 +100,15 @@ export const stepJobs:Partial<Record<StepAction,{operation:string;label:string}>
  'inspect-git':{operation:'inspect',label:'Git erneut prüfen'}
 };
 
-/** Which editor bar actions are available. Tests, preview and review check saved files only. */
-export function workActionState({dirty,canSave,canRun}:{dirty:boolean;canSave:boolean;canRun:boolean}){
+/**
+ * Which editor bar actions are available and one honest status line. Tests, preview and
+ * review check saved files only; opening a file is never reported as saving.
+ */
+export function workActionState({dirty,canSave,canRun,saving=false,loading=false,online=true,activeWork=false}:{dirty:boolean;canSave:boolean;canRun:boolean;saving?:boolean;loading?:boolean;online?:boolean;activeWork?:boolean}){
  const verify=canRun&&!dirty;
- return {save:canSave,changes:canRun,check:verify,preview:verify,review:verify,
-  note:dirty?'Erst speichern: Tests, Vorschau und Prüfstand prüfen den gespeicherten Stand.':null};
+ const note=saving?'Wird auf deinem PC gespeichert …':loading?'Datei wird von deinem PC geladen …':dirty?'Erst speichern: Tests, Vorschau und Prüfstand prüfen den gespeicherten Stand.'
+  :!online?'Dein PC ist nicht verbunden. Speichern und Prüfen sind erst nach dem Verbinden möglich.':activeWork?'Dein PC arbeitet an einem Auftrag. Weitere Aufträge starten danach.':'Tests, Vorschau und Prüfstand laufen auf deinem PC.';
+ return {save:canSave,changes:canRun,check:verify,preview:verify,review:verify,note,saveLabel:saving?'Speichert …':'Speichern'};
 }
 
 /** Task workspace progress: 0 Aufgabe, 1 Arbeitskopie, 2 Ändern & testen, 3 Prüfstand, 4 Freigabe. */
