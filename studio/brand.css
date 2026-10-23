@@ -414,6 +414,26 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
  .task-tabs button {padding:10px 8px;font-size:13px;}
 }
 
+/* UX A5: one-time setup checklist with live state. */
+.setup-context {display:flex;flex-wrap:wrap;gap:16px;align-items:end;margin-bottom:18px;}
+.setup-context label {display:grid;gap:8px;font-size:13px;min-width:min(100%,240px);}
+.setup-summary {font-size:14px;font-weight:600;flex:1 1 220px;}
+.setup-steps {list-style:none;padding:0;margin:0;display:grid;gap:14px;}
+.setup-step {display:grid;gap:12px;min-width:0;border-left:4px solid var(--line-strong);}
+.setup-step.done {border-left-color:var(--acid);}
+.setup-step.attention {border-left-color:#c79a3c;}
+.setup-step.blocked,.setup-step.optional {opacity:.8;}
+.setup-step.current {box-shadow:0 0 0 2px var(--ink) inset;}
+.setup-step-head {display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.setup-step-head h2 {font-size:17px;flex:1 1 200px;}
+.setup-step-number {display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;border:1px solid var(--line-strong);font-size:13px;}
+.setup-step.done .setup-step-number {background:var(--soft);}
+.setup-step > p {font-size:13px;line-height:1.7;color:var(--muted);}
+.setup-command pre,.setup-step pre {white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;border:1px solid var(--line);font-size:12px;}
+.setup-command {display:grid;gap:8px;justify-items:start;}
+.setup-step .button {justify-self:start;}
+.setup-link {font-size:13px;margin:12px 0 18px;color:var(--muted);}
+
 /* Mobile users should reach the working sign-in form before the brand story. */
 @media (max-width: 720px) {
   .studio-entry-layout .login-card { order: -1; }

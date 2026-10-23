@@ -1,4 +1,15 @@
 {
+  "ux_phase_a5_setup_checklist_20261023": {
+    "state": "local_ui_change_full_local_check_and_browser_verified_uncommitted",
+    "branch": "local/studio-a0-terms-20261023",
+    "change": "Setup view ?view=setup&project= with sidebar entry Einrichtung (app/setup-checklist.tsx): four required steps PC verbinden, Projekt auf deinem PC einrichten, Git-Verbindung prüfen, Probelauf plus optional AI and publishing, each with live state from /api/development every 5 s and one action (runner registration, existing project plan, Git inspection with result and identity help, link to development). Pure step logic in app/setup-model.ts. Runner registration extracted to app/runner-connect.tsx and shared with the development view. Development view shows a one-line setup summary with link instead of the readiness panel; PC verbinden and guide setup actions open the setup view; a new project continues to setup. No backend or command change; two local terminal commands remain.",
+    "fix_during_browser_check": "Offline PC reset the checklist to 0 of 4; reached Git check and trial now stay done while only open steps wait for the PC",
+    "focused_tests": "setup-model 5 tests PASS (order, offline, legacy runner, Git and trial states)",
+    "full_local_check": "studio:verify:local PASS after final change: source guard; 146 backend tests, 125 pass, 0 fail, 21 explicit Linux skips; TypeScript; build",
+    "browser_acceptance": "2026-10-23 PASS on fresh isolated demo 127.0.0.1:4390 with real runner: sidebar Einrichtung; unconfigured project shows step 2 with plan form and later steps locked; test project: Git check started from the checklist runs and turns done live, Zur Entwicklung, tests from the bar, setup line in development switches to abgeschlossen, checklist 4 of 4; own runner stopped: PC step needs attention with restart command, reached steps stay done (2 of 4); own runner restarted: 4 of 4 again without reload; PC verbinden in development opens setup; desktop 1280 and mobile 390 without horizontal overflow. Pane hidden, clicks in page context. Own processes stopped",
+    "known_limits": "Runner registration and project plan still need the existing local terminal commands (Phase B); a failed Git identity was covered by unit logic and the existing help, not re-run in the browser; default project in setup is the first project when none is selected",
+    "production_changed": false
+  },
   "ux_phase_a4_task_workspace_20261023": {
     "state": "local_ui_change_full_local_check_and_browser_verified_uncommitted",
     "branch": "local/studio-a0-terms-20261023",
