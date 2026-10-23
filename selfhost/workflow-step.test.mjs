@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {nextStep,guideIndex,stepJobs,inlineOperations} from '../app/workflow-step.ts';
+import {nextStep,guideIndex,stepJobs,inlineOperations,workActionState} from '../app/workflow-step.ts';
 
 const ready={hasDevice:true,online:true,projectStatus:'configured',inspection:{status:'completed',ready:true}};
 const ownCopy={status:'completed',own:true,online:true};
@@ -108,6 +108,17 @@ test('step buttons only start existing own-copy job types and never act for team
  for(const action of ['none','wait','open-review','request-review','review-feedback','publish','reconnect-pc','connect-pc'])assert.equal(stepJobs[action],undefined,action);
  const team=nextStep({copy:{...ownCopy,own:false},evidence:{check:passed,previewConfigured:true}});
  assert.equal(stepJobs[team.action],undefined);
+});
+
+test('editor bar: an unsaved draft blocks tests, preview and review but not saving or listing changes',()=>{
+ const dirty=workActionState({dirty:true,canSave:true,canRun:true});
+ assert.deepEqual([dirty.save,dirty.changes,dirty.check,dirty.preview,dirty.review],[true,true,false,false,false]);
+ assert.match(dirty.note,/Erst speichern/);
+ const clean=workActionState({dirty:false,canSave:false,canRun:true});
+ assert.deepEqual([clean.save,clean.changes,clean.check,clean.preview,clean.review],[false,true,true,true,true]);
+ assert.equal(clean.note,null);
+ const offline=workActionState({dirty:false,canSave:false,canRun:false});
+ assert.ok(!offline.changes&&!offline.check&&!offline.preview&&!offline.review);
 });
 
 test('evidence: stale or failed preview is reported without blocking the review path',()=>{

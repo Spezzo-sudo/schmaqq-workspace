@@ -100,5 +100,12 @@ export const stepJobs:Partial<Record<StepAction,{operation:string;label:string}>
  'inspect-git':{operation:'inspect',label:'Git erneut prüfen'}
 };
 
+/** Which editor bar actions are available. Tests, preview and review check saved files only. */
+export function workActionState({dirty,canSave,canRun}:{dirty:boolean;canSave:boolean;canRun:boolean}){
+ const verify=canRun&&!dirty;
+ return {save:canSave,changes:canRun,check:verify,preview:verify,review:verify,
+  note:dirty?'Erst speichern: Tests, Vorschau und Prüfstand prüfen den gespeicherten Stand.':null};
+}
+
 /** Guide position: 0 PC, 1 project/Git/copy, 2 develop and verify. */
 export function guideIndex(stage:StepStage){return stage==='pc'?0:stage==='project'||stage==='copy'?1:2;}

@@ -1,4 +1,16 @@
 {
+  "ux_phase_a3_editor_action_bar_20261023": {
+    "state": "local_ui_change_full_local_check_and_browser_verified_uncommitted",
+    "branch": "local/studio-a0-terms-20261023",
+    "change": "Sticky action bar at the top of the editor (app/work-actions.tsx): Speichern, Änderungen, Tests, Vorschau, Prüfstand erstellen. Unsaved draft blocks tests, preview and review with an explanation (workActionState in workflow-step). Inline result moved directly below the bar inside the editor; team copy list moved below the editor; copy selection in the left column collapses to a one-line summary once a copy is open; file list loads automatically when the PC is connected. Existing editor buttons, Dateien laden, Codex, publishing and dialogs unchanged.",
+    "fixes_during_browser_check": "Selection summary opened itself through the initial toggle event (now controlled by summary click); inline result was pushed out of view by scroll anchoring on the editor (overflow-anchor none on the editor, scroll-margin below the bar, scroll start via setTimeout instead of requestAnimationFrame)",
+    "focused_tests": "workflow-step 12 and workflow-terms 4 tests PASS, including editor bar availability",
+    "full_local_check": "studio:verify:local PASS after final change: source guard; 137 backend tests, 116 pass, 0 fail, 21 explicit Linux skips; TypeScript; build",
+    "browser_acceptance": "2026-10-23 PASS on fresh isolated demo 127.0.0.1:4390 with real runner at 1280x800, 1024x768 and 390x844: scrolled into the editor, bar sticks at top 0 with all five buttons visible, tests started from the bar show the inline result below the bar with its next-step button visible, no horizontal overflow; draft blocks tests/preview/review, saving from the bar unblocks them; selection collapses and reopens. Pane was hidden, so clicks were dispatched in page context and checks read from the DOM. Own processes stopped",
+    "environment_note": "After a session interruption the pre-existing demo on 4320/4321 (PID 15420) was no longer running; it was not stopped or restarted by this work",
+    "known_limits": "scripts/r23-browser-qa.py was not re-run (needs .studio/local-demo); bar is sticky inside the editor, not a fixed bottom bar on mobile; mobile bar is about 130 px high",
+    "production_changed": false
+  },
   "ux_phase_a2_inline_results_20261023": {
     "state": "local_ui_change_full_local_check_and_browser_verified_uncommitted",
     "branch": "local/studio-a0-terms-20261023",

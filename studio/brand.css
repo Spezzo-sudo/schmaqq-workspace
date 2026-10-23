@@ -365,6 +365,27 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .job-outcome-next.error {border-left-color:#a46642;}
 .job-outcome-next small {color:var(--muted);font-size:12px;}
 
+/* UX A3: editor actions stay reachable while the editor is scrolled. */
+.work-actions {position:sticky;top:0;z-index:5;background:#fff;margin:0 -22px;padding:12px 22px 10px;border-bottom:1px solid var(--line);box-shadow:0 6px 12px -10px #263c2433;}
+.work-actions-buttons {display:flex;flex-wrap:wrap;gap:8px;}
+.work-actions-buttons .button {min-height:40px;}
+.work-actions-note {margin:8px 0 0;font-size:12px;line-height:1.5;color:var(--muted);}
+.source-editor .job-outcome {margin:14px 0;}
+/* Land below the sticky bar and keep the result in place while it grows:
+   without this the browser anchors on the editor below and pushes the result out of view. */
+.job-outcome {scroll-margin-top:110px;}
+.source-editor {overflow-anchor:none;}
+.copy-selection summary {cursor:pointer;font-size:13px;line-height:1.6;overflow-wrap:anywhere;}
+.copy-selection[open] summary {margin-bottom:4px;}
+@media (max-width:640px) {
+ .work-actions {margin:0 -18px;padding:10px 18px 8px;}
+ .work-actions-buttons {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+ .work-actions-buttons .button {min-height:40px;padding:6px 8px;font-size:12px;justify-content:center;text-align:center;white-space:normal;}
+ .work-actions-buttons .button svg {display:none;}
+ .work-actions-note {font-size:11px;}
+ .job-outcome {scroll-margin-top:145px;}
+}
+
 /* Mobile users should reach the working sign-in form before the brand story. */
 @media (max-width: 720px) {
   .studio-entry-layout .login-card { order: -1; }
