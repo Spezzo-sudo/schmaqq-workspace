@@ -10,15 +10,17 @@ export function WorkspaceTaskCard({
   project: p,
   members,
   saving,
-  onMutate
+  onMutate,
+  onOpen
 }: {
   task: Task;
   project: Project | undefined;
   members: Member[];
   saving: boolean;
   onMutate: (payload: unknown) => Promise<boolean>;
+  onOpen?: () => void;
 }) {
-  return <article className="task-card"><div className="task-top"><span className={`label ${p?.color}`}>{p?.title}</span>{task.priority === 'Hoch' && <span className="priority">↑ Hoch</span>}</div><h3>{task.title}</h3>{task.description && <p>{task.description}</p>}<div className="task-bottom"><select aria-label={`Zuständig für ${task.title}`} value={task.assignee ?? ''} disabled={saving} onChange={e => onMutate({
+  return <article className="task-card"><div className="task-top"><span className={`label ${p?.color}`}>{p?.title}</span>{task.priority === 'Hoch' && <span className="priority">↑ Hoch</span>}</div>{onOpen ? <button className="task-card-open" onClick={onOpen}><h3>{task.title}</h3></button> : <h3>{task.title}</h3>}{task.description && <p>{task.description}</p>}<div className="task-bottom"><select aria-label={`Zuständig für ${task.title}`} value={task.assignee ?? ''} disabled={saving} onChange={e => onMutate({
         action: 'assign',
         id: task.id,
         assignee: e.target.value || null

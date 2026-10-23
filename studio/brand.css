@@ -450,6 +450,24 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .source-file-list.task-files .text-button {font-weight:600;}
 .source-show-all {font-size:12px;margin:8px 0;}
 
+/* UX C2: start page with own work first, grouped navigation. */
+.continue-card {margin-bottom:18px;border-left:4px solid var(--acid);}
+.continue-card ul {list-style:none;padding:0;margin:0;display:grid;gap:10px;}
+.continue-card li {display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px;}
+.continue-card li > div {display:grid;gap:4px;min-width:0;flex:1 1 220px;}
+.continue-card li strong {font-size:16px;overflow-wrap:anywhere;}
+.continue-card li small {font-size:12px;color:var(--muted);}
+.continue-card li span {font-size:13px;line-height:1.5;}
+.collaboration-layout.single {grid-template-columns:minmax(0,1fr);}
+.team-heading {font-size:18px;margin:28px 0 12px;}
+.nav-group {display:grid;gap:2px;margin-bottom:14px;}
+.nav-group > .nav-label {padding-left:13px;margin:4px 0 6px;}
+.task-card-open {display:block;width:100%;text-align:left;background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;}
+.task-card-open:hover h3,.task-card-open:focus-visible h3 {text-decoration:underline;}
+@media (max-width:640px) {
+ .page-heading .button.keep-label {font-size:13px;gap:6px;padding:10px 12px;}
+}
+
 /* Mobile users should reach the working sign-in form before the brand story. */
 @media (max-width: 720px) {
   .studio-entry-layout .login-card { order: -1; }

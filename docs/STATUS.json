@@ -1,4 +1,15 @@
 {
+  "ux_c2_start_page_navigation_20261023": {
+    "state": "local_ui_change_full_local_check_and_visible_browser_verified_uncommitted",
+    "branch": "local/studio-a0-terms-20261023",
+    "source": "Visible UX walkthrough 2026-10-23, findings 4-5",
+    "change": "Start page: Weitermachen card first with own open tasks (in progress first), their next step from workflow-step and a Weiterarbeiten button; team cards moved below the task list under Wer arbeitet woran?; empty discussion panel removed until a task is chosen (single column), card button renamed Diskussion (n); Neue Aufgabe keeps its label on mobile. Navigation: sidebar grouped into ARBEITEN, TEAM, EINSTELLUNGEN in one nav with unchanged entry labels; task workspace highlights Übersicht; kanban card titles open the task workspace; the optional AI setup step links to Verbindungen. Pure helpers in app/navigation.ts.",
+    "focused_tests": "navigation 3 tests (every sidebar entry in exactly one group, task view highlight, continue task order) PASS",
+    "full_local_check": "studio:verify:local PASS: source guard; 158 backend tests, 137 pass, 0 fail, 21 explicit Linux skips; TypeScript; build",
+    "browser_acceptance": "2026-10-23 visible pane, fresh isolated demo 127.0.0.1:4390 with real runner, screenshots: Weitermachen first with next step and button, grouped sidebar, order continue/project/tasks/team, discussion panel only after Diskussion (0) with two columns, Weiterarbeiten opens the task workspace with Übersicht active, kanban title opens the workspace, setup AI link opens Verbindungen; mobile 390: Weiterarbeiten and labelled Neue Aufgabe on the first screen, grouped menu with focus on Übersicht, no horizontal overflow. Own processes stopped",
+    "known_limits": "Entry labels kept for existing browser scripts (Team & Zugänge still duplicates the top Team button); walkthrough points 6-8 (language, step texts, visual hierarchy) open",
+    "production_changed": false
+  },
   "ux_c1_workspace_editor_20261023": {
     "state": "local_ui_change_full_local_check_and_visible_browser_verified_uncommitted",
     "branch": "local/studio-a0-terms-20261023",

@@ -12,12 +12,12 @@ import {jobStateLabel} from './workflow-terms';
 import type {Device,Job} from './development-model';
 import type {TeamWorkspace} from './team-workspaces';
 
-type Props={projects:{id:string;title:string}[];userId:string;initialProject?:string;onProjectChange:(id:string)=>void;onDevelopment:(project:string)=>void};
+type Props={projects:{id:string;title:string}[];userId:string;initialProject?:string;onProjectChange:(id:string)=>void;onDevelopment:(project:string)=>void;onConnections?:()=>void};
 const badge:Record<SetupState,string>={done:'Erledigt',todo:'Offen',attention:'Braucht Aufmerksamkeit',wait:'Läuft',blocked:'Noch gesperrt',optional:'Optional'};
 const restart='node selfhost/runner.mjs PFAD_ZUM_BESTEHENDEN_RUNNERPROFIL';
 
 /** One-time setup with live state; the same jobs and helpers as the development view, no new backend. */
-export default function SetupChecklist({projects,userId,initialProject,onProjectChange,onDevelopment}:Props){
+export default function SetupChecklist({projects,userId,initialProject,onProjectChange,onDevelopment,onConnections}:Props){
  const [devices,setDevices]=useState<Device[]>([]),[jobs,setJobs]=useState<Job[]>([]),[workspaces,setWorkspaces]=useState<TeamWorkspace[]>([]),[active,setActive]=useState<string[]>([]),[readiness,setReadiness]=useState<Readiness>(emptyReadiness);
  const [loaded,setLoaded]=useState(false),[error,setError]=useState(''),[device,setDevice]=useState(''),[connect,setConnect]=useState(false),[inspect,setInspect]=useState<string|null>(null),[pending,setPending]=useState(false),[copied,setCopied]=useState(false);
  const project=initialProject&&projects.some(p=>p.id===initialProject)?initialProject:projects[0]?.id??'';
@@ -43,6 +43,8 @@ export default function SetupChecklist({projects,userId,initialProject,onProject
   if(id==='project')return state==='todo'?<ProjectStart key={project} project={{id:project,title:projects.find(p=>p.id===project)?.title??'Projekt'}} onComplete={()=>void refresh()}/>:restartHelp;
   if(id==='git')return <>{state!=='wait'&&<button className="button primary" disabled={!selected||!online(selected)||busy||pending} onClick={()=>void startInspect()}><RefreshCw size={15}/> {state==='attention'?'Git erneut prüfen':'Git-Verbindung prüfen'}</button>}{follow.job&&<div className="setup-result"><p><span className="label neutral">{jobStateLabel(follow.job.status)}</span></p>{follow.job.result&&<DevelopmentResult action="inspect" result={follow.job.result}/>}</div>}</>;
   if(id==='trial')return <button className="button primary" onClick={()=>onDevelopment(project)}>Zur Entwicklung <ArrowRight size={15}/></button>;
+  // Personal AI and GitHub accounts are managed in one place: Verbindungen.
+  if(id==='ai'&&onConnections)return <button className="text-button" onClick={onConnections}>KI-Konten unter „Verbindungen“ ansehen <ArrowRight size={14}/></button>;
   return null;
  }
  return <>
