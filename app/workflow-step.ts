@@ -3,14 +3,14 @@
  * development guide (personal setup) and the change overview (one copy).
  * It only reads already loaded state; it never starts jobs or grants rights.
  */
-export type StepAction='connect-pc'|'reconnect-pc'|'configure-project'|'inspect-git'|'create-copy'|'wait'|'run-check'|'observe'|'create-review'|'request-review'|'open-review'|'review-feedback'|'publish'|'edit'|'none';
+export type StepAction='connect-pc'|'reconnect-pc'|'configure-project'|'inspect-git'|'create-copy'|'wait'|'run-check'|'run-preview'|'observe'|'create-review'|'request-review'|'open-review'|'review-feedback'|'publish'|'edit'|'none';
 export type StepStage='pc'|'project'|'copy'|'work'|'review'|'done';
 export type NextStep={stage:StepStage;action:StepAction;title:string;reason:string;tone:'info'|'warning'|'error';cautions:string[]};
 
 export type SetupInput={hasDevice:boolean;online:boolean;projectStatus:'configured'|'missing'|'unknown';inspection?:{status:string;ready:boolean}|null};
 export type CopyInput={status:string;own:boolean;online:boolean;revoked?:boolean;archived?:boolean};
 export type Evidence={status:string;changedAfter:boolean;freshness?:'same'|'changed'|'unverified';state?:string;published?:boolean}|null|undefined;
-export type EvidenceInput={check?:Evidence;preview?:Evidence;review?:Evidence;published?:boolean;observed?:boolean;observing?:boolean};
+export type EvidenceInput={check?:Evidence;preview?:Evidence;review?:Evidence;published?:boolean;observed?:boolean;observing?:boolean;previewConfigured?:boolean};
 export type StepInput={setup?:SetupInput;hasCopy?:boolean;copy?:CopyInput;active?:boolean;reviewCount?:number;evidence?:EvidenceInput};
 
 const running=['queued','running','cancelling'],failed=['failed','interrupted','cancelled'];
@@ -65,6 +65,8 @@ function evidenceStep(own:boolean,e:EvidenceInput,cautions:string[]):NextStep{
   if(!e.observed)return step('work','observe','Dateistand abgleichen.','Der Testlauf ist noch keinem Dateistand zugeordnet. Ein Abgleich zeigt, ob er zum aktuellen Stand passt.','warning',cautions);
   cautions.push('Der Testlauf hat keinen Dateinachweis, zum Beispiel von einem älteren Runner.');
  }
+ // Suggest a preview before the first review only when this PC reports a preview build.
+ if(!review&&e.previewConfigured&&(!preview||preview.status!=='completed'||preview.changedAfter))return step('work','run-preview','Vorschau erstellen und ansehen.','Tests sind bestanden. Prüfe das Ergebnis in der Vorschau, bevor du den Stand einreichst.','info',cautions.filter(text=>!/Vorschau/.test(text)));
  if(!review)return step('review','create-review','Aktuellen Stand zur Teamprüfung einreichen.','Tests sind bestanden; es gibt noch keinen Prüfstand.','info',cautions);
  if(review.changedAfter)return step('review','create-review','Aktuellen Stand zur Teamprüfung einreichen.','Seit dem letzten Prüfstand wurde weiter geändert.','warning',cautions);
  if(review.state==='unavailable'||!review.state)return step('review','create-review','Neuen Prüfstand erstellen.','Der letzte Prüfstand hat keinen prüfbaren Commit.','error',cautions);
@@ -85,6 +87,18 @@ export function nextStep(input:StepInput):NextStep{
  if(input.reviewCount)return step('review','open-review',`${input.reviewCount} ${input.reviewCount===1?'Prüfstand wartet':'Prüfstände warten'} auf dich`,'Öffne die gemeinsame Prüfung, lies die Änderungen und gib eine Rückmeldung.','info',cautions);
  return step('work','edit','Deine Arbeitskopie ist bereit','Bearbeite eine Datei oder gib Codex einen Auftrag. Prüfe das Ergebnis mit Tests und Vorschau und teile es zur Teamprüfung.','info',cautions);
 }
+
+/** Jobs whose result is shown on the page instead of a dialog. */
+export const inlineOperations=['check','preview','status','inspect'];
+
+/** Own-copy job a step can start directly, with its button label; other steps have no direct job. */
+export const stepJobs:Partial<Record<StepAction,{operation:string;label:string}>>={
+ 'run-check':{operation:'check',label:'Tests ausführen'},
+ 'run-preview':{operation:'preview',label:'Vorschau erstellen'},
+ observe:{operation:'status',label:'Dateistand abgleichen'},
+ 'create-review':{operation:'review',label:'Prüfstand erstellen'},
+ 'inspect-git':{operation:'inspect',label:'Git erneut prüfen'}
+};
 
 /** Guide position: 0 PC, 1 project/Git/copy, 2 develop and verify. */
 export function guideIndex(stage:StepStage){return stage==='pc'?0:stage==='project'||stage==='copy'?1:2;}

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {nextStep,guideIndex} from '../app/workflow-step.ts';
+import {readFileSync} from 'node:fs';
+import {nextStep,guideIndex,stepJobs,inlineOperations} from '../app/workflow-step.ts';
 
 const ready={hasDevice:true,online:true,projectStatus:'configured',inspection:{status:'completed',ready:true}};
 const ownCopy={status:'completed',own:true,online:true};
@@ -85,6 +86,28 @@ test('evidence: teammates can only open or wait, never act on the owner copy',()
  assert.equal(team({...passed,state:'approved'}).action,'none');
  for(const review of [null,{...passed,state:'pending'},{...passed,state:'approved'}])
   assert.ok(!['run-check','observe','create-review','publish','reconnect-pc'].includes(team(review).action));
+});
+
+test('evidence: a configured preview is suggested once after passing tests, never required',()=>{
+ const own=evidence=>nextStep({copy:ownCopy,evidence:{check:passed,...evidence}});
+ assert.equal(own({previewConfigured:true}).action,'run-preview');
+ assert.equal(own({previewConfigured:true,preview:{...passed,status:'failed'}}).action,'run-preview');
+ assert.equal(own({previewConfigured:true,preview:{...passed,changedAfter:true}}).cautions.length,0);
+ assert.equal(own({previewConfigured:true,preview:passed}).action,'create-review');
+ assert.equal(own({previewConfigured:false}).action,'create-review');
+ assert.equal(own({previewConfigured:true,review:{...passed,state:'pending'}}).action,'request-review');
+ assert.equal(nextStep({copy:ownCopy,evidence:{check:{...passed,status:'failed'},previewConfigured:true}}).action,'run-check');
+});
+
+test('step buttons only start existing own-copy job types and never act for teammates',()=>{
+ const server=readFileSync(new URL('./server.mjs',import.meta.url),'utf8');
+ const operations=server.match(/z\.enum\(\[([^\]]*'inspect'[^\]]*)\]\)/)[1].match(/'([^']+)'/g).map(value=>value.slice(1,-1));
+ for(const {operation,label} of Object.values(stepJobs)){assert.ok(operations.includes(operation),operation);assert.ok(label);}
+ for(const operation of inlineOperations)assert.ok(operations.includes(operation),operation);
+ assert.ok(!inlineOperations.includes('review')&&!inlineOperations.includes('codex'),'review and Codex keep their dialog');
+ for(const action of ['none','wait','open-review','request-review','review-feedback','publish','reconnect-pc','connect-pc'])assert.equal(stepJobs[action],undefined,action);
+ const team=nextStep({copy:{...ownCopy,own:false},evidence:{check:passed,previewConfigured:true}});
+ assert.equal(stepJobs[team.action],undefined);
 });
 
 test('evidence: stale or failed preview is reported without blocking the review path',()=>{

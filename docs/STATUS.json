@@ -1,4 +1,15 @@
 {
+  "ux_phase_a2_inline_results_20261023": {
+    "state": "local_ui_change_full_local_check_and_browser_verified_uncommitted",
+    "branch": "local/studio-a0-terms-20261023",
+    "change": "Checks, previews, change listings and Git inspections show their result inline below the development buttons (app/job-outcome.tsx) instead of a dialog: state, stop button while queued/running, preview link at the top, existing result content, log, and one next step with a direct button from workflow-step. Shared job polling extracted to app/job-follow.ts for dialog and inline result. Review and Codex jobs and history entries keep their dialog. workflow-step suggests a preview once after passing tests when the PC reports a preview build; never required.",
+    "fix_during_browser_check": "Inline next step was computed once at job end and stayed stale after a later save; evidence is now re-read every 5 s while the result is visible",
+    "focused_tests": "workflow-step 11 tests PASS, including preview suggestion and step buttons limited to existing own-copy job types",
+    "full_local_check": "studio:verify:local PASS after final change: source guard; 136 backend tests, 115 pass, 0 fail, 21 explicit Linux skips; TypeScript; build",
+    "browser_acceptance": "2026-10-23 PASS on fresh isolated demo 127.0.0.1:4390 with real runner: tests inline without dialog -> next Vorschau erstellen -> preview inline with link -> next Prüfstand erstellen; edit/save without heading -> change listing inline shows stale test -> next-step button runs failing test inline with error tone; Git inspection inline with checks; history entry and Prüfstand still open the dialog with focus inside and Escape closes; desktop 1280 and mobile 390 without horizontal overflow. Pane was hidden, so clicks were dispatched in page context and checks read from the DOM. Own processes stopped; existing demo on 4320/4321 untouched",
+    "known_limits": "Inline result is component state and disappears on page reload or when switching copy/project; next step for Git inspection is the setup-level guide step; no layout change beyond the inline panel (A3)",
+    "production_changed": false
+  },
   "ux_phase_a1_next_step_20261023": {
     "state": "local_ui_logic_change_full_local_check_and_browser_verified_uncommitted",
     "branch": "local/studio-a0-terms-20261023",

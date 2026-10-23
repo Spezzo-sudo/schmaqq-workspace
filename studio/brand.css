@@ -353,6 +353,18 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .github-pr-status a {text-decoration:underline;text-underline-offset:3px;font-size:12px;overflow-wrap:anywhere;}
 .github-pr-status code {overflow-wrap:anywhere;}
 
+/* UX A2: inline result of the last check, preview, change listing or Git inspection. */
+.job-outcome {margin:16px 0;padding:16px;min-width:0;}
+.job-outcome h3 {font-size:15px;}
+.job-outcome p {font-size:13px;line-height:1.7;overflow-wrap:anywhere;}
+.job-outcome .dev-output {max-height:260px;overflow:auto;}
+.job-outcome details {margin-top:12px;font-size:12px;}
+.job-outcome .dev-live-log {max-height:200px;overflow:auto;}
+.job-outcome-next {margin-top:14px;border-left:3px solid var(--acid);padding:6px 0 6px 12px;display:grid;gap:8px;justify-items:start;}
+.job-outcome-next.warning {border-left-color:#c79a3c;}
+.job-outcome-next.error {border-left-color:#a46642;}
+.job-outcome-next small {color:var(--muted);font-size:12px;}
+
 /* Mobile users should reach the working sign-in form before the brand story. */
 @media (max-width: 720px) {
   .studio-entry-layout .login-card { order: -1; }
