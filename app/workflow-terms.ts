@@ -12,12 +12,16 @@ export const terms = {
 
 /** Short explanations for technical terms shown next to their first use. */
 export const glossary: Record<string, string> = {
-  Arbeitskopie: 'Deine eigene Kopie des Projekts auf deinem PC. Änderungen darin betreffen niemand anderen, bis du sie teilst.',
-  Prüfstand: 'Ein gesicherter Stand deiner Arbeitskopie mit Testlauf. Eine zweite Person kann genau diesen Stand prüfen und freigeben.',
-  Runner: 'Das Studio-Programm auf deinem PC. Es führt Dateiaufträge, Tests und Vorschauen dort aus.',
-  Commit: 'Ein fest gespeicherter Stand in Git. Freigaben gelten immer für genau einen Commit.',
-  Branch: 'Ein eigener Entwicklungszweig in Git. Veröffentlichen überträgt ihn zum gemeinsamen Git-Remote.',
-  Dateiabgleich: 'Eine Momentaufnahme der Dateien deiner Arbeitskopie, um Testergebnisse dem richtigen Stand zuzuordnen.'
+  Arbeitskopie: 'Deine eigene Kopie des Projekts auf deinem PC. Was du darin änderst, betrifft niemanden sonst, bis du es zur Prüfung gibst.',
+  Prüfstand: 'Ein fest gespeicherter Stand deiner Arbeit, bei dem die Tests noch einmal laufen. Eine zweite Person sieht sich genau diesen Stand an und gibt ihn frei.',
+  Runner: 'Das kleine Studio-Programm auf deinem PC. Es öffnet und speichert Dateien und startet Tests und Vorschauen.',
+  Commit: 'Ein fest gespeicherter Zwischenstand mit eindeutiger Nummer. Eine Freigabe gilt immer genau für diesen Stand.',
+  Branch: 'Ein eigener Arbeitszweig des Projekts. Veröffentlichen schickt ihn an das gemeinsame Projektarchiv; online geht dadurch noch nichts.',
+  Dateiabgleich: 'Ein kurzer Blick auf die aktuellen Dateien deiner Arbeitskopie. Damit weiß Studio, ob ein Test noch zum heutigen Stand passt.',
+  Tests: 'Automatische Prüfungen des Projekts. Sie zeigen, ob nach deiner Änderung noch alles funktioniert.',
+  Vorschau: 'Eine Ansicht deiner geänderten Seite, nur für dich und dein Team. Sie ist nicht öffentlich.',
+  Git: 'Das Werkzeug, das alle Stände des Projekts speichert und verschiedene Arbeitskopien zusammenführt.',
+  Hauptzweig: 'Der gemeinsame, freigegebene Stand des Projekts. Neue Arbeitskopien starten von hier.'
 };
 
 /** Labels for development job actions (keys from the Studio API). */

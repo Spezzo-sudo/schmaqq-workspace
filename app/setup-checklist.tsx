@@ -9,6 +9,7 @@ import {developmentJob} from './development-request';
 import {emptyReadiness,readinessFor,type Readiness} from './project-readiness';
 import {setupSteps,type SetupState} from './setup-model';
 import {jobStateLabel} from './workflow-terms';
+import Term from './term';
 import type {Device,Job} from './development-model';
 import type {TeamWorkspace} from './team-workspaces';
 
@@ -51,6 +52,6 @@ export default function SetupChecklist({projects,userId,initialProject,onProject
   <div className="page-heading"><div><div className="eyebrow">EINMAL EINRICHTEN. DANACH EINFACH ARBEITEN.</div><h1>Einrichtung<span className="green-dot">.</span></h1><p>Dein PC, dein Projekt und deine Git-Verbindung. Jeder Schritt zeigt seinen aktuellen Stand.</p></div></div>
   <section className="panel setup-context"><label>Projekt<select aria-label="Projekt für die Einrichtung" value={project} onChange={e=>onProjectChange(e.target.value)}>{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>{own.length>1&&<label>Dein PC<select aria-label="PC für die Einrichtung" value={device} onChange={e=>setDevice(e.target.value)}>{own.map(d=><option key={d.id} value={d.id}>{d.name} · {online(d)?'verbunden':'nicht verbunden'}</option>)}</select></label>}<p className="setup-summary" role="status">{!loaded?'Einrichtungsstand wird geladen …':result.complete?'Einrichtung abgeschlossen: 4 von 4 Schritten erledigt.':`${result.done} von ${result.total} Schritten erledigt.`}</p>{loaded&&result.complete&&<button className="button primary" onClick={()=>onDevelopment(project)}>Zur Entwicklung <ArrowRight size={15}/></button>}</section>
   {error&&<p className="form-error" role="alert">{error}</p>}
-  {loaded&&<ol className="setup-steps">{result.steps.map((s,index)=><li key={s.id} className={`panel setup-step ${s.state}${result.current===s.id?' current':''}`} aria-current={result.current===s.id?'step':undefined}><div className="setup-step-head"><span className="setup-step-number">{s.state==='done'?'✓':s.required?index+1:'·'}</span><h2>{s.label}</h2><span className="label neutral">{badge[s.state]}</span></div><p>{s.detail}</p>{body(s.id,s.state)}</li>)}</ol>}
+  {loaded&&<ol className="setup-steps">{result.steps.map((s,index)=><li key={s.id} className={`panel setup-step ${s.state}${result.current===s.id?' current':''}`} aria-current={result.current===s.id?'step':undefined}><div className="setup-step-head"><span className="setup-step-number">{s.state==='done'?'✓':s.required?index+1:'·'}</span><h2>{s.id==='pc'?<Term name="Runner">{s.label}</Term>:s.id==='git'?<Term name="Git">{s.label}</Term>:s.label}</h2><span className="label neutral">{badge[s.state]}</span></div><p>{s.detail}</p>{body(s.id,s.state)}</li>)}</ol>}
  </>;
 }

@@ -7,6 +7,7 @@ import TaskDiscussion,{type TaskComment} from './task-discussion';
 import type {TeamWorkspace} from './team-workspaces';
 import {nextStep,statusSuggestion,stepTab,taskProgress,taskStages,type NextStep} from './workflow-step';
 import StatusSuggestionBox from './status-suggestion';
+import Term from './term';
 import {statuses} from './workspace-model';
 
 type Task={id:string;project:string;title:string;description:string;status:string;priority:string;assignee:string|null};
@@ -44,6 +45,7 @@ export default function TaskWorkspace({userId,projects,members,projectId,taskId,
    <h1>{task?.title??'Aufgabe wird geladen …'}</h1>
    {task&&<p className="task-workspace-meta">Zuständig: <strong>{person(task.assignee)}</strong> · Status: <strong>{statuses.find(s=>s[0]===task.status)?.[1]??task.status}</strong>{copy&&<> · Arbeitskopie: <strong>{copy.title}</strong> auf {copy.deviceName} · {copy.revoked?'PC-Zugang widerrufen':Date.now()-copy.seen<30000?'PC verbunden':'PC nicht verbunden'}</>}</p>}
    <ol className="task-progress" aria-label="Fortschritt der Aufgabe">{taskStages.map((label,index)=><li key={label} aria-current={index===progress?'step':undefined} className={index<progress?'reached':index===progress?'current':''}><span>{index<progress?'✓':index+1}</span>{label}</li>)}</ol>
+   <p className="task-terms">Begriffe kurz erklärt: <Term name="Arbeitskopie"/> · <Term name="Tests"/> · <Term name="Vorschau"/> · <Term name="Prüfstand"/></p>
    {next&&<div className={`task-next ${next.tone}`}><div><strong>Nächster Schritt:</strong> {next.title}<br/><small>{next.reason}</small>{next.cautions.map(text=><small key={text}><br/>{text}</small>)}</div>{stepTab(next.action)!==tab&&next.action!=='wait'&&<button className="button" onClick={()=>setTab(stepTab(next.action))}>{tabs.find(t=>t[0]===stepTab(next.action))?.[1]} öffnen <ArrowRight size={15}/></button>}</div>}
    <StatusSuggestionBox suggestion={suggestion} onApply={setStatus}/>
   </header>
@@ -51,7 +53,7 @@ export default function TaskWorkspace({userId,projects,members,projectId,taskId,
   {error&&<p className="form-error" role="alert">{error} Der angezeigte Stand kann veraltet sein.</p>}
   {/* The editor stays mounted while other tabs are open, so drafts, results and polling keep running. */}
   <div role="tabpanel" id={(tab==='history'?'task-panel-history':'task-panel-edit')} aria-labelledby={'task-tab-'+(tab==='history'?'history':'edit')} hidden={tab!=='edit'&&tab!=='history'}>
-   <Development key={review??'task'} mode="focused" panel={tab==='history'?'history':'edit'} projects={projects} userId={userId} canInvite={canInvite} initialProject={projectId} initialTask={taskId} initialReview={review} onProjectChange={()=>{}} onOpenSetup={onOpenSetup}/>
+   <Development key={review??'task'} mode="focused" panel={tab==='history'?'history':'edit'} projects={projects} userId={userId} canInvite={canInvite} initialProject={projectId} initialTask={taskId} initialReview={review} onProjectChange={()=>{}} onOpenSetup={onOpenSetup} recommendedAction={next?.action}/>
   </div>
   {tab==='discussion'&&<section role="tabpanel" id="task-panel-discussion" aria-labelledby="task-tab-discussion" className="panel task-discussion"><p className="discussion-description">{task?.description||'Noch keine Beschreibung vorhanden.'}</p>{task&&detail?<TaskDiscussion taskId={task.id} comments={detail.comments} draft={draft} onDraft={onDraft} onPosted={async()=>{await load();await onChanged();}}/>:<p role="status">Aufgabe wird geladen …</p>}</section>}
   {tab==='evidence'&&<section role="tabpanel" id="task-panel-evidence" aria-labelledby="task-tab-evidence" className="panel task-change-overviews"><div className="section-title"><h2>Was wurde gemacht und geprüft?</h2><button className="icon-button" aria-label="Nachweise aktualisieren" onClick={()=>void load()}><RefreshCw size={16}/></button></div>{!detail?<p role="status">Nachweise werden geladen …</p>:!detail.workspaces.length?<p className="muted">Noch keine Arbeitskopie verknüpft. Tests, Vorschauen und Prüfstände erscheinen hier, sobald jemand an der Aufgabe arbeitet.</p>:detail.workspaces.map(w=><ChangeOverview key={w.id} copy={w} change={detail.changes?.find(c=>c.workspace===w.id)} userId={userId} onReview={openReview} onWork={()=>setTab('edit')} onChange={load}/>)}{!!detail?.reviews.length&&<details className="task-review-links"><summary>Alle Prüfstände ({detail.reviews.length})</summary>{detail.reviews.map(r=><div className="shared-copy" key={r.id}><strong>{r.ownerName} · Stand {r.commit.slice(0,8)}</strong><span>{r.state==='approved'?'Von zweiter Person freigegeben':r.state==='changes_requested'?'Änderungen angefordert':'Wartet auf die zweite Prüfung'}</span><button className="button" onClick={()=>openReview(r.id)}>Prüfstand ansehen <ArrowRight size={14}/></button></div>)}</details>}</section>}

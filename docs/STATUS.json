@@ -1,4 +1,16 @@
 {
+  "ux_c3_language_hierarchy_20261023": {
+    "state": "local_ui_change_full_local_check_and_visible_browser_verified_uncommitted",
+    "branch": "local/studio-a0-terms-20261023",
+    "source": "Visible UX walkthrough 2026-10-23, findings 6-8",
+    "change": "Language: tap-to-open short explanations (app/term.tsx) from a plain-language glossary (Arbeitskopie, Prüfstand, Runner, Commit, Branch, Dateiabgleich, Tests, Vorschau, Git, Hauptzweig) in the task workspace term line, editor intro, change overview facts and setup steps; change overview and board footer rewritten without Commit/Runner/Git-Remote jargon. Next-step texts name the concrete action and button and avoid Commit/PR/Merge/Branch/Runner. Visual hierarchy: only the recommended editor bar button is highlighted (Speichern while a draft is unsaved, otherwise the next step's job via recommendedBarAction); status labels 12px regular font instead of 8-9px monospace.",
+    "fix_during_browser_check": "Progress-step CSS styled every span as a 22px circle and squeezed the inline explanation; rule limited to the step number and the term line moved below the progress row",
+    "focused_tests": "plain-language 3 tests (no jargon in next-step titles/reasons across states, recommended bar button, every used term explained) PASS; workflow-step, task-route, status-suggestion, workflow-terms PASS",
+    "full_local_check": "studio:verify:local PASS after final change: source guard; 161 backend tests, 140 pass, 0 fail, 21 explicit Linux skips; TypeScript; build",
+    "browser_acceptance": "2026-10-23 visible pane, fresh isolated demo 127.0.0.1:4390 with real runner, screenshots: next step reads Datei ändern und speichern, dann Tests ausführen; Tests highlighted, Speichern highlighted while a draft is unsaved and Tests again after saving; term explanations open and close; evidence tab shows plain wording with explanations; board status label In Arbeit readable at 12px; mobile 390 without horizontal overflow with every explanation open. Own processes stopped",
+    "known_limits": "Development (full view), code review dialog, setup detail texts and server error messages not yet language-reviewed; branch technical name still shown small in the evidence; Prüfstand after a separate test still asks for tests (backend evidence)",
+    "production_changed": false
+  },
   "ux_c2_start_page_navigation_20261023": {
     "state": "local_ui_change_full_local_check_and_visible_browser_verified_uncommitted",
     "branch": "local/studio-a0-terms-20261023",

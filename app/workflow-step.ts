@@ -51,12 +51,12 @@ function evidenceStep(own:boolean,e:EvidenceInput,cautions:string[]):NextStep{
  if(!own){
   if(!review)return step('work','none','Aufgabe und Anforderungen abstimmen.','Die zuständige Person hat noch keinen Prüfstand erstellt.','info',cautions);
   if(review.changedAfter)return step('review','none','Neueren Prüfstand bei der zuständigen Person anfordern.','Seit diesem Prüfstand wurde weiter geändert.','warning',cautions);
-  if(review.state==='approved')return step('done','none','Freigabe und weitere Schritte gemeinsam abstimmen.','Dieser Commit ist freigegeben.','info',cautions);
+  if(review.state==='approved')return step('done','none','Freigabe und weitere Schritte gemeinsam abstimmen.','Dieser Stand ist freigegeben.','info',cautions);
   if(review.state==='changes_requested')return step('review','none','Überarbeiteten Stand abwarten.','Für diesen Prüfstand wurden Änderungen angefordert.','info',cautions);
   return step('review','open-review','Prüfstand öffnen und Rückmeldung geben.','Die zuständige Person wartet auf eine zweite Prüfung.','info',cautions);
  }
  if(e.observing)return step('work','wait','Dateiabgleich läuft.','Das Ergebnis erscheint, sobald dein PC den Abgleich abgeschlossen hat.','info',cautions);
- if(!check)return step('work','run-check','Änderungen ansehen und Tests ausführen.','Für diese Arbeitskopie gibt es noch keinen Testlauf.','info',cautions);
+ if(!check)return step('work','run-check','Datei ändern und speichern, dann „Tests“ ausführen.','Für diese Arbeitskopie gibt es noch keinen Testlauf.','info',cautions);
  if(running.includes(check.status))return step('work','wait','Tests laufen.','Das Ergebnis erscheint, sobald dein PC den Testlauf abgeschlossen hat.','info',cautions);
  if(failed.includes(check.status))return step('work','run-check',`Letzter Test ${failureLabel[check.status]}: Ausgabe ansehen, Fehler beheben und erneut testen.`,'Ein nicht bestandener Test ist kein Nachweis für den aktuellen Stand.','error',cautions);
  if(check.status!=='completed')return step('work','run-check','Teststatus unbekannt: Tests erneut ausführen.','Der letzte Testlauf hat keinen bekannten Abschluss.','warning',cautions);
@@ -67,14 +67,14 @@ function evidenceStep(own:boolean,e:EvidenceInput,cautions:string[]):NextStep{
  }
  // Suggest a preview before the first review only when this PC reports a preview build.
  if(!review&&e.previewConfigured&&(!preview||preview.status!=='completed'||preview.changedAfter))return step('work','run-preview','Vorschau erstellen und ansehen.','Tests sind bestanden. Prüfe das Ergebnis in der Vorschau, bevor du den Stand einreichst.','info',cautions.filter(text=>!/Vorschau/.test(text)));
- if(!review)return step('review','create-review','Aktuellen Stand zur Teamprüfung einreichen.','Tests sind bestanden; es gibt noch keinen Prüfstand.','info',cautions);
- if(review.changedAfter)return step('review','create-review','Aktuellen Stand zur Teamprüfung einreichen.','Seit dem letzten Prüfstand wurde weiter geändert.','warning',cautions);
- if(review.state==='unavailable'||!review.state)return step('review','create-review','Neuen Prüfstand erstellen.','Der letzte Prüfstand hat keinen prüfbaren Commit.','error',cautions);
+ if(!review)return step('review','create-review','Stand zur Prüfung geben: „Prüfstand erstellen“.','Die Tests sind bestanden. Jetzt kann eine zweite Person deine Änderung ansehen.','info',cautions);
+ if(review.changedAfter)return step('review','create-review','Neuen Stand zur Prüfung geben: „Prüfstand erstellen“.','Seit dem letzten Prüfstand wurde weiter geändert.','warning',cautions);
+ if(review.state==='unavailable'||!review.state)return step('review','create-review','Neuen Prüfstand erstellen.','Der letzte Prüfstand enthält keinen prüfbaren Stand.','error',cautions);
  if(review.state==='changes_requested')return step('review','review-feedback','Rückmeldung lesen und Änderungen abstimmen.','Die zweite Person hat Änderungen angefordert.','warning',cautions);
- if(review.state!=='approved')return step('review','request-review','Zweite Person um Prüfung dieses Commits bitten.','Ein Prüfstand gilt erst nach unabhängiger Freigabe.','info',cautions);
+ if(review.state!=='approved')return step('review','request-review','Die zweite Person bitten, deinen Prüfstand anzusehen.','Freigegeben ist erst, wenn eine zweite Person zugestimmt hat.','info',cautions);
  return (e.published??review.published)
-  ?step('done','none','PR und gemeinsame Übernahme prüfen.','Branch ist veröffentlicht; PR, Merge und Live-Status sind nicht bestätigt.','info',cautions)
-  :step('done','publish','Freigegebenen Stand prüfen und bei Bedarf veröffentlichen.','Dieser Commit ist unabhängig freigegeben.','info',cautions);
+  ?step('done','none','Übernahme ins Projekt abstimmen.','Deine Arbeit ist veröffentlicht. Ob sie übernommen und online ist, ist noch nicht bestätigt.','info',cautions)
+  :step('done','publish','Freigegeben. Bei Bedarf unter „Weitere Aktionen“ veröffentlichen.','Eine zweite Person hat genau diesen Stand freigegeben.','info',cautions);
 }
 
 export function nextStep(input:StepInput):NextStep{
@@ -109,6 +109,14 @@ export function workActionState({dirty,canSave,canRun,saving=false,loading=false
  const note=saving?'Wird auf deinem PC gespeichert …':loading?'Datei wird von deinem PC geladen …':dirty?'Erst speichern: Tests, Vorschau und Prüfstand prüfen den gespeicherten Stand.'
   :!online?'Dein PC ist nicht verbunden. Speichern und Prüfen sind erst nach dem Verbinden möglich.':activeWork?'Dein PC arbeitet an einem Auftrag. Weitere Aufträge starten danach.':'Tests, Vorschau und Prüfstand laufen auf deinem PC.';
  return {save:canSave,changes:canRun,check:verify,preview:verify,review:verify,note,saveLabel:saving?'Speichert …':'Speichern'};
+}
+
+/** The one editor bar button to highlight: saving a draft first, otherwise the next step's job. */
+export type BarAction='save'|'changes'|'check'|'preview'|'review';
+export function recommendedBarAction(action:StepAction|undefined,dirty:boolean):BarAction|null{
+ if(dirty)return 'save';
+ const operation=action?stepJobs[action]?.operation:undefined;
+ return operation==='check'||operation==='preview'||operation==='review'?operation:operation==='status'?'changes':null;
 }
 
 /** Task workspace progress: 0 Aufgabe, 1 Arbeitskopie, 2 Ändern & testen, 3 Prüfstand, 4 Freigabe. */
