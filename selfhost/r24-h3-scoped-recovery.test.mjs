@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import {DatabaseSync} from 'node:sqlite';
 import {
-  chmodSync, linkSync, mkdtempSync, mkdirSync, rmSync, readdirSync, readFileSync,
+  chmodSync, chownSync, linkSync, mkdtempSync, mkdirSync, rmSync, readdirSync, readFileSync,
   writeFileSync, statSync, symlinkSync
 } from 'node:fs';
 import path from 'node:path';
@@ -132,6 +132,8 @@ test('pure operator attestation comparison requires every evidence binding',()=>
   }
   assert.throws(()=>compareAttestation({...review,extraSecret:'NOPE'},expected),
     /REVIEW_UNKNOWN_OR_MISSING_FIELDS/);
+  assert.throws(()=>compareAttestation({format:1},expected),
+    /REVIEW_UNKNOWN_OR_MISSING_FIELDS/);
 });
 test('stale or future review never satisfies the scope gate',()=>{
   const expected={sourceSha:candidateSha,backupId:'r24-h1-valid',
@@ -146,14 +148,31 @@ test('stale or future review never satisfies the scope gate',()=>{
 operatorTest('non-root-created self-attestation cannot approve archived data',async t=>{
   const root=fixture(t);
   const {backupId}=createH2Bundle(root);
+  const evidence=await verifyExistingH2Backup(args(root,backupId));
+  const expected={sourceSha:candidateSha,backupId,
+    snapshotSha256:evidence.recalculatedSnapshotSha256,
+    h2PrivateReportSha256:evidence.h2PrivateReportSha256,
+    historicalInventorySha256:evidence.historicalInventorySha256,
+    legacyRoots:evidence.legacyRoots};
+  const selfReview=rootReview(expected);
+  assert.equal(compareAttestation(selfReview,expected),true,
+    'The fixture must have valid content so rejection proves the ownership boundary.');
   const temp=mkdtempSync(path.join(os.tmpdir(),'schmaqq-h3-local-review-'));
   chmodSync(temp,0o700);
   t.after(()=>rmSync(temp,{recursive:true,force:true}));
   const review=path.join(temp,'review.json');
-  writeFileSync(review,'{"format":1}',{mode:0o644});
+  writeFileSync(review,JSON.stringify(selfReview),{mode:0o600});
+  // A root-run suite otherwise creates a genuinely root-owned attestation.
+  // Change ownership only on these new synthetic paths, never on real evidence.
+  if(process.getuid()===0){
+    chownSync(review,65534,65534);
+    chownSync(temp,65534,65534);
+  }
+  assert.notEqual(statSync(temp).uid,0,'Fixture parent must be non-root-owned.');
+  assert.notEqual(statSync(review).uid,0,'Fixture file must be non-root-owned.');
   await assert.rejects(
     verifyExistingH2Backup(args(root,backupId,review)),
-    /ROOT_ATTESTATION_PARENT_REQUIRED|ROOT_ATTESTATION_REQUIRED|ATTESTATION_RACE/
+    /ROOT_ATTESTATION_PARENT_REQUIRED/
   );
 });
 operatorTest('historical inventory digest binds to exact archived topology and modes',t=>{
