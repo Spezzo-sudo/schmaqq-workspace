@@ -62,6 +62,7 @@ test('each next step points to the tab where it can be done',()=>{
  assert.equal(stepTab('open-review'),'evidence');
  assert.equal(stepTab('request-review'),'evidence');
  assert.equal(stepTab('review-feedback'),'evidence');
+ assert.equal(stepTab('run-preview'),'preview');
 });
 
 

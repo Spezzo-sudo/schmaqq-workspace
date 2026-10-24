@@ -140,7 +140,8 @@ export function statusSuggestion({taskStatus,own,review}:{taskStatus:string;own:
 }
 
 /** Which task workspace tab moves the next step forward. */
-export function stepTab(action:StepAction):'edit'|'discussion'|'evidence'{
+export function stepTab(action:StepAction):'edit'|'discussion'|'evidence'|'preview'{
+ if(action==='run-preview')return 'preview';
  if(action==='open-review'||action==='request-review'||action==='review-feedback'||action==='publish')return 'evidence';
  if(action==='none')return 'discussion';
  return 'edit';

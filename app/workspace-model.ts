@@ -62,14 +62,14 @@ export const empty: Data = {
 };
 /** Task status labels for the kanban, the project board and the task workspace. */
 export const statuses = [['todo', 'Offen'], ['doing', 'In Arbeit'], ['review', 'Zur Prüfung'], ['done', 'Erledigt']];
-export type TaskTab='edit'|'discussion'|'evidence'|'history';
+export type TaskTab='edit'|'discussion'|'evidence'|'history'|'preview';
 export type Route = { view: string; project: string; task: string; tab?:TaskTab };
 /** Read view, project and task from the URL. The task workspace needs both a task and its project. */
 export function readRoute(search: string, views: readonly string[]): Route {
   const params = new URLSearchParams(search), requested = params.get('view') ?? '', project = params.get('project') ?? 'all', task = params.get('task') ?? '';
   if (requested === 'task') {
     const tab=params.get('tab');
-    return task && project !== 'all' ? { view: 'task', project, task, ...(['discussion','evidence','history'].includes(tab??'')?{tab:tab as TaskTab}:{}) } : { view: 'overview', project, task: '' };
+    return task && project !== 'all' ? { view: 'task', project, task, ...(['discussion','evidence','history','preview'].includes(tab??'')?{tab:tab as TaskTab}:{}) } : { view: 'overview', project, task: '' };
   }
   return { view: views.includes(requested) ? requested : 'overview', project, task: '' };
 }

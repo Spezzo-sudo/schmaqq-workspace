@@ -1,21 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {navGroups,activeNav,continueTasks,pendingReviews} from '../app/navigation.ts';
+import {navGroups,activeNav,continueTasks,pendingReviews,secondaryViews} from '../app/navigation.ts';
 
 test('every sidebar entry belongs to exactly one group',()=>{
  const sidebar=readFileSync(new URL('../app/workspace-sidebar.tsx',import.meta.url),'utf8');
  const keys=[...sidebar.matchAll(/\['([a-z]+)', '[^']+', [A-Za-z]+\]/g)].map(m=>m[1]);
  assert.ok(keys.length>=9,'sidebar entries not found');
- const grouped=navGroups.flatMap(g=>g.views);
+ const grouped=[...navGroups.flatMap(g=>g.views),...Object.keys(secondaryViews).filter(key=>key!=='task')];
  assert.deepEqual([...grouped].sort(),[...keys].sort());
  assert.equal(new Set(grouped).size,grouped.length);
 });
 
 test('the task workspace highlights tasks; technical tools remain a separate settings entry',()=>{
  assert.equal(activeNav('task'),'tasks');
- assert.ok(navGroups.find(g=>g.id==='settings').views.includes('development'));
- assert.equal(activeNav('setup'),'setup');
+ assert.equal(activeNav('development'),'settings');
+ assert.equal(activeNav('setup'),'settings');
+ assert.equal(activeNav('models'),'settings');
+ assert.equal(activeNav('chat'),'team');
+ assert.equal(activeNav('docs'),'team');
+ assert.equal(activeNav('overview','project-id'),'projects');
+ assert.equal(activeNav('overview'),'overview');
+ assert.deepEqual(navGroups.filter(g=>g.id!=='help').flatMap(g=>g.views),['overview','projects','tasks','team','settings']);
 });
 
 test('continue card lists own open tasks, in progress first',()=>{

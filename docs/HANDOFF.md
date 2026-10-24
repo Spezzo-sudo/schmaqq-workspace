@@ -1,5 +1,37 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
+## 24.10.2026: Navigation, Vorschau und verständliche Rückwege
+
+Der vorherige persönliche Test war für den Owner nicht selbständig bedienbar.
+Mit aktuellem Owner-Auftrag wurde deshalb die Struktur auf fünf Haupteinstiege
+plus „So funktioniert Studio“ ausgerichtet. Team-Gespräch/Wissen liegen bei Team,
+Einrichtung/Verbindungen/technische Werkzeuge unter einem gemeinsamen Einstieg.
+Bestehende Direktlinks bleiben gültig. Einladungen liegen jetzt bei Team und
+nutzen unverändert die geschützte Eigentümer-Schnittstelle.
+
+Aufgaben haben einen erklärten Startknopf, sichtbares Ziel und eigene Reiter für
+Bearbeitung, Vorschau, Ergebnis & Prüfung, Gespräch und Verlauf. Aktionen nennen
+vorher ihre Wirkung. Vorherige Dateifassung kann nach einem erfolgreichen Save
+zuerst als Entwurf geladen werden; erst ein erneuter Save schreibt, mit dem
+bestehenden Revisions-/Konfliktschutz. Anleitung benennt die Grenzen ausdrücklich.
+
+Selbst ausgeführt: lokaler Gesamtcheck 151 PASS, 0 FAIL, 21 Linux-Skips;
+Source Guard/TypeScript/Build PASS. Nach letzter reiner Vorschau-Textkorrektur
+8 gezielte Tests und TypeScript/Build erneut PASS. Eigene interaktive Browser-
+prüfung auf 1280x900 und 390x844: echter Start, Save, Entwurferhalt über Hilfe,
+Dateirückweg, Diff, Tests, gebaute Vorschau und lokaler Prüfstand. Neue Konten,
+Einladungen, KI-Ausführung, Peer-Freigabe und Git-Übertragung nicht ausgeführt.
+[Arbeitsauftrag, Abnahme und Grenzen](evidence/UX_NAVIGATION_20261024.md).
+
+Lokaler Branch: `local/studio-navigation-20261024`. Kein Push/Deployment.
+Nächster Schritt ist die erneute selbständige Bedienabnahme durch den Owner.
+Technische Erstverbindung, vollständige Projektwiederherstellung und automatische
+Übergabe des Aufgaben-/Gesprächskontexts an Codex sind damit noch nicht gelöst.
+Der vorhandene isolierte Probelauf auf 127.0.0.1:4394/4395 bleibt für die Auswertung
+erreichbar, mit bestehendem privaten Profil (KI und Git-Veröffentlichung gesperrt).
+
+
+
 
 ## 23.10.2026: Aufgabenorientierung E1–E8 lokal umgesetzt und geprüft
 

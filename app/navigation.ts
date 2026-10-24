@@ -1,15 +1,18 @@
 /**
  * Sidebar groups and orientation helpers. Labels of the entries stay in the
- * sidebar; this file only decides grouping, order and which entry is active.
+ * sidebar; secondary views stay routable and belong to one clear parent.
  */
 export const navGroups=[
  {id:'work',label:'ARBEITEN',views:['overview','projects','tasks']},
- {id:'team',label:'TEAM',views:['chat','docs','team']},
- {id:'settings',label:'EINSTELLUNGEN',views:['setup','models','ai','development']}
+ {id:'team',label:'ZUSAMMENARBEIT',views:['team']},
+ {id:'settings',label:'EINRICHTEN',views:['settings']},
+ {id:'help',label:'HILFE',views:['help']}
 ] as const;
 
 /** Views without an own entry highlight the entry they belong to. */
-export function activeNav(view:string){return view==='task'?'tasks':view;}
+export const secondaryViews:Record<string,string>={task:'tasks',chat:'team',docs:'team',setup:'settings',models:'settings',ai:'settings',development:'settings'};
+export function activeNav(view:string,project='all'){return view==='overview'&&project!=='all'?'projects':secondaryViews[view]??view;}
+export const navDescriptions:Record<string,string>={overview:'Weitermachen und offene Prüfungen',projects:'Gemeinsame Vorhaben und ihr Stand',tasks:'Arbeit beginnen und Ergebnisse prüfen',team:'Personen, Gespräch und Wissen',settings:'PC, Projekt und KI verbinden',help:'Ablauf, Folgen und Rückwege'};
 
 type ContinueTask={id:string;project:string;title:string;status:string;assignee:string|null};
 const order:Record<string,number>={doing:0,review:1,todo:2};

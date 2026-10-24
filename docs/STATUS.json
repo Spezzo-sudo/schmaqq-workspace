@@ -1,4 +1,19 @@
 {
+  "ux_navigation_20261024": {
+    "state": "local_navigation_implemented_verified_owner_acceptance_open",
+    "branch": "local/studio-navigation-20261024",
+    "source": "Owner could not begin unaided; explicit implementation request for five main destinations, action explanations, preview and available recovery paths.",
+    "change": "Five main destinations plus help; nested team conversation/knowledge and settings tools retain existing routes. Invitations moved to Team with the same owner-only endpoint. Guide covers daily flow, effects, visibility and recovery. Task goal/status visible; simple start creates its own task-bound copy, advanced start options retained. Dedicated preview tab with dated links and stale/unverified/draft warnings; direct review action after preview. Keyboard tab navigation and URL restore. Visible action explanations; previous successful save can be staged as a draft without writing or bypassing revision checks. Existing supported Codex action is discoverable; no new provider adapter.",
+    "focused_tests": "19 focused tests PASS initially. After final preview wording: 8 navigation/recovery/preview tests PASS, TypeScript and build PASS. Recovery integration proves staged content does not write and an external change still rejects the save.",
+    "local_check": "node selfhost/verify.mjs --local: exit0; 172 tests, 151 PASS, 0 FAIL, 21 explicit Linux skips; Source Guard, TypeScript and build PASS. Last subsequent product edit only clarified the earlier-preview message; focused tests/TypeScript/build repeated for it.",
+    "visible_browser": "Personally operated in-app browser on existing isolated test accounts/profile at4394/4395; desktop1280x900 and mobile390x844. Started a new task-bound copy, opened file, staged draft, visited guide and returned with draft retained, saved, recovered preceding content and verified via file comparison that staging did not write, saved recovery, saved desired heading. Real diff, test, built preview opened in new tab with correct heading; local review with tests PASS and pending independent review. Menu, settings/PC setup/provider display, Team/invite form/conversation/knowledge, help contents and resume from Start exercised. No new invite, AI job, publication or peer vote.",
+    "evidence": "docs/evidence/UX_NAVIGATION_20261024.md",
+    "private_evidence": ".studio/navigation-*.png and navigation-verify*-20261024.log; existing private fixture under .studio/ux-p1-20261023 remains private.",
+    "limits": "Independent owner usability acceptance remains open; first project and PC setup still needs existing local commands. No full project restore UI. Previous-content recovery is memory-only in the mounted editor; not available after reload/remount. Codex does not automatically receive task conversations. Preview source association can become older after a review commit without a visible file edit. Linux/release proof separate.",
+    "production_changed": false,
+    "release_approved": false,
+    "next": "Owner starts one new small task without click-by-click guidance and later resumes it; assess understanding of effects and recovery, not only successful job execution."
+  },
   "ux_orientation_20261023": {
     "state": "local_orientation_package_verified_owner_acceptance_open",
     "scope": "Exploratory audit E1/E2 fixed first, then E3-E8 orientation: task-bound copies, explicit historical review freshness, draft-aware next step, consistent task title destinations, stable tabs/dialog return and compact editor. E9 invitations and E10 login recovery remain separate.",
