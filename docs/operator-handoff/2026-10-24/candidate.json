@@ -1,0 +1,93 @@
+{
+  "createdUtc": "2026-10-24T18:53:51.388Z",
+  "sourceCommit": "41d9f30245fa056b52042181eb7ddadedbc7ff8d",
+  "sourceTree": "90097fa8236a5abfca31f8820fdfe32bb702a177",
+  "sourceBranch": "local/studio-navigation-20261024",
+  "runtimeArchive": "studio-runtime.tar.gz",
+  "runtimeSha256": "065556221d3ffbcb6cfda4c76f20b31f454aa45b8c2730c161fc322b02d571a3",
+  "runtimeBytes": 804491,
+  "sourceBundle": "studio-source.bundle",
+  "sourceBundleSha256": "4c8afc9d4ad38fe31657caceb52f3037f35efd90bebead5c56b08b39597e562d",
+  "sourceBundleBytes": 1081720,
+  "verification": {
+    "status": "PASS",
+    "files": 716,
+    "expectedSource": "41d9f30245fa056b52042181eb7ddadedbc7ff8d",
+    "sourceAttestation": "embedded",
+    "archiveSha256": "065556221d3ffbcb6cfda4c76f20b31f454aa45b8c2730c161fc322b02d571a3",
+    "releaseName": "runtime-unpacked"
+  },
+  "localVerification": {
+    "tests": 172,
+    "pass": 151,
+    "fail": 0,
+    "linuxSkips": 21,
+    "sourceGuard": "PASS",
+    "typescript": "PASS",
+    "frontendBuild": "PASS"
+  },
+  "productionChanged": false,
+  "linuxReleaseRecovery": "NOT_VERIFIED",
+  "accountMarco": "NOT_VERIFIED",
+  "designScreens": "30 static design views; not implemented as this runtime",
+  "runtimeSmokeWindows": "PASS on extracted runtime with private synthetic fixture",
+  "mobileRuntime": {
+    "sourceCommit": "41d9f30245fa056b52042181eb7ddadedbc7ff8d",
+    "scope": "Actual extracted runtime; synthetic local identity only; no real user or live changes",
+    "stages": [
+      "UI bootstrap completed with synthetic account",
+      "Mobile menu and tasks show saved synthetic task",
+      "Authenticated task screen fits width 390",
+      "Authenticated task screen fits width 360",
+      "Reload retains session and task route",
+      "Logout and subsequent UI email/password login succeed"
+    ],
+    "errors": [],
+    "result": "PASS"
+  },
+  "publicProbe": {
+    "origin": "https://studio.schmaqq.com",
+    "checkedUtc": "2026-10-24T18:51:48.319Z",
+    "scope": "Unauthenticated public read only; no credentials entered and no login or production mutation",
+    "http": [
+      {
+        "route": "/healthz",
+        "status": 200
+      },
+      {
+        "route": "/api/auth/session",
+        "status": 401
+      }
+    ],
+    "mobile": [
+      {
+        "width": 390,
+        "title": "Schmaqq Studio — Gemeinsam entwickeln",
+        "headings": [
+          "Gute Ideen.Gemeinsam gebaut.",
+          "Willkommen im Studio."
+        ],
+        "emailField": true,
+        "passwordField": true,
+        "submitText": "Studio öffnen",
+        "overflow": false,
+        "loginTop": 942
+      },
+      {
+        "width": 360,
+        "title": "Schmaqq Studio — Gemeinsam entwickeln",
+        "headings": [
+          "Gute Ideen.Gemeinsam gebaut.",
+          "Willkommen im Studio."
+        ],
+        "emailField": true,
+        "passwordField": true,
+        "submitText": "Studio öffnen",
+        "overflow": false,
+        "loginTop": 1192
+      }
+    ],
+    "errors": []
+  },
+  "handoffStatus": "READY_FOR_HERMES_PREFLIGHT_NOT_PRODUCTION_VERIFIED"
+}

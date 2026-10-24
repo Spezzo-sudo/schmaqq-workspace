@@ -1,7 +1,0 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
-export const members = sqliteTable('members', {id:text('id').primaryKey(),name:text('name').notNull(),email:text('email').notNull(),seen:integer('seen').notNull()});
-export const projects = sqliteTable('projects', {id:text('id').primaryKey(),title:text('title').notNull(),description:text('description').notNull(),color:text('color').notNull(),stage:text('stage').notNull(),created:integer('created').notNull()});
-export const tasks = sqliteTable('tasks', {id:text('id').primaryKey(),project:text('project').notNull().references(()=>projects.id),title:text('title').notNull(),description:text('description').notNull(),status:text('status').notNull(),priority:text('priority').notNull(),assignee:text('assignee'),created:integer('created').notNull()});
-export const messages = sqliteTable('messages', {id:text('id').primaryKey(),channel:text('channel').notNull(),author:text('author').notNull().references(()=>members.id),body:text('body').notNull(),created:integer('created').notNull()});
-export const documents = sqliteTable('documents', {id:text('id').primaryKey(),title:text('title').notNull(),body:text('body').notNull(),author:text('author').notNull().references(()=>members.id),revision:integer('revision').notNull().default(1),updated:integer('updated').notNull()});
-export const activities = sqliteTable('activities', {id:text('id').primaryKey(),author:text('author').notNull(),body:text('body').notNull(),created:integer('created').notNull()});

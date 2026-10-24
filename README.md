@@ -1,203 +1,54 @@
-# SCHMAQQ Studio
+# SCHMAQQ Studio Mobiler Erstzugang und Releasevorbereitung
 
-Aktueller Einstieg und Übergabe für einen neuen Chat: [START_HERE.md](START_HERE.md).
-Der Produktkandidat liegt auf `local/studio-use-candidate-20261022`.
+Stand: 24.10.2026. Einstieg für Hermes zum aktuellen Nutzerauftrag: funktionierenden Studio-Kandidaten prüfen und kontrolliert auf `studio.schmaqq.com` bereitstellen; erster persönlicher Zugang für `marco@schmaqq.com`, insbesondere am Handy.
 
-Eigenständige Entwicklungsumgebung für die Zusammenarbeit an SCHMAQQ.
-Zentrale private Codebasis: [Spezzo-sudo/schmaqq-workspace](https://github.com/Spezzo-sudo/schmaqq-workspace).
-Der Code liegt direkt im Repository-Root. NetzKontor ist ein separates Projekt.
+## Das exakte Paket
 
-**Stand 19.10.2026:** Production läuft auf dem freigegebenen R23-Commit aef64f85efeeb40f6c0f3a7dc43986a52a20f09f. GitHub main ist ein anderer Entwicklungsstand. R24-A enthält nur reviewpflichtige Verbesserungen und ist **nicht deployed**.
+Dateien in diesem Verzeichnis:
 
-- [Release-Herkunft und Sicherheitsgates](docs/RELEASE_PROVENANCE_POLICY.md)
-- [VPS-Umzug und Disaster-Recovery](docs/VPS_MIGRATION_RUNBOOK.md)
-- [Produktionsstatus und historische Nachweise](docs/STATUS.json)
+- `SCHMAQQ_STUDIO_HERMES_20261024.zip`
+- `SCHMAQQ_STUDIO_HERMES_20261024.sha256`
+- `HERMES_AUFTRAG.md` zum direkten Lesen
+- `MOBILTEST.md` für Marco
+- `candidate.json` mit Herkunft und tatsächlichen Prüfergebnissen
 
-**Projektüberblick und verbindliche nächste Schritte:** [Gesamtplan](docs/ROADMAP.md).
-Nächster Meilenstein: Marco und Markus arbeiten parallel am selben Testprojekt,
-mit eigenen Kopien, Kommentaren, echten Tests, Vorschauen und gegenseitiger Prüfung.
+ZIP SHA256:
 
+`9fb69c803eef2d53d07b7f13dacacee55f9f2375b1bb27f2b8cd839e70c59345`
 
-## Produktvision und Architektur
+Runtime-Quellcommit im Paket:
 
-**SCHMAQQ Workspace** ist langfristig eine universelle Plattform für die Zusammenarbeit von Menschen und KI-Agenten. **SCHMAQQ Studio** ist der erste spezialisierte Bereich für Softwareentwicklung. Ein freiwilliges, später eventuell vergütetes Compute-Netzwerk ist ein **Zukunftsziel**, heute weder implementiert noch öffentlich betreibbar.
+`41d9f30245fa056b52042181eb7ddadedbc7ff8d`
 
-- [Produktvision](docs/PRODUCT_VISION.md) · [Zielarchitektur und Bestand](docs/ARCHITECTURE.md) · [Meilensteine](docs/ROADMAP.md)
-- [Integrationsgrenzen zur SCHMAQQ-Plattform](docs/INTEGRATION_BOUNDARIES.md) · [Architekturentscheidungen](docs/DECISIONS/0001-modular-core.md)
-- **Tatsächliche Funktionen/Nachweise:** [STATUS.json](docs/STATUS.json). Die neue Zielarchitektur ist kein Beleg für produktive Umsetzung.
+Die Runtime und die vollständige versionierte Quelle liegen im ZIP. Dessen Git-Bundle ermöglicht den exakten Checkout. Dieser Übergabebranch enthält ausschließlich das Paket und seine Anweisungen. Für Build und Deployment die gepinnte Quelle beziehungsweise das Runtimearchiv aus dem ZIP verwenden. Nicht auf main oder einen anderen Kandidaten ausweichen.
 
-## Tatsächliche Architektur
+## Vorgehen
 
-- `studio/`: React-Einstieg, Vite-Build und SCHMAQQ-Gestaltung.
-- `app/`: gemeinsame Oberfläche, Projekte, Aufgaben, Teamchat, Dateieditor und Review.
-- `selfhost/`: Node-HTTP-Server, SQLite-WAL-Datenbank und persönliche Runner.
-- Runner führen Git-, Test- und Codex-Aufträge auf dem verbundenen Rechner aus.
-- `selfhost/deploy/`: Betriebsanleitung; geprüfter Kollaborationskandidat läuft auf dem VPS.
-  [Betriebswechsel und Nachprüfung](docs/evidence/P2_SWITCH_ACCEPTANCE_20261017.md).
-- `app/api/`, `db/`, `build/`: erhaltener Sites-/Cloudflare-Starter, separater Laufzeitpfad.
+1. Mit bereits berechtigtem GitHub-Zugang dieses private Repository lesen. Der Link allein vergibt keinen Zugriff; keine neue kostenpflichtige API und keinen Token in den Chat kopieren.
+2. Diesen Übergabestand auf eine konkrete GitHub-Commit-ID pinnen und genau diesen Stand beziehen. Branch: `handoff/studio-mobile-pilot-20261024`.
+3. In `docs/operator-handoff/2026-10-24` die ZIP-Prüfsumme prüfen. In ein neues separates Verzeichnis entpacken; vorhandene Daten nicht überschreiben.
+4. `HERMES_AUFTRAG.md` aus dem verifizierten ZIP vollständig lesen und ausführen. Er enthält Linux-Prüfung, aktuelles Live-Preflight, Backup/Restore, Kontoerhalt, kontrollierten Dienstwechsel und Rückweg. Etwaige konkret fehlende Freigaben oder Schemaänderungen vor dem betreffenden Schritt benennen.
+5. Privaten Zugang für `marco@schmaqq.com` prüfen beziehungsweise passend zum bestehenden Kontozustand vorbereiten. Anmeldung verwendet ein eigenes Studio-Passwort. Setup-/Einladungstokens nicht im Releasebericht ausgeben.
+6. Tatsächlichen Live- und Kontostand sowie mobile Abnahme berichten. Ein öffentlicher Health-Status oder synthetischer Login beweist Marcos persönlichen Zugang nicht.
 
-Lokal nachgewiesen sind Backend-Verträge, Git-Arbeitskopien, Dateibearbeitung,
-Tests/Vorschau und gegenseitiges Review. ChatGPT-Website-Login benötigt einen
-registrierten Client. Linux-Prüfung und kontrollierter Live-Wechsel des Kandidaten
-sind belegt; echte gemeinsame Fernnutzung mit Markus steht noch aus. Details und offene Punkte stehen in `docs/STATUS.json`.
-
-## Entwicklungsstart
+Optionaler Bezugsweg in einem neuen autorisierten Arbeitsverzeichnis:
 
 ```sh
-git clone https://github.com/Spezzo-sudo/schmaqq-workspace.git
-cd schmaqq-workspace
+git clone --single-branch --branch handoff/studio-mobile-pilot-20261024 \
+  https://github.com/Spezzo-sudo/schmaqq-workspace.git studio-handoff
+git -C studio-handoff rev-parse HEAD
 ```
 
-Anschließend die folgenden Installations-/Prüfbefehle ausführen. Node >=24.15.0
-ist für den selbst betriebenen Server erforderlich; die ältere Engine-Angabe im
-Starter-Paket ersetzt diese Voraussetzung nicht.
-
-**Hier starten:** [AGENTS.md](AGENTS.md), [Status](docs/STATUS.json),
-[Übergabe für neue Chats](docs/HANDOFF.md), [Hermes-Betriebsauftrag](docs/HERMES_HANDOFF.md).
-
-Node.js >=24.15.0, Git und Python 3. Im Studio-Verzeichnis:
-
-Unter Windows ist `npm run studio:verify:local` der lokale Prüfweg.
-Linux-Recovery bleibt separat nachzuweisen. Details: [Windows-Prüfung](docs/WINDOWS_LOCAL_DEVELOPMENT.md).
+Den zurückgegebenen Commit mit dem vom Owner übergebenen unveränderlichen GitHub-Link abgleichen und bei Abweichung den genauen dort genannten Commit auschecken. Danach im obigen Paketverzeichnis:
 
 ```sh
-npm ci --no-audit --no-fund
-npm run studio:verify
-npm run studio:demo
+sha256sum -c SCHMAQQ_STUDIO_HERMES_20261024.sha256
 ```
 
-Die Demo läuft lokal auf Port 4320. Der persönliche Server startet mit
-`npm run studio:start` auf Port 4310; beide sind zunächst nur lokal erreichbar.
-Details zu echtem Backend, Runner, Backup und Betrieb: [Selfhost](selfhost/README.md).
+## Verifizierter und noch offener Stand
 
-Der folgende Abschnitt beschreibt den ursprünglichen Sites-Starter. Dessen
-`dev`-/Hosting-/Mock-Auth-Pfad ist getrennt vom selbst betriebenen Studio.
+Neu lokal ausgeführt: 151 Tests PASS, 0 FAIL, 21 explizite Linux-Skips; Source Guard, TypeScript und Build PASS. Runtimearchiv/Manifest/Quelle geprüft. Synthetischer Runtime-Smoke und mobiler Konto-/Aufgaben-/Wiederanmeldelauf bestanden. Öffentliche aktuelle Anmeldeseite unangemeldet auf 390/360 Pixel geprüft.
 
----
+Noch offen sind exakte Linux-/Recoveryprüfung, Live-Datenkompatibilität, persönlicher Marco-Zugang und dessen echter Handytest. Hier wurde kein Deployment durchgeführt. Die 30 Designansichten im ZIP sind statische Entwürfe und nicht als neue Anwendung vollständig implementiert. Der Kandidat ist die bereits funktionierende Studio-Anwendung mit dem dokumentierten Umfang.
 
-# vinext-starter
-
-A clean full-stack starter running on [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and Drizzle support.
-
-## Prerequisites
-
-- Node.js `>=22.13.0`
-- Portable: Windows, macOS, or Linux; no Bash required
-- Managed Linux: managed Linux runtime with Bash, `flock`, `curl`, `sha256sum`, and GNU `timeout`
-- Git is required only for publishing
-
-## Sites Lifecycle
-
-The Sites initializer copies the shared starter and selects managed-linux only when `SITES_MANAGED_LINUX_CONTAINER=1`; otherwise it selects portable. It saves the selection only in ignored `.sites-runtime/execution-profile.json`. Both profiles copy/configure first, then use the plugin's separate `install-dependencies.mjs` step to measure installation independently. Edit source under `app/` and follow the Sites skill for installation, preview, builds, and publishing.
-
-Run `node <plugin-root>/scripts/configure-execution-profile.mjs` only when the profile is unknown for the current checkout and environment. Profile changes do not alter tracked source or require reinstalling otherwise-valid dependencies; restart an existing preview to use the new selection. Do not commit or upload `.sites-runtime/`.
-
-This starter does not use `wrangler.jsonc`.
-
-`install:ci` runs `npm ci` once against the shared lockfile, disables parent-workspace discovery, and includes required dev/optional dependencies despite production/omit settings. Sharp defaults to prebuilt binaries unless explicitly configured otherwise. Do not overlap installers.
-
-- **Portable:** Preserve host HOME, npm cache, registry, proxy, temporary paths, retry/concurrency settings, and lifecycle-script policy. Use `--prefer-offline --no-audit --no-fund`.
-- **Managed Linux:** Use the existing project-local HOME/cache/tmp setup and Linux install lock, tarball preflight, and timeout. Restore the image-seeded npm cache only when its lockfile hash matches; retain network fallback. Builds keep their existing timeout. These helpers are not invoked by the portable profile.
-
-`scripts/sites-env.mjs` preserves the caller's HOME, npm cache, proxy, XDG, and temporary-directory configuration while defaulting Wrangler and Miniflare state to the checkout. If npm reports an unwritable cache, select a writable path with `npm_config_cache` for that install. The `dev` and `start` scripts also keep Wrangler logs inside the checkout. Generated `.sites-runtime/` and `.wrangler/` directories are disposable and ignored by Git.
-
-On portable, `npm run dev` uses `vinext dev` with HMR, starting at port 5173. Vinext records the running server in ignored `.vinext/` state, rejects an ordinary duplicate launch, and recovers stale state after a stopped process; exactly simultaneous starts can race. Pass `--port <port>` or `--hostname <host>` after `npm run dev --` when needed; keep portable previews on loopback.
-
-For browser QA on managed Linux, use `sites-preview start`. The project's dev script runs Vite and accepts the supervisor's `--host 0.0.0.0 --port 4173 --strictPort` arguments. The internal browser uses `http://terminal.local:4173/`; it is not a user-facing URL. The supervisor owns the preview lifecycle. The ignored local profile survives the supervisor's cleared process environment.
-
-The portable profile simulates ChatGPT sign-in only for loopback development requests. Visit `/signin-with-chatgpt?return_to=/` to sign in as `local_seedy` (`seedy@sites.test`, display name `Seedy`) and `/signout-with-chatgpt?return_to=/` to sign out. The development cookie preserves that identity across server restarts. Mock auth is disabled in the managed-linux profile and is not included in production builds; hosted authentication remains dispatch-owned.
-
-The Worker uses `vinext/server/fetch-handler`, including Vinext's config-aware image handling. After building, `npm start` runs that Worker locally through Wrangler on `127.0.0.1`, sharing `.wrangler/state` with dev preview and local D1 migrations; it does not deploy the site or simulate sign-in. Use the URL printed by the server. Pass `npm start -- --port <port>` to select a different built-preview port.
-
-Local previews use Miniflare's placeholder `Request.cf` metadata without a network lookup. Set `CLOUDFLARE_CF_FETCH_ENABLED=true` to opt into fetching preview metadata; this setting does not change hosted request metadata.
-
-Local tool usage metrics are disabled by default. Set `WRANGLER_SEND_METRICS=true` to opt in.
-
-## Included Shape
-
-- edit site code under `app/`
-- `app/chatgpt-auth.ts` provides optional dispatch-owned ChatGPT sign-in helpers
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/index.ts` reads the D1 binding from the Cloudflare Worker environment
-- `db/schema.ts` starts intentionally empty
-- `@cloudflare/workers-types` provides Worker types; `cloudflare-env.d.ts` declares optional `DB`/`BUCKET` bindingsâ€”update these declarations if binding names change
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
-
-The user ID is stable for the same user on the same Site and different across Sites. Use it as the durable user key; use email and name for display or contact purposes.
-
-SIWC-authenticated workspace sites may also receive `oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty `name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by `oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
-```
-
-## Optional Dispatch-Owned ChatGPT Sign-In
-
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs optional or required ChatGPT sign-in:
-
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use the returned `userId` as the stable user key for user-owned records; do not use email as a durable identifier.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send anonymous visitors through Sign in with ChatGPT.
-- In a Server Component, start sign-in with `<a href={chatGPTSignInPath(returnTo)} target="_top">`. The auth helper module is server-only; do not import it into a Client Component.
-- Do not use `fetch`, XHR, a client-side router, or a framework link that can prefetch the sign-in route. SIWC must start as a top-level navigation.
-- Never request the AuthAPI authorization endpoint directly. The dispatch-owned `/signin-with-chatgpt` route must start the SIWC flow.
-- Use `chatGPTSignOutPath(returnTo)` for browser sign-out links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the OAuth cookies, and identity header injection. Do not implement app routes for those reserved paths. Routes that do not import and call the helper remain anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the Sites hosting platform's access policy controls for workspace-wide restrictions, or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Local D1 migrations
-
-For a D1-backed local preview, generate SQL with `npm run db:generate`. Build once through the Sites skill's build entrypoint (or `npm run build` for standalone use) to generate `dist/server/wrangler.json`, rebuilding if bindings change. From the project root, apply each pending migration in order:
-
-```sh
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_example.sql
-```
-
-Replace the filename with the pending migration and `DB` with your D1 binding name if different. Use `.wrangler/state`, not `.wrangler/state/v3`; Wrangler adds the versioned directories. Do not replay migrations already applied locally. This updates only the preview database; publishing applies production migrations separately.
-
-## Diagnostic Commands
-
-- `npm run install:ci`: perform the one locked dependency install
-- `npm run dev`: start the Vite/Vinext development server
-- `npm run build`: build the deployable Sites artifact
-- `npm run start`: preview the built Worker locally with D1/R2 support
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-When using the Sites plugin, follow its skill instructions for installation, builds, and publishing. These npm commands remain available for standalone use.
-
-The portable build runs Vinext directly without a host `timeout` command. The managed-linux build uses `scripts/build-verified.sh` and its existing `SITES_BUILD_TIMEOUT` setting.
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+Die GitHub-Hinterlegung wurde aktuell vom Nutzer ausdrücklich beauftragt. Sie ist kein Merge nach main und noch kein Nachweis einer erfolgten Bereitstellung. Die operative Ausführung und ihre Grenzen stehen im Hermes-Auftrag.

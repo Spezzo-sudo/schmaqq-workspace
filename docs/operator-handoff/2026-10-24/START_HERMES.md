@@ -20,7 +20,7 @@ Runtime-Quellcommit im Paket:
 
 `41d9f30245fa056b52042181eb7ddadedbc7ff8d`
 
-Die Runtime und die vollständige versionierte Quelle liegen im ZIP. Dessen Git-Bundle ermöglicht den exakten Checkout. Der Code im Wurzelverzeichnis dieses Übergabebranches ist die ältere Branchbasis und **nicht** der auszuliefernde Kandidat. Für Build und Deployment ausschließlich die gepinnte Quelle beziehungsweise das Runtimearchiv aus dem ZIP verwenden. Nicht auf main oder einen anderen Kandidaten ausweichen.
+Die Runtime und die vollständige versionierte Quelle liegen im ZIP. Dessen Git-Bundle ermöglicht den exakten Checkout. Dieser Übergabebranch enthält ausschließlich das Paket und seine Anweisungen. Für Build und Deployment die gepinnte Quelle beziehungsweise das Runtimearchiv aus dem ZIP verwenden. Nicht auf main oder einen anderen Kandidaten ausweichen.
 
 ## Vorgehen
 
@@ -52,4 +52,3 @@ Neu lokal ausgeführt: 151 Tests PASS, 0 FAIL, 21 explizite Linux-Skips; Source 
 Noch offen sind exakte Linux-/Recoveryprüfung, Live-Datenkompatibilität, persönlicher Marco-Zugang und dessen echter Handytest. Hier wurde kein Deployment durchgeführt. Die 30 Designansichten im ZIP sind statische Entwürfe und nicht als neue Anwendung vollständig implementiert. Der Kandidat ist die bereits funktionierende Studio-Anwendung mit dem dokumentierten Umfang.
 
 Die GitHub-Hinterlegung wurde aktuell vom Nutzer ausdrücklich beauftragt. Sie ist kein Merge nach main und noch kein Nachweis einer erfolgten Bereitstellung. Die operative Ausführung und ihre Grenzen stehen im Hermes-Auftrag.
-
