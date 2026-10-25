@@ -4,6 +4,13 @@ _Planungsstand 18.10.2026. Dieser Plan ordnet die Arbeit; der technische
 Iststand mit Nachweisen bleibt in [STATUS.json](STATUS.json). Keine
 Deployment-, Merge- oder Providerfreigabe durch diesen Text._
 
+## Aktive Steuerung ab R27/R28 – ein realer Zwei-Personen-Pilot zuerst
+
+**Aktuelle Priorität:** [R28 – Produktlinie und tatsächlicher Zwei-Personen-Pilot](R28_PRODUCT_LINE_AND_PILOT.md).
+Marco und Markus sollen mit **eigenen Studio-Identitäten, eigenen persönlichen ChatGPT-/Codex-Anmeldungen und ihren freigegebenen Runnern** genau einen bestehenden Projektraum bis zum gegenseitigen Code-Review nutzen. Nicht zuerst neue Frameworks installieren. Der [Ideenspeicher](R28_IDEAS_PARKING_LOT.md) bewahrt OpenClaw, Hermes Agent, Paperclip, DeepSeek Harness, OpenCode, ACP, IDE- und Live-Editing-Ideen **ohne** Umsetzungsfreigabe.
+
+Dieser Pilot konkretisiert die unten beschriebenen S1–S5-Pakete; deren frühere Fortschrittsangaben sind historische Planung und kein aktueller Live-Nachweis. Aktueller Stand: R27 ist laut Betreiberbericht produktiv, der erste echte Zwei-Personen-Agentenworkflow ist noch offen. Kein Merge und keine Production-Änderung durch diesen Text.
+
 ## Wofür wir das bauen
 
 Marco in der Schweiz und Markus in Thailand sollen gleichzeitig digitale

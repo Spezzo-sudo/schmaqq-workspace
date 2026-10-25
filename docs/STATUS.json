@@ -1,4 +1,25 @@
 {
+  "r28_product_line_20261025": {
+    "state": "review_draft_documented_no_runtime_change",
+    "goal": "One real project, two actual Studio identities, personal ChatGPT/Codex logins and own consented runners, one small bounded Git task through independent peer review",
+    "documents": [
+      "docs/R28_PRODUCT_LINE_AND_PILOT.md",
+      "docs/R28_IDEAS_PARKING_LOT.md"
+    ],
+    "first_gate": "Real Markus invitation/registration and humans-only task handoff; then personal runner/Codex availability, bounded execution, diff, tests and peer review",
+    "deferred": "Paperclip, OpenClaw, Hermes Agent, DeepSeek Harness, OpenCode, Claude, Kimi, Pi, OpenHands, ACP/AG-UI, shared realtime editor, full IDE and automation until actual pilot need",
+    "real_markus_registered": "not_proven; last operator aggregate members=1",
+    "production_changed": false,
+    "next": "Owner reviews planning draft; start a real two-person pilot in existing live R27 before expanding product scope"
+  },
+  "r27_live_operator_report_20261025": {
+    "state": "production_live_operator_report_and_independent_https_asset_and_release_pointer_confirmed",
+    "fresh_backup_restore": "PASS per Hermes operator report; protected root data not independently read by planning worktree",
+    "owner_account_and_hash": "UNCHANGED per Hermes operator report",
+    "current_release": "R27; live pointer and HTTPS build marker independently checked in prior work",
+    "h3_historical_owner_mismatch": "UNRESOLVED",
+    "real_two_person_codex_pilot": "not_yet_completed"
+  },
   "r27_design_diff_20261025": {
     "state": "isolated_source_implemented_awaiting_immutable_review_not_live",
     "source": "Current deployed marketing stylesheet and docs from Spezzo-sudo/NetzKontor@92aad74781c03c7414d5a7adfd6c0568ad82c99b (historical repo name); brand/V1 remains concept, not approved animated logo replacement.",
