@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "checks": [
+    "two-real-separated-sessions",
+    "room-surfaces-existing-work-without-hunting-through-tabs",
+    "one-task-one-flow-no-four-hidden-tabs",
+    "edit-brief-directly-in-same-task",
+    "handoff-does-not-falsely-start-execution",
+    "recipient-gets-same-task-and-direct-work-choice",
+    "second-person-comment-arrives-in-original-task",
+    "task-can-be-resumed-at-same-deep-link",
+    "unavailable-ai-honestly-identified",
+    "simplified-entry-reaches-real-Git-worktree-editor",
+    "mobile-handoff-without-local-path-or-overflow",
+    "mobile-draft-kept-on-reload",
+    "no-uncaught-browser-errors"
+  ],
+  "checksPassed": 13,
+  "productionChanged": false,
+  "realPersonalAccountsUsed": false,
+  "purpose": "isolated R26 task/handoff UX"
+}

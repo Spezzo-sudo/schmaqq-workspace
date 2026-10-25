@@ -1,5 +1,32 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
+## 25.10.2026: R26 – ein einziger Aufgabenablauf (Review-Kandidat)
+
+Die tatsächliche Handy-Bedienung von R25 war trotz erfolgreicher Integration
+zu technisch und tablastig. R26 entfernt die vier Pflicht-Reiter aus der Aufgabe
+und verbindet Auftrag, tatsächlichen Arbeitsstatus, Übergabe an Teammitglied,
+optionale persönliche Git-/KI-Ausführung, Ergebnis und Gespräch auf einer
+scrollbaren Seite. Direkt im Raum werden die nächsten Aufgaben gezeigt.
+
+Neue API-Aktionen `handoff` (atomare erwartete Zuständigkeit, kein vorgetäuschter
+Job) und `brief` (revisionierte Änderung in bestehender workspace_meta).
+Task-Kommentare, Git-Berechtigungen, persönliche Modellfreigaben und bisherige
+R25-Daten bleiben erhalten. Kein Datenbankschema-Migrationsschritt.
+
+Source-Gesamtcheck: 190 Tests, 187 PASS, 0 FAIL, 3 erwartete Linux-Skips.
+Chrome-Browser mit zwei synthetischen Konten, echtem isoliertem Git-Runner und
+390px-Handy: 13/13 PASS; keine Browser-Ausnahmen. Ein zuvor beobachteter
+doppelter Editor wurde korrigiert und anschliessend neu geprüft. Kein reales
+Markus-Gerät, kein echtes privates KI-Abo und keine automatisierte GitHub-
+Einrichtung wurden behauptet oder angetastet.
+
+R25 bleibt bis zum gesondert freigegebenen Deployment produktiv; der
+R26-Branch ist ein überprüfbarer Kandidat und **noch nicht live**.
+
+[Detaillierter Scope](R26_TASK_FLOW.md) ·
+[Browser-Abnahme](evidence/R26_TASK_FLOW_ACCEPTANCE_20261025.md).
+
+
 ## 25.10.2026: R25 Workspace Rooms – zusammenhängender Arbeitsweg
 
 Eigener Engineering-Branch `feat/workspace-rooms-r25-20261025`, auf der

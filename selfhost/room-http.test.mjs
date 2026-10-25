@@ -145,3 +145,41 @@ test('room: the next older message page stays in this room and no message ID can
  assert.equal((await f.get('/api/room?project='+q+'&before='+page.messages[0].id,f.markus.cookie)).status,400);
  assert.equal((await f.post({action:'message',id:'msg-000',project:p,body:'Overwrite'},f.markus.cookie)).status,409);
 });
+
+test('R26: clear task handoff is not a fake start; concurrent handoffs refuse stale ownership',async t=>{
+ const f=await fixture(t),p=await f.create();
+ const made=await f.post({action:'task',id:randomUUID(),project:p,title:'Designvorlage verwenden',description:'Bisherige Vorlage als Referenz',source:undefined},f.marco.cookie);
+ assert.equal(made.status,200);const task=made.data.task;
+ const assign=async(person,expectedAssignee,by=f.marco.cookie)=>f.post({action:'handoff',task,assignee:person,expectedAssignee},by,{},'/api/collaboration/task');
+ assert.equal((await assign(f.markus.id,null)).status,200);
+ const state=(await f.get('/api/collaboration/task?id='+task,f.markus.cookie)).data;
+ assert.equal(state.task.assignee,f.markus.id);
+ assert.equal(state.task.status,'todo','A handoff does NOT claim that code work has started');
+ assert.equal(state.workspaces.length,0);
+ assert.equal((await assign(f.marco.id,null)).status,409,'Stale reassignment rejected');
+ assert.equal((await assign(f.marco.id,f.markus.id)).status,403,'Other person cannot unilaterally grab their task');
+ assert.equal((await assign(f.marco.id,f.markus.id,f.markus.cookie)).status,200,'Assigned member may hand off');
+ assert.equal((await assign(null,f.marco.id,f.marco.cookie)).status,200);
+ assert.equal((await assign('not-a-member',null)).status,400);
+ const [a,b]=await Promise.all([assign(f.marco.id,null),assign(f.markus.id,null)]);
+ assert.deepEqual([a.status,b.status].sort(),[200,409]);
+ assert.equal(f.app.db.prepare('SELECT count(*) AS n FROM workspaces WHERE task=?').get(task).n,0);
+});
+
+test('R26: task brief revisions protect concurrent edits and survive reload; old task data preserved',async t=>{
+ const f=await fixture(t),p=await f.create();
+ const task=(await f.post({action:'task',id:randomUUID(),project:p,title:'Startentwurf',description:'Erstes Ziel'},f.marco.cookie)).data.task;
+ const before=(await f.get('/api/collaboration/task?id='+task,f.markus.cookie)).data;
+ assert.equal(before.brief.revision,0);
+ const update={action:'brief',task,title:'SCHMAQQ Designreferenz',description:'Ergebnis: responsive Workspace-Oberfläche',revision:0};
+ assert.equal((await f.post(update,f.marco.cookie,{},'/api/collaboration/task')).status,200);
+ assert.equal((await f.post({...update,title:'Stale overwrite'},f.markus.cookie,{},'/api/collaboration/task')).status,409);
+ const after=(await f.get('/api/collaboration/task?id='+task,f.markus.cookie)).data;
+ assert.equal(after.brief.revision,1);
+ assert.equal(after.task.title,update.title);
+ assert.equal(after.task.description,update.description);
+ assert.equal((await f.post({...update,revision:1,description:'Neu abgestimmt'},f.markus.cookie,{},'/api/collaboration/task')).status,200);
+ assert.equal((await f.get('/api/collaboration/task?id='+task,f.marco.cookie)).data.brief.revision,2);
+ assert.equal((await f.post({...update,revision:2,title:' '},f.marco.cookie,{},'/api/collaboration/task')).status,400);
+ assert.equal(f.app.db.prepare('SELECT count(*) AS n FROM tasks WHERE id=?').get(task).n,1);
+});

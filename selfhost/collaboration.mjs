@@ -37,17 +37,38 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   const reviews=db.prepare("SELECT j.*,m.name AS ownerName FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree') JOIN members m ON m.id=j.owner WHERE w.task=? AND j.action IN ('review','submit') AND j.status='completed' ORDER BY j.created DESC,j.id").all(task.id).map(j=>({id:j.id,owner:j.owner,ownerName:j.ownerName,created:j.created,commit:JSON.parse(j.result??'{}').commit??'',state:reviewState(db,j)}));
   // This is the existing single private Studio team, not a public/tenant API.
   const workspaces=taskWorkspaces(db,task.id);
-  send({task,reviews,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces});return true;
+  const briefRow=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('taskflow:v1:brief:'+task.id);
+  const brief={revision:briefRow?JSON.parse(briefRow.value).revision:0};
+  send({task,brief,reviews,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces});return true;
  }
  if(route!=='/api/collaboration/task'||method!=='POST')throw fail(405,'Methode nicht erlaubt.');
  const value=parse(z.discriminatedUnion('action',[
   z.object({action:z.literal('comment'),task:id,id,body:z.string().trim().min(1).max(4000)}),
   z.object({action:z.literal('claim'),task:id}),z.object({action:z.literal('release'),task:id}),
+  z.object({action:z.literal('handoff'),task:id,assignee:id.nullable(),expectedAssignee:id.nullable()}),
+  z.object({action:z.literal('brief'),task:id,title:z.string().trim().min(1).max(160),description:z.string().trim().max(12000),revision:z.number().int().min(0)}),
   z.object({action:z.literal('status'),task:id,status:z.enum(['todo','doing','review','done'])})
  ]),await readJSON(req));
  transaction(db,()=>{
   const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(value.task);if(!task)throw fail(404,'Aufgabe fehlt.');
-  if(value.action==='comment'){
+  if(value.action==='brief'){
+   const metaKey='taskflow:v1:brief:'+task.id;
+   const prior=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get(metaKey);
+   const revision=prior?JSON.parse(prior.value).revision:0;
+   if(revision!==value.revision)throw fail(409,'Der Auftrag wurde inzwischen geändert. Bitte die aktuelle Fassung prüfen.');
+   if(task.title===value.title&&task.description===value.description)return;
+   db.prepare('UPDATE tasks SET title=?,description=? WHERE id=?').run(value.title,value.description,task.id);
+   db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(metaKey,JSON.stringify({revision:revision+1,updatedBy:member.id,updated:Date.now()}));
+  }else if(value.action==='handoff'){
+   if(task.status==='done')throw fail(409,'Abgeschlossene Aufgabe zuerst wieder öffnen.');
+   if(task.assignee!==value.expectedAssignee)throw fail(409,'Die Zuständigkeit hat sich inzwischen geändert. Neu laden, bevor du jemanden übergehst.');
+   if(task.assignee&&task.assignee!==member.id)throw fail(403,'Nur die zuständige Person kann eine bereits übernommene Aufgabe weitergeben.');
+   if(value.assignee&&!db.prepare('SELECT id FROM members WHERE id=?').get(value.assignee))throw fail(400,'Dieses Teammitglied ist nicht verfügbar.');
+   if(task.assignee===value.assignee)return;
+   if(value.assignee)assertAssignment(db,task.id,value.assignee);
+   else if(taskWorkspaces(db,task.id).length)throw fail(409,'Erst den eigenen Arbeitsbereich abschliessen, bevor die Zuständigkeit entfernt wird.');
+   db.prepare('UPDATE tasks SET assignee=? WHERE id=?').run(value.assignee,task.id);
+  }else if(value.action==='comment'){
    const existing=db.prepare('SELECT * FROM task_comments WHERE id=?').get(value.id);
    if(existing){if(existing.author!==member.id||existing.task!==task.id||existing.body!==value.body)throw fail(409,'Dieser Kommentar wurde bereits mit anderem Inhalt gesendet.');return;}
    db.prepare('INSERT INTO task_comments VALUES(?,?,?,?,?)').run(value.id,task.id,member.id,value.body,Date.now());
@@ -65,7 +86,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
    if(taskWorkspaces(db,task.id).length)throw fail(409,'Schließe zuerst deinen Arbeitsbereich ab. Deine Dateien bleiben dabei erhalten.');
    db.prepare("UPDATE tasks SET assignee=NULL,status=CASE WHEN status='doing' THEN 'todo' ELSE status END WHERE id=?").run(task.id);
   }
-  db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(randomUUID(),member.id,`${value.action==='comment'?'Kommentar zu':value.action==='claim'?'Übernommen:':value.action==='status'?'Status geändert:':'Freigegeben:'} ${task.title}`,Date.now());
+  db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(randomUUID(),member.id,`${value.action==='comment'?'Kommentar zu':value.action==='claim'?'Übernommen:':value.action==='status'?'Status geändert:':value.action==='brief'?'Auftrag präzisiert:':value.action==='handoff'?'Auftrag übergeben:':'Freigegeben:'} ${task.title}`,Date.now());
  });
  send({ok:true});return true;
 }

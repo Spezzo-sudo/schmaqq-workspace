@@ -1,4 +1,18 @@
 {
+  "r26_one_task_one_flow": {
+    "state": "implemented_review_candidate_not_deployed",
+    "user_problem": "R25 video showed multiple task tabs, misleading In Arbeit on self-claim and missing direct handoff/execute path",
+    "branch": "feat/r26-one-task-one-flow-20261025",
+    "scope": "One task screen: editable/versioned brief, actual execution state, team handoff, existing own Git editor, task-linked local AI, same-task results and comments, visible priority tasks on project page",
+    "security": "Atomic compare-and-set assignee handoff; no worktree transfer across owners; versioned task brief in workspace_meta; existing single-private-team and model grants preserved",
+    "backend_verification": "190 tests, 187 PASS, 0 FAIL, 3 expected Linux platform skips; Source Guard, TypeScript, Vite PASS",
+    "real_chrome": "13/13 source build checks: separate test accounts, handoff, atomic task edit, persistent comments, no fake execution, no four tabs, real isolated Git worktree/editor, mobile and reload, no uncaught JS errors",
+    "still_open": "Real Markus account/device, first-time GitHub+Runner connection, genuine personal Codex/ChatGPT integration, full marketing design system alignment, user usability acceptance, live H3 historic owner mismatch",
+    "production_changed": false,
+    "release_approved": false,
+    "evidence": "docs/evidence/R26_TASK_FLOW_ACCEPTANCE_20261025.md",
+    "next": "Review and actual two-person pilot, only then exact release + operator backup/H3 scope + separate deployment GO"
+  },
   "workspace_rooms_r25_20261025": {
     "state": "room_first_candidate_implemented_and_synthetic_pilot_passed_not_deployed",
     "branch": "feat/workspace-rooms-r25-20261025",
