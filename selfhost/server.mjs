@@ -92,7 +92,10 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     }else{
      let result=v.result??{};
      if(v.ok&&job.action==='preview'&&result.previewBundle){
-      const bundle=parse(z.record(z.string().max(7000000)),result.previewBundle);let bytes=0;const entries=Object.entries(bundle);
+      // Reject oversized containers before building Zod issue collections.
+      const rawBundle=result.previewBundle;
+      if(!rawBundle||typeof rawBundle!=='object'||Array.isArray(rawBundle)||Object.keys(rawBundle).length>500)throw fail(413,'Vorschau hat zu viele Dateien.');
+      const bundle=parse(z.record(z.string(),z.string().max(7000000)),rawBundle);let bytes=0;const entries=Object.entries(bundle);
       if(entries.length>500||!bundle['index.html'])throw fail(400,'Vorschau benötigt index.html und höchstens 500 Dateien.');
       for(const [name,value] of entries){if(!name||name.startsWith('/')||name.includes('\\')||name.split('/').some(p=>!p||p==='.'||p==='..')||/[\u0000-\u001f]/.test(name))throw fail(400,'Ungültiger Vorschau-Pfad.');bytes+=Buffer.from(value,'base64').length;}
       if(bytes>5000000)throw fail(413,'Vorschau darf höchstens 5 MB groß sein.');const previewId=token();

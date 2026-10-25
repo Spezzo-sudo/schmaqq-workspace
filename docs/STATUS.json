@@ -1,13 +1,14 @@
 {
   "password_recovery_20261025": {
-    "state": "candidate_implemented_verified_smtp_and_owner_approval_pending",
+    "state": "candidate_verified_zod4_smtp_and_owner_approval_pending",
     "branch": "fix/studio-secure-password-recovery-20261025",
     "base_source": "R24 production source, resolved through Git ancestry",
-    "scope": "Password reset UI, one-time 15-minute hashed token, enumeration-neutral request, throttling, same-origin confirm, session and device revocation. Reuses existing workspace_meta; no schema tables added. SMTP TLS 465, operator-configured only.",
-    "tests": "5/5 focused PASS; full Linux verification 174 PASS, 0 FAIL, 3 expected SKIP; desktop/mobile isolated login UI tested",
-    "requires": "Protected SMTP credentials, real owner mailbox confirmation, separate new Release/Recovery gate and owner GO",
+    "scope": "Password reset UI, one-time 15-minute hashed token, enumeration-neutral request, throttling, same-origin confirm, session and device revocation. Reuses existing workspace_meta; no schema tables added. SMTP TLS 465, operator-configured only. Zod security upgrade to 4.6.7 and early Preview record length check.",
+    "tests": "5/5 focused PASS; full Linux verification 174 PASS, 0 FAIL, 3 expected SKIP; 3/3 runner integration PASS; Chromium desktop/mobile recovery-request UI previously passed; full Chrome E2E with live SMTP pending",
+    "requires": "Dedicated SMTP credentials in operator-only channel, isolated real-mail test, full Chromium link/reset E2E, new Release/Recovery gate and owner GO",
     "production_changed": false,
-    "evidence": "docs/PASSWORD_RECOVERY_SECURITY.md"
+    "evidence": "docs/PASSWORD_RECOVERY_SECURITY.md",
+    "security": "GHSA-mrhx-c7xc-m3w5 cleared from npm audit for zod 4.6.7; remaining 5 advisories are full-monorepo dependencies outside isolated Studio runtime"
   },
   "ux_navigation_20261024": {
     "state": "local_navigation_implemented_verified_owner_acceptance_open",

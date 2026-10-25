@@ -1,5 +1,15 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
+## 25.10.2026: Zod-Lücke im Recovery-Kandidaten gezielt adressiert
+
+Zod 3.25.76 durch 4.6.7 ersetzt, record-Schnittstelle migriert und
+Runner-Preview-Dateizahl vor Zod geprüft. Studio-Gesamtsuite, gezielte
+Runner-HTTP-Regressionen und unabhängiger Audit bestätigen: der frühere
+Zod-HIGH-Befund entfällt. Fünf Warnungen für nicht im separaten Studio-Runtime-
+Paket enthaltene Monorepo-Abhängigkeiten bleiben bestehen. Keine Production-
+Änderung. SMTP-Betreiberkonfiguration und echte Mail-/Browser-End-to-End-
+Freigabe sind weiterhin offen. Siehe PASSWORD_RECOVERY_SECURITY.md.
+
 ## 25.10.2026: Sicherheitsfunktion „Passwort vergessen“ – isolierter Kandidat
 
 Auf eigenem Review-Branch auf der unveränderten produktiven R24-Quelle: Einmalige

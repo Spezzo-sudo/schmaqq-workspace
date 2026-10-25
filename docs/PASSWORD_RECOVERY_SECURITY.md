@@ -69,14 +69,22 @@ oder Logs zeigen.
 7. Nach Deployment einen **echten** Owner-Reset nur mit dessen Einverständnis
    ausführen; keine automatische Passwortänderung.
 
-**Zusätzlicher Auditbefund vom 25.10.2026:** Der npm-Produktionsdependency-Audit
-meldet insgesamt sechs bereits vorhandene Advisories (1 kritisch, 3 hoch,
-2 moderat), vor allem im separaten Next-Starterpfad. Auch das im Studio-Runtime
-enthaltene Zod 3.x wird als hoch gemeldet. **Nodemailer 10.2.1 hat in dieser
-Prüfung keinen gemeldeten eigenen Advisory.** Das ist kein Freispruch für den
-Gesamtstack; vor dem späteren Release ist die tatsächliche Exposition von Zod
-und die getrennte Next-Anwendung ausdrücklich zu bewerten. Keine ungeprüfte
-Major-Version-Migration innerhalb dieses Passwort-Recovery-Fixes.
+**Zod-Security-Fix (25.10.2026):** GHSA-mrhx-c7xc-m3w5 betraf das bisherige
+Zod 3.25.76. Nach begrenztem Major-Upgrade auf gepatchtes **Zod 4.6.7**
+und Anpassung von `z.record(value)` zu `z.record(key,value)` sind Backend-
+Runner-Verträge, TypeScript und vollständige Studio-Suite erfolgreich.
+Zusätzlich verweigert `/api/runner/report` Preview-Records mit mehr als
+500 Dateien vor der Schema-Prüfung. Grosse Runner-Events (>40) sowie
+Preview-Records (>500) haben explizite negative HTTP-Regressionen.
+
+**Audit-Reproduktion:** vorher 6 Meldungen, darunter Zod HIGH; nachher
+5 Meldungen, **Zod 0**. Die übrigen fünf Meldungen (Next kritisch,
+Sharp/Source-Map-JS hoch und zwei moderate) betreffen Abhängigkeiten des
+separaten Entwicklungs-/Starterpfades. Das isolierte Studio-Release kopiert
+nur `node_modules/zod`, `node_modules/jose` und `node_modules/nodemailer`,
+nicht Next/Sharp/Source-Map-JS. Das ist keine Freigabe für die getrennte
+Starteranwendung. Vor einem Release ist die gesonderte Artefaktprüfung
+und die tatsächliche Runtime-Exposition erneut zu bestätigen.
 
 **Nicht gelöst:** Absicherung beim Verlust des gesamten VPS (Offsite/Host-Recovery),
 fehlende SMTP-Konfiguration und mögliche abweichende Konto-E-Mail des Eigentümers.
