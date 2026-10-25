@@ -20,7 +20,8 @@ export function createAuthHttpRoute({
   fail,
   uuid,
   now,
-  loginLimiter
+  loginLimiter,
+  passwordRecovery
 }) {
   const text = z.string().trim().min(1).max(160);
   const publicMember = member => ({
@@ -41,6 +42,28 @@ export function createAuthHttpRoute({
       send({
         user: publicMember(user(req))
       });
+      return true;
+    }
+    if (route === '/api/auth/recovery/status' && method === 'GET') {
+      send({available: passwordRecovery.available});
+      return true;
+    }
+    if (route === '/api/auth/recovery/request' && method === 'POST') {
+      const v = parse(z.object({
+        email: z.string().trim().email().max(200)
+      }), await readJSON(req, 2048));
+      const result = passwordRecovery.request(req, v.email.toLowerCase());
+      send(result.body, result.status);
+      return true;
+    }
+    if (route === '/api/auth/recovery/confirm' && method === 'POST') {
+      const v = parse(z.object({
+        token: z.string().regex(/^[a-zA-Z0-9_-]{43}$/),
+        password: z.string().min(12).max(200)
+      }), await readJSON(req, 2048));
+      if (!passwordRecovery.confirm(req, v.token, v.password))
+        throw fail(400, 'Link ungültig oder abgelaufen. Bitte einen neuen anfordern.');
+      send({ok: true});
       return true;
     }
     if (route === '/api/auth/login' && method === 'POST') {

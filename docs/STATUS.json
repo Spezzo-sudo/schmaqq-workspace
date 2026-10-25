@@ -1,4 +1,14 @@
 {
+  "password_recovery_20261025": {
+    "state": "candidate_implemented_verified_smtp_and_owner_approval_pending",
+    "branch": "fix/studio-secure-password-recovery-20261025",
+    "base_source": "R24 production source, resolved through Git ancestry",
+    "scope": "Password reset UI, one-time 15-minute hashed token, enumeration-neutral request, throttling, same-origin confirm, session and device revocation. Reuses existing workspace_meta; no schema tables added. SMTP TLS 465, operator-configured only.",
+    "tests": "5/5 focused PASS; full Linux verification 174 PASS, 0 FAIL, 3 expected SKIP; desktop/mobile isolated login UI tested",
+    "requires": "Protected SMTP credentials, real owner mailbox confirmation, separate new Release/Recovery gate and owner GO",
+    "production_changed": false,
+    "evidence": "docs/PASSWORD_RECOVERY_SECURITY.md"
+  },
   "ux_navigation_20261024": {
     "state": "local_navigation_implemented_verified_owner_acceptance_open",
     "branch": "local/studio-navigation-20261024",

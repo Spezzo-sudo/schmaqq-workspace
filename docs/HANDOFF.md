@@ -1,5 +1,19 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
+## 25.10.2026: Sicherheitsfunktion „Passwort vergessen“ – isolierter Kandidat
+
+Auf eigenem Review-Branch auf der unveränderten produktiven R24-Quelle: Einmalige
+15-Minuten-Links über ausschliesslich TLS-geschützten, operator-konfigurierten
+SMTP-Versand. SHA256 statt Roh-Token in der vorhandenen workspace_meta-Tabelle,
+kein neues Schema, neutrale Anfrageantworten, Rate-Limits und atomarer Widerruf
+aller Studio-Sitzungen/Gerätetokens beim Passwortwechsel. Anmeldung, Bearbeitung
+und vorhandene Konten bleiben bis zu einer separaten Deploymentfreigabe unverändert.
+
+Die Betreiber-Konfiguration für die SCHMAQQ-Absenderdomain und ein echter
+Postfachempfang stehen noch aus. Test- und Sicherheitsumfang sowie Grenzen:
+[Passwort-Wiederherstellung](PASSWORD_RECOVERY_SECURITY.md).
+
+
 ## 24.10.2026: Navigation, Vorschau und verständliche Rückwege
 
 Der vorherige persönliche Test war für den Owner nicht selbständig bedienbar.

@@ -43,11 +43,13 @@ function copy(source, dest = source) {
 for (const file of [
   'server', 'store', 'reviews', 'workspaces', 'admin', 'backup', 'private-path', 'ai-routes',
   'oidc', 'connections', 'collaboration', 'change-overview', 'source-evidence',
-  'project-start', 'github-pr-status', 'auth-http', 'workspace-http', 'login-rate-limit'
+  'project-start', 'github-pr-status', 'auth-http', 'workspace-http', 'login-rate-limit',
+  'password-recovery'
 ]) copy('selfhost/' + file + '.mjs');
 copy('studio-dist');
 copy('node_modules/zod');
 copy('node_modules/jose');
+copy('node_modules/nodemailer');
 copy('selfhost/deploy');
 
 writeFileSync(path.join(directory, 'package.json'), JSON.stringify({
