@@ -9,10 +9,16 @@ ROOT=Path(__file__).resolve().parent.parent
 parser=argparse.ArgumentParser()
 parser.add_argument('--node',required=True)
 parser.add_argument('--output',required=True)
+parser.add_argument('--release-dir')
+parser.add_argument('--expected-sha')
 args=parser.parse_args()
 out=Path(args.output).resolve();out.mkdir(parents=True,exist_ok=True,mode=0o700)
 env={k:v for k,v in os.environ.items() if not k.startswith(('STUDIO_','GH_','GITHUB_','OPENAI_')) and k not in ('NODE_OPTIONS','NODE_PATH')}
 env['R25_FIXTURE_PORT']='45661'
+if args.release_dir:
+ assert args.expected_sha and len(args.expected_sha)==40,'Immutable verification needs a pinned source SHA'
+ env['R25_FIXTURE_RELEASE']=str(Path(args.release_dir).resolve())
+ env['R25_FIXTURE_SOURCE']=args.expected_sha
 child=subprocess.Popen([args.node,str(ROOT/'scripts/r25-room-fixture.mjs')],cwd=ROOT,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
 metadata=None;checks=[];errors=[]
 def mark(x):checks.append(x);print('PASS '+x,flush=True)
@@ -121,7 +127,7 @@ try:
   assert not errors,'Browser exceptions: '+str(errors)
   mark('no-uncaught-browser-errors')
   browser.close()
- result={'status':'PASS','checks':checks,'checksPassed':len(checks),'productionChanged':False,'realPersonalAccountsUsed':False,'purpose':'isolated R26 task/handoff UX'}
+ result={'status':'PASS','checks':checks,'checksPassed':len(checks),'productionChanged':False,'realPersonalAccountsUsed':False,'purpose':'isolated R26 task/handoff UX','releaseSource':args.expected_sha}
  (out/'result.json').write_text(json.dumps(result,indent=2)+'\n')
  print('R26_BROWSER=PASS checks='+str(len(checks)))
 except Exception as e:
