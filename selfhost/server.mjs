@@ -73,7 +73,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     const selected=db.prepare('SELECT id FROM projects WHERE id=?').get(v.project);
     const started=db.prepare('SELECT owner FROM project_starts WHERE project=?').get(v.project);
     const role=db.prepare('SELECT role FROM members WHERE id=?').get(d.owner)?.role;
-    if(!selected||(!started&&role!=='owner')||(started&&started.owner!==d.owner&&role!=='owner'))throw fail(403,'Projekt und persönlicher Runner sind nicht gemeinsam freigegeben.');
+    if(!selected||(started?started.owner!==d.owner:role!=='owner'))throw fail(403,'Projekt und persönlicher Runner sind nicht gemeinsam freigegeben.');
     send({ok:true});return;
    }
    if(await aiRoute({route,method,req,db,user,device,send,readJSON,parse}))return;

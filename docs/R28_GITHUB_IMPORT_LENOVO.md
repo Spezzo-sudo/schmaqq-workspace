@@ -34,7 +34,7 @@ Nicht Teil dieses Schrittes: eine neue Runnerregistrierung, geteilte GitHub- ode
 
 ## Security und technische Nachweise
 
-- Besitzer-/Geräteprüfung auf dem Studio-Server: `/api/runner/project-setup-verify`.
+- Besitzer-/Geräteprüfung auf dem Studio-Server: `/api/runner/project-setup-verify`. Ein über diesen Assistenten angelegtes Projekt darf **ausschliesslich mit einem Gerät seines anlegenden Kontos** importiert werden – selbst die globale Studio-Owner-Rolle ist keine Ausnahme. Die globale Owner-Rolle bleibt nur für historische Projekte ohne `project_starts`-Eigentümernachweis zugelassen.
 - Lokal: strikte GitHub-URL-Zulassung, symlinkfreie Elternpfade, exklusiv neue Zielverzeichnisse, Schutz bestehender Runnerprofile/Arbeitskopien, `shell:false`, Git-Hooks/Fsmonitor beim Clone deaktiviert, keine automatische Submodul-Initialisierung.
 - Git-Credentials bleiben im Betriebssystem/Git Credential Manager bzw. persönlichen SSH-Agenten. Studio speichert sie nicht.
 - Bestehende Runner-`inspect`-, `prepare`-, `check`- und `review`-Pfadlogik wird **wiederverwendet**.

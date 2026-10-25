@@ -14,7 +14,7 @@ test('project start is idempotent and personal readiness never reveals another r
  const dir=mkdtempSync(path.join(os.tmpdir(),'studio-start-api-')),origin='http://127.0.0.1:44351',app=createStudioServer({filename:path.join(dir,'studio.sqlite'),origin});await new Promise(r=>app.server.listen(44351,'127.0.0.1',r));
  const request=async(route,value,cookie,token,from=origin)=>{const r=await fetch(origin+route,{method:value?'POST':'GET',headers:{...(value?{Origin:from,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:value?JSON.stringify(value):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};};
  try{
-  const a=await request('/api/auth/register',{invite:createInvite(app.db,'a@fixture.invalid'),name:'A',password:'fixture-password-1234'}),b=await request('/api/auth/register',{invite:createInvite(app.db,'b@fixture.invalid'),name:'B',password:'fixture-password-1234'});
+  const a=await request('/api/auth/register',{invite:createInvite(app.db,'a@fixture.invalid','owner'),name:'A',password:'fixture-password-1234'}),b=await request('/api/auth/register',{invite:createInvite(app.db,'b@fixture.invalid'),name:'B',password:'fixture-password-1234'});
   const payload={id:randomUUID(),title:'Gemeinsames Projekt',description:'Prüfbares Ergebnis',mode:'new'};
   assert.equal((await request('/api/project-start',payload)).status,401);assert.equal((await request('/api/project-start',payload,a.cookie,null,'https://foreign.invalid')).status,403);
   const started=await request('/api/project-start',payload,a.cookie);assert.equal(started.status,200);assert.equal((await request('/api/project-start',payload,a.cookie)).data.project,started.data.project);
@@ -23,6 +23,10 @@ test('project start is idempotent and personal readiness never reveals another r
   const foreignDevice=(await request('/api/development',{action:'device',name:'Other PC'},b.cookie)).data;
   assert.equal((await request('/api/runner/project-setup-verify',{project:started.data.project},null,device.token)).status,200);
   assert.equal((await request('/api/runner/project-setup-verify',{project:started.data.project},null,foreignDevice.token)).status,403);
+  const another=await request('/api/project-start',{id:randomUUID(),title:'Projekt B',description:'Privates Projekt von B',mode:'github'},b.cookie);
+  assert.equal(another.status,200);
+  assert.equal((await request('/api/runner/project-setup-verify',{project:another.data.project},null,device.token)).status,403,'Global owner must not import another account\'s private project');
+  assert.equal((await request('/api/runner/project-setup-verify',{project:'website'},null,device.token)).status,200,'Legacy projects remain accessible to the studio owner');
   assert.equal((await request('/api/runner/project-setup-verify',{project:'does-not-exist'},null,device.token)).status,403);
   assert.equal((await request('/api/runner/project-setup-verify',{project:started.data.project})).status,401);
   const capabilities=await aiCapabilities({projects:{[started.data.project]:{repo:'/not-transmitted',check:['node','--test'],publish:false,allowCodex:false,preview:{build:['node','build.mjs'],directory:'dist'}}}});
