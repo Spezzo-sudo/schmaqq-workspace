@@ -89,3 +89,15 @@
 .r26-section-kicker{font-size:9px;letter-spacing:1px}
 }
 @media(prefers-reduced-motion:reduce){.r26-mode-choice{transition:none}}
+
+/* Keep first team invitation in the same task rather than navigating away. */
+.r26-inline-invite{margin:14px 0 10px;padding:15px;border:1px solid #d7e4c9;border-radius:9px;background:#fffefa;max-width:100%;min-width:0}
+.r26-inline-invite>h2{font-size:14px!important;color:#405a35;margin:0 0 7px}
+.r26-inline-invite>p{font-size:11px;line-height:1.65;color:#728565;margin-bottom:12px}
+.r26-inline-invite label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:#59744b;margin:0 0 10px;overflow-wrap:anywhere}
+.r26-inline-invite input{display:block;min-height:44px;width:100%;max-width:100%;border:1px solid #bfcfb0;border-radius:7px;padding:9px 11px;background:#fff;color:#374c30;font:13px/1.6 Inter,Arial,sans-serif}
+.r26-inline-invite button{border-radius:7px;padding:10px 13px;min-height:43px;border:1px solid #b1ca8c;background:#e0f5b1;color:#3a5726;font-size:12px}
+.r26-inline-invite .invite-link{font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.r26-inline-invite .form-error{font-size:11px;color:#b74437}
+.r26-prerequisite .rw-button.subtle{margin-left:9px}
+@media(max-width:650px){.r26-inline-invite{padding:12px}.r26-prerequisite .rw-button.subtle{margin:9px 0 0}.r26-inline-invite button{width:100%}}

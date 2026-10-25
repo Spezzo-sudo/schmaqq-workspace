@@ -4,6 +4,7 @@ import Development from '../app/development';
 import TaskDiscussion,{type TaskComment} from '../app/task-discussion';
 import {statuses,type Task} from '../app/workspace-model';
 import RoomAssistant from './room-assistant';
+import TeamInvite from '../app/team-invite';
 import {roomRequest,saveDraft,storedDraft,type RoomState,type ContextPreview,type Resource} from './room-model';
 
 type Review={id:string;ownerName:string;commit:string;state:string};
@@ -17,6 +18,7 @@ export default function RoomTask({taskId,room,resources,userId,onClose,onRefresh
 }){
  const [detail,setDetail]=useState<Detail|null>(null),[mode,setMode]=useState<WorkingMode>(()=>{const m=storedDraft('r26-mode:'+userId+':'+taskId);return ['people','self','ai'].includes(m)?m as WorkingMode:'choose';});
  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[editing,setEditing]=useState(false),[selectedReview,setSelectedReview]=useState(''),[context,setContext]=useState<ContextPreview|null>(null),[include,setInclude]=useState(true);
+ const [inviteOpen,setInviteOpen]=useState(false);
  const [title,setTitle]=useState(''),[description,setDescription]=useState(''),[editRevision,setEditRevision]=useState(0);
  const commentKey='room-comment:'+userId+':'+taskId;const [draft,setDraft]=useState(()=>storedDraft(commentKey));
  const panel=useRef<HTMLElement|null>(null),latest=useRef<Detail|null>(null);
@@ -32,6 +34,7 @@ export default function RoomTask({taskId,room,resources,userId,onClose,onRefresh
  const phase=task?.status==='done'?'Erledigt':lastReview?'Ergebnis zur Prüfung':ongoing?'Bearbeitung vorhanden':task?.assignee?'Verantwortung vergeben, Bearbeitung noch nicht gestartet':'Noch niemand zuständig';
  const source=room.messages.find(m=>m.taskId===taskId);
  const people=room.members.filter(m=>m.id!==userId);
+ const isOwner=room.members.some(m=>m.id===userId&&m.role==='owner');
  function choose(next:WorkingMode){setMode(next);saveDraft('r26-mode:'+userId+':'+taskId,next);}
  async function action(data:Record<string,unknown>){setBusy(true);setError('');try{await roomRequest('/api/collaboration/task',{task:taskId,...data});await Promise.all([refresh(),onRefresh()]);return true;}catch(e){setError((e as Error).message);return false;}finally{setBusy(false);}}
  async function beginEdit(){if(!detail)return;setTitle(detail.task.title);setDescription(detail.task.description);setEditRevision(detail.brief.revision);setEditing(true);}
@@ -62,7 +65,7 @@ export default function RoomTask({taskId,room,resources,userId,onClose,onRefresh
      <h3>Ein Auftrag. Ihr entscheidet, wer ihn weiterbringt.</h3>
      <div className="r26-mode-choices">{modes.map(([id,label,Icon])=><button key={id} onClick={()=>choose(id)} className={'r26-mode-choice '+(mode===id?'selected':'')} aria-pressed={mode===id}><Icon size={20}/><span>{label}</span><ArrowRight size={14}/></button>)}</div>
      {mode==='people'&&<div className="r26-mode-panel"><strong>Mit wem möchtest du arbeiten?</strong><p>Die Übergabe ist sofort in diesem Raum sichtbar. Markus sieht denselben Auftrag und kann hier antworten. Ein Rechner oder Git ist dafür noch nicht nötig.</p>
-      {!people.length&&<div className="r26-prerequisite"><Users size={18}/><div><strong>Noch kein zweites Teamkonto</strong><p>Lade Markus unter „Team & Ressourcen“ ein. Der Auftrag bleibt hier gespeichert.</p><button className="rw-button" onClick={onTeam}>Teammitglied einladen</button></div></div>}
+      {!people.length&&<div className="r26-prerequisite"><Users size={18}/><div><strong>Noch kein zweites Teamkonto</strong><p>Der Auftrag bleibt hier gespeichert. Markus benötigt einmalig ein eigenes Konto – keinen Zugang zu deinem Konto.</p>{isOwner?<><button className="rw-button" onClick={()=>setInviteOpen(!inviteOpen)} aria-expanded={inviteOpen}>{inviteOpen?'Einladung schliessen':'Markus direkt hier einladen'}</button>{inviteOpen&&<TeamInvite compact/>}<button className="rw-button subtle" onClick={()=>void onRefresh()}>Team aktualisieren</button></>:<button className="rw-button" onClick={onTeam}>Eigentümer um Einladung bitten</button>}</div></div>}
       {people.map(person=><div className="r26-person" key={person.id}><span className="rw-avatar">{person.name.slice(0,2).toUpperCase()}</span><div><strong>{person.name}</strong><small>{task?.assignee===person.id?'Ist zuständig':'Kann die Aufgabe übernehmen'}</small></div><button disabled={busy||task?.status==='done'||!!task?.assignee&&task.assignee!==userId} className="rw-button" onClick={()=>void action({action:'handoff',assignee:person.id,expectedAssignee:task?.assignee??null})}>{task?.assignee===person.id?'Bereits übergeben':'Übergeben'}</button></div>)}
       {task?.assignee===userId&&<button disabled={busy||ongoing} className="rw-button subtle" onClick={()=>void action({action:'handoff',assignee:null,expectedAssignee:userId})}>Meine Zuständigkeit freigeben</button>}
       {task?.assignee&&task.assignee!==userId&&<p className="r26-handoff-note"><CheckCheck size={16}/>{selected?.name} ist verantwortlich. Rückfragen und Ergebnisse bleiben weiter unten im Gespräch.</p>}

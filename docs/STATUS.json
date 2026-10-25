@@ -11,7 +11,10 @@
     "production_changed": false,
     "release_approved": false,
     "evidence": "docs/evidence/R26_TASK_FLOW_ACCEPTANCE_20261025.md",
-    "next": "Review and actual two-person pilot, only then exact release + operator backup/H3 scope + separate deployment GO"
+    "next": "Review and actual two-person pilot, only then exact release + operator backup/H3 scope + separate deployment GO",
+    "real_team_onboarding": "Owner can invite member directly inside task; 48h single-use link via existing owner-only endpoint; second account registers with own password; direct task handoff and response confirmed by isolated real Chrome test (7/7); no personal live account modified.",
+    "browser_onboarding": "7/7 Chrome owner-only fixture PASS; invitation generated, second account joined, replay denied, task handed off and replied, no JS errors; synthetic only.",
+    "limitations": "Real Markus registration, real personal runner and GitHub/AI connections still need actual human sign-in; R25 remains production. Historical H3 mismatch remains unresolved."
   },
   "workspace_rooms_r25_20261025": {
     "state": "room_first_candidate_implemented_and_synthetic_pilot_passed_not_deployed",

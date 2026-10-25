@@ -1,5 +1,23 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
+## 25.10.2026: R26 – Markus direkt in einer Aufgabe einladen
+
+Die zuerst gebaute R26-Aufgabenansicht musste für den tatsächlichen
+Single-Owner-Produktionszustand einen weiteren Navigationsbruch vermeiden.
+Owner kann jetzt direkt unter „Mit dem Team“ eine **persönliche Einladung**
+erzeugen, ohne den Aufgabenbereich zu verlassen. Single-use-Link mit
+48 Stunden Laufzeit; kein SMTP-Versand, keine Konto-/Runner-Übernahme.
+
+Echter isolierter Chrome-Lauf: ein synthetischer Owner startet ohne
+zweites Konto, erstellt den Link, ein zweites eigenes Konto registriert
+sich, Wiederverwendung des Links wird abgewiesen, der Owner übergibt
+dieselbe Aufgabe und bekommt eine Antwort zurück. **7/7 PASS.**
+Persönliche Registrierung von Markus und der lokale Git-Runner sind noch
+nicht ausgeführt. R25-Produktion bleibt unverändert.
+
+[Onboarding-Runbook](R26_REAL_TEAM_ONBOARDING.md).
+
+
 ## 25.10.2026: R26 – ein einziger Aufgabenablauf (Review-Kandidat)
 
 Die tatsächliche Handy-Bedienung von R25 war trotz erfolgreicher Integration
