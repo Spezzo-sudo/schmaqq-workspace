@@ -6,11 +6,11 @@
     "security": "File event HTTP route remains owner scoped (401 without session, 403 for another account); no changes to review approval, integration, publish or permissions.",
     "focused_tests": "review.test.mjs, studio.test.mjs and editor-size-contract.test.mjs: 5 PASS, 0 FAIL, isolated Node 24.15.0",
     "verification": "npm run studio:verify: 190 tests, 187 PASS, 0 FAIL, 3 expected Linux skips; Source Guard, TypeScript and Vite PASS",
-    "browser_test": "Not required for this backend-only fix; combined R28 UI and runner candidate requires separate isolated browser acceptance.",
+    "browser_test": "Combined with R28 / PR #46 only in a disposable local test worktree: Google Chrome 147, desktop 1320x920 and mobile emulation 390x844, real project/import UI, denied download without consent, credential-free setup-plan Blob, 0 uncaught browser errors PASS. No external/Production deployment.",
     "deployment": false,
     "merge": false,
     "documentation": "docs/R27_FILE_EVENTS_REVIEW_FIX.md",
-    "next": "Review separate draft PR and test combined with R28 GitHub import in an isolated candidate; Lenovo owner acceptance and Production promotion require explicit separate approval."
+    "next": "Review the separate R27 fix Draft PR and R28 import Draft PR. Combined local verification and synthetic Chrome UI acceptance passed; real Lenovo Windows/Codex pilot and any external deployment or merge still require separate explicit owner approval."
   },
   "r27_design_diff_20261025": {
     "state": "isolated_source_implemented_awaiting_immutable_review_not_live",

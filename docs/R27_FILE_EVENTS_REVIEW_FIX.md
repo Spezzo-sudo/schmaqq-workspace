@@ -30,4 +30,14 @@ Die Protokolle enthalten **keine Dateiinhalte**, keine lokalen Zugangsdaten und 
 
 Die Tests verwenden synthetische persönliche Konten, isolierte lokale Git-Repositories und einen temporären Studio-Server. Kein echter Lenovo-Runner, keine realen Accounts, keine automatische Codex-Modellnutzung. Dieser Fix ist unabhängig vom GitHub-Import in R28 / Draft-PR #46; für einen gemeinsamen R28-Kandidaten beide Quellstände ausschliesslich in einer temporären Test-Arbeitskopie kombinieren.
 
+## Gemeinsame lokale Kandidatenprüfung mit R28 / PR #46
+
+PR #46 und der separate Datei-Event-Fix wurden ausschliesslich in einer **wegwerfbaren lokalen Git-Arbeitskopie** kombiniert; beide Quell-PRs blieben unabhängig und wurden nicht gemergt.
+
+- **Kombinierte Integrationsprobe:** GitHub-Import mit lokalem Git-Testtransport und anschliessendem `inspect` / `prepare`, Projekt- und Geräteberechtigungen, privater Datei-Review-Test — **4/4 PASS**.
+- **Gesamtsuite:** `npm run studio:verify` — **194 Tests: 191 PASS, 0 FAIL, 3 erwartete Linux-Skips; Source Guard, TypeScript und Vite-Build PASS** (Node 24.15.0).
+- **Kontrollierte lokale Browserbereitstellung:** Studio-Server auf Loopback mit synthetischem Eigentümerkonto und eigenem SQLite-Teststand, UI-Build aus der kombinierten Arbeitskopie. Google Chrome 147: Desktop 1320×920, mobile Emulation 390×844, echter Klickweg zu „Bestehendes GitHub-Repository importieren“, Eingabe von Repository und Windows-Beispielpfad, explizite Zustimmungsverweigerung mit Fehlermeldung, danach Zustimmung und Downloadplan. Aus dem vom Browser erzeugten JSON-Blob wurden `schema: schmaqq-project-setup-v1`, `mode: github` und die Test-Repository-Adresse geprüft. **Kein Token/Passwort, 0 uncaught JavaScript exceptions.**
+- **Nachweise:** bisherige browserbasierte Screenshots aus [PR #46](https://github.com/Spezzo-sudo/schmaqq-workspace/pull/46) unter `docs/evidence/issue45/`. Die neuen kombinierten Screenshots wurden im temporären Testbereich visuell geprüft; sie enthalten nur synthetische Identitäten und werden nicht als Production-Abnahme ausgegeben.
+- **Kein externer Staging-Host geändert:** Diese lokale Bereitstellung war nicht `studio.schmaqq.com`, nicht `preview.schmaqq.com` und kein Provider-Deployment.
+
 **Kein Merge, kein Production-Deployment.** Die reale Lenovo-/Windows-Abnahme und der historische H3-Owner-Mismatch sind weiterhin offen.

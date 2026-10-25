@@ -6,7 +6,7 @@ Ausgangs-R27: Der bestehende Review-Integrationstest scheitert am fehlenden Date
 
 Separater Review-Fix: drei begrenzte `type:'files'`-Meldungen nach erfolgreichen Aktionen, ausschliesslich erlaubte Dateinamen, keine Inhalte oder geheimen Daten. Die Regression prüft 401/403-Zugriff, keine Inhaltsweitergabe und keine Erfolgsereignisse bei gesperrten Dateien. **5/5 fokussierte Tests PASS; vollständiges `studio:verify` PASS: 190 Tests, 187 PASS, 3 erwartete Skips, 0 FAIL; TypeScript/Vite/Guard PASS.** R27 und PR #46 bleiben unverändert, kein Merge/Deployment. [Repro und Details](R27_FILE_EVENTS_REVIEW_FIX.md).
 
-Nächster Schritt: getrennten Fix-Draft und zusammen mit R28 einen kombinierten, lokalen Testkandidaten prüfen. Danach Lenovo-Eigentümerabnahme, erst mit gesonderter Freigabe produktive Schritte.
+Die **kombinierte lokale Testkopie von R28-Import und Review-Fix** wurde danach eigenständig geprüft: `npm run studio:verify` **194 Tests, 191 PASS, 3 erwartete Skips, 0 FAIL; TypeScript/Vite/Guard PASS**. Reale Chrome-Bedienung mit synthetischem Owner an isoliertem Loopback-Server, Desktop und mobil, Zustimmung/Fehler, heruntergeladener JSON-Plan ohne Credentials, 0 JS-Ausnahmen PASS. Keine öffentliche Test- oder Production-Bereitstellung, kein Merge. Weiter: beide Draft-PRs reviewen und Lenovo-Eigentümerabnahme planen. [Kombinierter Nachweis](R27_FILE_EVENTS_REVIEW_FIX.md).
 
 ## 25.10.2026: R27 – Designkonvergenz und gemeinsamer Git-Diff (noch nicht live)
 
