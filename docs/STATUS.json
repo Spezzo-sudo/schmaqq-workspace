@@ -1,4 +1,23 @@
 {
+  "workspace_rooms_r25_20261025": {
+    "state": "room_first_candidate_implemented_and_synthetic_pilot_passed_not_deployed",
+    "branch": "feat/workspace-rooms-r25-20261025",
+    "base": "PR38 reviewed Zod4/password-recovery line; exact identity is Git ancestry, not remote main",
+    "implemented": "No-path project rooms; persistent room messages/replies; source-linked tasks/decisions; same-task discussion, real editor/test/preview/review; explicit local-model team grants and bounded context; private output with owner-controlled publication; repository/chat references labelled as references; mobile navigation, drafts and safe deep-link resumption.",
+    "data": "No new SQL tables or migrations. Existing entities and namespaced workspace_meta. One private team, not tenant-isolated rooms. Old general chats/documents retained through explicit previous-view links.",
+    "backend_verification": "188 tests: 185 PASS, 0 FAIL, 3 expected Linux platform skips; Source Guard, TypeScript, Vite PASS",
+    "browser_verification": "22 real Chromium checks passed on the source build; two personal sessions, observer privacy check, phone flow, two real disposable Node/Git runners, file save, Node tests/build/preview, independent peer review. Separate immutable-archive rerun is required and is reported in the release handoff.",
+    "ai_boundary": "Local model transport/consent/context/result pipeline exercised with explicitly synthetic output; no real model inference, personal Codex account or Markus hardware claimed tested.",
+    "limitations": "No automatic GitHub clone/repository creation from browser; no private ChatGPT transcript sync; first PC/project enrollment still uses existing local helper; live SMTP and password-recovery rollout remain operator work; shared local AI is text-only, not arbitrary access to another user runner.",
+    "production_changed": false,
+    "release_approved": false,
+    "next": "Review immutable candidate in isolated authenticated preview; then operator backup/restore/H3 against current R24 data and explicit owner promotion approval; personal two-user real-device pilot.",
+    "documentation": [
+      "docs/WORKSPACE_ROOMS.md",
+      "docs/HERMES_R25_ROOMS_HANDOFF.md",
+      "docs/evidence/WORKSPACE_R25_ACCEPTANCE_20261025.md"
+    ]
+  },
   "password_recovery_20261025": {
     "state": "candidate_verified_zod4_smtp_and_owner_approval_pending",
     "branch": "fix/studio-secure-password-recovery-20261025",

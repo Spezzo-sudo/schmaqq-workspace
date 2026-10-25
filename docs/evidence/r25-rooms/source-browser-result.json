@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "checks": [
+    "separate-personal-browser-sessions",
+    "no-path-no-git-project-created-in-browser",
+    "persistent-project-conversation",
+    "second-person-sees-and-replies-without-context-copy",
+    "message-to-task-preserves-source",
+    "task-claim-comment-shared-with-second-person",
+    "decision-stays-linked-to-project",
+    "draft-survives-tab-change-and-reload",
+    "repository-reference-and-external-link-not-misreported-as-integration",
+    "offline-model-does-not-block-planning",
+    "authorized-team-compute-job-with-project-context-and-private-output",
+    "explicit-owner-share-returns-ai-result-to-room",
+    "real-git-copy-editor-save-and-unsaved-test-guard",
+    "real-configured-node-test-completed",
+    "built-preview-served-on-isolated-preview-origin",
+    "real-git-review-commit-and-diff-created",
+    "independent-second-person-review-in-the-same-task",
+    "result-gates-distinguish-tested-reviewed-and-not-published",
+    "mobile-navigation-task-creation-and-no-horizontal-overflow",
+    "task-pane-restored-after-mobile-reload",
+    "existing-deep-link-opens-same-new-room",
+    "no-uncaught-browser-errors"
+  ],
+  "checksPassed": 22,
+  "browser": "Google Chrome / Playwright",
+  "desktop": [
+    1440,
+    1000
+  ],
+  "mobile": [
+    390,
+    844
+  ],
+  "realProviderInference": false,
+  "syntheticRunnerResult": true,
+  "productionChanged": false,
+  "releaseSource": null
+}

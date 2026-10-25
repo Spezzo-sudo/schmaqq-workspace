@@ -1,5 +1,32 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
+## 25.10.2026: R25 Workspace Rooms – zusammenhängender Arbeitsweg
+
+Eigener Engineering-Branch `feat/workspace-rooms-r25-20261025`, auf der
+PR38-Linie statt ungeprüftem main. Neue normale Oberfläche ist der Projektraum:
+Raumgespräch, Aufgaben, Ergebnisse, Wissen und Code/KI gehören zusammen.
+Projektanlage am Handy verlangt keinen Rechnerpfad. Nachrichten lassen sich
+mit Herkunft in Aufgaben und Entscheidungen überführen. Zwei Benutzer können
+an derselben Aufgabe diskutieren; Code-Arbeitskopien und Prüfrechte bleiben
+personengetrennt. Kontext für Codex wird sichtbar und optional mitgegeben.
+
+Lokale Textmodelle verwenden bestehende persönliche Freigaben des Rechner-
+besitzers. Eine Antwort ist zuerst privat für Auftraggeber und Gerätebesitzer;
+der Auftraggeber teilt sie ausdrücklich im Raum. ChatGPT/GitHub-Verweise
+werden nicht als automatisch synchronisierte Chats oder geklonte Repos ausgegeben.
+
+Source-Gesamtcheck: 188 Tests, 185 PASS, 0 FAIL, 3 erwartete Skips; TypeScript,
+Vite, Source Guard PASS. Source-Chromium-Pilot: 22 Punkte, echte isolierte
+Git-Arbeitskopie/Runner/Datei/Tests/Vorschau und Zweitprüfung. Modelloutput im
+Pilot ist synthetisch; persönliche Accounts/Hardware bleiben ungeprüft.
+Der abschliessende Prüflauf am unveränderten Release wird im privaten
+Handoff und PR dokumentiert. Kein Merge, Deployment oder Production-Mutation.
+
+[Produkt und Abzweigungen](WORKSPACE_ROOMS.md) ·
+[Abnahme](evidence/WORKSPACE_R25_ACCEPTANCE_20261025.md) ·
+[Betreiberübergabe](HERMES_R25_ROOMS_HANDOFF.md).
+
+
 ## 25.10.2026: Zod-Lücke im Recovery-Kandidaten gezielt adressiert
 
 Zod 3.25.76 durch 4.6.7 ersetzt, record-Schnittstelle migriert und

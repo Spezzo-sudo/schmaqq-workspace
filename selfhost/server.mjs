@@ -17,6 +17,7 @@ import {createAuthHttpRoute} from './auth-http.mjs';
 import {createLoginLimiter} from './login-rate-limit.mjs';
 import {createResetMailer, createPasswordRecovery} from './password-recovery.mjs';
 import {createWorkspaceHttpRoute} from './workspace-http.mjs';
+import {createRoomRoute} from './room-http.mjs';
 import { openStore,digest,token,transaction } from './store.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -48,6 +49,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  const authHttpRoute=createAuthHttpRoute({
   db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now,loginLimiter,passwordRecovery
  });
+ const roomRoute=createRoomRoute({db,user,readJSON,parse});
  const workspaceHttpRoute=createWorkspaceHttpRoute({
   db,user,readJSON,parse,record,fail
  });
@@ -68,6 +70,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(await projectStartRoute({route,method,req,db,user,send,readJSON,parse}))return;
    if(await aiRoute({route,method,req,db,user,device,send,readJSON,parse}))return;
    if(await authHttpRoute({route,method,req,res,send}))return;
+   if(await roomRoute({route,method,req,res,url,send}))return;
    if(route==='/api/runner/poll'&&method==='POST'){
     const d=device(req);db.prepare('UPDATE devices SET seen=? WHERE id=?').run(now(),d.id);
     // A lost acknowledgement must never execute a code job a second time.

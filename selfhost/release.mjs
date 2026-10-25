@@ -44,7 +44,7 @@ for (const file of [
   'server', 'store', 'reviews', 'workspaces', 'admin', 'backup', 'private-path', 'ai-routes',
   'oidc', 'connections', 'collaboration', 'change-overview', 'source-evidence',
   'project-start', 'github-pr-status', 'auth-http', 'workspace-http', 'login-rate-limit',
-  'password-recovery'
+  'password-recovery', 'room-http'
 ]) copy('selfhost/' + file + '.mjs');
 copy('studio-dist');
 copy('node_modules/zod');
