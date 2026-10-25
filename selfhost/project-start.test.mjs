@@ -20,11 +20,16 @@ test('project start is idempotent and personal readiness never reveals another r
   const started=await request('/api/project-start',payload,a.cookie);assert.equal(started.status,200);assert.equal((await request('/api/project-start',payload,a.cookie)).data.project,started.data.project);
   assert.equal((await request('/api/project-start',{...payload,title:'Changed'},a.cookie)).status,409);assert.equal((await request('/api/project-start',payload,b.cookie)).status,409);
   const device=(await request('/api/development',{action:'device',name:'Personal PC'},a.cookie)).data;
+  const foreignDevice=(await request('/api/development',{action:'device',name:'Other PC'},b.cookie)).data;
+  assert.equal((await request('/api/runner/project-setup-verify',{project:started.data.project},null,device.token)).status,200);
+  assert.equal((await request('/api/runner/project-setup-verify',{project:started.data.project},null,foreignDevice.token)).status,403);
+  assert.equal((await request('/api/runner/project-setup-verify',{project:'does-not-exist'},null,device.token)).status,403);
+  assert.equal((await request('/api/runner/project-setup-verify',{project:started.data.project})).status,401);
   const capabilities=await aiCapabilities({projects:{[started.data.project]:{repo:'/not-transmitted',check:['node','--test'],publish:false,allowCodex:false,preview:{build:['node','build.mjs'],directory:'dist'}}}});
   assert.equal(JSON.stringify(capabilities).includes('/not-transmitted'),false);
   assert.equal((await request('/api/runner/capabilities',capabilities,null,device.token)).status,200);
   const own=(await request('/api/development',null,a.cookie)).data.readiness,foreign=(await request('/api/development',null,b.cookie)).data.readiness;
-  assert.equal(own.reports[0].projects[0].id,started.data.project);assert.equal(own.reports[0].projects[0].allowCodex,false);assert.equal(own.reports[0].codex,'disabled');assert.equal(foreign.reports.length,0);assert.ok(!JSON.stringify(own).includes('/not-transmitted'));
+  assert.equal(own.reports[0].projects[0].id,started.data.project);assert.equal(own.reports[0].projects[0].allowCodex,false);assert.equal(own.reports[0].codex,'disabled');assert.equal(foreign.reports.length,1);assert.equal(foreign.reports[0].projects,null);assert.ok(!JSON.stringify(own).includes('/not-transmitted'));
   const {development,...legacy}=capabilities;await request('/api/runner/capabilities',legacy,null,device.token);
   assert.equal((await request('/api/development',null,a.cookie)).data.readiness.reports[0].projects,null);
  }finally{await new Promise(r=>app.server.close(r));app.db.close();assert.ok(dir.startsWith(path.join(os.tmpdir(),'studio-start-api-')));rmSync(dir,{recursive:true,force:true});}

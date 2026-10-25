@@ -4,7 +4,7 @@ import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const sourceFiles=['runner','local-ai','process','files','codex-run','pilot-runner','source-revision','project-setup'].map(n=>'selfhost/'+n+'.mjs');
+const sourceFiles=['runner','local-ai','process','files','codex-run','pilot-runner','source-revision','project-setup','github-import'].map(n=>'selfhost/'+n+'.mjs');
 const source=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 if(execFileSync('git',['status','--porcelain','--',...sourceFiles,'selfhost/runner-package.mjs'],{cwd:root,encoding:'utf8'}).trim())throw new Error('Runner-Quellcode zuerst prüfen und committen.');
 const destination=path.join(root,'.studio','runner-packages',new Date().toISOString().replace(/[:.]/g,'-'));

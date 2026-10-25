@@ -68,6 +68,14 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(await connectionRoute({route,method,req,res,url,send}))return;
    if(await collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
    if(await projectStartRoute({route,method,req,db,user,send,readJSON,parse}))return;
+   if(route==='/api/runner/project-setup-verify'&&method==='POST'){
+    const d=device(req),v=parse(z.object({project:id}),await readJSON(req));
+    const selected=db.prepare('SELECT id FROM projects WHERE id=?').get(v.project);
+    const started=db.prepare('SELECT owner FROM project_starts WHERE project=?').get(v.project);
+    const role=db.prepare('SELECT role FROM members WHERE id=?').get(d.owner)?.role;
+    if(!selected||(!started&&role!=='owner')||(started&&started.owner!==d.owner&&role!=='owner'))throw fail(403,'Projekt und persönlicher Runner sind nicht gemeinsam freigegeben.');
+    send({ok:true});return;
+   }
    if(await aiRoute({route,method,req,db,user,device,send,readJSON,parse}))return;
    if(await authHttpRoute({route,method,req,res,send}))return;
    if(await roomRoute({route,method,req,res,url,send}))return;

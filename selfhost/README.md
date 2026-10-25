@@ -533,8 +533,7 @@ separat freigegebenen Live-Rollout ein konsistentes Backup aus.
 ## Geführter Projektstart und persönliche Bereitschaft (S2, Kandidat)
 
 Unter Projekte → Neues Projekt werden Ziel und lokaler Einstieg gemeinsam erfasst.
-Es gibt zwei Wege: vorhandenen Git-Stammordner mit origin verwenden oder ein neues
-lokales Startprojekt mit Startseite, node:test und statischem Build anlegen.
+Drei Wege sind vorgesehen: ein bestehendes privates GitHub-Repository sicher auf den eigenen Rechner importieren, einen bereits vorhandenen lokalen Git-Stammordner verbinden oder ein neues lokales Startprojekt mit Startseite, node:test und statischem Build anlegen.
 Ein neues Startprojekt hat zunächst nur ein lokales Bare-Remote; es ist dadurch
 noch nicht vom Rechner des Kollegen erreichbar. Gemeinsames externes Remote
 separat bereitstellen; keine automatische GitHub-Anlage oder Veröffentlichung.

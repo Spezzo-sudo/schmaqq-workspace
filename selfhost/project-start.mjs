@@ -10,7 +10,7 @@ export function projectReadiness(db,member){
 export async function projectStartRoute({route,method,req,db,user,send,readJSON,parse}){
  if(route!=='/api/project-start')return false;
  const member=user(req);if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
- const value=parse(z.object({id:z.string().uuid(),title:z.string().trim().min(1).max(160),description:z.string().trim().max(12000),mode:z.enum(['existing','new'])}),await readJSON(req));
+ const value=parse(z.object({id:z.string().uuid(),title:z.string().trim().min(1).max(160),description:z.string().trim().max(12000),mode:z.enum(['existing','new','github'])}),await readJSON(req));
  let project;
  transaction(db,()=>{
   const existing=db.prepare('SELECT * FROM project_starts WHERE id=?').get(value.id);

@@ -326,6 +326,8 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .project-start input,.project-start textarea,.project-start select { width: 100%; min-width: 0; }
 .project-start-steps { display: flex; flex-wrap: wrap; gap: 16px; list-style: none; padding: 0; font-size: 12px; }
 .project-location-fields details label { margin-top: 12px; }
+.project-start label.project-consent { display: flex; align-items: flex-start; gap: 11px; line-height: 1.6; }
+.project-start .project-consent input[type="checkbox"] { width: 17px; min-width: 17px; height: 17px; flex: 0 0 17px; margin-top: 2px; }
 .project-local-next pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; border: 1px solid var(--line); margin: 14px 0; }
 
 /* PR16 usability: keep separate workflow steps and review explanation readable. */
