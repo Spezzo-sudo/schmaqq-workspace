@@ -56,10 +56,21 @@ export class LocalRunner{
   if(await this.git(w.dir,'branch','--show-current')!==w.branch)throw new Error('Arbeitszweig wurde außerhalb des Workspace geändert.');
   if(['files','read-file','save-file'].includes(job.action)){
    const tracked=(await this.git(w.dir,'ls-files','-z','--')).split('\0').filter(allowedFile);
-   if(job.action==='files')return {files:tracked.slice(0,2000),truncated:tracked.length>2000};
+   if(job.action==='files'){
+    // Emit bounded filename-only audit metadata. This event route is owner-scoped;
+    // never include file contents or credentials in runner event logs.
+    control.onEvent?.({type:'files',text:'Dateiliste: '+tracked.slice(0,2000).join(', ').slice(0,3500)});
+    return {files:tracked.slice(0,2000),truncated:tracked.length>2000};
+   }
    if(!tracked.includes(job.payload.file))throw new Error('Nur bereits in Git erfasste Dateien können geöffnet werden.');
-   if(job.action==='read-file')return readSource(w.dir,job.payload.file);
-   return {...saveSource(w.dir,job.payload.file,job.payload.revision,job.payload.content),source:await sourceRevision(w.dir,control)};
+   if(job.action==='read-file'){
+    const result=readSource(w.dir,job.payload.file);
+    control.onEvent?.({type:'files',text:'Datei geöffnet: '+job.payload.file});
+    return result;
+   }
+   const saved=saveSource(w.dir,job.payload.file,job.payload.revision,job.payload.content),source=await sourceRevision(w.dir,control);
+   control.onEvent?.({type:'files',text:'Datei gespeichert: '+job.payload.file});
+   return {...saved,source};
   }
   if(job.action==='status')return {branch:w.branch,status:await this.git(w.dir,'status','--short'),diff:(await this.git(w.dir,'diff','HEAD','--')).slice(0,50000),commit:await this.git(w.dir,'rev-parse','HEAD'),source:await sourceRevision(w.dir,control)};
   if(job.action==='check'){const before=await sourceRevision(w.dir,control),checks=await this.check(w.dir,p);return {checks,commit:await this.git(w.dir,'rev-parse','HEAD'),source:stableSource(before,await sourceRevision(w.dir,control))};}

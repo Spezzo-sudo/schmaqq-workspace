@@ -1,5 +1,13 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
+## 25.10.2026: Isolierte Reparatur des R27-Datei-Ereignisprotokolls (kein Rollout)
+
+Ausgangs-R27: Der bestehende Review-Integrationstest scheitert am fehlenden Dateinamen in den privatisierten Ereignissen für `files`, `read-file` und `save-file`. Ursache: Im Runner fehlen die Erfolgsmeldungen, obwohl der Server Datei-Ereignisse bereits nur dem Job-Eigentümer ausliefert. Das ist unabhängig von R28 / Import-PR #46.
+
+Separater Review-Fix: drei begrenzte `type:'files'`-Meldungen nach erfolgreichen Aktionen, ausschliesslich erlaubte Dateinamen, keine Inhalte oder geheimen Daten. Die Regression prüft 401/403-Zugriff, keine Inhaltsweitergabe und keine Erfolgsereignisse bei gesperrten Dateien. **5/5 fokussierte Tests PASS; vollständiges `studio:verify` PASS: 190 Tests, 187 PASS, 3 erwartete Skips, 0 FAIL; TypeScript/Vite/Guard PASS.** R27 und PR #46 bleiben unverändert, kein Merge/Deployment. [Repro und Details](R27_FILE_EVENTS_REVIEW_FIX.md).
+
+Nächster Schritt: getrennten Fix-Draft und zusammen mit R28 einen kombinierten, lokalen Testkandidaten prüfen. Danach Lenovo-Eigentümerabnahme, erst mit gesonderter Freigabe produktive Schritte.
+
 ## 25.10.2026: R27 – Designkonvergenz und gemeinsamer Git-Diff (noch nicht live)
 
 Die bestehende SCHMAQQ-Website ist das verbindliche Designvorbild.

@@ -46,10 +46,16 @@ test('two accounts review real Git snapshots: no self approval, SHA binding, fee
    const route='/api/development/events?job='+fileJob.job.id;
    assert.equal((await request(route)).status,401);
    const own=await request(route,null,a.cookie);assert.equal(own.status,200);
-   assert.ok(own.data.events.some(event=>event.text.includes('value.txt')));
+   const fileEvents=own.data.events.filter(event=>event.type==='files');
+   assert.ok(fileEvents.some(event=>event.text.includes('value.txt')),'Dateioperation muss im eigenen Auditlog erkennbar sein.');
+   assert.ok(fileEvents.every(event=>event.text.length<=4000),'Auditlogs müssen begrenzt bleiben.');
+   assert.ok(!JSON.stringify(own.data.events).includes('Gemeinsam prüfen'),'Inhalte dürfen nie im Auditlog auftauchen.');
+   assert.ok(!JSON.stringify(own.data.events).includes('Neue Datei'),'Ungespeicherte Dateien dürfen nicht im Auditlog auftauchen.');
    assert.equal((await request(route,null,b.cookie)).status,403);
   }
-  await assert.rejects(runner.run({...opened.job,action:'read-file',payload:{...opened.job.payload,file:'new.txt'}}),/Git erfasste/);
+  const rejectedEvents=[];
+  await assert.rejects(runner.run({...opened.job,action:'read-file',payload:{...opened.job.payload,file:'new.txt'}},{onEvent:e=>rejectedEvents.push(e)}),/Git erfasste/);
+  assert.equal(rejectedEvents.some(event=>event.type==='files'),false,'Ungültiger Dateizugriff darf kein Erfolgsereignis erzeugen.');
   const first=await dispatch('review',prepared.job.id);
   assert.match(first.result.diff,/Gemeinsam prüfen/);assert.match(first.result.diff,/new.txt/);assert.equal(first.result.published,false);
   assert.equal(await git(dir,'--git-dir',bare,'rev-parse','main'),prepared.result.commit);

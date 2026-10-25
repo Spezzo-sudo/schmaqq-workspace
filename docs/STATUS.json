@@ -1,4 +1,17 @@
 {
+  "r27_file_events_review_fix_20261025": {
+    "state": "isolated_review_candidate_not_deployed",
+    "origin": "The R27 review.test.mjs owner-scoped file-event assertion failed because LocalRunner emitted no filename event for files, read-file or save-file, despite the server already enforcing owner-only access.",
+    "change": "Add bounded filename-only type:files success events in the existing runner for Git-tracked file list/read/save operations; no file contents, commands or credentials in logs, and no success event for disallowed reads.",
+    "security": "File event HTTP route remains owner scoped (401 without session, 403 for another account); no changes to review approval, integration, publish or permissions.",
+    "focused_tests": "review.test.mjs, studio.test.mjs and editor-size-contract.test.mjs: 5 PASS, 0 FAIL, isolated Node 24.15.0",
+    "verification": "npm run studio:verify: 190 tests, 187 PASS, 0 FAIL, 3 expected Linux skips; Source Guard, TypeScript and Vite PASS",
+    "browser_test": "Not required for this backend-only fix; combined R28 UI and runner candidate requires separate isolated browser acceptance.",
+    "deployment": false,
+    "merge": false,
+    "documentation": "docs/R27_FILE_EVENTS_REVIEW_FIX.md",
+    "next": "Review separate draft PR and test combined with R28 GitHub import in an isolated candidate; Lenovo owner acceptance and Production promotion require explicit separate approval."
+  },
   "r27_design_diff_20261025": {
     "state": "isolated_source_implemented_awaiting_immutable_review_not_live",
     "source": "Current deployed marketing stylesheet and docs from Spezzo-sudo/NetzKontor@92aad74781c03c7414d5a7adfd6c0568ad82c99b (historical repo name); brand/V1 remains concept, not approved animated logo replacement.",
