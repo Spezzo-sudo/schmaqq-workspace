@@ -4,11 +4,12 @@ import Development from '../app/development';
 import TaskDiscussion,{type TaskComment} from '../app/task-discussion';
 import {statuses,type Task} from '../app/workspace-model';
 import RoomAssistant from './room-assistant';
+import TaskReviewDiff from './task-review-diff';
 import TeamInvite from '../app/team-invite';
 import {roomRequest,saveDraft,storedDraft,type RoomState,type ContextPreview,type Resource} from './room-model';
 
 type Review={id:string;ownerName:string;commit:string;state:string};
-type Change={workspace:string;check?:{status:string};preview?:{id:string;status:string};review?:{id:string;state:string;changedAfter?:boolean}};
+type Change={workspace:string;lastActivity?:{kind:string;status:string;created:number}|null;check?:{status:string};preview?:{id:string;status:string};review?:{id:string;state:string;changedAfter?:boolean}};
 type Detail={task:Task;brief:{revision:number};comments:TaskComment[];reviews:Review[];workspaces:{id:string;owner:string;status?:string;deviceName?:string}[];changes:Change[]};
 type WorkingMode='choose'|'people'|'self'|'ai';
 const modes:[WorkingMode,string,typeof Users][]=[['people','Mit dem Team',Users],['self','Selbst bearbeiten',Code2],['ai','Mit KI',Sparkles]];
@@ -81,8 +82,10 @@ export default function RoomTask({taskId,room,resources,userId,onClose,onRefresh
     </section>
     <section className="r26-task-results"><div className="r26-section-kicker"><span className="r26-step">04</span> ERGEBNIS & PRÜFUNG</div>
      {!detail?.reviews.length&&!detail?.changes.length?<p className="rw-muted">Noch kein Code-Ergebnis. Sobald eine Arbeitskopie, Vorschau oder ein Prüfstand entsteht, findest du ihn hier – bei derselben Aufgabe.</p>:<>
-      {detail?.changes.map(change=><div className="r26-result" key={change.workspace}><GitBranch size={18}/><div><strong>Arbeitsstand</strong><small>{change.check?.status==='completed'?'Tests ausgeführt':'Tests noch nicht bestätigt'} · {change.review?.state==='approved'?'Geprüft':'Review offen'} · nicht automatisch veröffentlicht</small></div></div>)}
+      {detail?.changes.map(change=><div className="r26-result" key={change.workspace}><GitBranch size={18}/><div><strong>Arbeitsstand</strong><small>{change.check?.status==='completed'?'Tests ausgeführt':'Tests noch nicht bestätigt'} · {change.review?.state==='approved'?'Geprüft':'Review offen'} · nicht automatisch veröffentlicht</small>
+       {change.lastActivity&&<small className="r27-activity">Letzte bestätigte Aktion: {({ 'save-file':'Datei gespeichert','codex':'Codex-Auftrag','check':'Testlauf','preview':'Vorschau','review':'Prüfstand','submit':'Veröffentlichung' } as Record<string,string>)[change.lastActivity.kind]??'Aktualisierung'} · {change.lastActivity.status==='completed'?'Abgeschlossen':change.lastActivity.status==='running'?'In Ausführung':change.lastActivity.status==='queued'?'Wartet':'Nicht abgeschlossen'} · {new Date(change.lastActivity.created).toLocaleString('de-CH')}<br/>Gespeicherte Ereignisse werden regelmässig abgeglichen, keine Live-Cursor oder ungespeicherten Entwürfe.</small>}</div></div>)}
       {detail?.reviews.map(review=><div className="r26-result" key={review.id}><ShieldCheck size={18}/><div><strong>Prüfstand von {review.ownerName}</strong><small>{review.commit.slice(0,10)} · {review.state==='approved'?'freigegeben':'Prüfung offen'}</small></div><button className="rw-button" onClick={()=>setSelectedReview(review.id)}>Prüfen</button></div>)}
+      {selectedReview&&<TaskReviewDiff key={selectedReview} task={taskId} review={selectedReview} changedAfter={detail?.changes.some(c=>c.review?.id===selectedReview&&c.review.changedAfter)??false} onClose={()=>setSelectedReview('')}/>}
       {mode==='self'?<p className="rw-muted">Deine Vorschau, Tests und Codeänderungen öffnest du direkt bei „Selbst bearbeiten“ – dieselbe Arbeitskopie, kein zweiter Editor.</p>:<details className="r26-work-details"><summary><Monitor size={17}/>Vorschau ansehen oder aktualisieren <ChevronDown size={16}/></summary><Development projects={[room.project]} userId={userId} initialProject={room.project.id} initialTask={taskId} mode="focused" panel="preview" onOpenSetup={onConnect}/></details>}
      </>}
     </section>
@@ -90,7 +93,7 @@ export default function RoomTask({taskId,room,resources,userId,onClose,onRefresh
      {detail&&<div className="task-discussion"><TaskDiscussion taskId={taskId} comments={detail.comments} draft={draft} onDraft={value=>{setDraft(value);saveDraft(commentKey,value);}} onPosted={refresh}/></div>}
     </section>
    </div>
-   {selectedReview&&<div style={{display:'none'}}><Development key={selectedReview} projects={[room.project]} userId={userId} initialProject={room.project.id} initialTask={taskId} initialReview={selectedReview} mode="focused" panel="history" onReviewClosed={()=>setSelectedReview('')}/></div>}
+
   </section>
  </div>;
 }

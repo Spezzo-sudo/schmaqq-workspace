@@ -12,8 +12,29 @@ export function assertAssignment(db,task,assignee){
  if(taskWorkspaces(db,task).some(w=>w.owner!==assignee))throw fail(409,'Für diese Aufgabe ist noch ein Arbeitsbereich reserviert. Erst abstimmen und den Arbeitsbereich abschließen.');
 }
 export async function collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}){
- if(!['/api/collaboration','/api/collaboration/task','/api/collaboration/change'].includes(route))return false;
+ if(!['/api/collaboration','/api/collaboration/task','/api/collaboration/task-diff','/api/collaboration/change'].includes(route))return false;
  const member=user(req);
+ // A review diff is shared only after a completed task-bound review/submit.
+ // Never expose draft, file content, job output or another task's worktree.
+ if(route==='/api/collaboration/task-diff'){
+  if(method!=='GET')throw fail(405,'Methode nicht erlaubt.');
+  const taskId=parse(id,url.searchParams.get('task'));
+  const reviewId=parse(id,url.searchParams.get('review'));
+  const task=db.prepare('SELECT id FROM tasks WHERE id=?').get(taskId);
+  if(!task)throw fail(404,'Aufgabe fehlt.');
+  const job=db.prepare(`SELECT j.id,j.owner,j.created,j.result,m.name AS ownerName FROM jobs j
+   JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree')
+   JOIN members m ON m.id=j.owner
+   WHERE j.id=? AND w.task=? AND j.status='completed' AND j.action IN ('review','submit')
+   AND w.archived=0 AND j.owner=(SELECT owner FROM jobs WHERE id=w.job)
+   LIMIT 1`).get(reviewId,taskId);
+  if(!job)throw fail(404,'Kein fertiger Prüfstand für diese Aufgabe.');
+  let result={};try{result=JSON.parse(job.result??'{}')??{};}catch{}
+  const diff=typeof result.diff==='string'?result.diff:'';
+  const complete=typeof result.diff==='string'&&result.diffTruncated!==true&&diff.length<50000;
+  send({review:job.id,ownerName:job.ownerName,commit:typeof result.commit==='string'&&/^[a-f0-9]{40,64}$/.test(result.commit)?result.commit:null,
+   created:job.created,complete,diff:complete?diff:'',limited:!complete});return true;
+ }
  if(route==='/api/collaboration/change'){
   if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
   const value=parse(z.object({workspace:id,revision:z.number().int().min(0),kind:z.enum(['unspecified','feature','fix','maintenance']),body:z.string().trim().max(4000)}),await readJSON(req));

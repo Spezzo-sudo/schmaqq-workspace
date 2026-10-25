@@ -1,4 +1,18 @@
 {
+  "r27_design_diff_20261025": {
+    "state": "isolated_source_implemented_awaiting_immutable_review_not_live",
+    "source": "Current deployed marketing stylesheet and docs from Spezzo-sudo/NetzKontor@92aad74781c03c7414d5a7adfd6c0568ad82c99b (historical repo name); brand/V1 remains concept, not approved animated logo replacement.",
+    "features": "Source-linked SCHMAQQ marketing design tokens in Workspace UI; pinned design guide in every room Knowledge; authenticated task-bound completed Git review diff red/green with lines; last acknowledged worktree action only, no private files or prompt, existing 5s task polling.",
+    "security": "No public review content; no cross-task review access; incomplete/truncated diff never exposed as completed view; no current working-tree code snapshot; personal runner access unchanged.",
+    "source_qa": "190 tests, 187 PASS, 0 FAIL, 3 expected Linux skips; TypeScript, Source Guard and Vite PASS.",
+    "browser_qa": "8/8 Chrome checks on source build with two separate synthetic accounts, mobile and desktop, no horizontal page overflow or uncaught browser errors.",
+    "limitations": "Git diff is completed reviewed commit only; no live cursors, shared simultaneous text editing or uncommitted draft synchronization; review data seeded synthetically in browser fixture; real Markus/Marco devices not involved.",
+    "prod_changed": false,
+    "owner_approval": false,
+    "h3_historical_owner_mismatch": "unresolved",
+    "documentation": "docs/R27_DESIGN_AND_TEAM_DIFF.md",
+    "next": "Immutable artifact browser repeat, design review, real two-person workflow validation then separate owner/operator production GO."
+  },
   "r26_one_task_one_flow": {
     "state": "implemented_review_candidate_not_deployed",
     "user_problem": "R25 video showed multiple task tabs, misleading In Arbeit on self-claim and missing direct handoff/execute path",

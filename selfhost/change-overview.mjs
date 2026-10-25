@@ -23,7 +23,10 @@ export function changeOverview(db,workspaces){
     ...(job.action==='review'||job.action==='submit'?{state:reviewState(db,job),published:job.action==='submit'&&result.published===true}:{}),
    };
   };
+  const lastActivity=jobs.find(j=>['save-file','codex','check','preview','review','submit'].includes(j.action));
   return {workspace:w.id,task:w.taskId,project:w.project,
+   // Metadata only: last acknowledged action, never job result, prompt, file path or private draft.
+   lastActivity:lastActivity?{kind:lastActivity.action,status:lastActivity.status,created:lastActivity.created}:null,
    // A completed review or submit ran the configured tests on exactly its committed state.
    check:(job=>!job?null:{...evidence(job),...(job.action==='check'?{}:{via:'review'})})(jobs.find(j=>j.action==='check'||['review','submit'].includes(j.action)&&j.status==='completed')),
    preview:evidence(jobs.find(j=>j.action==='preview')),

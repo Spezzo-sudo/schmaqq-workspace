@@ -1,5 +1,35 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
+## 25.10.2026: R27 – Designkonvergenz und gemeinsamer Git-Diff (noch nicht live)
+
+Die bestehende SCHMAQQ-Website ist das verbindliche Designvorbild.
+Die R27-Quelle fixiert das Marketing-Commit 92aad747 und übernimmt die
+benutzten Farben, Schriften, Abstände und Linien statt weiterer freier
+Workspace-Farben. In jedem Projektraum sind die Referenzen unter Wissen
+sichtbar, die neuere V1-Markenrichtung bleibt als Entwurf gekennzeichnet.
+
+Das bisher verborgene Git-Review zeigt jetzt **direkt in der Aufgabe**
+einen vollständigen, taskgebundenen Diff mit grünen Ergänzungen, roten
+Löschungen, Commit und Warnung vor möglicher Veraltung. Andere Personen
+mit eigener Studiositzung können denselben *abgeschlossenen Prüfstand*
+sehen; ungespeicherte Editor-Entwürfe und private Runnerinhalte werden
+niemals dazu synchronisiert. Laufende Aufgaben zeigen die letzte
+bestätigte Aktion (nur Typ/Status/Zeit) bei bestehendem 5-Sekunden-Poll.
+
+Source-Prüfung: 190 Tests / 187 PASS / 0 FAIL / 3 erwartete Skips;
+Source Guard, TypeScript und Vite PASS. Chrome: 8/8 isolierte checks
+mit zwei synthetischen Konten, 390px-Handy, normalem Desktop, keinem
+Seitenüberlauf und keinen ungefangenen Browser-Fehlern. Das Diff stammt
+für den Browsernachweis aus ausdrücklich **synthetischen Fixture-Daten**.
+
+**Kein** Live-Editing desselben Dokuments, keine WebSockets oder
+Cursorübertragung, keine persönlichen Geräte/Accounts geprüft. R26
+bleibt produktiv. H3-Historiengrenze bleibt offen.
+
+[Design-/Diff-Plan](R27_DESIGN_AND_TEAM_DIFF.md) ·
+[Browserbelege](evidence/R27_DESIGN_DIFF_ACCEPTANCE_20261025.md)
+
+
 ## 25.10.2026: R26 – Markus direkt in einer Aufgabe einladen
 
 Die zuerst gebaute R26-Aufgabenansicht musste für den tatsächlichen

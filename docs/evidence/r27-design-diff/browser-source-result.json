@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "checksPassed": 8,
+  "checks": [
+    "two-authenticated-and-isolated-browser-sessions",
+    "canonical-marketing-palette-and-design-guide-findable-in-project-knowledge",
+    "task-inline-latest-activity-only-acknowledged-job",
+    "git-review-diff-inline-green-additions-red-deletions-and-commit-bound-label",
+    "second-person-can-read-identical-reviewed-git-diff",
+    "mobile-task-with-diff-no-page-horizontal-overflow",
+    "review-diff-can-be-closed-without-losing-task",
+    "no-uncaught-browser-errors"
+  ],
+  "productionChanged": false,
+  "fixtureDiffSynthetic": true,
+  "personalAccountsUsed": false,
+  "releaseSource": null
+}

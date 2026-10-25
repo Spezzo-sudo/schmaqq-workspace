@@ -23,6 +23,8 @@ test('change overview keeps failures and historical evidence honest without expo
   assert.equal(state().review.state,'approved');
   // Same timestamp, later row: successful file save invalidates older evidence.
   job('save-file','completed',{content:'private-content'});
+  assert.deepEqual(state().lastActivity,{kind:'save-file',status:'completed',created:100});
+  assert.ok(!JSON.stringify(state().lastActivity).includes('private-content'));
   assert.equal(state().check.changedAfter,true);assert.equal(state().preview.changedAfter,true);assert.equal(state().review.changedAfter,true);
   assert.equal(state().review.state,'approved'); // Historical vote remains, not current-code approval.
   job('check','failed',{error:'private-error'});
