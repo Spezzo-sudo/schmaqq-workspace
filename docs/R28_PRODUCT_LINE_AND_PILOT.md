@@ -1,90 +1,81 @@
-# R28 – Eine klare Produktlinie und ein echter Zwei-Personen-Pilot
+# R28 – Produktlinie: zuerst Marcos eigener Entwicklungsalltag
 
-_Status: **Review-Entwurf der Produktentscheidung**, 25.10.2026. Keine Laufzeitänderung, kein Deployment, keine implizite Merge-/Providerfreigabe._
+_Status: **Review-Entwurf**, 25.10.2026, nach Owner-Korrektur aktualisiert. Kein Deployment, keine neuen Modellzugänge, kein Merge und keine Runtime-Änderung._
 
-## Ein Satz, der alle Entscheidungen ordnet
+## Ein Satz, der die Richtung vorgibt
 
-**SCHMAQQ Workspace ist ein gemeinsamer, dauerhafter Arbeitsraum für Menschen. SCHMAQQ Studio ist darin die Entwicklungszentrale; persönliche Coding-Agenten können begrenzt mitarbeiten.**
+**SCHMAQQ Workspace ist ein dauerhafter gemeinsamer Arbeitsraum für Menschen. SCHMAQQ Studio ist die Entwicklungszentrale darin, die persönliche Coding-Agenten kontrolliert einsetzen kann.**
 
-Der erste nachzuweisende Nutzen ist **nicht** ein weiterer Agenten-Adapter, sondern:
-**Marco und Markus erledigen in einem realen Projekt mit getrennten Konten und jeweils eigenen ChatGPT-/Codex-Zugängen eine Änderung bis zum gegenseitigen Code-Review – verständlich am Desktop und auf dem Handy.**
+**Aktuelle Reihenfolge vom Owner:** Marco entwickelt und testet zunächst **allein** mit seinem bestehenden Studio-Konto, dem eigenen Lenovo und seinem persönlichen ChatGPT-/Codex-Zugang. Markus lebt in Thailand, ist nicht laufend erreichbar und wird **erst dann eingeladen, wenn die Bedienung für Marco alleine ausreichend funktioniert.** Sein Einstieg ist ein späterer eigenständiger Meilenstein und **kein Blocker** für R28-0.
 
-Daran messen wir jede neue Idee. Kein „Discord mit Terminal“, keine Kopie von VS Code, keine autonome KI-Firma und kein neues Orchestrierungsframework vor diesem Nachweis.
+Das Mehrbenutzer-Ziel bleibt architektonisch erhalten: separate Menschenidentitäten, persönliche Runner, getrennte Codex-Anmeldungen, begrenzte Freigaben, identifizierbare Autoren und versionsgebundene Reviews. Das heutige Solo-Ergebnis darf aber nicht als echtes Peer-Review oder als bestandene Zwei-Personen-Abnahme ausgegeben werden.
 
-Diese Linie konkretisiert, ersetzt aber nicht die R1-Vision in [PRODUCT_VISION.md](PRODUCT_VISION.md) und die Sicherheitsgrenzen in [AGENTS.md](../AGENTS.md), [WORKSPACE_ROOMS.md](WORKSPACE_ROOMS.md) und [INTEGRATION_BOUNDARIES.md](INTEGRATION_BOUNDARIES.md).
+Diese Festlegung konkretisiert [PRODUCT_VISION.md](PRODUCT_VISION.md), [AGENTS.md](../AGENTS.md), [WORKSPACE_ROOMS.md](WORKSPACE_ROOMS.md) und [INTEGRATION_BOUNDARIES.md](INTEGRATION_BOUNDARIES.md).
 
-## Was entschieden ist – was noch nicht
+## Verbindlich entschieden
 
-| Entscheidung für den ersten realen Pilot | Grenze |
+| Entscheidung | Konsequenz |
 | --- | --- |
-| **Ein Projektraum** als Einstieg, nicht fünf isolierte Anwendungen | Diskussion, Aufgaben, Wissen, Ergebnisse und Codeansicht bleiben im selben Projekt |
-| **Menschen entscheiden und besitzen den Arbeitskontext** | Agenten sind ausführende Helfer, keine Projekt-Owner oder automatische Teammitglieder mit Menschenrechten |
-| **Studio = Entwicklungsansicht** | Git und eigene Arbeitskopien bleiben die Code-Wahrheit; ein Git-Review ist kein Merge und kein Deployment |
-| **Zwei persönliche Konten und persönliche ChatGPT-/Codex-Zugänge** | Keine Abo-Pools, Weitergabe von Cookies/Tokens, automatisches Nutzen des anderen Kontingents oder zusätzliche gebührenpflichtige Modell-API |
-| **Codex zuerst, über den vorhandenen persönlichen Runner** | Realer Codex-Zugang, Gerätebereitschaft und lokale Projektfreigaben sind erst zu prüfen, nicht als live bewiesen zu behaupten |
-| **Projektgedächtnis ist strukturiertes Wissen** | Keine riesigen Chatprotokolle blind in Prompts, kein automatisches Erinnern jeder Unterhaltung, keine behaupteten garantierten Token-Ersparnisse |
-| **Eine SCHMAQQ-Designfamilie** | Die aktuelle Website-Referenz gilt; keine neue unabhängige SaaS-Oberfläche, keine unfreigegebene Logo-Ablösung |
+| **Ein Projektraum als Ausgangspunkt** | Projektziel, Aufgabe, Unterhaltung, Wissen und Ergebnisse bleiben im selben Arbeitszusammenhang |
+| **Studio als Entwicklungszentrale** | Dateien, Git, Codezustand, Tests, Vorschau, Auftragshistorie und Review |
+| **Codex zuerst, persönliche Anmeldung** | Vorhandener Runner und ChatGPT-Abo; kein API- oder Fremdmodell-Zwang und kein Teilen von Konten |
+| **Privater Rechner als Ausführungsgrenze** | Keine stillschweigende Agentenausführung auf dem produktiven SCHMAQQ-Server |
+| **Projektgedächtnis statt Chat-Dump** | Vorhandenes `AGENTS.md`, ausgewähltes Projektwissen und bestätigte Entscheidungen gezielt heranziehen |
+| **SCHMAQQ-eigene Oberfläche** | Design der bestehenden Marke; keine kopierte IDE oder kopiertes Discord |
+| **Menschliche Kontrolle** | Agenten erzeugen Arbeit, Menschen prüfen; Git-Push, Merge und Deployment bleiben ausdrücklich getrennt |
 
-**Noch keine Architekturentscheidung:** Discord-Klon, mehrere Harnesses, ACP, AG-UI, OpenClaw, Hermes, Paperclip, DeepSeek Harness, OpenCode, Claude, Kimi, vollständige Browser-IDE, Yjs, autonome Heartbeats oder Multi-Tenant-SaaS. Diese Ideen bleiben im [R28-Ideenspeicher](R28_IDEAS_PARKING_LOT.md), nicht in der aktuellen Implementierung.
+**Nicht aktiv implementieren:** Neue Anbieter und Harnesses, Paperclip, OpenClaw, Hermes Agent, DeepSeek Harness, OpenCode, Claude/Kimi, ACP/AG-UI, autonome Daueragenten, Full-IDE, Live-Cursor, Yjs und Multi-Tenant-SaaS. Sie bleiben im [Ideenspeicher](R28_IDEAS_PARKING_LOT.md) und können bei einem späteren, konkret belegten Bedarf verglichen werden.
 
-## Tatsächlich verfügbarer Ausgangspunkt
+## Ausgangslage R27
 
-- R27 läuft laut Hermes-Releasebericht und unabhängig kontrolliertem Release-Pointer auf `studio.schmaqq.com`; HTTPS und unauthentifizierter Git-Diff-Zugriff wurden geprüft. Die alte R26/R27-Projektstatushistorie im Repository ist keine Aussage über den neuesten Live-Pointer.
-- Projektraum, Nachrichten, Aufgaben, Kommentare, Wissen, Datei-Editor, persönliche Runner, Git-Arbeitskopien, Tests, Vorschau, abgeschlossener Git-Diff und lokale Codex-Ausführungspfade existieren bereits.
-- Die bestehenden Browserabnahmen verwendeten **synthetische** Konten und für Teile des Git-Diffs synthetische Daten. Der echte Zwei-Personen-Alltag ist damit **nicht** bewiesen.
-- Beim letzten Betreiberbericht waren **1 reales Mitglied**, 6 Projekte und 4 Aufgaben vorhanden. Markus' tatsächliche Registrierung, eigener Runner und persönliche Codex-Ausführung bleiben offen.
-- H3: `H3_HISTORICAL_OWNER_MISMATCH` bleibt **unresolved**. Keine Änderung an Produktionsbackup, Provider, Studio-Identitäten oder anderen Services durch dieses Dokument.
+- R27 wurde laut Betreiberbericht produktiv aktiviert; Release-Pointer, HTTPS-Asset und API-Authentifizierungsgrenzen wurden separat kontrolliert. Der alte Kandidatenstand in historischen R27-Statusabschnitten ist kein aktueller Produktionsbefund.
+- Projektraum, Aufgaben/Kommentare, Wissen, Datei-Editor, persönliche Runner, Git-Arbeitskopien, Checks, Vorschau, abgeschlossener Git-Diff und ein Codex-Runnerpfad sind vorhanden.
+- **Noch nicht durch echte Nutzung nachgewiesen:** Marcos Lenovo tatsächlich mit dem eigenen Projekt/Runner verbunden; seine persönliche Codex-Anmeldung in einem echten Studio-Job; durchgängige Bedienung mit Desktop und Handy.
+- Bisherige isolierte Browserabnahmen verwendeten synthetische Konten und zum Teil synthetische Git-Ergebnisse. Sie belegen nicht Marcos persönlichen Workflow.
+- Beim letzten Betreiberbericht war **ein reales Mitglied** registriert. Das ist für den Solo-Pilot ausreichend; Markus' Konto und Rechner sind aktuell bewusst **nicht erforderlich**.
+- Historisches `H3_HISTORICAL_OWNER_MISMATCH`: **UNRESOLVED**, keine Änderung durch diesen Dokumentationsstand.
 
-## Ein einziger aktiver Meilenstein: R28-0 „Wir arbeiten wirklich zusammen“
+## Aktiver Meilenstein R28-0 – „Marco entwickelt allein im eigenen Studio“
 
-Wir verwenden **ein vorhandenes Projekt und ein vorhandenes Repository**, keine neue Feature-Demo und keine neue Infrastruktur. Der Pilot kann mit einer ungefährlichen kleinen Änderung in einem geschützten Branch beginnen. Keine ungeprüften Kundendaten und keine Produktionsänderung.
+**Genau ein bestehendes Projekt und eine kleine, ungefährliche Aufgabe.** Ziel ist ein praktisch wiederholbarer, belegter End-to-End-Durchlauf, nicht die nächste Funktionssammlung.
 
-1. **Echte Teamidentitäten.** Marco lädt Markus über die bestehende 48h-Einladung ein. Markus registriert sich selbst, mit **eigener** Anmeldung. Im Raum sind beide nachweisbar getrennte Personen. Getestete Rollen und sichtbare Zuständigkeiten sind noch keine Online-Präsenz.
-2. **Ein echter Projektraum.** Projektziel, eine kleine konkret prüfbare Aufgabe, verantwortliche Person und Kontext-/Designentscheidung stehen an einer auffindbaren Stelle. Beide öffnen und kommentieren dieselbe Aufgabe, ohne eine zweite Aufgabenliste anzulegen.
-3. **Ausführung zunächst mit dem vorhandenen Stack.** Mindestens ein persönlicher Runner erhält begrenzten Zugriff auf die passende Git-Arbeitskopie. Persönliches `codex login status` und lokales `allowCodex` werden pro Gerät getrennt geprüft. Kein Studio-Login wird als Modellfreigabe ausgegeben.
-4. **Erster echter Codex-Durchlauf.** Berechtigter Nutzer startet einen kleinen aufgabengebundenen Codex-Auftrag mit dem begrenzten, einsehbaren Kontext. Ergebnis entsteht in einer eigenen Kopie, nicht direkt in `main` oder Production. Fehlende Quota, Offline-Gerät oder Auth-Problem werden offen angezeigt.
-5. **Artefakt und Gegenprüfung.** Tatsächliche geänderte Dateien, Git-Diff, dazugehöriger Commit, Tests und – falls konfiguriert – Vorschau erscheinen am **selben Task**. Die andere Person liest den Diff, stellt eine Rückfrage und gibt den exakt geprüften Commit frei oder lehnt ihn ab.
-6. **Wiederaufnahme und zweite Person.** Nach neuem Browseraufruf bleibt der Zusammenhang erhalten. Markus führt einen **eigenen** begrenzten Auftrag mit **seiner** privaten Codex-Anmeldung aus; Marco prüft. Falls sein Gerät noch nicht verfügbar ist, gilt der Pilot ausdrücklich nur als Teilabnahme.
-7. **Abschlussbefund.** Beide können ohne Entwicklerführung erklären: Was ist das Ziel? Wer macht was? Was wurde geändert? Was wurde tatsächlich geprüft? Was ist der nächste Schritt? Offene Hürden kommen in genau dieselbe Pilot-Aufgabe.
+1. **Projekt öffnen:** Marco meldet sich unter `https://studio.schmaqq.com` mit dem bestehenden Owner-Konto an, wählt ein existierendes Projekt und formuliert eine klar prüfbare kleine Aufgabe. Kein Projektwechsel, keine Demo-Anhäufung und keine zweite Task-Verwaltung.
+2. **Kontext begreifen:** Im Projektraum sind Ziel, relevante Design-/Projektregeln, aktuelle Aufgabe und nächster Schritt auffindbar. Fehlende Sichtbarkeit als tatsächlichen UX-Befund dokumentieren, nicht über Chat-Erklärungen kaschieren.
+3. **Persönlichen Lenovo verbinden:** Vorhandenen Runnerstatus/Registrierung und lokale Projektfreigabe prüfen; bestehende Konfiguration respektieren. Falls der Rechner nicht erreichbar ist, einen verständlichen Setup-Schritt statt einer fingierten „online“-Anzeige anbieten.
+4. **Codex persönlich aktivieren:** Auf **Marcos Lenovo** persönlichen `codex login status`, Projekt-`allowCodex` und verfügbare Abokapazität getrennt überprüfen. Kein API-Key-Zwang; Anmeldung und Modellkonto nicht auf den Studio-Server kopieren.
+5. **Eine echte Änderung machen:** Studio erstellt/benutzt die eigene begrenzte Git-Arbeitskopie. Marco beauftragt Codex mit dem kleinen Task; reale Dateiänderung und Agentenereignisse bleiben an dieser Aufgabe. Kein direkter Schreibzugriff auf `main` oder Production.
+6. **Prüfen und nachvollziehen:** Tatsächliche konfigurierte Tests und – falls vorhanden – Vorschau ausführen, einen Git-Prüfstand mit exaktem Commit und grün-rotem Diff erstellen, Ergebnisse **am gleichen Task** ansehen. Marco bewertet das Ergebnis als **Selbstprüfung**, nicht als unabhängige Fremdfreigabe.
+7. **Handy & Wiederaufnahme:** Projekt nach Neuladen und später auf dem Samsung öffnen; Aufgabe, letzte Ausführung, reale Änderungen, Testergebnis, Git-Stand und nächster Schritt müssen nachvollziehbar bleiben. Fehler/Abbruch/Quota-/Offline-Status korrekt zeigen.
+8. **Genau die wichtigste Hürde beheben:** Den ersten belegten Bedienfehler oder fehlenden Projektüberblick als **eigenen kleinen R28-Fix** mit Tests und Browsernachweis beheben. Kein allgemeines Redesign auf Verdacht.
 
-**Fertig ist R28-0 erst, wenn zwei echte Nutzer und ihre getrennten Codex-Zugänge praktisch nachgewiesen sind.** Synthetische Browser-Tests, ein einzelner Owner oder reine Runner-Statusanzeigen genügen nicht. Ein erster nur manueller Menschen-zu-Menschen-Durchlauf zählt als Teilfortschritt, nicht als fertiger Agenten-Pilot.
+**Abnahme R28-0:** Ein echter Mensch (Marco), ein eigener freigegebener Runner, ein tatsächlich gestarteter persönlicher Codex-Auftrag, eine nachweisbare Git-Änderung samt Tests/Prüfstand und eine erfolgreiche Wiederaufnahme am Handy. Kann ein Schritt noch nicht ausgeführt werden, bleibt der Zustand **PARTIAL/BLOCKED mit konkretem Grund**, nicht künstlich PASS.
 
-## Nur wenn der Pilot die Lücke belegt: R28-1 und R28-2
+Ein Mensch kann sein eigenes Ergebnis technisch prüfen; unabhängiger Peer-Review wird ausdrücklich **nicht** behauptet. Eine spätere Freigabe durch Markus bleibt getrennt.
 
-**R28-1 – Eine kleine Projektzentrale statt zusätzlicher Menüs.**
-Erst die tatsächlich beobachteten Verwirrungen beheben. Ein kompakter Überblick soll mindestens Projektziel, Personen und getrennte Zustände (im Raum / Gerät erreichbar / Auftrag läuft), zuständige Aufgabe, letzte bestätigte Änderung, Tests, Review und nächsten Schritt erklären. Menschenpräsenz darf nicht aus Runner-Heartbeats abgeleitet werden. Kein vollwertiger VS-Code-Klon; Dateiliste und Review in den vorhandenen Komponenten weiterverwenden.
+## Danach, aber ohne auf Markus warten zu müssen
 
-**R28-2 – Ein begrenztes gemeinsames Kontextpaket.**
-Vorhandene `AGENTS.md`-Regeln im jeweiligen Repository sind verbindlich; genau **eine** kurze Projektübersicht, bestätigte Entscheidungen mit Quellenverweis, ausgewählte Aufgabenbeschreibung und relevante Dateiverweise ergänzen sie. Nicht einfach `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` und KI-Zusammenfassungen doppelt fortschreiben. Der Nutzer sieht, was für den Auftrag freigegeben wird. Personal-Chats, Tokens, private Entwürfe und fremde Runnerdaten bleiben ausgeschlossen. Kontextumfang begrenzen und nach Relevanz wählen; keine Behauptung, dass ChatGPT-Projekte die vollständigen Prompt-Tokens automatisch sparen.
+**R28-1 – Projektzentrale nur nach realer UX-Evidenz.** Die minimal tatsächlich fehlenden Überblicksfunktionen ergänzen: Projektziel, aktueller Task, Zustände „Person im Raum“ / „Runner erreichbar“ / „Agent arbeitet“, letzte bestätigte Änderung, Checks, Diff und nächster Schritt. Keine Komplett-IDE. Präsenz nicht aus Runner-Heartbeats ableiten.
 
-**Kein Automatismus:** Ein Gespräch wird erst nach menschlicher Bestätigung zur verbindlichen Entscheidung. Eine KI-Zusammenfassung ist ein Vorschlag mit Quelle und Status, nicht automatisch Projekt-Wahrheit.
+**R28-2 – selektives Projektgedächtnis.** `AGENTS.md` als bestehende Coding-Regelquelle, eine kurze Projektübersicht, bestätigte Entscheidungen mit Quellen und den relevanten Task-/Dateiausschnitt zusammenführen. Keine doppelten `CLAUDE.md`-/`AGENTS.md`-Regelsammlungen, kein Auslesen privater ChatGPT-Chats, keine automatische dauerhafte Speicherung ungeprüfter Agentenaussagen. Kontext sichtbar und begrenzt, ohne garantierte Token-Ersparnis zu behaupten.
 
-## Abnahme und Messung
+**Später R28-Team – Markus' Einstieg nach Marcos Entscheidung.** Markus registriert sich mit eigenem Konto und verbindet seinen eigenen Runner/Codex. Beide arbeiten mit getrennten Kopien, gleichen geteilten Projektzielen und echter gegenseitiger Prüfung. Der bereits existierende Berechtigungs- und Zweipersonen-Testpfad darf bis dahin nicht vereinfacht oder kaputtoptimiert werden. Erst dieser spätere Test belegt die Zusammenarbeit zwischen zwei echten Menschen.
 
-Für jeden Pilot-Schritt notieren: tatsächlicher Benutzer / tatsächliches Gerät / Projekt / Aufgabe / betroffener Git-Zustand / belegtes Ergebnis / Fehler oder fehlende Evidenz.
+## Explizite technische und organisatorische Grenzen
 
-- Kein „Online“, wenn nur der Runner noch einen alten Heartbeat hat.
-- Kein „Tests bestanden“, wenn der Stand seit dem Test geändert wurde.
-- Keine Freigabe für nicht nachweisbar vollständige Diffs.
-- Keine automatische Codeübernahme, Git-Push, Merge oder Production-Aktion.
-- Kein implizites Anlaufen eines Agenten auf fremder Hardware.
-- Fehlender zweiter Account, persönliche Codex-Quota, fehlendes Git-Remote oder Offline-Gerät sind **Blocker mit konkreter Benutzerführung**, kein Vorwand für eine neue Plattform.
-- Pilot muss mit echten Sitzungen, Handy/PC und Wiederaufnahme getestet sein; technische Fixture-Tests bleiben eigene Evidenz.
+- Solo-Milestone benötigt weder Markus noch eine zweite persönliche Codex-Subscription.
+- Kein vorgetäuschtes Live-Editing, kein öffentliches Terminal auf dem VPS, kein anderer fremder Runner, keine automatisch gestarteten Daueragenten.
+- Kein „Tests grün“, wenn seitdem Dateien geändert wurden; keine Freigabe ohne vollständigen Diff und exakte Revision.
+- Keine Preis-/Tokenversprechen: Persönliche ChatGPT-/Codex-Nutzung hat die jeweiligen Limits.
+- Keine unbeaufsichtigten Änderungen an Production, bestehenden GitHub-PRs, Nutzerpasswörtern oder Runnerprofilen.
+- Quelle und Rückverfolgung der tatsächlichen Ausführung statt Erfolg durch synthetische Fixtures behaupten.
+- Aktuell ein privates Team; spätere Mandantenisolation oder vertragsübergreifende Abonutzung nicht voraussetzen.
 
-## Nächster konkreter Auftrag – und nichts daneben
+## Ein einzelner aktiver Arbeitsauftrag
 
-**„R28-0: Mit Marco und Markus eine echte kleine Aufgabe in SCHMAQQ Studio über persönliche Codex-Runner vollständig erledigen und gegenseitig prüfen.“**
+**R28-0: Marcos erster realer Codex- und Git-Durchlauf im bestehenden SCHMAQQ Studio – bis zur nachvollziehbaren Selbstprüfung auf Desktop und Smartphone.**
 
-Erster Bedien-Schritt: bestehendes Owner-Konto öffnet `https://studio.schmaqq.com`, legt im vorhandenen Projektraum einen kleinen Auftrag an und verschickt eine **einmalige Einladung** an Markus. Der Invite-Link und persönliche Zugangsdaten werden nicht im GitHub-Issue oder Chat-Übergabedokument gespeichert.
+Die Umsetzung bekommt **nur dann** eine neue Codeänderung, wenn der Solo-Durchlauf eine reproduzierbare Lücke zeigt. Fehlende Agenten- oder Produktfunktionen werden als bewusste Befunde erfasst und nach Nutzen priorisiert, nicht ungeprüft zusammengebaut.
 
-Engineering erst dann, wenn der reale Durchlauf eine reproduzierbare Lücke zeigt; für diese genau **einen** abgegrenzten Fix-PR mit Browsernachweis und ohne Nebenfeatures.
+Fortsetzung: [ROADMAP.md](ROADMAP.md) · [STATUS.json](STATUS.json) · [HANDOFF.md](HANDOFF.md) · [Ideenspeicher](R28_IDEAS_PARKING_LOT.md).
 
-## Quellen und Fortsetzung
-
-- [Produktvision](PRODUCT_VISION.md) – langfristiger Nordstern.
-- [R25-Projektraumvertrag](WORKSPACE_ROOMS.md) – heutige Begriffe und Daten-/Rechtegrenzen.
-- [Bestehende Roadmap](ROADMAP.md) – historische S1–S5-Pakete und technische Verpflichtungen; R28-0 ist die aktuelle Produktpriorität.
-- [Technische Wahrheit](STATUS.json) / [Fortsetzungsnotiz](HANDOFF.md) – reale Implementierung und offene Blocker.
-- [Ideenspeicher ohne Implementierungsfreigabe](R28_IDEAS_PARKING_LOT.md).
-
-_Dieser Text bewahrt die in der SCHMAQQ-Planung diskutierten Optionen. Er setzt keinen neuen Dienst auf und autorisiert keine Rechteerweiterung._
+_Dieses Dokument hält die Owner-Reihenfolge dauerhaft fest, autorisiert aber keinen Deployment-, Account-, Git-Merge- oder Provider-Schritt._

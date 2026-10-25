@@ -4,12 +4,14 @@ _Planungsstand 18.10.2026. Dieser Plan ordnet die Arbeit; der technische
 Iststand mit Nachweisen bleibt in [STATUS.json](STATUS.json). Keine
 Deployment-, Merge- oder Providerfreigabe durch diesen Text._
 
-## Aktive Steuerung ab R27/R28 – ein realer Zwei-Personen-Pilot zuerst
+## Aktive Steuerung ab R27/R28 – Marcos Solo-Pilot zuerst
 
-**Aktuelle Priorität:** [R28 – Produktlinie und tatsächlicher Zwei-Personen-Pilot](R28_PRODUCT_LINE_AND_PILOT.md).
-Marco und Markus sollen mit **eigenen Studio-Identitäten, eigenen persönlichen ChatGPT-/Codex-Anmeldungen und ihren freigegebenen Runnern** genau einen bestehenden Projektraum bis zum gegenseitigen Code-Review nutzen. Nicht zuerst neue Frameworks installieren. Der [Ideenspeicher](R28_IDEAS_PARKING_LOT.md) bewahrt OpenClaw, Hermes Agent, Paperclip, DeepSeek Harness, OpenCode, ACP, IDE- und Live-Editing-Ideen **ohne** Umsetzungsfreigabe.
+**Aktuelle Priorität:** [R28 – Produktlinie und Marcos echter Solo-Pilot](R28_PRODUCT_LINE_AND_PILOT.md).
+Marco entwickelt **jetzt allein** mit bestehendem Studio-Konto, eigenem Lenovo und persönlichem ChatGPT-/Codex-Zugang einen vorhandenen Projektraum bis zur belegbaren Git-Änderung, zu Tests/Prüfstand und zur Wiederaufnahme am Handy. Markus in Thailand wird **später** auf Einladung beteiligt. Seine Anmeldung, sein Rechner und seine Verfügbarkeit sind **keine Vorbedingung** für R28-0.
 
-Dieser Pilot konkretisiert die unten beschriebenen S1–S5-Pakete; deren frühere Fortschrittsangaben sind historische Planung und kein aktueller Live-Nachweis. Aktueller Stand: R27 ist laut Betreiberbericht produktiv, der erste echte Zwei-Personen-Agentenworkflow ist noch offen. Kein Merge und keine Production-Änderung durch diesen Text.
+Die langfristige Mehrbenutzerfähigkeit bleibt erhalten; eine Selbstprüfung ist kein unabhängiges Peer-Review. Der [Ideenspeicher](R28_IDEAS_PARKING_LOT.md) sichert OpenClaw, Hermes Agent, Paperclip, DeepSeek Harness, OpenCode, ACP, IDE- und Live-Editing-Ideen **ohne** Umsetzungsfreigabe. Keine neuen Frameworks vor dem echten Solo-Durchlauf.
+
+Dieser Pilot konkretisiert die unten beschriebenen S1–S5-Pakete; deren frühere Fortschrittsangaben sind historische Planung, keine aktuellen Solo-Abnahmebelege. R27 ist laut Betreiberbericht produktiv. Kein Merge und keine Production-Änderung durch diesen Text.
 
 ## Wofür wir das bauen
 
@@ -23,10 +25,10 @@ erste Bereich für Entwicklung. Der Mehrwert entsteht durch die Verbindung von
 Aufgabe, Gespräch, eigener Arbeitskopie, Ergebnis und Prüfung. Eure vorhandenen
 Werkzeuge bleiben Teil dieses Ablaufs.
 
-**Nächster Meilenstein:** Beide erledigen im selben Testprojekt unabhängig je
-eine Aufgabe, besprechen sie im Studio, führen echte Tests aus, sehen ihre
-Vorschau und prüfen das Ergebnis des anderen. Der Ablauf muss für euch ohne
-ständige Agentenerklärung verständlich sein.
+**Späterer Mehrbenutzer-Meilenstein (nicht R28-0):** Beide erledigen im selben
+Testprojekt unabhängig je eine Aufgabe, besprechen sie im Studio, führen echte
+Tests aus, sehen ihre Vorschau und prüfen das Ergebnis des anderen.
+**Jetzt gilt davor Marcos Solo-Pilot** nach der aktuellen R28-Steuerung oben.
 
 ## Aktuelle Arbeitspriorität nach Owner-Steuerung
 

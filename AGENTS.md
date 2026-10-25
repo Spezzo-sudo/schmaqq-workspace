@@ -1,7 +1,12 @@
 # SCHMAQQ Studio — Einstieg für Codex, Work und andere Engineering-Agenten
 
-Ziel: Marco und Markus entwickeln gemeinsam digitale Services, mit eigenen Konten,
+Ziel: Marco und Markus können langfristig gemeinsam digitale Services entwickeln, mit eigenen Konten,
 eigenen Arbeitskopien und gegenseitigem Review. Designreferenz ist SCHMAQQ.
+Aktuelle Owner-Reihenfolge R28-0: Marco entwickelt und prüft zunächst allein mit seinem
+eigenen Lenovo und persönlichen ChatGPT-/Codex-Konto. Markus wird erst später
+eingeladen; seine Verfügbarkeit ist kein Blocker. Maßgeblich ist
+`docs/R28_PRODUCT_LINE_AND_PILOT.md`. Bestehende Mehrbenutzer- und Sicherheitsgrenzen
+bleiben vollständig bestehen.
 
 Vor Arbeit lesen: `docs/STATUS.json`, `docs/HANDOFF.md`, dann nur relevante Source.
 Dieses Repository ist die eigenständige Anwendung `Spezzo-sudo/schmaqq-workspace`.

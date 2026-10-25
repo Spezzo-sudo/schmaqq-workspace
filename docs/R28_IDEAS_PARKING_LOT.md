@@ -4,14 +4,14 @@ _Status: Sammlung der bisherigen SCHMAQQ-Produktdiskussion, 25.10.2026; keine Au
 
 ## Verwendung
 
-Die Ideen bleiben hier referenzierbar. Erst wenn der reale Zwei-Personen-Pilot eine konkrete Lücke belegt, wird **eine** Option gegen den bestehenden SCHMAQQ-Code geprüft.
+Die Ideen bleiben hier referenzierbar. Marco entwickelt zunächst **allein**. Erst wenn der echte Solo-Pilot eine konkrete Lücke belegt, wird **eine** Option gegen den bestehenden SCHMAQQ-Code geprüft. Der spätere Teamtest mit Markus ist ein eigener Meilenstein, keine Voraussetzung.
 
 **Entscheidungsfilter (immer in dieser Reihenfolge):**
-1. Welche echte Benutzerhürde löst die Option für Marco und Markus?
+1. Welche echte Benutzerhürde löst die Option **jetzt für Marco**, später für Marco und Markus?
 2. Ist die Funktion nicht bereits in R27 vorhanden oder mit wenig Code erreichbar?
 3. Welche neuen Konten, Datenrechte, Risiken, Ressourcen und laufenden Kosten entstehen?
 4. Können wir sie austauschbar und isoliert testen, ohne das Projekt-/Aufgabenmodell zu ersetzen?
-5. Ist ein tatsächlicher Zwei-Personen-Browsertest mit Git- und Fehlernachweis möglich?
+5. Ist zuerst ein echter Solo-Browsertest mit Git- und Fehlernachweis möglich – ohne späteren Mehrbenutzerbetrieb zu beschädigen?
 
 Namen, Lizenzmodelle, APIs und Versionsstände aus der Ideenphase sind **keine unabhängig geprüfte Integrationszusage**. Vor produktiver Nutzung aktuelle Upstream-Dokumentation, Lizenz, Authentifizierung, Stabilität und Security separat prüfen.
 

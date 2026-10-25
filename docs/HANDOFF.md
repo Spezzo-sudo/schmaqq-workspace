@@ -1,17 +1,16 @@
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
-## 25.10.2026: R28 – ein Produkt, ein Pilot, Ideen geparkt
+## 25.10.2026: R28 – KORRIGIERTE OWNER-REIHENFOLGE: MARCO ALLEIN ZUERST
 
-Die verbindliche nächste Arbeitsrichtung steht in [R28_PRODUCT_LINE_AND_PILOT.md](R28_PRODUCT_LINE_AND_PILOT.md); weitere analysierte Möglichkeiten sind unter [R28_IDEAS_PARKING_LOT.md](R28_IDEAS_PARKING_LOT.md) **nicht verloren, aber nicht beauftragt**. R28 ist in diesem Stand nur ein **Review-Entwurf der Produktentscheidung**, keine neue Runtime-Funktion.
+**Verbindliche Nutzerkorrektur:** Marco möchte SCHMAQQ jetzt **allein** weiterentwickeln. Markus lebt in Thailand und ist nicht regelmässig verfügbar; er wird später eingeladen, **wenn das Studio für Marco allein funktioniert**. Der bisher verlangte sofortige Zwei-Personen-Pilot war die falsche Reihenfolge und ist **kein R28-0-Abnahme- oder Startkriterium** mehr.
 
-Nordstern: **SCHMAQQ Workspace = gemeinsamer Projekt-/Wissensraum für Menschen. Studio = dessen Fachbereich für Coding.** Zunächst nur Marcos und Markus' getrennte ChatGPT-/Codex-Zugänge auf ihren freigegebenen persönlichen Runnern. Kein neuer Harness, keine heimliche Kontingentnutzung, kein gemeinsamer Provider-Login und keine doppelte Aufgabenverwaltung. Vorhandenes `AGENTS.md`, Projektziel und bestätigte Entscheidungen bilden selektiven Kontext statt ganzer Chats.
+Aktueller Arbeitsplan: [R28_PRODUCT_LINE_AND_PILOT.md](R28_PRODUCT_LINE_AND_PILOT.md). Der [R28-Ideenspeicher](R28_IDEAS_PARKING_LOT.md) bewahrt alle diskutierten Technologien, ohne sie jetzt zu installieren.
 
-**Unmittelbarer nächster Beweis:** Marco lädt Markus im existierenden R27-Studio als echte zweite Person ein; beide arbeiten an einem echten kleinen Task im selben Projekt, verwenden persönliche Codex-Anmeldungen auf eigenen freigegebenen Rechnern, sehen realen Code-/Test-/Diff-Stand und führen einen gegenseitigen Review durch. Erst diese reale Abnahme bestimmt nötige UX- und Kontext-Korrekturen. Der letzte Betreiberbericht wies nur **ein** reales Studio-Mitglied aus; synthetische Zwei-Konto-Browserabnahmen ersetzen Markus' Anmeldung nicht.
+**Einziger nächster Meilenstein R28-0:** Marco benutzt im bestehenden R27-Studio einen Projektraum, verbindet seinen eigenen Lenovo und den persönlichen ChatGPT-/Codex-Zugang, erledigt eine kleine echte Git-Aufgabe in isolierter Arbeitskopie, führt Tests/Vorschau/Prüfstand aus, kann den vollständigen Diff nachvollziehen und findet den Auftrag vom Handy wieder. Tatsächliche Blocker mit Belegen notieren; anschliessend den wichtigsten einzelnen UX-/Kontextmangel beheben.
 
-**Betriebsfakt vor diesem R28-Dokument:** Hermes meldete R27_PRODUCTION=LIVE mit frischem, isoliert geprüftem SQLite-Backup/Restore und erhaltener R26-Binär-Rückfallebene. Release-Pointer, HTTPS-Asset und API-Grenze wurden separat kontrolliert. **H3_HISTORICAL_OWNER_MISMATCH ist weiterhin UNRESOLVED.** Die darunter folgenden R26/R27-Notizen beschreiben ihre damalige Kandidatenphase und sind nicht der neueste Produktionsstatus.
+**Wichtig für spätere Teamfähigkeit:** Benutzer-/Runnerrechte, getrennte Modellzugänge, parallele Kopien und unabhängige Reviews bleiben im Code erhalten. Marcos Selbstprüfung ist keine zweite unabhängige Benutzerabnahme. Markus weder automatisch registrieren noch einladen noch seine Konten/Runner konfigurieren.
 
-Keine Code-/DB-/Produktionsänderung, kein Merge und keine neue Authentifizierung durch diese reine Planungsübergabe.
-
+**Betriebsstand:** R27 wurde von Hermes als LIVE gemeldet; Release-Pointer/HTTPS-Asset und API-Schutz wurden separat geprüft. H3_HISTORICAL_OWNER_MISMATCH bleibt UNRESOLVED. Keine Code-, Account-, DB- oder Produktionsänderung durch diesen Dokumentations-PR.
 
 ## 25.10.2026: R27 – Designkonvergenz und gemeinsamer Git-Diff (noch nicht live)
 

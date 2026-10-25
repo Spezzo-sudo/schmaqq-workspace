@@ -1,16 +1,18 @@
 {
   "r28_product_line_20261025": {
     "state": "review_draft_documented_no_runtime_change",
-    "goal": "One real project, two actual Studio identities, personal ChatGPT/Codex logins and own consented runners, one small bounded Git task through independent peer review",
+    "goal": "Marco independently completes one real project task with his own Studio identity, Lenovo runner and personal ChatGPT/Codex login: Git changes, real tests, review diff and mobile resume; invite Markus only later.",
     "documents": [
       "docs/R28_PRODUCT_LINE_AND_PILOT.md",
       "docs/R28_IDEAS_PARKING_LOT.md"
     ],
-    "first_gate": "Real Markus invitation/registration and humans-only task handoff; then personal runner/Codex availability, bounded execution, diff, tests and peer review",
+    "first_gate": "Owner independently checks existing room/project, Lenovo runner and personal Codex readiness; then one real bounded task to tested reviewed commit and mobile resume. Markus is not a gate.",
     "deferred": "Paperclip, OpenClaw, Hermes Agent, DeepSeek Harness, OpenCode, Claude, Kimi, Pi, OpenHands, ACP/AG-UI, shared realtime editor, full IDE and automation until actual pilot need",
     "real_markus_registered": "not_proven; last operator aggregate members=1",
     "production_changed": false,
-    "next": "Owner reviews planning draft; start a real two-person pilot in existing live R27 before expanding product scope"
+    "next": "Start real SOLO R28-0 on live R27 with Marco; record actual UX blockers and fix one at a time; later optional separate two-person pilot.",
+    "owner_correction": "Markus in Thailand is not regularly available and is not needed before Studio works for Marco alone. Preserve future collaboration architecture but do not require his onboarding.",
+    "real_solo_codex_pilot": "not_yet_proven"
   },
   "r27_live_operator_report_20261025": {
     "state": "production_live_operator_report_and_independent_https_asset_and_release_pointer_confirmed",
@@ -18,7 +20,8 @@
     "owner_account_and_hash": "UNCHANGED per Hermes operator report",
     "current_release": "R27; live pointer and HTTPS build marker independently checked in prior work",
     "h3_historical_owner_mismatch": "UNRESOLVED",
-    "real_two_person_codex_pilot": "not_yet_completed"
+    "real_two_person_codex_pilot": "not_yet_completed",
+    "real_solo_codex_pilot": "not_yet_completed; planned first"
   },
   "r27_design_diff_20261025": {
     "state": "isolated_source_implemented_awaiting_immutable_review_not_live",
