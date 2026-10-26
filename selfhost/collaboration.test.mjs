@@ -9,7 +9,7 @@ import {createInvite,openStore} from './store.mjs';
 
 test('parallel task ownership, durable task discussion and active workspace assignment protection',async()=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'studio-collaboration-')),origin='http://127.0.0.1:44346',filename=path.join(dir,'studio.sqlite');
- const app=createStudioServer({filename,origin,previewOrigin:'http://127.0.0.1:44347'});await new Promise(r=>app.server.listen(44346,'127.0.0.1',r));
+ const app=createStudioServer({seedProjects:true,filename,origin,previewOrigin:'http://127.0.0.1:44347'});await new Promise(r=>app.server.listen(44346,'127.0.0.1',r));
  async function request(route,data,cookie,from=origin){const r=await fetch(origin+route,{method:data?'POST':'GET',headers:{...(data?{Origin:from,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:data?JSON.stringify(data):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};}
  const act=(account,action,task,extra={})=>request('/api/collaboration/task',{action,task,...extra},account.cookie);
  try{
@@ -69,14 +69,14 @@ test('parallel task ownership, durable task discussion and active workspace assi
   assert.equal((await request('/api/development/reviews',{id:randomUUID(),job:reviewId,commit:'a'.repeat(40),decision:'approved',body:'Geprüft'},peer.cookie)).status,200);
   assert.equal((await request('/api/collaboration/task?id='+task,null,owner.cookie)).data.reviews[0].state,'approved');
   assert.equal((await act(owner,'release',task)).status,409);
-  assert.equal((await request('/api/workspace',{action:'assign',id:task,assignee:peer.id},peer.cookie)).status,409);
+  assert.equal((await request('/api/workspace',{action:'assign',id:task,assignee:peer.id},peer.cookie)).status,403);
   assert.equal((await request('/api/workspace',{action:'assign',id:task,assignee:null},owner.cookie)).status,409);
   assert.equal((await request('/api/collaboration/task?id='+task,null,peer.cookie)).data.workspaces[0].owner,owner.id);
   assert.equal((await request('/api/development',{action:'job',operation:'prepare',project:'website',device:peer.device.id,task},peer.cookie)).status,409);
   await request('/api/development',{action:'cancel',id:copy.data.id},owner.cookie);
   assert.equal((await act(owner,'release',task)).status,200);
   assert.equal((await act(peer,'claim',task)).status,200);
-  assert.equal((await act(peer,'status',task,{status:'done'})).status,200);assert.equal((await act(peer,'claim',task)).status,409);
+  assert.equal((await act(peer,'status',task,{status:'done'})).status,409,'Code work cannot be completed without a shared, approved integration');
   const reopened=openStore(filename);try{assert.equal(reopened.prepare('SELECT body FROM task_comments WHERE id=?').get(cid).body,body);}finally{reopened.close();}
  }finally{await new Promise(r=>app.server.close(r));app.db.close();assert.ok(dir.startsWith(path.join(os.tmpdir(),'studio-collaboration-')));rmSync(dir,{recursive:true,force:true});}
 });

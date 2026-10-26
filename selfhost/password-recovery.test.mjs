@@ -16,7 +16,7 @@ async function fixture(t,{mailer=true}={}) {
   async sendReset(detail){emails.push({kind:'reset',...detail});},
   async sendChanged(detail){emails.push({kind:'notice',...detail});}
  }:null;
- const app=createStudioServer({
+ const app=createStudioServer({seedProjects:true,
   filename:path.join(dir,'studio.sqlite'),
   origin:ORIGIN,previewOrigin:'http://127.0.0.1:44736',
   resetMailer:sender,recoveryNow:()=>clock.value

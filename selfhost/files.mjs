@@ -1,4 +1,4 @@
-import {readFileSync,writeFileSync,lstatSync,realpathSync} from 'node:fs';
+import {readFileSync,writeFileSync,lstatSync,realpathSync,mkdirSync,existsSync} from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 
@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 const limit=64*1024;
 const revision=buffer=>createHash('sha256').update(buffer).digest('hex');
 export function allowedFile(name){
- return typeof name==='string'&&name.length>0&&name.length<400&&!name.includes('\\')&&!name.includes(':')&&!/[\x00-\x1f]/.test(name)&&!name.startsWith('/')&&name.split('/').every(p=>p&&p!=='.'&&p!=='..'&&!p.startsWith('.env')&&!['.git','.ssh','node_modules'].includes(p))&&!/(?:^|\/)(?:credentials|secrets?)(?:[./]|$)|\.(?:pem|key|p12|pfx)$|\.private\.json$/i.test(name);
+ return typeof name==='string'&&name.length>0&&name.length<400&&!name.includes('\\')&&!name.includes(':')&&!/[\x00-\x1f]/.test(name)&&!name.startsWith('/')&&name.split('/').every(p=>p&&p!=='.'&&p!=='..'&&!/^\.env/i.test(p)&&!['.git','.ssh','node_modules'].includes(p.toLowerCase()))&&!/(?:^|\/)(?:credentials|secrets?)(?:[./]|$)|\.(?:pem|key|p12|pfx)$|\.private\.json$/i.test(name);
 }
 function target(root,name){
  if(!allowedFile(name))throw new Error('Diese Datei ist im Editor nicht freigegeben.');
@@ -26,4 +26,18 @@ export function saveSource(root,name,expected,content){
  const buffer=Buffer.from(content,'utf8');if(buffer.length>limit||buffer.includes(0))throw new Error('Nur UTF-8-Text bis 64 KB ist erlaubt.');
  // Runner jobs execute serially. Compare immediately before the synchronous write.
  writeFileSync(filename,buffer);return {file:name,revision:revision(buffer),saved:true};
+}
+
+export function createSource(root,name,content=''){
+ if(!allowedFile(name)||name.split('/').some(p=>/^(?:\.git|\.ssh|node_modules|con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(p)||/[. ]$/.test(p)))throw new Error('Dieser Dateipfad ist nicht erlaubt.');
+ const buffer=Buffer.from(content,'utf8');if(buffer.length>limit||buffer.includes(0))throw new Error('Nur UTF-8-Text bis 64 KB ist erlaubt.');
+ let dir=realpathSync(root);const parts=name.split('/');
+ for(const part of parts.slice(0,-1)){
+  dir=path.join(dir,part);
+  if(!existsSync(dir))mkdirSync(dir);
+  const info=lstatSync(dir);if(!info.isDirectory()||info.isSymbolicLink())throw new Error('Der Zielordner darf keine Verknüpfung sein.');
+ }
+ const filename=path.join(dir,parts.at(-1));
+ try{writeFileSync(filename,buffer,{flag:'wx'});}catch(e){if(e.code==='EEXIST')throw new Error('Diese Datei existiert bereits. Sie wurde nicht überschrieben.');throw e;}
+ return readSource(root,name);
 }

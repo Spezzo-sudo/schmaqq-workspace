@@ -10,7 +10,7 @@ import {LOGIN_ACCOUNT_LIMIT,LOGIN_CLIENT_LIMIT} from './login-rate-limit.mjs';
 async function createFixture(t, {trustedProxyIps=''}={}) {
   const dir=mkdtempSync(path.join(os.tmpdir(),'studio-auth-throttle-'));
   const origin='http://127.0.0.1:44695';
-  const app=createStudioServer({
+  const app=createStudioServer({seedProjects:true,
     filename:path.join(dir,'fixture.sqlite'),origin,
     previewOrigin:'http://127.0.0.1:44696',trustedProxyIps
   });
@@ -113,7 +113,7 @@ test('misconfigured trusted proxy refuses startup before opening SQLite',t=>{
   const dir=mkdtempSync(path.join(os.tmpdir(),'studio-invalid-proxy-'));
   t.after(()=>rmSync(dir,{recursive:true,force:true}));
   const filename=path.join(dir,'should-not-exist.sqlite');
-  assert.throws(()=>createStudioServer({
+  assert.throws(()=>createStudioServer({seedProjects:true,
     filename,origin:'http://127.0.0.1:44695',
     previewOrigin:'http://127.0.0.1:44696',
     trustedProxyIps:'172.16.0.0/12'

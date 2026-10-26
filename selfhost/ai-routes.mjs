@@ -23,6 +23,7 @@ export async function aiRoute({route,method,req,db,user,device,send,readJSON,par
  if(method==='GET'){
   const resources=db.prepare('SELECT r.device,r.models,r.status,r.allow_team AS allowTeam,r.projects,r.codex,r.updated,d.owner,d.name,m.name AS ownerName FROM ai_resources r JOIN devices d ON r.device=d.id JOIN members m ON d.owner=m.id WHERE d.revoked=0 AND (d.owner=? OR (r.allow_team=1 AND EXISTS(SELECT 1 FROM ai_grants g WHERE g.device=d.id AND g.member=?)))').all(m.id,m.id).map(r=>({...r,models:JSON.parse(r.models),projects:JSON.parse(r.projects),grants:r.owner===m.id?db.prepare('SELECT member FROM ai_grants WHERE device=?').all(r.device).map(x=>x.member):[],codex:r.owner===m.id?r.codex:'private',online:Date.now()-r.updated<60000}));
   const jobs=db.prepare("SELECT j.id,j.owner,j.device,j.project,j.status,j.created,json_extract(j.payload,'$.model') AS model FROM jobs j JOIN devices d ON d.id=j.device WHERE j.action='local-ai' AND (j.owner=? OR d.owner=?) ORDER BY j.created DESC LIMIT 30").all(m.id,m.id);
+  for(const resource of resources){const state=db.prepare('SELECT projects FROM runner_project_state WHERE device=?').get(resource.device);resource.development=resource.owner===m.id&&state?JSON.parse(state.projects):[];}
   send({resources,jobs,members:db.prepare('SELECT id,name FROM members').all()});return true;
  }
  if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');const v=await readJSON(req);

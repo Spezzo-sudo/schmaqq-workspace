@@ -4,6 +4,7 @@ import {transaction} from './store.mjs';
 import {listWorkspaces} from './workspaces.mjs';
 import {reviewState} from './reviews.mjs';
 import {changeOverview} from './change-overview.mjs';
+import {taskView,assertTaskStatus,teamEvent,taskContract,invalidateTaskResult,storeMetadata} from './team-model.mjs';
 
 const id=z.string().regex(/^[\w-]{1,100}$/);
 const fail=(status,message)=>Object.assign(new Error(message),{status});
@@ -26,14 +27,15 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
    JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree')
    JOIN members m ON m.id=j.owner
    WHERE j.id=? AND w.task=? AND j.status='completed' AND j.action IN ('review','submit')
-   AND w.archived=0 AND j.owner=(SELECT owner FROM jobs WHERE id=w.job)
+   AND j.owner=(SELECT owner FROM jobs WHERE id=w.job)
    LIMIT 1`).get(reviewId,taskId);
   if(!job)throw fail(404,'Kein fertiger Prüfstand für diese Aufgabe.');
   let result={};try{result=JSON.parse(job.result??'{}')??{};}catch{}
   const diff=typeof result.diff==='string'?result.diff:'';
   const complete=typeof result.diff==='string'&&result.diffTruncated!==true&&diff.length<50000;
-  send({review:job.id,ownerName:job.ownerName,commit:typeof result.commit==='string'&&/^[a-f0-9]{40,64}$/.test(result.commit)?result.commit:null,
-   created:job.created,complete,diff:complete?diff:'',limited:!complete});return true;
+  const contractSnapshot=JSON.parse(db.prepare('SELECT payload FROM jobs WHERE id=?').get(job.id).payload).contractSnapshot??null;
+  send({review:job.id,owner:job.owner,ownerName:job.ownerName,state:reviewState(db,{...job,action:'review',status:'completed'}),checks:typeof result.checks==='string'?result.checks:'Kein Testprotokoll vorhanden.',published:result.published===true,commit:typeof result.commit==='string'&&/^[a-f0-9]{40,64}$/.test(result.commit)?result.commit:null,
+   created:job.created,complete,diff:complete?diff:'',limited:!complete,contractSnapshot,preview:typeof result.preview?.url==='string'?result.preview.url:null});return true;
  }
  if(route==='/api/collaboration/change'){
   if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
@@ -60,7 +62,11 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   const workspaces=taskWorkspaces(db,task.id);
   const briefRow=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('taskflow:v1:brief:'+task.id);
   const brief={revision:briefRow?JSON.parse(briefRow.value).revision:0};
-  send({task,brief,reviews,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces});return true;
+  const sourceMeta=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:task-source:'+task.id);
+  const sourceId=sourceMeta?JSON.parse(sourceMeta.value).message:null;
+  const source=sourceId?db.prepare('SELECT m.id,m.body,m.created,n.name AS authorName FROM messages m JOIN members n ON n.id=m.author WHERE m.id=? AND m.channel=?').get(sourceId,task.project):null;
+  const activeJobs=db.prepare(`SELECT j.id,j.action,j.status,m.name AS ownerName FROM jobs j JOIN members m ON m.id=j.owner WHERE j.status IN ('queued','running','cancelling') AND (json_extract(j.payload,'$.worktree') IN (SELECT job FROM workspaces WHERE task=?) OR (j.action='integrate' AND json_extract(j.payload,'$.reviewJob') IN (SELECT r.id FROM jobs r JOIN workspaces w ON w.job=json_extract(r.payload,'$.worktree') WHERE w.task=?))) AND j.action NOT IN ('files','read-file','save-file') ORDER BY j.created`).all(task.id,task.id);
+  send({task:taskView(db,task),brief,reviews,activeJobs,source,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces});return true;
  }
  if(route!=='/api/collaboration/task'||method!=='POST')throw fail(405,'Methode nicht erlaubt.');
  const value=parse(z.discriminatedUnion('action',[
@@ -79,6 +85,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
    if(revision!==value.revision)throw fail(409,'Der Auftrag wurde inzwischen geändert. Bitte die aktuelle Fassung prüfen.');
    if(task.title===value.title&&task.description===value.description)return;
    db.prepare('UPDATE tasks SET title=?,description=? WHERE id=?').run(value.title,value.description,task.id);
+   const contract=taskContract(db,task);storeMetadata(db,'team:v1:task:'+task.id,{...contract,revision:contract.revision+1});invalidateTaskResult(db,task);
    db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(metaKey,JSON.stringify({revision:revision+1,updatedBy:member.id,updated:Date.now()}));
   }else if(value.action==='handoff'){
    if(task.status==='done')throw fail(409,'Abgeschlossene Aufgabe zuerst wieder öffnen.');
@@ -101,6 +108,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
    db.prepare("UPDATE tasks SET assignee=?,status=CASE WHEN status='todo' THEN 'doing' ELSE status END WHERE id=?").run(member.id,task.id);
   }else if(value.action==='status'){
    if(task.status===value.status)return;
+   assertTaskStatus(db,task,value.status,member.id);
    db.prepare('UPDATE tasks SET status=? WHERE id=?').run(value.status,task.id);
   }else{
    if(task.assignee!==member.id)throw fail(403,'Nur die zuständige Person kann ihre Aufgabe freigeben.');
@@ -108,6 +116,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
    db.prepare("UPDATE tasks SET assignee=NULL,status=CASE WHEN status='doing' THEN 'todo' ELSE status END WHERE id=?").run(task.id);
   }
   db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(randomUUID(),member.id,`${value.action==='comment'?'Kommentar zu':value.action==='claim'?'Übernommen:':value.action==='status'?'Status geändert:':value.action==='brief'?'Auftrag präzisiert:':value.action==='handoff'?'Auftrag übergeben:':'Freigegeben:'} ${task.title}`,Date.now());
+  teamEvent(db,{actor:member.id,project:task.project,task:task.id,kind:value.action,body:`${value.action==='status'?'Status: '+value.status:value.action==='comment'?'Neuer Kommentar':value.action==='brief'?'Aufgabe präzisiert':'Zuständigkeit geändert'} · ${task.title}`});
  });
  send({ok:true});return true;
 }

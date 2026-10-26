@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { assertAssignment } from './collaboration.mjs';
+import {assertTaskStatus} from './team-model.mjs';
 
 // The browser and Studio backend share an unchanged workspace JSON contract.
 // Keep authorization, optimistic document revisions and message idempotency
@@ -78,6 +79,10 @@ export function createWorkspaceHttpRoute({
         if (v.assignee && !db.prepare('SELECT id FROM members WHERE id=?').get(v.assignee)) throw fail(400, 'Mitglied fehlt.');
         db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(uuid(), v.project, v.title, v.description, 'todo', v.priority, v.assignee, now());
       } else if (v.action === 'status' || v.action === 'assign') {
+        const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(v.id);
+        if(!task)throw fail(404,'Aufgabe fehlt.');
+        if(v.action==='status')assertTaskStatus(db,task,v.status,m.id);
+        if(v.action==='assign'&&task.assignee&&task.assignee!==m.id)throw fail(403,'Eine zugewiesene Aufgabe muss ausdrücklich übergeben oder mit Begründung übernommen werden.');
         if (v.action === 'assign' && v.assignee && !db.prepare('SELECT id FROM members WHERE id=?').get(v.assignee)) throw fail(400, 'Mitglied fehlt.');
         if (v.action === 'assign') assertAssignment(db, v.id, v.assignee);
         const r = v.action === 'status' ? db.prepare('UPDATE tasks SET status=? WHERE id=?').run(v.status, v.id) : db.prepare('UPDATE tasks SET assignee=? WHERE id=?').run(v.assignee, v.id);

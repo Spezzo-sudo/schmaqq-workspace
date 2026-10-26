@@ -9,7 +9,7 @@ import {createInvite} from './store.mjs';
 test('Studio HTTP job contract supports 48 KB files and bounded escaped reads', async () => {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'studio-large-editor-'));
   const origin = 'http://127.0.0.1:44584';
-  const app = createStudioServer({
+  const app = createStudioServer({seedProjects:true,
     filename: path.join(dir, 'studio.sqlite'), origin,
     previewOrigin: 'http://127.0.0.1:44585'
   });

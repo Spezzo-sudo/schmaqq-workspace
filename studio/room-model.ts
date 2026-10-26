@@ -2,15 +2,15 @@ import type {Task} from '../app/workspace-model';
 export type Room={id:string;title:string;description:string;color:string;stage:string;openTasks?:number;lastMessage?:number};
 export type RoomMember={id:string;name:string;role:string;seen:number};
 export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;replyTo?:string|null;kind?:'human'|'ai-shared';model?:string;taskId?:string|null};
-export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string};
+export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
 export type RoomRun={id:string;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;task:string|null};
-export type RoomState={project:Room;meta:{revision:number;repository:string|null};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];runs:RoomRun[]};
-export type Resource={device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[]};
+export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];runs:RoomRun[]};
+export type Resource={device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;check:boolean;preview:boolean;allowCodex:boolean;publish:boolean}[]};
 export type ContextPreview={text:string;hash:string;messageIds:string[];task:string|null};
-export type RoomTab='talk'|'tasks'|'results'|'knowledge'|'connect';
+export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect';
 export type RoomRoute={room:string;tab:RoomTab;task:string;page:'rooms'|'team'};
-export const tabs:{id:RoomTab;label:string}[]=[{id:'talk',label:'Raum'},{id:'tasks',label:'Aufgaben'},{id:'results',label:'Ergebnisse'},{id:'knowledge',label:'Wissen'},{id:'connect',label:'Code & KI'}];
+export const tabs:{id:RoomTab;label:string}[]=[{id:'overview',label:'Übersicht'},{id:'talk',label:'Gespräch'},{id:'tasks',label:'Aufgaben'},{id:'knowledge',label:'Wissen'},{id:'results',label:'Ergebnisse'},{id:'connect',label:'Einstellungen'}];
 export function readRoomRoute(search=location.search):RoomRoute{
  const p=new URLSearchParams(search),old=p.get('view'),project=p.get('project'),explicit=p.get('tab');
  const room=p.get('room')??(project&&project!=='all'?project:'');
@@ -34,7 +34,13 @@ export async function roomRequest<T>(path:string,body?:unknown,signal?:AbortSign
 }
 export const operationId=()=>crypto.randomUUID();
 export const time=(value:number)=>new Date(value).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
-export const initials=(name:string)=>name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+export const initials=(name:string)=>{const w=name.replace(/\([^)]*\)/g,'').trim().split(/\s+/).filter(Boolean);return (w.length>1?w[0][0]+w.at(-1)![0]:(w[0]?.[0]??'?')+(w[0]?.slice(-1)??'')).toUpperCase();};
 export function storedDraft(key:string){try{return sessionStorage.getItem(key)??'';}catch{return '';}}
 export function saveDraft(key:string,value:string){try{value?sessionStorage.setItem(key,value):sessionStorage.removeItem(key);}catch{/* Private browsing can disallow storage; keep the React draft. */}}
 export const stateLabel=(status:string)=>({queued:'Wartet auf Rechner',running:'Wird bearbeitet',completed:'Antwort bereit',failed:'Fehlgeschlagen',cancelled:'Abgebrochen',cancelling:'Wird gestoppt',interrupted:'Unterbrochen'}[status]??status);
+
+export type TaskContract={kind:'general'|'code';criteria:string;requiresReview:boolean;blocked:string;cancelled:boolean;revision:number};
+export type TaskResult={id:string;owner:string;body?:string;commit?:string;branch?:string;state:string;created:number;shared?:boolean;integrated?:boolean;workflow?:string;votes?:{reviewer:string;decision:string;body:string;created:number}[]};
+export type TeamTask=Task&{contract:TaskContract;completion:{ready:boolean;missing:string[];result:TaskResult|null}};
+export type TeamEvent={id:string;actor:string;project:string;task:string|null;kind:string;body:string;created:number};
+export type TeamState={tasks:TeamTask[];events:TeamEvent[];unread?:TeamEvent[]};

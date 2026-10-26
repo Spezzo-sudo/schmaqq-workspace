@@ -1,5 +1,7 @@
 import {spawn} from 'node:child_process';
 import {StringDecoder} from 'node:string_decoder';
+import {existsSync} from 'node:fs';
+import path from 'node:path';
 
 // Only terminate the process tree created by this runner, never a shared shell.
 function terminate(child){
@@ -11,6 +13,12 @@ function terminate(child){
 }
 export async function command(argv,cwd,{input='',timeout=600000,env=process.env,signal,onStdout,onOutput}={}){
  if(!Array.isArray(argv)||!argv.length||!argv.every(x=>typeof x==='string'))throw new Error('Lokaler Befehl muss ein Argument-Array sein.');
+ // Windows npm is a .cmd wrapper. Invoke its installed JS entry point rather
+ // than enabling a shell for user-supplied command arguments.
+ if(process.platform==='win32'&&/^(npm|npm\.cmd)$/i.test(argv[0])){
+  const cli=path.join(path.dirname(process.execPath),'node_modules','npm','bin','npm-cli.js');
+  if(existsSync(cli))argv=[process.execPath,cli,...argv.slice(1)];
+ }
  signal?.throwIfAborted();
  return new Promise((resolve,reject)=>{
   let output='',expired=false;

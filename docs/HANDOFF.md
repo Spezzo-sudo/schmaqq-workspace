@@ -1,3 +1,7 @@
+## Team workflow candidate
+
+The current local candidate uses one project workspace and one task flow. Read `docs/TEAM_WORKFLOW.md` for implemented contracts, personal setup, provider boundaries and acceptance scope. Existing R23/R24 operator and historical evidence below remains historical; this change does not authorize a deployment or migration. Final test and browser evidence is recorded in `docs/evidence/TEAM_WORKFLOW_ACCEPTANCE.md`.
+
 # SCHMAQQ Studio — Fortsetzen ohne alten Chat
 
 ## 25.10.2026: Isolierte Reparatur des R27-Datei-Ereignisprotokolls (kein Rollout)

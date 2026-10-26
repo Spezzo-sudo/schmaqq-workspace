@@ -23,7 +23,7 @@ test('GitHub account connection: session binding, PKCE, replay, isolation, error
   exchanges++;res.end(JSON.stringify({access_token:'fixture-access',token_type:'bearer'}));
  });
  await new Promise(r=>provider.listen(0,'127.0.0.1',r));const baseProvider='http://127.0.0.1:'+provider.address().port,origin='http://127.0.0.1:44342';
- const app=createStudioServer({filename:path.join(dir,'db.sqlite'),origin,previewOrigin:'http://127.0.0.1:44343',githubProvider:{clientId:'fixture-client',secret:'fixture-secret',authorize:baseProvider+'/authorize',tokenUrl:baseProvider+'/token',userUrl:baseProvider+'/user'}});
+ const app=createStudioServer({seedProjects:true,filename:path.join(dir,'db.sqlite'),origin,previewOrigin:'http://127.0.0.1:44343',githubProvider:{clientId:'fixture-client',secret:'fixture-secret',authorize:baseProvider+'/authorize',tokenUrl:baseProvider+'/token',userUrl:baseProvider+'/user'}});
  await new Promise(r=>app.server.listen(44342,'127.0.0.1',r));
  const request=(route,data,cookie,from=origin)=>fetch(origin+route,{method:data?'POST':'GET',headers:{...(data?{Origin:from,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:data?JSON.stringify(data):undefined,redirect:'manual'});
  let sequence=0;
@@ -61,7 +61,7 @@ test('GitHub account connection: session binding, PKCE, replay, isolation, error
 
 test('unconfigured GitHub connection stays unavailable and never implies repository access',async()=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'studio-connections-disabled-')),origin='http://127.0.0.1:44344';
- const app=createStudioServer({filename:path.join(dir,'db.sqlite'),origin,previewOrigin:'http://127.0.0.1:44345',githubProvider:null});await new Promise(r=>app.server.listen(44344,'127.0.0.1',r));
+ const app=createStudioServer({seedProjects:true,filename:path.join(dir,'db.sqlite'),origin,previewOrigin:'http://127.0.0.1:44345',githubProvider:null});await new Promise(r=>app.server.listen(44344,'127.0.0.1',r));
  const post=(route,data,cookie)=>fetch(origin+route,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body:JSON.stringify(data)});
  try{
   const r=await post('/api/auth/register',{invite:createInvite(app.db,'disabled@fixture.invalid'),name:'Fixture',password:'fixture-password-1234'});const cookie=r.headers.get('set-cookie').split(';')[0];

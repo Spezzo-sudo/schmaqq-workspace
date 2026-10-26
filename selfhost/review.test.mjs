@@ -10,7 +10,7 @@ import {LocalRunner,command} from './runner.mjs';
 
 test('two accounts review real Git snapshots: no self approval, SHA binding, feedback and merge gate',async()=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-review-')),origin='http://127.0.0.1:44321';
- const app=createStudioServer({filename:path.join(dir,'studio.sqlite'),origin});
+ const app=createStudioServer({seedProjects:true,filename:path.join(dir,'studio.sqlite'),origin});
  await new Promise(r=>app.server.listen(44321,'127.0.0.1',r));
  const request=async(route,value,cookie,token)=>{
   const r=await fetch(origin+route,{method:value?'POST':'GET',headers:{...(value?{'Content-Type':'application/json',Origin:origin}:{}),...(cookie?{Cookie:cookie}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:value?JSON.stringify(value):undefined});

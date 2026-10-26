@@ -10,7 +10,7 @@ import {createInvite,digest} from './store.mjs';
 async function fixture(t){
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-room-test-'));
  const origin='http://127.0.0.1:44891';
- const app=createStudioServer({filename:path.join(dir,'test.sqlite'),origin,previewOrigin:'http://127.0.0.1:44892',resetMailer:null});
+ const app=createStudioServer({seedProjects:true,filename:path.join(dir,'test.sqlite'),origin,previewOrigin:'http://127.0.0.1:44892',resetMailer:null});
  await new Promise((resolve,reject)=>{app.server.once('error',reject);app.server.listen(0,'127.0.0.1',resolve);});
  t.after(async()=>{await new Promise(resolve=>app.server.close(resolve));app.db.close();rmSync(dir,{recursive:true,force:true});});
  const host='http://127.0.0.1:'+app.server.address().port;

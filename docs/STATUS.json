@@ -1,4 +1,15 @@
 {
+  "team_workflow_20261026": {
+    "state": "local_team_workflow_candidate_not_deployed",
+    "scope": "Shared project workspace, My Work, task completion contracts, general result versions, code sharing/review/integration, explicit takeover, knowledge archive/history, guided personal repository setup, guarded GitHub adapter.",
+    "persistence": "Versioned domain records behind team-model.mjs preserve the existing schema and recovery baseline. No production migration.",
+    "verification": "Final node selfhost/verify.mjs --local: 208 tests, 187 PASS, 0 FAIL, 21 explicit Linux/operator platform skips. Source Guard, TypeScript and Vite PASS. Linux recovery NOT_VERIFIED; full/release verification INCOMPLETE. Evidence: docs/evidence/TEAM_WORKFLOW_ACCEPTANCE.md.",
+    "browser": "Synthetic Marco and Markus sessions, two runner processes and separate Git clones on this Windows PC. Real file save/new file, tests, exact-version static preview, independent review and merge exercised, including author runner stopped. General results, knowledge history/archive/restore, explicit takeover and conversation origin exercised. At 390px: no page overflow or column overlap. Final-source reload had no captured browser errors.",
+    "github": "Provider-contract tests use an isolated double. Real account repository credentials, real GitHub writes and physical two-device acceptance remain unverified.",
+    "production_changed": false,
+    "release_approved": false,
+    "remaining": "Human real-account/device pilot, personal provider credentials and Linux/operator recovery acceptance before a separately authorized deployment."
+  },
   "r27_file_events_review_fix_20261025": {
     "state": "isolated_review_candidate_not_deployed",
     "origin": "The R27 review.test.mjs owner-scoped file-event assertion failed because LocalRunner emitted no filename event for files, read-file or save-file, despite the server already enforcing owner-only access.",

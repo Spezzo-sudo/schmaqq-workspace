@@ -30,6 +30,8 @@ export const jobActions: Record<string, string> = {
   files: 'Dateiliste',
   'read-file': 'Datei öffnen',
   'save-file': 'Datei speichern',
+  'create-file': 'Datei erstellen',
+  'connect-project': 'Projekt auf eigenem Rechner einrichten',
   inspect: 'Git-Verbindung prüfen',
   prepare: 'Arbeitskopie erstellen',
   status: 'Änderungen ansehen',

@@ -35,12 +35,12 @@ export function importDestination(directory,config,configPath){
  return target;
 }
 
-export async function confirmProjectOwner(config,project){
+export async function confirmProjectOwner(config,project,repository,base){
  let response;
  try{
   response=await fetch(new URL('/api/runner/project-setup-verify',config.server),{
    method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${config.token}`},
-   body:JSON.stringify({project}),signal:AbortSignal.timeout(12000)
+   body:JSON.stringify({project,...(repository?{repository,base}:{})}),signal:AbortSignal.timeout(12000)
   });
  }catch{fail('Studio ist nicht erreichbar. Internetverbindung prüfen und den bestehenden persönlichen Runnerzugang verwenden.');}
  if(!response.ok)fail('Projekt und persönlicher Runner sind nicht gemeinsam freigegeben. Im Studio das eigene Projekt und die bestehende Geräteanmeldung prüfen.');
@@ -49,7 +49,7 @@ export async function confirmProjectOwner(config,project){
 export async function cloneGithubRepository({url,base,directory,config,configPath,project}){
  const source=githubRepository(url),target=importDestination(directory,config,configPath);
  // Verify the Studio project/device ownership before creating files or contacting GitHub.
- await confirmProjectOwner(config,project);
+ await confirmProjectOwner(config,project,url,base);
  try{mkdirSync(target,{mode:0o700});}catch(e){if(e.code==='EEXIST')fail('Der Zielordner existiert bereits. Nichts überschrieben.');fail('Zielordner kann lokal nicht angelegt werden. Berechtigungen prüfen.');}
  try{
   await command(['git','-c','core.hooksPath='+path.join(target,'.schmaqq-disabled-hooks'),'-c','core.fsmonitor=false',

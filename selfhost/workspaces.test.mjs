@@ -11,7 +11,7 @@ import {developmentJob} from '../app/development-request.ts';
 
 test('persistent workspaces: two owners, atomic reservations, archive, revisions and task assignment',async()=>{
  const root=mkdtempSync(path.join(os.tmpdir(),'studio-workspaces-')),filename=path.join(root,'data.sqlite'),origin='http://127.0.0.1:44322';
- const app=createStudioServer({filename,origin});await new Promise(r=>app.server.listen(44322,'127.0.0.1',r));
+ const app=createStudioServer({seedProjects:true,filename,origin});await new Promise(r=>app.server.listen(44322,'127.0.0.1',r));
  async function request(route,value,cookie,token){const r=await fetch(origin+route,{method:value?'POST':'GET',headers:{...(value?{'Content-Type':'application/json',Origin:origin}:{}),...(cookie?{Cookie:cookie}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:value?JSON.stringify(value):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};}
  try{
   for(const scope of ['../outside','/root','a//b','a/../b','C:/files','a\\b','a/*'])assert.equal(validScope(scope),false);

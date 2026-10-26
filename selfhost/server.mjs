@@ -18,6 +18,9 @@ import {createLoginLimiter} from './login-rate-limit.mjs';
 import {createResetMailer, createPasswordRecovery} from './password-recovery.mjs';
 import {createWorkspaceHttpRoute} from './workspace-http.mjs';
 import {createRoomRoute} from './room-http.mjs';
+import {createTeamRoute} from './team-http.mjs';
+import {createGithubWorkflow,githubMemberTokens} from './github-workflow.mjs';
+import {taskContract,completion,teamEvent,storeMetadata,metadata} from './team-model.mjs';
 import { openStore,digest,token,transaction } from './store.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -27,7 +30,7 @@ const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
 function parse(schema,data){const r=schema.safeParse(data);if(!r.success)throw fail(400,'Bitte Eingaben prüfen.');return r.data;}
-export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now}={}){
+export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,seedProjects=demoMode,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now}={}){
  if(!/^[a-z_]{1,60}$/.test(sessionCookie))throw new Error('Ungültiger Sitzungsname.');
  if(new URL(origin).origin===new URL(previewOrigin).origin)throw new Error('Studio und Vorschau benötigen unterschiedliche Origins.');
  // Reject unsafe proxy trust settings before opening the SQLite store.
@@ -35,7 +38,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  // A partially configured mailer refuses startup before touching persistent data.
  const configuredMailer=resetMailer===undefined?
    (demoMode?null:createResetMailer({origin})):resetMailer;
- const db=openStore(filename),secure=new URL(origin).protocol==='https:';
+ const db=openStore(filename,{seedProjects}),secure=new URL(origin).protocol==='https:';
  const passwordRecovery=createPasswordRecovery({
   db,origin,mailer:configuredMailer,now:recoveryNow,trustedProxyIps
  });
@@ -50,6 +53,8 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
   db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now,loginLimiter,passwordRecovery
  });
  const roomRoute=createRoomRoute({db,user,readJSON,parse});
+ const teamRoute=createTeamRoute({db,user,readJSON,parse});
+ const githubWorkflow=createGithubWorkflow({db,tokens:demoMode?{}:githubMemberTokens(process.env.STUDIO_GITHUB_MEMBER_TOKENS)});
  const workspaceHttpRoute=createWorkspaceHttpRoute({
   db,user,readJSON,parse,record,fail
  });
@@ -67,14 +72,44 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(await oidcRoute({route,method,req,res,url,send}))return;
    if(await connectionRoute({route,method,req,res,url,send}))return;
    if(await collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
+   if(await teamRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
+   if(route==='/api/team/project-connect'){
+    const member=user(req);if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
+    const command=z.array(z.string().min(1).max(4096)).min(1).max(30);
+    const value=parse(z.object({project:id,device:id,check:command,publish:z.boolean(),allowCodex:z.boolean(),workflow:z.enum(['direct','pull-request']),preview:z.object({build:command,directory:z.string().min(1).max(240)}).optional()}),await readJSON(req));
+    if(!db.prepare('SELECT id FROM devices WHERE id=? AND owner=? AND revoked=0').get(value.device,member.id))throw fail(403,'Nur deinen eigenen Rechner einrichten.');
+    const meta=metadata(db,'room:v1:project:'+value.project);if(!meta?.teamShared||!meta.repository)throw fail(409,'Zuerst das gemeinsame Repository in diesem Projekt festlegen.');
+    if(value.workflow!==(meta.workflow??'pull-request'))throw fail(409,'Die gewählte Übernahmeregel passt nicht zum gemeinsamen Projekt.');
+    if(db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device))throw fail(409,'Den laufenden Vorgang auf deinem Rechner zuerst abschließen lassen.');
+    const job=uuid(),payload={repository:meta.repository,base:meta.base??'main',check:value.check,publish:value.publish,allowCodex:value.allowCodex,workflow:value.workflow,...(value.preview?{preview:value.preview}:{})};
+    db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created) VALUES(?,?,?,?,?,?,?,?)').run(job,member.id,value.device,value.project,'connect-project',JSON.stringify(payload),'queued',now());send({id:job});return;
+   }
+   if(route==='/api/github-project'){
+    const member=user(req);if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
+    const value=parse(z.object({project:id,id:z.string().uuid(),name:text,revision:z.number().int().min(0)}),await readJSON(req));
+    send(await githubWorkflow.createRepository(member,value));return;
+   }
+   if(route==='/api/github-workflow'){
+    const member=user(req);
+    if(method==='GET'){
+     const job=parse(id,url.searchParams.get('job'));
+     send(githubWorkflow.configured(member)?await githubWorkflow.perform('refresh',job,member):{configured:false,state:'not_configured',reason:'Persönlicher Repository-Zugang noch nicht eingerichtet. Die Kontoanmeldung allein erlaubt keine Repository-Aktionen.'});return;
+    }
+    if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
+    const value=parse(z.object({action:z.enum(['open','merge','refresh']),job:id}),await readJSON(req));
+    send(await githubWorkflow.perform(value.action,value.job,member));return;
+   }
    if(await projectStartRoute({route,method,req,db,user,send,readJSON,parse}))return;
    if(route==='/api/runner/project-setup-verify'&&method==='POST'){
-    const d=device(req),v=parse(z.object({project:id}),await readJSON(req));
+    const d=device(req),v=parse(z.object({project:id,repository:z.string().max(250).optional(),base:z.string().max(100).optional()}),await readJSON(req));
     const selected=db.prepare('SELECT id FROM projects WHERE id=?').get(v.project);
     const started=db.prepare('SELECT owner FROM project_starts WHERE project=?').get(v.project);
     const role=db.prepare('SELECT role FROM members WHERE id=?').get(d.owner)?.role;
-    if(!selected||(started?started.owner!==d.owner:role!=='owner'))throw fail(403,'Projekt und persönlicher Runner sind nicht gemeinsam freigegeben.');
-    send({ok:true});return;
+    const shared=metadata(db,'room:v1:project:'+v.project)?.teamShared===true;
+    if(!selected||(!shared&&(started?started.owner!==d.owner:role!=='owner')))throw fail(403,'Projekt und persönlicher Runner sind nicht gemeinsam freigegeben.');
+    const sharedMeta=metadata(db,'room:v1:project:'+v.project);
+    if(sharedMeta?.repository&&v.repository){const canonical=s=>s.replace(/^git@github.com:/,'https://github.com/').replace(/\.git$/,'').replace(/\/$/,'').toLowerCase();if(canonical(sharedMeta.repository)!==canonical(v.repository))throw fail(409,'Dieses Repository passt nicht zum gemeinsamen Projekt.');}
+    send({ok:true,repository:sharedMeta?.repository??null,base:sharedMeta?.base??'main'});return;
    }
    if(await aiRoute({route,method,req,db,user,device,send,readJSON,parse}))return;
    if(await authHttpRoute({route,method,req,res,send}))return;
@@ -87,7 +122,9 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      if(j.action==='local-ai'&&!aiAccess(db,j)){db.prepare("UPDATE jobs SET status='failed',result=? WHERE id=?").run(JSON.stringify({error:'Modellzugang vor dem Start nicht mehr verfügbar.'}),j.id);return null;}
      if(j.action==='integrate'){
       const payload=JSON.parse(j.payload),source=db.prepare('SELECT * FROM jobs WHERE id=?').get(payload.reviewJob??'');
-      if(!source||reviewState(db,source)!=='approved'){
+      const task=source?db.prepare("SELECT t.* FROM tasks t JOIN workspaces w ON w.task=t.id WHERE w.job=json_extract(?,'$.worktree')").get(source.payload):null;
+      const current=task?completion(db,task).result:null,meta=metadata(db,'room:v1:project:'+j.project);
+      if(!source||reviewState(db,source)!=='approved'||meta?.repository&&(meta.workflow??'pull-request')==='pull-request'||task&&(!current||current.id!==source.id||current.changedAfter||current.contractRevision!==taskContract(db,task).revision)){
        db.prepare("UPDATE jobs SET status='failed',result=? WHERE id=?").run(JSON.stringify({error:'Die Freigabe wurde vor dem Start zurückgenommen. Bitte erneut prüfen lassen.'}),j.id);return null;
       }
      }
@@ -102,7 +139,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      send({ok:true,cancel:job.status==='cancelling'||(job.action==='local-ai'&&!aiAccess(db,job))});return;
     }else{
      let result=v.result??{};
-     if(v.ok&&job.action==='preview'&&result.previewBundle){
+     if(v.ok&&['preview','review','submit'].includes(job.action)&&result.previewBundle){
       // Reject oversized containers before building Zod issue collections.
       const rawBundle=result.previewBundle;
       if(!rawBundle||typeof rawBundle!=='object'||Array.isArray(rawBundle)||Object.keys(rawBundle).length>500)throw fail(413,'Vorschau hat zu viele Dateien.');
@@ -110,14 +147,30 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
       if(entries.length>500||!bundle['index.html'])throw fail(400,'Vorschau benötigt index.html und höchstens 500 Dateien.');
       for(const [name,value] of entries){if(!name||name.startsWith('/')||name.includes('\\')||name.split('/').some(p=>!p||p==='.'||p==='..')||/[\u0000-\u001f]/.test(name))throw fail(400,'Ungültiger Vorschau-Pfad.');bytes+=Buffer.from(value,'base64').length;}
       if(bytes>5000000)throw fail(413,'Vorschau darf höchstens 5 MB groß sein.');const previewId=token();
-      transaction(db,()=>{db.prepare('INSERT INTO previews VALUES(?,?,?,?)').run(previewId,job.id,now(),JSON.stringify(bundle));db.prepare('DELETE FROM previews WHERE id NOT IN (SELECT id FROM previews ORDER BY created DESC LIMIT 10)').run();});
-      result={url:`${previewOrigin}/${previewId}/index.html`,scope:'shared',files:entries.length,bytes,source:sourceEvidence(result.source)};
+      transaction(db,()=>{db.prepare('INSERT INTO previews VALUES(?,?,?,?)').run(previewId,job.id,now(),JSON.stringify(bundle));});
+      const preview={url:`${previewOrigin}/${previewId}/index.html`,scope:'shared',files:entries.length,bytes,source:sourceEvidence(result.source)};
+      result=job.action==='preview'?preview:{...result,previewBundle:undefined,preview};
      }
      const resultText=JSON.stringify(result);
      // A 64 KiB text file can expand heavily when JSON escapes control bytes.
      const maxResultLength=job.action==='read-file'?500000:150000;
      if(resultText.length>maxResultLength)throw fail(413,'Ergebnis zu groß.');
      db.prepare('UPDATE jobs SET status=?,result=?,lease=NULL WHERE id=?').run(job.status==='cancelling'?'cancelled':v.ok?'completed':'failed',resultText,job.id);
+     if(v.ok&&job.status!=='cancelling'){
+      const payload=JSON.parse(job.payload),copy=payload.worktree?db.prepare('SELECT task FROM workspaces WHERE job=?').get(payload.worktree):null;
+      if(copy?.task){
+       const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(copy.task);
+       if(task&&job.action==='submit'&&result.published===true)db.prepare("UPDATE tasks SET status='review' WHERE id=?").run(task.id);
+       if(task&&['save-file','create-file','codex'].includes(job.action)&&task.status==='review')db.prepare("UPDATE tasks SET status='doing' WHERE id=?").run(task.id);
+       if(task)teamEvent(db,{actor:job.owner,project:job.project,task:task.id,kind:job.action,body:({submit:'Code zur Prüfung geteilt','save-file':'Datei gespeichert','create-file':'Datei erstellt',review:'Prüfstand erstellt',check:'Tests abgeschlossen',preview:'Vorschau erstellt',codex:'KI-Bearbeitung abgeschlossen'})[job.action]??'Bearbeitung aktualisiert'});
+      }
+      if(job.action==='integrate'){
+       const source=db.prepare('SELECT payload FROM jobs WHERE id=?').get(payload.reviewJob),base=source?JSON.parse(source.payload).worktree:null;
+       const linked=base?db.prepare('SELECT task FROM workspaces WHERE job=?').get(base):null;
+       const task=linked?.task?db.prepare('SELECT * FROM tasks WHERE id=?').get(linked.task):null;
+       if(task&&completion(db,task).ready){db.prepare("UPDATE tasks SET status='done' WHERE id=?").run(task.id);teamEvent(db,{actor:job.owner,project:job.project,task:task.id,kind:'integrated',body:'Freigegebener Code zusammengeführt · '+task.title});}
+      }
+     }
     }send({ok:true});return;
    }
    if(route==='/api/development/reviews'){
@@ -133,9 +186,16 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     if(v.decision!=='comment'&&job.owner===m.id)throw fail(403,'Die Prüfung muss die zweite Person übernehmen.');
     if(v.decision==='approved'&&!completeReview(result))throw fail(409,'Dieser Diff ist unvollständig. Für eine Freigabe einen vollständig prüfbaren Stand erstellen.');
     if(v.decision!=='approved'&&!v.body)throw fail(400,'Bitte eine Rückmeldung eingeben.');
+    if(result.workflow==='pull-request'&&v.decision!=='comment'){
+     send(await githubWorkflow.perform('review',job.id,m,v.decision,v.body));return;
+    }
+    const linkedTask=db.prepare("SELECT t.* FROM tasks t JOIN workspaces w ON w.task=t.id WHERE w.job=json_extract(?,'$.worktree')").get(job.payload);
+    if(v.decision==='approved'&&linkedTask&&taskContract(db,linkedTask).revision!==(JSON.parse(job.payload).contractRevision??0))throw fail(409,'Die Abschlussbedingungen wurden geändert. Einen neuen Prüfstand einreichen.');
     const existing=db.prepare('SELECT * FROM code_reviews WHERE id=?').get(v.id);
     if(existing){if(existing.job!==v.job||existing.reviewer!==m.id||existing.commit_sha!==v.commit||existing.decision!==v.decision||existing.body!==v.body)throw fail(409,'Diese Rückmeldung wurde bereits anders gespeichert.');}
     else db.prepare('INSERT INTO code_reviews(id,job,commit_sha,reviewer,decision,body,created) VALUES(?,?,?,?,?,?,?)').run(v.id,job.id,v.commit,m.id,v.decision,v.body,now());
+    const linked=db.prepare("SELECT task FROM workspaces WHERE job=json_extract(?,'$.worktree')").get(job.payload);
+    if(linked?.task){if(v.decision==='changes')db.prepare("UPDATE tasks SET status='doing' WHERE id=?").run(linked.task);teamEvent(db,{actor:m.id,project:job.project,task:linked.task,kind:'review',body:v.decision==='approved'?'Prüfstand freigegeben':v.decision==='changes'?'Änderungen angefordert':'Rückmeldung zum Prüfstand'});}
     send({ok:true,state:reviewState(db,job)});return;
    }
    if(route==='/api/development/github-pr'){
@@ -149,12 +209,12 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(route==='/api/development/job'&&method==='GET'){
     const m=user(req);const jid=parse(id,url.searchParams.get('id'));
     const job=db.prepare('SELECT id,owner,device,project,action,payload,status,created,started,result FROM jobs WHERE id=?').get(jid);
-    if(!job)throw fail(404,'Auftrag fehlt.');if(job.action==='local-ai'&&job.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(job.device,m.id))throw fail(403,'KI-Anfrage ist nur für Absender und Rechnerbesitzer sichtbar.');if(['files','read-file','save-file'].includes(job.action)&&job.owner!==m.id)throw fail(403,'Dateiinhalte sind nur in der eigenen Arbeitskopie verfügbar.');send({job:{...job,payload:JSON.parse(job.payload),result:job.result?JSON.parse(job.result):null}});return;
+    if(!job)throw fail(404,'Auftrag fehlt.');if(job.action==='local-ai'&&job.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(job.device,m.id))throw fail(403,'KI-Anfrage ist nur für Absender und Rechnerbesitzer sichtbar.');if(['files','read-file','save-file','create-file'].includes(job.action)&&job.owner!==m.id)throw fail(403,'Dateiinhalte sind nur in der eigenen Arbeitskopie verfügbar.');send({job:{...job,payload:JSON.parse(job.payload),result:job.result?JSON.parse(job.result):null}});return;
    }
    if(route==='/api/development/events'&&method==='GET'){
     const m=user(req);const jid=parse(id,url.searchParams.get('job'));
     const eventJob=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);if(!eventJob)throw fail(404,'Auftrag fehlt.');if(eventJob.action==='local-ai'&&eventJob.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(eventJob.device,m.id))throw fail(403,'KI-Auftrag ist privat.');
-    if(['files','read-file','save-file'].includes(eventJob.action)&&eventJob.owner!==m.id)throw fail(403,'Dateiprotokolle sind nur in der eigenen Arbeitskopie verfügbar.');
+    if(['files','read-file','save-file','create-file'].includes(eventJob.action)&&eventJob.owner!==m.id)throw fail(403,'Dateiprotokolle sind nur in der eigenen Arbeitskopie verfügbar.');
     const after=parse(z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER),url.searchParams.get('after')??0);
     send({events:db.prepare('SELECT seq,type,text,created FROM job_events WHERE job=? AND seq>? ORDER BY seq').all(jid,after)});return;
    }
@@ -185,23 +245,35 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     }
     if(v.action==='device'){const name=parse(text,v.name),t=token(),did=uuid();db.prepare('INSERT INTO devices(id,owner,name,hash) VALUES(?,?,?,?)').run(did,m.id,name,digest(t));send({id:did,token:t});return;}
     if(v.action==='revoke'){const did=parse(id,v.id);if(!db.prepare('UPDATE devices SET revoked=1 WHERE id=? AND owner=?').run(did,m.id).changes)throw fail(404,'Gerät nicht gefunden.');db.prepare("UPDATE jobs SET status='cancelled' WHERE device=? AND status='queued'").run(did);send({ok:true});return;}
-    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','prepare','status','check','review','submit','preview','integrate','codex','files','read-file','save-file']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
+    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','prepare','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
     if(!db.prepare('SELECT id FROM devices WHERE id=? AND owner=? AND revoked=0').get(value.device,m.id))throw fail(403,'Wähle deinen eigenen Runner.');
     if(!db.prepare('SELECT id FROM projects WHERE id=?').get(value.project))throw fail(404,'Projekt nicht gefunden.');
     let payload={};
     if(['inspect','prepare'].includes(value.operation))payload=value.issue?{issue:value.issue}:{};
     else if(value.operation==='integrate'){
-     const source=db.prepare("SELECT * FROM jobs WHERE id=? AND project=? AND action='submit' AND status='completed'").get(value.source??'',value.project);if(!source)throw fail(400,'Ein erfolgreich eingereichter Stand wird benötigt.');const result=JSON.parse(source.result);if(reviewState(db,source)!=='approved')throw fail(409,'Die zweite Person muss genau diesen eingereichten Stand zuerst freigeben.');if(result.workflow==='pull-request')throw fail(409,'Dieses Repository wird ausschließlich über Pull Request, CI und Review zusammengeführt.');if(!/^[a-f0-9]{40,64}$/.test(result.commit)||!/^studio\/[\w-]+$/.test(result.branch))throw fail(400,'Ungültiger Git-Stand.');payload={commit:result.commit,branch:result.branch,reviewJob:source.id};
+     const source=db.prepare("SELECT * FROM jobs WHERE id=? AND project=? AND action='submit' AND status='completed'").get(value.source??'',value.project);if(!source)throw fail(400,'Ein erfolgreich eingereichter Stand wird benötigt.');const result=JSON.parse(source.result);if(reviewState(db,source)!=='approved')throw fail(409,'Die zweite Person muss genau diesen eingereichten Stand zuerst freigeben.');if(result.workflow==='pull-request'||metadata(db,'room:v1:project:'+value.project)?.repository&&(metadata(db,'room:v1:project:'+value.project).workflow??'pull-request')==='pull-request')throw fail(409,'Dieses Repository wird ausschließlich über Pull Request, CI und Review zusammengeführt.');
+     const linked=db.prepare("SELECT t.* FROM tasks t JOIN workspaces w ON w.task=t.id WHERE w.job=json_extract(?,'$.worktree')").get(source.payload);
+     if(linked){const current=completion(db,linked).result;if(!current||current.id!==source.id||current.changedAfter||current.contractRevision!==taskContract(db,linked).revision)throw fail(409,'Der Prüfstand ist nicht mehr aktuell. Erneut einreichen und prüfen lassen.');}
+     if(!/^[a-f0-9]{40,64}$/.test(result.commit)||!/^studio\/[\w-]+$/.test(result.branch))throw fail(400,'Ungültiger Git-Stand.');payload={commit:result.commit,branch:result.branch,reviewJob:source.id};
     }else{
      const base=db.prepare("SELECT * FROM jobs WHERE id=? AND owner=? AND device=? AND project=? AND action='prepare' AND status='completed'").get(value.worktree??'',m.id,value.device,value.project);if(!base)throw fail(403,'Eine eigene vorbereitete Arbeitskopie wird benötigt.');if(db.prepare('SELECT archived FROM workspaces WHERE job=?').get(base.id)?.archived)throw fail(409,'Arbeitsbereich zuerst wieder öffnen.');payload={worktree:base.id,...(JSON.parse(base.payload).issue?{issue:JSON.parse(base.payload).issue}:{}),...(value.operation==='codex'?{prompt:value.prompt??''}:{})};if(value.operation==='codex'&&!payload.prompt)throw fail(400,'Auftrag fehlt.');
     }
-    if(['files','read-file','save-file'].includes(value.operation)){
+    if(['files','read-file','save-file','create-file'].includes(value.operation)){
      if(value.operation!=='files'&&!value.file)throw fail(400,'Dateipfad fehlt.');
      if(value.operation==='save-file'&&(value.content===undefined||!value.revision))throw fail(400,'Dateistand fehlt.');
-     if(value.operation==='save-file'&&Buffer.byteLength(value.content,'utf8')>65536)throw fail(413,'UTF-8-Datei ist größer als 64 KiB.');
+     if(['save-file','create-file'].includes(value.operation)&&Buffer.byteLength(value.content??'','utf8')>65536)throw fail(413,'UTF-8-Datei ist größer als 64 KiB.');
      if(db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device))throw fail(409,'Bitte den laufenden Auftrag zuerst beenden lassen.');
      payload={...payload,file:value.file,revision:value.revision,content:value.content};
     }
+    if(payload.worktree){
+     const linked=db.prepare('SELECT t.* FROM tasks t JOIN workspaces w ON w.task=t.id WHERE w.job=?').get(payload.worktree);
+     if(linked&&linked.assignee!==m.id)throw fail(409,'Diese Aufgabe wurde inzwischen übergeben. Bitte den aktuellen Stand prüfen.');
+     if(linked&&linked.status==='done'&&['save-file','create-file','codex','submit','review'].includes(value.operation))throw fail(409,'Abgeschlossene Aufgabe zuerst wieder öffnen.');
+     if(linked){const contract=taskContract(db,linked);payload.contractRevision=contract.revision;payload.contractSnapshot={title:linked.title,description:linked.description,criteria:contract.criteria};}
+    }
+    const sharedProject=metadata(db,'room:v1:project:'+value.project);
+    if(sharedProject?.repository){payload.expectedRepository=sharedProject.repository;payload.expectedBase=sharedProject.base??'main';}
+    if(['review','submit','integrate'].includes(value.operation)&&db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device))throw fail(409,'Auf deinem Rechner läuft noch ein Vorgang. Den bestätigten Abschluss abwarten.');
     const jid=uuid();transaction(db,()=>{
      if(value.operation==='prepare'){
       assertAvailable(db,{project:value.project,issue:value.issue,scope:value.scope,task:value.task});

@@ -47,13 +47,13 @@ export async function setupProject(planFile,configurationFile){
   await git(repository,'add','.');await git(repository,'-c','user.name=SCHMAQQ Project Setup','-c','user.email=project-setup@schmaqq.invalid','commit','-m','Initial local SCHMAQQ project');
   await git(repository,'remote','add','origin',remote);await git(repository,'push','-u','origin','main');
  }
- const project={repo:realpathSync(repository),base,check,allowCodex:false,publish:false,workflow:'pull-request',...(plan.mode==='new'?{preview:{build:[process.execPath,'build.mjs'],directory:'dist'}}:preview?{preview}:{})};
+ const project={repo:realpathSync(repository),base,check,allowCodex:false,publish:plan.publish===true,workflow:plan.workflow==='direct'?'direct':'pull-request',...(plan.mode==='new'?{preview:{build:[process.execPath,'build.mjs'],directory:'dist'}}:preview?{preview}:{})};
  const next={...config,projects:{...config.projects,[plan.project]:project}};
  const info=lstatSync(configPath);if(info.isSymbolicLink()||info.nlink!==1||!readFileSync(configPath).equals(original))fail('Runnerprofil inzwischen geändert; nicht überschrieben.');
  const suffix=randomUUID(),backup=configPath+'.before-'+suffix+'.private.json',temporary=configPath+'.tmp-'+suffix+'.private.json';
  writeFileSync(backup,original,{flag:'wx',mode:0o600});
  try{writeFileSync(temporary,JSON.stringify(next,null,2)+'\n',{flag:'wx',mode:0o600});renameSync(temporary,configPath);}catch{try{unlinkSync(temporary);}catch{}fail('Runnerprofil konnte nicht gespeichert werden. Sicherung und Projektdateien bleiben erhalten.');}
- return {project:plan.project,repository,backup,allowCodex:false,publish:false,restartRequired:true};
+ return {project:plan.project,repository,backup,allowCodex:false,publish:project.publish,restartRequired:true};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  if(process.argv.length!==5||process.argv[2]!=='--apply'){console.error('Aufruf: node selfhost/project-setup.mjs --apply PFAD_ZUM_PLAN PFAD_ZUM_BESTEHENDEN_RUNNERPROFIL');process.exitCode=1;}

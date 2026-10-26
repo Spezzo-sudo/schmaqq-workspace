@@ -10,7 +10,7 @@ import {LocalRunner,command} from './runner.mjs';
 
 test('two members: private sessions, isolated devices, jobs, documents and shared preview',async()=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-test-'));
- const studio=createStudioServer({filename:path.join(dir,'studio.sqlite'),origin:'http://127.0.0.1:44310',previewOrigin:'http://127.0.0.1:44311'});
+ const studio=createStudioServer({seedProjects:true,filename:path.join(dir,'studio.sqlite'),origin:'http://127.0.0.1:44310',previewOrigin:'http://127.0.0.1:44311'});
  await new Promise(r=>studio.server.listen(44310,'127.0.0.1',r));await new Promise(r=>studio.previewServer.listen(44311,'127.0.0.1',r));
  const base='http://127.0.0.1:44310';
  async function request(route,data,cookie,authorization){const r=await fetch(base+route,{method:data?'POST':'GET',headers:{...(data?{'Content-Type':'application/json',Origin:base}:{}),...(cookie?{Cookie:cookie}:{}),...(authorization?{Authorization:`Bearer ${authorization}`}:{})},body:data?JSON.stringify(data):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};}
@@ -116,7 +116,7 @@ test('two real Git workspaces: tests, reviewed merge, conflict stop and static p
 test('first owner setup is one-time and origin protected',async()=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-setup-'));
  const origin='http://127.0.0.1:44312',setup='fixture-setup-token-long-enough';
- const app=createStudioServer({filename:path.join(dir,'studio.sqlite'),origin});
+ const app=createStudioServer({seedProjects:true,filename:path.join(dir,'studio.sqlite'),origin});
  app.db.prepare("INSERT INTO workspace_meta VALUES('bootstrap',?)").run(digest(setup));
  await new Promise(r=>app.server.listen(44312,'127.0.0.1',r));
  try{

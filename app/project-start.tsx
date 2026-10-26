@@ -1,5 +1,6 @@
 'use client';
-import {useRef,useState} from 'react';
+import {useRef,useState,useEffect} from 'react';
+import {parseCommand} from './setup-command';
 
 type SetupMode='github'|'existing'|'new';
 export default function ProjectStart({project,onComplete}:{project?:{id:string;title:string};onComplete:(id:string)=>void}){
@@ -10,7 +11,9 @@ export default function ProjectStart({project,onComplete}:{project?:{id:string;t
  const [directory,setDirectory]=useState('');
  const [approved,setApproved]=useState(false);
  const [base,setBase]=useState('main');
- const [check,setCheck]=useState('["node","--test"]');
+ const [check,setCheck]=useState('node --test');
+ const [publish,setPublish]=useState(false);
+ const [workflow,setWorkflow]=useState('pull-request');
  const [previewBuild,setPreviewBuild]=useState('');
  const [previewDirectory,setPreviewDirectory]=useState('dist');
  const [created,setCreated]=useState(project?.id??'');
@@ -21,6 +24,7 @@ export default function ProjectStart({project,onComplete}:{project?:{id:string;t
  const id=useRef('');
  if(!id.current)id.current=crypto.randomUUID();
  const reset=()=>{setSaved(false);setError('');};
+ useEffect(()=>{if(project)fetch('/api/room?project='+encodeURIComponent(project.id)).then(r=>r.json() as Promise<{meta?:{repository?:string;base?:string}}>).then(r=>{if(r.meta?.repository)setRepository(r.meta.repository);if(r.meta?.base)setBase(r.meta.base);}).catch(()=>{});},[project?.id]);
 
  function plan(){
   if(!created)throw Error('Erst ein Studio-Projekt vorbereiten.');
@@ -31,18 +35,18 @@ export default function ProjectStart({project,onComplete}:{project?:{id:string;t
    if(!approved)throw Error('Bitte die Freigabe des lokalen Zielordners bestätigen.');
   }
   let command:unknown;
-  try{command=JSON.parse(check);}catch{throw Error('Testbefehl als Argumentliste angeben, zum Beispiel ["npm","test"].');}
+  command=parseCommand(check);
   if(!Array.isArray(command)||!command.length||!command.every(a=>typeof a==='string'&&a.length>0))throw Error('Testbefehl benötigt eine nicht leere Argumentliste.');
   let preview;
   if(mode!=='new'&&previewBuild.trim()){
    let build:unknown;
-   try{build=JSON.parse(previewBuild);}catch{throw Error('Vorschau-Build als Argumentliste angeben.');}
+   build=parseCommand(previewBuild);
    if(!Array.isArray(build)||!build.length||!build.every(a=>typeof a==='string'&&a.length>0))throw Error('Vorschau-Build benötigt eine nicht leere Argumentliste.');
    if(!previewDirectory.trim()||/^[\\/]|^[A-Za-z]:/.test(previewDirectory.trim())||previewDirectory.trim().split(/[\\/]/).some(p=>!p||p==='.'||p==='..'))throw Error('Relativen Vorschau-Ausgabeordner innerhalb der Arbeitskopie angeben.');
    preview={build,directory:previewDirectory.trim()};
   }
   return {schema:'schmaqq-project-setup-v1',server:location.origin,project:created,mode,
-   directory:destination,base,check:command,...(mode==='github'?{repository:repository.trim()}:{}),...(preview?{preview}:{})};
+   directory:destination,base,check:command,publish,workflow,...(mode==='github'?{repository:repository.trim()}:{}),...(preview?{preview}:{})};
  }
 
  async function create(e:React.FormEvent){
@@ -78,7 +82,7 @@ export default function ProjectStart({project,onComplete}:{project?:{id:string;t
    <label>Wie möchtest du starten?<select value={mode} disabled={pending} onChange={e=>{setMode(e.target.value as SetupMode);reset();}}>
     <option value="github">Bestehendes GitHub-Repository importieren</option>
     <option value="existing">Bereits lokales Git-Repository verbinden</option>
-    <option value="new">Neues lokales Startprojekt</option>
+    <option value="new">Lokales Übungsprojekt auf diesem Rechner</option>
    </select></label>
    <button className="button primary" disabled={pending}>{pending?'Wird vorbereitet …':'Projekt vorbereiten'}</button>
   </form>:<>
@@ -88,7 +92,7 @@ export default function ProjectStart({project,onComplete}:{project?:{id:string;t
     <label>Startart<select value={mode} onChange={e=>{setMode(e.target.value as SetupMode);setApproved(false);reset();}}>
      <option value="github">Bestehendes GitHub-Repository importieren</option>
      <option value="existing">Bereits lokales Git-Repository verbinden</option>
-     <option value="new">Neues lokales Startprojekt</option>
+     <option value="new">Lokales Übungsprojekt auf diesem Rechner</option>
     </select></label>
     {mode==='github'&&<label>GitHub-Repository (HTTPS oder SSH)
      <input required value={repository} onChange={e=>{setRepository(e.target.value);reset();}} placeholder="https://github.com/OWNER/REPOSITORY"/>
@@ -99,14 +103,14 @@ export default function ProjectStart({project,onComplete}:{project?:{id:string;t
     <p>{mode==='github'?'Wähle einen neuen, noch nicht existierenden Ordner in deinem persönlichen Projektverzeichnis. Dessen übergeordneter Ordner muss bereits existieren. Der lokale Helfer klont nur dieses Repository; bestehende Ordner und andere Projekte bleiben unangetastet.':mode==='new'?'Der neue Ordner muss frei sein. Der Helfer erstellt ein lokales Git-Projekt ohne GitHub-Anlage.':'Der Helfer prüft den vorhandenen Git-Stammordner und ein bestehendes origin. Er klont nichts.'}</p>
     {mode!=='new'&&<details><summary>Hauptzweig, Tests und Vorschau festlegen</summary>
      <label>Gemeinsamer Hauptzweig<input required value={base} onChange={e=>{setBase(e.target.value);reset();}}/></label>
-     <label>Testbefehl als Argumentliste<input required value={check} onChange={e=>{setCheck(e.target.value);reset();}}/></label>
-     <label>Vorschau-Build als Argumentliste · optional<input value={previewBuild} onChange={e=>{setPreviewBuild(e.target.value);reset();}} placeholder='["npm","run","build"]'/></label>
+     <label>Testbefehl<input required value={check} onChange={e=>{setCheck(e.target.value);reset();}}/></label>
+     <label>Vorschau-Build · optional<input value={previewBuild} onChange={e=>{setPreviewBuild(e.target.value);reset();}} placeholder='npm run build'/></label>
      {previewBuild.trim()&&<label>Relativer Vorschau-Ausgabeordner<input required value={previewDirectory} onChange={e=>{setPreviewDirectory(e.target.value);reset();}}/></label>}
      <p>Tests und Build werden erst bei späteren, ausdrücklich angeforderten Runnerjobs ausgeführt. Nutze nur dir bekannte Befehle.</p>
     </details>}
     {mode==='github'&&<label className="project-consent"><input type="checkbox" checked={approved} onChange={e=>{setApproved(e.target.checked);reset();}}/> Ich habe das Repository und den neuen lokalen Zielordner bewusst ausgewählt. Keine bestehenden Daten sollen ersetzt werden.</label>}
    </div>
-   <button className="button" onClick={download}>Einrichtungsplan herunterladen</button>
+   <label className="project-consent"><input type="checkbox" checked={publish} onChange={e=>{setPublish(e.target.checked);reset();}}/> Diesem persönlichen Runner erlauben, Projektbranches mit dem gemeinsamen Repository zu teilen.</label><label>Wie werden Änderungen übernommen?<select value={workflow} onChange={e=>{setWorkflow(e.target.value);reset();}}><option value="pull-request">GitHub Pull Request mit Prüfung und Branchschutz</option><option value="direct">Geprüfte Zusammenführung durch meinen Runner</option></select></label><button className="button" onClick={download}>Einrichtungsplan herunterladen</button>
    {saved&&<div className="project-local-next"><h3>Einmalig auf deinem Rechner ausführen</h3>
     <ol>
      <li>Privaten Plan lokal speichern. Er enthält <strong>kein</strong> GitHub-Passwort oder Runner-Token.</li>
@@ -115,7 +119,7 @@ export default function ProjectStart({project,onComplete}:{project?:{id:string;t
     </ol>
     <pre>{apply}</pre><button className="button" onClick={()=>copy('apply',apply)}>Befehl kopieren</button>
     {copied==='apply'&&<p role="status">Befehl kopiert. Beide Platzhalter ersetzen.</p>}
-    <p>Bei erfolgreichem Import wird das bestehende Runnerprofil gesichert und nur um diese Projektfreigabe ergänzt. Codex und Veröffentlichung bleiben zunächst gesperrt. Bei fehlender Berechtigung bleibt die neue Arbeitskopie zur lokalen Prüfung erhalten.</p>
+    <p>Bei erfolgreichem Import wird das bestehende Runnerprofil gesichert und nur um diese Projektfreigabe ergänzt. Codex bleibt gesperrt. Das Teilen von Branches richtet sich nach deiner ausdrücklichen Auswahl im Plan. Bei fehlender Berechtigung bleibt die neue Arbeitskopie zur lokalen Prüfung erhalten.</p>
     <p>Danach nur den vorhandenen Runner mit seinem ergänzten Profil neu starten:</p>
     <pre>{restart}</pre><button className="button" onClick={()=>copy('restart',restart)}>Neustartbefehl kopieren</button>
     {copied==='restart'&&<p role="status">Neustartbefehl kopiert. Dateipfad ersetzen.</p>}

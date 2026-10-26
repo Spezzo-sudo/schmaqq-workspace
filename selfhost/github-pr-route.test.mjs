@@ -9,7 +9,7 @@ import {createInvite} from './store.mjs';
 test('authenticated read-only GitHub PR route: owner-safe studio job, no mutations and no provider calls',async()=>{
  const dir=mkdtempSync(path.join(tmpdir(),'studio-r23-gh-route-')),origin='http://127.0.0.1:44582';
  let called=0;
- const app=createStudioServer({filename:path.join(dir,'studio.sqlite'),origin,previewOrigin:'http://127.0.0.1:44583',
+ const app=createStudioServer({seedProjects:true,filename:path.join(dir,'studio.sqlite'),origin,previewOrigin:'http://127.0.0.1:44583',
   pullRequestReader:async job=>{
    called++;assert.equal(job.id,'r23-pr-job');assert.equal(job.project,'website');return {state:'matched',mergeReady:false,ci:'not_verified',reviews:'not_verified'};
   }});

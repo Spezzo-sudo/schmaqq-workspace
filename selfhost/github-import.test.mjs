@@ -26,7 +26,7 @@ test('import target is explicit, fresh and outside all existing profiles',()=>{
   assert.throws(()=>importDestination(path.join(work,'taken'),config,profile),/existiert/);
   assert.throws(()=>importDestination(path.join(existing,'nested'),config,profile),/Arbeitskopie/);
   assert.throws(()=>importDestination(path.join(state,'nested'),config,profile),/Arbeitskopie/);
-  const alias=path.join(root,'alias');symlinkSync(work,alias,'dir');
+  const alias=path.join(root,'alias');symlinkSync(work,alias,process.platform==='win32'?'junction':'dir');
   assert.throws(()=>importDestination(path.join(alias,'new'),config,profile),/Verknüpfung/);
  }finally{rmSync(root,{recursive:true,force:true});}
 });

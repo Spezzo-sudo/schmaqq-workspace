@@ -4,7 +4,7 @@ import StudioBrand from '../app/studio-brand';
 import ProviderLogin from '../app/provider-login';
 import PasswordRecovery,{readRecoveryTokenFromFragment} from './password-recovery';
 import Workspace from '../app/workspace';
-import RoomWorkspace from './workspace-room';
+import RoomWorkspace from './team-workspace';
 import {roomResumeURL} from './room-model';
 import '../app/globals.css';
 import './brand.css';

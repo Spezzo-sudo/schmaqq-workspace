@@ -1,26 +1,44 @@
 import { spawn } from 'node:child_process';
-import { mkdirSync,readFileSync,readdirSync,lstatSync,existsSync,realpathSync } from 'node:fs';
+import { mkdirSync,readFileSync,readdirSync,lstatSync,existsSync,realpathSync,appendFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {aiCapabilities,runLocalAi} from './local-ai.mjs';
 import {command} from './process.mjs';
-import {allowedFile,readSource,saveSource} from './files.mjs';
+import {allowedFile,readSource,saveSource,createSource} from './files.mjs';
 import {runCodex} from './codex-run.mjs';
 import {sourceRevision,stableSource} from './source-revision.mjs';
+import {managedProjects,connectManagedProject} from './managed-projects.mjs';
+import {githubRepository} from './github-import.mjs';
 export {command} from './process.mjs';
 export class LocalRunner{
  constructor(config){
   this.config=config;this.state=path.resolve(config.stateDir??'.studio-runner');mkdirSync(this.state,{recursive:true});mkdirSync(path.join(this.state,'no-hooks'),{recursive:true});this.previews=new Map();
+  this.config.projects={...managedProjects(this.state),...this.config.projects};
  }
  async git(repo,...args){return this.execute(['git','-c',`core.hooksPath=${path.join(this.state,'no-hooks')}`,...args],repo);}
  project(id){const project=this.config.projects?.[id];if(!project?.repo)throw new Error('Dieses Projekt ist auf diesem PC nicht freigegeben.');if(!/^[\w./-]+$/.test(project.base??'main')||(project.base??'main').startsWith('-'))throw new Error('Ungültiger Basiszweig.');return {...project,repo:realpathSync(project.repo),base:project.base??'main'};}
  worktree(job,p){const key=job.action==='prepare'||job.action==='integrate'?job.id:job.payload.worktree;if(!/^[\w-]{1,100}$/.test(key??''))throw new Error('Ungültige Arbeitskopie.');const dir=path.join(this.state,'worktrees',`${job.project}-${key}`);const branch=p.requireIssue?`codex/${job.payload.issue}-studio-${key}`:`studio/${key}`;if(p.requireIssue&&(!Number.isSafeInteger(job.payload.issue)||job.payload.issue<1))throw new Error('Für dieses Repository zuerst die Nummer des begrenzten GitHub-Issues angeben.');return {key,dir,branch};}
  async execute(argv,cwd,options={}){return command(argv,cwd,{signal:this.control?.signal,onOutput:text=>this.control?.onEvent?.({type:'output',text:text.slice(-4000)}),...options});}
+ async excludeBuildOutput(dir,p){
+  if(!p.preview?.directory)return;const output=p.preview.directory;
+  if(typeof output!=='string'||path.isAbsolute(output)||/[\r\n\0\\]/.test(output)||output.split('/').some(x=>!x||x==='.'||x==='..'||x==='.git'))throw new Error('Vorschau-Ausgabeordner ungültig.');
+  const filename=path.resolve(dir,await this.git(dir,'rev-parse','--git-path','info/exclude'));
+  mkdirSync(path.dirname(filename),{recursive:true});
+  if(lstatSync(path.dirname(filename)).isSymbolicLink()||existsSync(filename)&&(lstatSync(filename).isSymbolicLink()||lstatSync(filename).nlink!==1))throw new Error('Lokale Git-Ausnahmen sind keine reguläre Datei.');
+  const line='/'+output.replace(/[ *?\[\]#!]/g,'\\$&')+'/';
+  const existing=existsSync(filename)?readFileSync(filename,'utf8'):'';
+  if(!existing.split(/\r?\n/).includes(line))appendFileSync(filename,'\n'+line+'\n',{mode:0o600});
+ }
  async run(job,control={}){
   this.control=control;control.signal?.throwIfAborted();control.onEvent?.({type:'status',text:'Runner hat den Auftrag übernommen.'});
   if(job.action==='local-ai')return runLocalAi(this.config,job,control.signal);
+  if(job.action==='connect-project')return connectManagedProject(this,job);
   const p=this.project(job.project);
+  if(job.payload?.expectedRepository){
+   const expected=githubRepository(job.payload.expectedRepository),actual=githubRepository(await this.git(p.repo,'remote','get-url','origin'));
+   if(expected.owner.toLowerCase()!==actual.owner.toLowerCase()||expected.repository.toLowerCase()!==actual.repository.toLowerCase()||job.payload.expectedBase!==p.base)throw new Error('Deine lokale Arbeitskopie passt nicht zum gemeinsamen Repository oder Zielbranch. Projekteinstellung prüfen.');
+  }
   if(job.action==='inspect'){
    const checks=[];
    const probe=async(label,args)=>{try{const value=await command(['git','-c',`core.hooksPath=${path.join(this.state,'no-hooks')}`,...args],p.repo,{signal:control.signal,timeout:20000});checks.push({label,ok:true});return value;}catch(e){if(control.signal?.aborted)throw e;checks.push({label,ok:false});return '';}};
@@ -38,6 +56,7 @@ export class LocalRunner{
   const w=this.worktree(job,p);mkdirSync(path.dirname(w.dir),{recursive:true});
   if(job.action==='prepare'){
    await this.git(p.repo,'fetch','origin');await this.git(p.repo,'worktree','add','-b',w.branch,w.dir,`origin/${p.base}`);
+   await this.excludeBuildOutput(w.dir,p);
    return {path:w.dir,branch:w.branch,commit:await this.git(w.dir,'rev-parse','HEAD')};
   }
   if(job.action==='integrate'){
@@ -54,6 +73,12 @@ export class LocalRunner{
    const actual=realpathSync(await this.git(w.dir,'rev-parse','--show-toplevel'));if(actual!==realpathSync(w.dir))throw new Error('Arbeitskopie zeigt auf ein anderes Repository.');
   }
   if(await this.git(w.dir,'branch','--show-current')!==w.branch)throw new Error('Arbeitszweig wurde außerhalb des Workspace geändert.');
+  if(job.action==='create-file'){
+   const created=createSource(w.dir,job.payload.file,job.payload.content??'');
+   await this.git(w.dir,'add','--',job.payload.file);
+   control.onEvent?.({type:'files',text:'Datei erstellt: '+job.payload.file});
+   return {...created,source:await sourceRevision(w.dir,control)};
+  }
   if(['files','read-file','save-file'].includes(job.action)){
    const tracked=(await this.git(w.dir,'ls-files','-z','--')).split('\0').filter(allowedFile);
    if(job.action==='files'){
@@ -75,17 +100,24 @@ export class LocalRunner{
   if(job.action==='status')return {branch:w.branch,status:await this.git(w.dir,'status','--short'),diff:(await this.git(w.dir,'diff','HEAD','--')).slice(0,50000),commit:await this.git(w.dir,'rev-parse','HEAD'),source:await sourceRevision(w.dir,control)};
   if(job.action==='check'){const before=await sourceRevision(w.dir,control),checks=await this.check(w.dir,p);return {checks,commit:await this.git(w.dir,'rev-parse','HEAD'),source:stableSource(before,await sourceRevision(w.dir,control))};}
   if(['review','submit'].includes(job.action)){
+   await this.git(w.dir,'fetch','origin');
    await this.git(w.dir,'add','--all');
    const staged=await this.git(w.dir,'diff','--cached','--name-only');if(staged)await this.git(w.dir,'commit','-m','Schmaqq Studio: Änderungen zur Prüfung');
    const before=await sourceRevision(w.dir,control),checks=await this.check(w.dir,p);if(await this.git(w.dir,'status','--porcelain'))throw new Error('Arbeitskopie hat sich während der Prüfung verändert. Bitte erneut prüfen und einreichen.');
    const commit=await this.git(w.dir,'rev-parse','HEAD'),base=await this.git(w.dir,'merge-base','HEAD',`origin/${p.base}`);
    const diff=await this.git(w.dir,'diff','--no-ext-diff','--no-textconv','--no-color',base,commit,'--');
    const result={checks,workflow:p.workflow??'direct',branch:w.branch,commit,base,diff:diff.slice(0,50000),diffTruncated:diff.length>=50000,published:job.action==='submit',source:stableSource(before,await sourceRevision(w.dir,control))};
+   if(p.preview?.build&&p.preview?.directory){
+    const preview=await this.run({...job,action:'preview'},control);
+    if(await this.git(w.dir,'status','--porcelain'))throw new Error('Der Vorschau-Build hat Quelldateien verändert. Erneut testen und einreichen.');
+    result.previewBundle=preview.previewBundle;result.source=stableSource(before,await sourceRevision(w.dir,control));
+   }
    if(job.action==='submit')await this.git(w.dir,'push','--set-upstream','origin',`HEAD:refs/heads/${w.branch}`);
    return result;
   }
   if(job.action==='preview'){
    if(p.preview?.build&&p.preview?.directory){
+    await this.excludeBuildOutput(w.dir,p);
     const before=await sourceRevision(w.dir,control);await this.execute(p.preview.build,w.dir);const output=path.resolve(w.dir,p.preview.directory),real=realpathSync(output),workspace=realpathSync(w.dir);
     if(!real.startsWith(workspace+path.sep)||real===workspace)throw new Error('Vorschau-Ausgabe muss innerhalb der Arbeitskopie liegen.');
     const files={};let bytes=0,count=0;
@@ -127,7 +159,7 @@ export async function startRunner(config){
     finally{syncing=false;}
    };
    const timer=setInterval(flush,1000),onEvent=event=>{events.push({...event,seq:++sequence});if(events.length>400)events.splice(0,events.length-400);};
-   try{const result=await runner.run(job,{signal:controller.signal,onEvent});clearInterval(timer);while(syncing)await new Promise(r=>setTimeout(r,20));while(events.length){await flush();if(failures)break;}await request('/api/runner/report',{id:job.id,lease:job.lease,ok:true,result});}
+   try{const result=await runner.run(job,{signal:controller.signal,onEvent});if(job.action==='connect-project')lastCapabilities=0;clearInterval(timer);while(syncing)await new Promise(r=>setTimeout(r,20));while(events.length){await flush();if(failures)break;}await request('/api/runner/report',{id:job.id,lease:job.lease,ok:true,result});}
    catch(e){await request('/api/runner/report',{id:job.id,lease:job.lease,ok:false,result:{error:e.message}}).catch(()=>{});}
    finally{clearInterval(timer);current=null;}
   }

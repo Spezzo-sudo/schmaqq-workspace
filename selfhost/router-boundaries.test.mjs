@@ -9,7 +9,7 @@ import {createStudioServer} from './server.mjs';
 test('extracted auth and workspace routes preserve the HTTP and role contract', async t => {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'studio-routing-regression-'));
   const origin = 'http://127.0.0.1:44675';
-  const app = createStudioServer({
+  const app = createStudioServer({seedProjects:true,
     filename: path.join(dir, 'fixture.sqlite'),
     origin,
     previewOrigin: 'http://127.0.0.1:44676'

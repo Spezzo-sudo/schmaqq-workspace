@@ -17,7 +17,7 @@ test('local AI sharing: explicit owner consent, private results, revoke, limits 
   assert.equal(req.url,'/api/chat');let body='';for await(const chunk of req)body+=chunk;sent=JSON.parse(body);chatCalls++;
   res.end(JSON.stringify({done:true,message:{role:'assistant',content:'Protocol fixture response'},eval_count:3}));
  });await new Promise(r=>backend.listen(0,'127.0.0.1',r));
- const app=createStudioServer({filename:path.join(root,'db.sqlite'),origin});await new Promise(r=>app.server.listen(44325,'127.0.0.1',r));
+ const app=createStudioServer({seedProjects:true,filename:path.join(root,'db.sqlite'),origin});await new Promise(r=>app.server.listen(44325,'127.0.0.1',r));
  async function request(route,data,cookie,token){const r=await fetch(origin+route,{method:data?'POST':'GET',headers:{...(data?{Origin:origin,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:data?JSON.stringify(data):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};}
  const config={stateDir:path.join(root,'runner'),projects:{},ai:{projects:['website'],ollama:{enabled:true,baseURL:`http://127.0.0.1:${backend.address().port}`,models:['fixture-local','cloud-model','model:cloud'],allowTeam:false,maxOutputTokens:256}}};const runner=new LocalRunner(config);
  try{

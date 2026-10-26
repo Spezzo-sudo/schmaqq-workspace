@@ -11,7 +11,7 @@ import {setupProject} from './project-setup.mjs';
 import {LocalRunner,command} from './runner.mjs';
 
 test('project start is idempotent and personal readiness never reveals another runner or config contents',async()=>{
- const dir=mkdtempSync(path.join(os.tmpdir(),'studio-start-api-')),origin='http://127.0.0.1:44351',app=createStudioServer({filename:path.join(dir,'studio.sqlite'),origin});await new Promise(r=>app.server.listen(44351,'127.0.0.1',r));
+ const dir=mkdtempSync(path.join(os.tmpdir(),'studio-start-api-')),origin='http://127.0.0.1:44351',app=createStudioServer({seedProjects:true,filename:path.join(dir,'studio.sqlite'),origin});await new Promise(r=>app.server.listen(44351,'127.0.0.1',r));
  const request=async(route,value,cookie,token,from=origin)=>{const r=await fetch(origin+route,{method:value?'POST':'GET',headers:{...(value?{Origin:from,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:value?JSON.stringify(value):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};};
  try{
   const a=await request('/api/auth/register',{invite:createInvite(app.db,'a@fixture.invalid','owner'),name:'A',password:'fixture-password-1234'}),b=await request('/api/auth/register',{invite:createInvite(app.db,'b@fixture.invalid'),name:'B',password:'fixture-password-1234'});
