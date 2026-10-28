@@ -25,6 +25,7 @@ import {createTeamRoute} from './team-http.mjs';
 import {createGithubWorkflow,githubMemberTokens} from './github-workflow.mjs';
 import {taskContract,completion,teamEvent,storeMetadata,metadata} from './team-model.mjs';
 import { openStore,digest,token,transaction } from './store.mjs';
+import {resolveDevice,placementView,setPlacement,placementModes} from './placement.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dataDir=path.resolve(process.env.STUDIO_DATA_DIR??path.join(root,'.studio'));
@@ -69,7 +70,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  // This dispatcher is private to the validated plugin host. Network request
  // headers cannot set its WeakMap identity; ordinary API auth stays unchanged.
  async function executeAsMember(memberId,route,value){
-  if(!/^\/api\/(rooms|room\/context|development(?:\/job)?)(?:\?|$)/.test(route))throw fail(403,'Pluginoperation nicht freigegeben.');
+  if(!/^\/api\/(rooms|room\/context|development(?:\/job)?|executors)(?:\?|$)/.test(route)||route.startsWith('/api/executors')&&value)throw fail(403,'Pluginoperation nicht freigegeben.');
   const req=Readable.from(value?[Buffer.from(JSON.stringify(value))]:[]);req.url=route;req.method=value?'POST':'GET';req.headers={origin,'content-type':'application/json'};req.socket={remoteAddress:'127.0.0.1'};
   internalMembers.set(req,memberId);
   let status=200,body;
@@ -241,7 +242,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    }
    if(route==='/api/development'){
     const m=user(req);
-    if(method==='GET'){const devices=db.prepare('SELECT id,owner,name,seen,revoked FROM devices WHERE revoked=0').all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));send({devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all(),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)})),readiness:projectReadiness(db,m.id)});return;}
+    if(method==='GET'){const devices=db.prepare("SELECT d.id,d.owner,d.name,d.seen,d.revoked,COALESCE(json_extract(h.info,'$.kind'),'pc') AS kind FROM devices d LEFT JOIN device_hosts h ON h.device=d.id WHERE d.revoked=0").all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));send({devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all(),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)})),readiness:projectReadiness(db,m.id)});return;}
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     // Bound editor payloads by the runner's 64 KiB byte limit and by
     // Zod's 65536-character cap; JSON escaping needs a separate wire limit.
@@ -267,8 +268,10 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     if(v.action==='device'){const name=parse(text,v.name),t=token(),did=uuid();db.prepare('INSERT INTO devices(id,owner,name,hash) VALUES(?,?,?,?)').run(did,m.id,name,digest(t));send({id:did,token:t});return;}
     if(v.action==='revoke'){const did=parse(id,v.id);if(!db.prepare('UPDATE devices SET revoked=1 WHERE id=? AND owner=?').run(did,m.id).changes)throw fail(404,'Gerät nicht gefunden.');db.prepare("UPDATE jobs SET status='cancelled' WHERE device=? AND status='queued'").run(did);send({ok:true});return;}
     const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','prepare','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
-    if(!db.prepare('SELECT id FROM devices WHERE id=? AND owner=? AND revoked=0').get(value.device,m.id))throw fail(403,'Wähle deinen eigenen Runner.');
     if(!db.prepare('SELECT id FROM projects WHERE id=?').get(value.project))throw fail(404,'Projekt nicht gefunden.');
+    // "auto" is resolved here, once; the job row then names the executor that runs it.
+    const placed=resolveDevice(db,{member:m,project:value.project,device:value.device,worktree:value.operation==='integrate'?undefined:value.worktree});
+    value.device=placed.device;
     let payload={};
     if(['inspect','prepare'].includes(value.operation))payload=value.issue?{issue:value.issue}:{};
     else if(value.operation==='integrate'){
@@ -295,6 +298,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     const sharedProject=metadata(db,'room:v1:project:'+value.project);
     if(sharedProject?.repository){payload.expectedRepository=sharedProject.repository;payload.expectedBase=sharedProject.base??'main';}
     if(['review','submit','integrate'].includes(value.operation)&&db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device))throw fail(409,'Auf deinem Rechner läuft noch ein Vorgang. Den bestätigten Abschluss abwarten.');
+    payload.placement={mode:placed.mode,kind:placed.kind,reason:placed.reason};
     const jid=uuid();transaction(db,()=>{
      if(value.operation==='prepare'){
       assertAvailable(db,{project:value.project,issue:value.issue,scope:value.scope,task:value.task});
@@ -305,7 +309,14 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
       db.prepare('INSERT INTO workspaces(job,title,scope,task) VALUES(?,?,?,?)').run(jid,value.title??(value.issue?'Issue #'+value.issue:'Arbeitskopie'),value.scope??'',value.task??null);
       if(value.task)db.prepare("UPDATE tasks SET assignee=?,status=CASE WHEN status='todo' THEN 'doing' ELSE status END WHERE id=?").run(m.id,value.task);
      }
-    });send({ok:true,id:jid});return;
+    });send({ok:true,id:jid,device:value.device,placement:payload.placement});return;
+   }
+   if(route==='/api/executors'){
+    const m=user(req);
+    if(method==='GET'){const project=parse(id,url.searchParams.get('project'));if(!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt nicht gefunden.');send(placementView(db,m,project));return;}
+    if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
+    const value=parse(z.object({project:id,mode:z.enum(placementModes)}),await readJSON(req));
+    setPlacement(db,{member:m,project:value.project,mode:value.mode});record(m.id,'Ausführungsregel geändert');send(placementView(db,m,value.project));return;
    }
    if(await workspaceHttpRoute({route,method,req,send}))return;
    if(route.startsWith('/api/'))throw fail(404,'Schnittstelle nicht gefunden.');

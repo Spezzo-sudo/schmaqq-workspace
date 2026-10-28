@@ -1,6 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {transaction} from './store.mjs';
+import {hostSchema,recordHost} from './placement.mjs';
 const id=z.string().regex(/^[\w-]{1,100}$/),model=z.string().min(1).max(200);
 const fail=(status,message)=>Object.assign(new Error(message),{status});
 export function aiAccess(db,job){
@@ -11,8 +12,9 @@ export function aiAccess(db,job){
 }
 export async function aiRoute({route,method,req,db,user,device,send,readJSON,parse}){
  if(route==='/api/runner/capabilities'&&method==='POST'){
-  const d=device(req),v=parse(z.object({models:z.array(model).max(30),status:z.enum(['disabled','unreachable','no-models','ready']),allowTeam:z.boolean(),projects:z.array(id).max(30),codex:z.enum(['disabled','not-connected','chatgpt']),development:z.array(z.object({id,setupVersion:z.number().int().min(1).optional(),check:z.boolean(),preview:z.boolean(),allowCodex:z.boolean(),publish:z.boolean()})).max(30).optional()}),await readJSON(req));
+  const d=device(req),v=parse(z.object({models:z.array(model).max(30),status:z.enum(['disabled','unreachable','no-models','ready']),allowTeam:z.boolean(),projects:z.array(id).max(30),codex:z.enum(['disabled','not-connected','chatgpt']),development:z.array(z.object({id,setupVersion:z.number().int().min(1).optional(),check:z.boolean(),preview:z.boolean(),allowCodex:z.boolean(),publish:z.boolean()})).max(30).optional(),host:hostSchema.optional()}),await readJSON(req));
   transaction(db,()=>{
+   if(v.host)recordHost(db,d.id,v.host);
    db.prepare('INSERT INTO ai_resources VALUES(?,?,?,?,?,?,?) ON CONFLICT(device) DO UPDATE SET models=excluded.models,status=excluded.status,allow_team=excluded.allow_team,projects=excluded.projects,codex=excluded.codex,updated=excluded.updated').run(d.id,JSON.stringify(v.models),v.status,Number(v.allowTeam),JSON.stringify(v.projects),v.codex,Date.now());
    db.prepare('DELETE FROM runner_project_state WHERE device=?').run(d.id);
    if(v.development)db.prepare('INSERT INTO runner_project_state VALUES(?,?,?)').run(d.id,JSON.stringify(v.development),Date.now());

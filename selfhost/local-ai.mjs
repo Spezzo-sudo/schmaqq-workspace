@@ -1,4 +1,13 @@
+import os from 'node:os';
 import {command} from './process.mjs';
+
+/** Non-secret executor facts for placement. A cgroup memory limit (server
+ * worker) is reported instead of the host's total memory when it is lower. */
+export function hostInfo(config){
+ const limit=process.constrainedMemory?.()||0,total=os.totalmem(),memory=limit>0&&limit<total?limit:total;
+ const label=typeof config.label==='string'&&config.label.trim()?config.label.trim().slice(0,80):undefined;
+ return {kind:config.kind==='server'?'server':'pc',os:process.platform,arch:process.arch,node:process.version,cpus:Math.max(1,Math.min(config.cpus??os.availableParallelism(),os.availableParallelism())),memoryMb:Math.max(1,Math.round(memory/1048576)),...(label?{label}:{})};
+}
 
 function endpoint(config){
  const url=new URL(config.baseURL??'http://127.0.0.1:11434');
@@ -19,7 +28,7 @@ export async function aiCapabilities(config){
  const local=config.ai?.ollama;let models=[],status=local?.enabled?'unreachable':'disabled';
  if(local?.enabled){try{models=await localModels(local);status=models.length?'ready':'no-models';}catch{}}
  let codex='disabled';if(Object.values(config.projects??{}).some(p=>p.allowCodex)){try{const output=await command([config.codex??'codex','login','status'],undefined,{timeout:8000});codex=/chatgpt/i.test(output)?'chatgpt':'not-connected';}catch{codex='not-connected';}}
- return {models,status,allowTeam:local?.allowTeam===true,projects:config.ai?.projects??[],codex,development:Object.entries(config.projects??{}).slice(0,30).map(([id,p])=>({id,setupVersion:1,check:Array.isArray(p.check)&&p.check.length>0,preview:!!(p.preview?.build?.length&&p.preview?.directory||p.preview?.argv?.length&&p.preview?.url),allowCodex:p.allowCodex===true,publish:p.publish!==false}))};
+ return {models,status,allowTeam:local?.allowTeam===true,projects:config.ai?.projects??[],codex,host:hostInfo(config),development:Object.entries(config.projects??{}).slice(0,30).map(([id,p])=>({id,setupVersion:1,check:Array.isArray(p.check)&&p.check.length>0,preview:!!(p.preview?.build?.length&&p.preview?.directory||p.preview?.argv?.length&&p.preview?.url),allowCodex:p.allowCodex===true,publish:p.publish!==false}))};
 }
 export async function runLocalAi(config,job,signal){
  const local=config.ai?.ollama;
