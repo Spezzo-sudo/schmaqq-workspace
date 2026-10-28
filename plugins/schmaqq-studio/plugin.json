@@ -1,0 +1,8 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "schmaqq-studio",
+  "version": "0.2.0",
+  "description": "Gemeinsame Studio-Projekte im Chat bearbeiten: Kontext lesen, Code auf dem eigenen freigegebenen Runner aendern, Tests und Vorschauen erstellen.",
+  "author": {"name": "SCHMAQQ"},
+  "homepage": "https://studio.schmaqq.com/"
+}

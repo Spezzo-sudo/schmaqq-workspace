@@ -1,4 +1,7 @@
 import http from 'node:http';
+import {Readable} from 'node:stream';
+import {DatabaseSync} from 'node:sqlite';
+import {createPluginHttpRoutes} from './studio-plugin-http.mjs';
 import {createOidcRoutes} from './oidc.mjs';
 import {createConnectionRoutes} from './connections.mjs';
 import {collaborationRoute} from './collaboration.mjs';
@@ -30,8 +33,9 @@ const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
 function parse(schema,data){const r=schema.safeParse(data);if(!r.success)throw fail(400,'Bitte Eingaben prüfen.');return r.data;}
-export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,seedProjects=demoMode,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now}={}){
+export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,seedProjects=demoMode,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now,pluginClients=JSON.parse(process.env.STUDIO_PLUGIN_CLIENTS??'[]')}={}){
  if(!/^[a-z_]{1,60}$/.test(sessionCookie))throw new Error('Ungültiger Sitzungsname.');
+ if(!Array.isArray(pluginClients)||pluginClients.length>20)throw new Error('Ungueltige Plugin-Clientliste.');
  if(new URL(origin).origin===new URL(previewOrigin).origin)throw new Error('Studio und Vorschau benötigen unterschiedliche Origins.');
  // Reject unsafe proxy trust settings before opening the SQLite store.
  const loginLimiter=createLoginLimiter({trustedProxyIps,now});
@@ -42,7 +46,8 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  const passwordRecovery=createPasswordRecovery({
   db,origin,mailer:configuredMailer,now:recoveryNow,trustedProxyIps
  });
- function user(req){const cookie=req.headers.cookie?.match(new RegExp('(?:^|;\\s*)'+sessionCookie+'=([\\w-]+)'))?.[1];if(!cookie)throw fail(401,'Bitte anmelden.');const m=db.prepare('SELECT members.* FROM sessions JOIN members ON member=members.id WHERE hash=? AND expires>?').get(digest(cookie),now());if(!m)throw fail(401,'Bitte erneut anmelden.');return m;}
+ const internalMembers=new WeakMap();
+ function user(req){const memberId=internalMembers.get(req);if(memberId){const member=db.prepare('SELECT * FROM members WHERE id=?').get(memberId);if(!member)throw fail(401,'Mitglied nicht mehr vorhanden.');return member;}const cookie=req.headers.cookie?.match(new RegExp('(?:^|;\\s*)'+sessionCookie+'=([\\w-]+)'))?.[1];if(!cookie)throw fail(401,'Bitte anmelden.');const m=db.prepare('SELECT members.* FROM sessions JOIN members ON member=members.id WHERE hash=? AND expires>?').get(digest(cookie),now());if(!m)throw fail(401,'Bitte erneut anmelden.');return m;}
  function device(req){const t=req.headers.authorization?.match(/^Bearer ([\w-]+)$/)?.[1];if(!t)throw fail(401,'Geräteanmeldung fehlt.');const d=db.prepare('SELECT * FROM devices WHERE hash=? AND revoked=0').get(digest(t));if(!d)throw fail(401,'Gerätezugang ungültig.');return d;}
  function session(res,member){const t=token();db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(digest(t),member,now()+7*86400000);res.setHeader('Set-Cookie',`${sessionCookie}=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800${secure?'; Secure':''}`);}
  function record(author,message){db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(uuid(),author,message,now());}
@@ -61,13 +66,29 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  // Identity-only OAuth is not a repository permission. PR inspection requires
  // a separate optional, operator-configured read-only credential and project allowlist.
  const inspectPullRequest=pullRequestReader??createPullRequestReader({repositories:demoMode?{}:configuredRepos(process.env.STUDIO_GITHUB_PROJECT_REPOS),readToken:demoMode?'':process.env.STUDIO_GITHUB_PR_READ_TOKEN??''});
- const server=http.createServer(async(req,res)=>{
+ // This dispatcher is private to the validated plugin host. Network request
+ // headers cannot set its WeakMap identity; ordinary API auth stays unchanged.
+ async function executeAsMember(memberId,route,value){
+  if(!/^\/api\/(rooms|room\/context|development(?:\/job)?)(?:\?|$)/.test(route))throw fail(403,'Pluginoperation nicht freigegeben.');
+  const req=Readable.from(value?[Buffer.from(JSON.stringify(value))]:[]);req.url=route;req.method=value?'POST':'GET';req.headers={origin,'content-type':'application/json'};req.socket={remoteAddress:'127.0.0.1'};
+  internalMembers.set(req,memberId);
+  let status=200,body;
+  const res={setHeader(){},writeHead(code){status=code;},end(data){body=JSON.parse(String(data));}};
+  try{await handleRequest(req,res);return {status,data:body};}finally{internalMembers.delete(req);}
+ }
+ let plugin,ledgerDb;
+ if(pluginClients.length){
+  ledgerDb=new DatabaseSync(path.join(path.dirname(filename),'plugin-mutations.sqlite'));
+  try{plugin=createPluginHttpRoutes({db,ledgerDb,origin,clients:pluginClients,user,readJSON,execute:executeAsMember});}catch(e){ledgerDb.close();db.close();throw e;}
+ }
+ const handleRequest=async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');
   const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
   try{
    const url=new URL(req.url,origin),route=url.pathname,method=req.method;
    if(route==='/api/studio'&&method==='GET'){send({mode:demoMode?'demo':'private'});return;}
    if(route==='/healthz'){send({ok:true});return;}
+   if(plugin&&await plugin.route({req,res,url,send}))return;
    if(method==='POST'&&!route.startsWith('/api/runner/')){if(req.headers.origin!==origin)throw fail(403,'Ungültiger Ursprung.');if(!req.headers['content-type']?.includes('application/json'))throw fail(415,'JSON erforderlich.');}
    if(await oidcRoute({route,method,req,res,url,send}))return;
    if(await connectionRoute({route,method,req,res,url,send}))return;
@@ -294,7 +315,9 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(!existsSync(target))throw fail(503,'Oberfläche zuerst mit npm run studio:build erstellen.');
    const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.woff2':'font/woff2'}[path.extname(target)]??'application/octet-stream';res.writeHead(200,{'Content-Type':mime});res.end(readFileSync(target));
   }catch(e){if(!e.status)console.error('studio request failed',e.message);send({error:e.status?e.message:'Anfrage fehlgeschlagen.'},e.status??500);}
- });
+ };
+ const server=http.createServer(handleRequest);
+ server.once('close',()=>ledgerDb?.close());
  const previewServer=http.createServer((req,res)=>{
   // A different origin prevents project JavaScript from reading Studio sessions.
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Cache-Control','no-store');

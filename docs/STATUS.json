@@ -1,4 +1,30 @@
 {
+  "plugin_oauth_20261029": {
+    "state": "local_oauth_mcp_verified_not_deployed_not_connected_to_chatgpt",
+    "implemented": "OAuth authorization server for registered public clients: S256 PKCE, exact redirect URIs, resource and scope binding (studio:read, studio:code), hashed tokens, grant listing and revocation, protected-resource and authorization-server metadata, POST-only consent page, /mcp Streamable HTTP endpoint with per-tool scope checks and member/grant-bound mutation ledger. Enabled only via STUDIO_PLUGIN_CLIENTS.",
+    "verification": "231 tests: 210 PASS, 0 FAIL, 21 platform skips; Source Guard, TypeScript and Vite PASS. Local browser consent -> code -> token exchange PASS with synthetic account.",
+    "limits": "No real ChatGPT/Codex client tested; actual ChatGPT redirect URI and client registration unverified. No VPS deployment, no isolated server worker. Preview remains a capability link.",
+    "production_changed": false,
+    "github_published": false
+  },
+  "plugin_durable_mutations_20261028": {
+    "state": "local_sqlite_ledger_verified_host_authorization_integration_pending",
+    "implemented": "Person/grant-scoped persistent mutation ledger, pending-before-dispatch, result replay across adapter reconnection and database reopen, conflict/quota/storage-error handling. Real Studio job is reused after reconnect in the coding test.",
+    "verification": "220 tests: 199 PASS, 0 FAIL, 21 platform skips; Source Guard, TypeScript and Vite PASS. Log: .studio/prototype-evidence/verify-ledger.log.",
+    "limits": "No OAuth product host yet. Stable grant identity, safe private database placement and mandatory ledger activation must be supplied by that host. Ambiguous requests stop rather than auto-retry; no atomic external HTTP/database exactly-once guarantee.",
+    "next": "docs/PLUGIN_AUTHORIZATION_CONTRACT.md",
+    "production_changed": false,
+    "github_published": false
+  },
+  "plugin_worker_prototype_20261028": {
+    "state": "local_code_test_preview_contract_verified_not_connected_to_chatgpt",
+    "implemented": "Identity-bound MCP tool adapter, loopback-only authenticated transport harness, coding workflow skill, runner package import closure correction.",
+    "verification": "217 tests: 196 PASS, 0 FAIL, 21 explicit platform skips; Source Guard, TypeScript and Vite PASS. Full local verification used existing complete Portable Git; reduced session Git lacked daemon and caused an initial fixture failure.",
+    "evidence": "docs/STUDIO_PLUGIN_WORKER_PROTOTYPE.md",
+    "limits": "Synthetic two-account local HTTP/Git/runner fixture, no model calls. No real normal ChatGPT connection, OAuth resource server, durable reconnect idempotency, VPS isolation, general scheduler or three-OS installer. Existing preview remains a capability link.",
+    "production_changed": false,
+    "github_published": false
+  },
   "github_handoff_20261028": {
     "entry": "docs/RELEASE_NEXT.md",
     "verification": "211 tests:190 PASS,0 FAIL,21 platform skips; Source Guard,TypeScript,Vite PASS",

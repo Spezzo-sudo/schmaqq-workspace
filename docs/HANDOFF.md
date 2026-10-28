@@ -1,4 +1,25 @@
-## Aktuelle Übergabe
+## Lokaler Plugin-/Workerprototyp
+
+Neue lokale Arbeit: [Umfang und Grenzen](STUDIO_PLUGIN_WORKER_PROTOTYPE.md).
+MCP-Werkzeuge fuer revisionsgebundene Codeaenderungen, Tests und Vorschau nutzen
+die bestehenden persoenlichen Studio-Operationen. Echte lokale HTTP-/Git-/Runner-
+Kette mit zwei synthetischen Konten geprueft. Runner-Paketabhaengigkeit korrigiert.
+Neu: persistentes SQLite-Mutationsledger mit Personen-/Grantbindung, Abbruch-
+schutz und Wiederverwendung echter Job-IDs nach Adapterneustart. Der Produkthost
+muss es noch verbindlich konfigurieren. [Autorisierungsvertrag](PLUGIN_AUTHORIZATION_CONTRACT.md).
+29.10.: Persoenliche Plugin-Autorisierung implementiert: OAuth Authorization Code
+mit S256-PKCE, registrierte Clients/Redirects, Resource-/Scope-Bindung
+(`studio:read`, `studio:code`), gehashte Tokens, Widerruf, Discovery-Metadaten,
+Zustimmungsseite ohne GET-Seiteneffekt und MCP-Endpunkt `/mcp` ueber den
+offiziellen Streamable-HTTP-Transport. Ledger ist an Mitglied und Grant gebunden.
+Nur aktiv, wenn `STUDIO_PLUGIN_CLIENTS` gesetzt ist; sonst unveraendertes Verhalten.
+Lokale Gesamtpruefung: 231 Tests, 210 PASS, 0 FAIL, 21 Plattform-Skips; Source Guard,
+TypeScript und Vite PASS. Browserdurchlauf Zustimmung -> Tokenaustausch PASS mit
+synthetischem Konto. Kein ChatGPT-/VPS-/Installer-PASS.
+Naechster Schritt: freigegebene VPS-Bereitstellung, dann echte Normalchat-
+Interoperabilitaet und isolierter Serverworker.
+
+## Vorherige Übergabe
 
 Für Veröffentlichung und Hermes zuerst [RELEASE_NEXT.md](RELEASE_NEXT.md) lesen.
 Kombinierte lokale Quellprüfung: 211 Tests, 190 PASS, 0 FAIL, 21 Plattform-Skips;

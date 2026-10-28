@@ -3,6 +3,7 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {copyRuntime} from './runtime-package.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function git(...args) {
@@ -33,24 +34,14 @@ if (git('status', '--porcelain', '--untracked-files=normal')) {
 
 const version = new Date().toISOString().replace(/[:.]/g, '-');
 const directory = path.join(root, '.studio', 'releases', version);
-mkdirSync(directory, {recursive: true});
+copyRuntime({root,destination:directory});
 
 function copy(source, dest = source) {
   cpSync(path.join(root, source), path.join(directory, dest), {
     recursive: true, errorOnExist: true, force: false
   });
 }
-for (const file of [
-  'server', 'store', 'reviews', 'workspaces', 'admin', 'backup', 'private-path', 'ai-routes',
-  'oidc', 'connections', 'collaboration', 'change-overview', 'source-evidence',
-  'project-start', 'github-pr-status', 'auth-http', 'workspace-http', 'login-rate-limit',
-  'password-recovery', 'room-http'
-]) copy('selfhost/' + file + '.mjs');
 copy('studio-dist');
-copy('node_modules/zod');
-copy('node_modules/jose');
-copy('node_modules/nodemailer');
-copy('selfhost/deploy');
 
 writeFileSync(path.join(directory, 'package.json'), JSON.stringify({
   name: 'schmaqq-studio-runtime', private: true, type: 'module',
