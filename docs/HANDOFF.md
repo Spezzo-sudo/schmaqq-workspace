@@ -16,8 +16,10 @@ Nur aktiv, wenn `STUDIO_PLUGIN_CLIENTS` gesetzt ist; sonst unveraendertes Verhal
 Lokale Gesamtpruefung: 231 Tests, 210 PASS, 0 FAIL, 21 Plattform-Skips; Source Guard,
 TypeScript und Vite PASS. Browserdurchlauf Zustimmung -> Tokenaustausch PASS mit
 synthetischem Konto. Kein ChatGPT-/VPS-/Installer-PASS.
-Naechster Schritt: freigegebene VPS-Bereitstellung, dann echte Normalchat-
-Interoperabilitaet und isolierter Serverworker.
+Production am 29.10. nach Owner-GO auf diesen Stand umgeschaltet, Plugin dort
+noch deaktiviert: [Nachweis und Rueckweg](evidence/PLUGIN_OAUTH_DEPLOY_20261029.md).
+Naechster Schritt: ChatGPT-Redirect-URI ermitteln, Plugin-Client aktivieren,
+echte Normalchat-Interoperabilitaet pruefen; danach isolierter Serverworker.
 
 ## Vorherige Übergabe
 
