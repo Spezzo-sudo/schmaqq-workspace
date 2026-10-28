@@ -189,6 +189,11 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .execution-note, .workflow-help, .publish-details p { font-size: 12px; line-height: 1.7; color: var(--muted); margin: 14px 0; overflow-wrap: anywhere; }
 .execution-note { border-left: 3px solid var(--acid); padding-left: 12px; }
 .execution-note strong { color: var(--ink); }
+.executors .executor-list { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 8px; }
+.executors .executor { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.executors .executor > div { flex: 1; min-width: 0; }
+.executors .executor small { display: block; color: var(--muted); overflow-wrap: anywhere; }
+.executors .executor.selected { border-color: var(--line-strong); box-shadow: inset 3px 0 0 var(--acid); }
 .workflow-heading { font-size: 15px; margin-top: 24px; }
 .publish-details { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 16px; }
 .publish-details summary { cursor: pointer; font-size: 12px; }

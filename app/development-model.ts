@@ -24,6 +24,8 @@ export type Device = {
   name: string;
   owner: string;
   seen: number;
+  /** "server" for a server worker; older runners report nothing and count as PC. */
+  kind?: 'pc' | 'server';
 };
 export type Job = {
   id: string;
