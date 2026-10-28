@@ -1,10 +1,11 @@
 {
   "plugin_oauth_20261029": {
-    "state": "deployed_to_production_plugin_disabled_not_connected_to_chatgpt",
+    "state": "deployed_to_production_plugin_client_enabled_chatgpt_connection_untested",
+    "plugin_client": "schmaqq-chatgpt with redirect https://chatgpt.com/connector_platform_oauth_redirect enabled 29.10.2026; live discovery, 401 challenge and redirect allowlist checked.",
     "deployment": "29.10.2026 production schmaqq-studio switched to source e7ee710596465cf49c4dbdc4c2472b087a59500b after verify-release PASS, backup and isolated probe; STUDIO_PLUGIN_CLIENTS not set. Evidence: docs/evidence/PLUGIN_OAUTH_DEPLOY_20261029.md",
     "implemented": "OAuth authorization server for registered public clients: S256 PKCE, exact redirect URIs, resource and scope binding (studio:read, studio:code), hashed tokens, grant listing and revocation, protected-resource and authorization-server metadata, POST-only consent page, /mcp Streamable HTTP endpoint with per-tool scope checks and member/grant-bound mutation ledger. Enabled only via STUDIO_PLUGIN_CLIENTS.",
     "verification": "231 tests: 210 PASS, 0 FAIL, 21 platform skips; Source Guard, TypeScript and Vite PASS. Local browser consent -> code -> token exchange PASS with synthetic account.",
-    "limits": "No real ChatGPT/Codex client tested; actual ChatGPT redirect URI and client registration unverified; plugin inactive in production. No isolated server worker. Preview remains a capability link.",
+    "limits": "No real ChatGPT/Codex client tested; plugin client enabled in production but no real token exchange or tool call from ChatGPT yet. No isolated server worker. Preview remains a capability link.",
     "production_changed": true,
     "github_published": false
   },

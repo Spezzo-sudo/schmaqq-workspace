@@ -41,6 +41,18 @@ Plugin bleibt deaktiviert, bei Problemen Rollback.
   `schmaqq-chatgpt`. Danach erst Normalchat-Interoperabilitaet testen.
 - Kein Push, kein PR, kein Merge.
 
+## Nachtrag: Plugin-Client aktiviert (Owner-GO im Chat)
+
+Redirect-URI aus offizieller Doku (developers.openai.com/plugins/build/auth):
+bei RFC-9207-Issuer-Unterstuetzung `https://chatgpt.com/connector_platform_oauth_redirect`.
+In `/etc/schmaqq-studio.env` ergaenzt: Client `schmaqq-chatgpt`, genau diese
+Redirect-URI. Vorherige ENV als Backup im Staging-Ordner unter `/root/`.
+Nach Neustart live: Discovery-Dokumente 200, `/mcp` ohne Token 401 mit
+`WWW-Authenticate`, Autorisierung mit fremdem Redirect 400, mit korrektem
+Redirect 200 (Zustimmungsseite). Kein Tokenaustausch und keine echte
+ChatGPT-Verbindung durch diesen Schritt nachgewiesen.
+Deaktivieren: Zeile `STUDIO_PLUGIN_CLIENTS=` entfernen, Dienst neu starten.
+
 ## Rueckweg
 
     ln -sfn /opt/schmaqq-studio/releases/c79309735f172691190db272fcec90ebb4a05cf8 /opt/schmaqq-studio/current.next
