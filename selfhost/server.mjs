@@ -34,7 +34,7 @@ const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
 function parse(schema,data){const r=schema.safeParse(data);if(!r.success)throw fail(400,'Bitte Eingaben prüfen.');return r.data;}
-export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,seedProjects=demoMode,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now,pluginClients=JSON.parse(process.env.STUDIO_PLUGIN_CLIENTS??'[]')}={}){
+export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,seedProjects=demoMode,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now,pluginClients=JSON.parse(process.env.STUDIO_PLUGIN_CLIENTS??'[]'),pluginDynamicClients=process.env.STUDIO_PLUGIN_DYNAMIC_CLIENTS==='1',pluginFetchMetadata}={}){
  if(!/^[a-z_]{1,60}$/.test(sessionCookie))throw new Error('Ungültiger Sitzungsname.');
  if(!Array.isArray(pluginClients)||pluginClients.length>20)throw new Error('Ungueltige Plugin-Clientliste.');
  if(new URL(origin).origin===new URL(previewOrigin).origin)throw new Error('Studio und Vorschau benötigen unterschiedliche Origins.');
@@ -78,9 +78,9 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
   try{await handleRequest(req,res);return {status,data:body};}finally{internalMembers.delete(req);}
  }
  let plugin,ledgerDb;
- if(pluginClients.length){
+ if(pluginClients.length||pluginDynamicClients){
   ledgerDb=new DatabaseSync(path.join(path.dirname(filename),'plugin-mutations.sqlite'));
-  try{plugin=createPluginHttpRoutes({db,ledgerDb,origin,clients:pluginClients,user,readJSON,execute:executeAsMember});}catch(e){ledgerDb.close();db.close();throw e;}
+  try{plugin=createPluginHttpRoutes({db,ledgerDb,origin,clients:pluginClients,dynamic:pluginDynamicClients,fetchMetadata:pluginFetchMetadata,user,readJSON,execute:executeAsMember});}catch(e){ledgerDb.close();db.close();throw e;}
  }
  const handleRequest=async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');

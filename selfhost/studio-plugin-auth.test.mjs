@@ -38,7 +38,10 @@ test('personal PKCE grant, discovery, hashed credentials, own revocation and mem
 
 test('authorization rejects PKCE downgrade, unknown scopes, duplicated parameters and open redirects',t=>{
  const f=fixture(t);
- for(const changes of [{client_id:'missing'},{redirect_uri:'https://attacker.invalid/'},{resource:'https://attacker.invalid/mcp'},{code_challenge_method:'plain'},{code_challenge:'short'},{state:''},{state:'x'.repeat(513)},{scope:'studio:code'},{scope:'studio:read arbitrary'},{scope:'studio:read studio:read'}])assert.throws(()=>f.auth.validateAuthorization({...f.params,...changes}));
+ for(const changes of [{client_id:'missing'},{redirect_uri:'https://attacker.invalid/'},{resource:'https://attacker.invalid/mcp'},{code_challenge_method:'plain'},{code_challenge:'short'},{state:'x'.repeat(513)},{state:'a\nb'},{scope:'studio:code'},{scope:'studio:read arbitrary'},{scope:'studio:read studio:read'}])assert.throws(()=>f.auth.validateAuthorization({...f.params,...changes}));
+ // OAuth 2.1 with PKCE: state, scope and resource may be omitted; defaults are this resource and all scopes shown on consent.
+ const {state,scope,resource,...minimal}=f.params,defaults=f.auth.validateAuthorization(minimal);
+ assert.equal(defaults.state,'');assert.deepEqual(defaults.scopes,['studio:read','studio:code']);assert.equal(defaults.resource,f.params.resource);
  const duplicated=new URLSearchParams(f.params);duplicated.append('client_id','other');error(()=>f.auth.validateAuthorization(duplicated),'invalid_request');
  assert.throws(()=>createPluginAuth({db:f.db,issuer:'https://studio.fixture.invalid/path',clients:[]}));
  assert.throws(()=>createPluginAuth({db:f.db,issuer:'http://public.fixture.invalid',clients:[]}));
