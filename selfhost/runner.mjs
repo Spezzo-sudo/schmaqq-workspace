@@ -8,13 +8,13 @@ import {command} from './process.mjs';
 import {allowedFile,readSource,saveSource,createSource} from './files.mjs';
 import {runCodex} from './codex-run.mjs';
 import {sourceRevision,stableSource} from './source-revision.mjs';
-import {managedProjects,connectManagedProject} from './managed-projects.mjs';
+import {managedProjects,connectManagedProject,applyProjectSettings} from './managed-projects.mjs';
 import {githubRepository} from './github-import.mjs';
 export {command} from './process.mjs';
 export class LocalRunner{
  constructor(config){
   this.config=config;this.state=path.resolve(config.stateDir??'.studio-runner');mkdirSync(this.state,{recursive:true});mkdirSync(path.join(this.state,'no-hooks'),{recursive:true});this.previews=new Map();
-  this.config.projects={...managedProjects(this.state),...this.config.projects};
+  this.config.projects=applyProjectSettings(this.state,{...managedProjects(this.state),...this.config.projects});
  }
  async git(repo,...args){return this.execute(['git','-c',`core.hooksPath=${path.join(this.state,'no-hooks')}`,...args],repo);}
  project(id){const project=this.config.projects?.[id];if(!project?.repo)throw new Error('Dieses Projekt ist auf diesem PC nicht freigegeben.');if(!/^[\w./-]+$/.test(project.base??'main')||(project.base??'main').startsWith('-'))throw new Error('Ungültiger Basiszweig.');return {...project,repo:realpathSync(project.repo),base:project.base??'main'};}

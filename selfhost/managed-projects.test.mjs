@@ -5,7 +5,42 @@ import path from 'node:path';
 import os from 'node:os';
 import {LocalRunner} from './runner.mjs';
 import {command} from './process.mjs';
-import {managedProjects} from './managed-projects.mjs';
+import {managedProjects,detectProject} from './managed-projects.mjs';
+
+test('failed metadata detection retains a clone for a safe guided retry',async t=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'studio-retry-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const runner=new LocalRunner({stateDir:root,projects:{}});let clones=0;
+ runner.git=async(cwd,...args)=>{if(args[0]==='clone'){clones++;mkdirSync(args.at(-1));return '';}return 'https://github.com/fixture/project.git';};
+ const payload={repository:'https://github.com/fixture/project',base:'main',automatic:true,publish:false,allowCodex:true};
+ await assert.rejects(()=>runner.run({action:'connect-project',project:'retry',payload}),/nicht automatisch erkannt/);
+ assert.equal(managedProjects(root).retry.allowCodex,false);assert.equal(managedProjects(root).retry.publish,false);
+ await runner.run({action:'connect-project',project:'retry',payload:{...payload,automatic:false,check:['node','--test']}});
+ assert.equal(clones,1);assert.equal(managedProjects(root).retry.allowCodex,true);
+});
+
+test('existing project settings change live and survive restart without registration or unrelated changes',async t=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'studio-settings-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const repo=path.join(root,'repo');mkdirSync(repo);writeFileSync(path.join(repo,'package.json'),JSON.stringify({scripts:{test:'node --test',build:'node scripts/build.mjs'}}));
+ const original={repo,base:'main',check:['old'],publish:false,allowCodex:false,requireIssue:true};
+ const config={stateDir:path.join(root,'state'),token:'unchanged',projects:{pilot:original,other:{...original}}};
+ const runner=new LocalRunner(config);runner.git=async()=> 'https://github.com/fixture/project.git';
+ const payload={repository:'https://github.com/fixture/project',base:'main',automatic:true,publish:false,allowCodex:true,workflow:'pull-request'};
+ await runner.run({action:'connect-project',project:'pilot',payload});
+ assert.deepEqual(runner.config.projects.pilot.check,['node','--test']);assert.equal(runner.config.projects.pilot.preview.directory,'dist');assert.equal(runner.config.projects.pilot.requireIssue,true);
+ assert.equal(config.token,'unchanged');assert.equal(config.projects.other.allowCodex,false);
+ const restarted=new LocalRunner({stateDir:config.stateDir,projects:{pilot:original,other:original}});
+ assert.equal(restarted.config.projects.pilot.allowCodex,true);assert.equal(restarted.config.projects.pilot.publish,false);assert.equal(restarted.config.projects.other.allowCodex,false);
+ await assert.rejects(()=>runner.run({action:'connect-project',project:'pilot',payload:{...payload,repository:'https://github.com/other/repo'}}),/anderen Repository/);
+ assert.equal(runner.config.projects.pilot.publish,false);
+});
+
+test('detection reads bounded metadata and rejects unknown build output without executing scripts',t=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'studio-detect-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ writeFileSync(path.join(root,'package.json'),JSON.stringify({scripts:{test:'node --test',build:'next build'}}));
+ assert.throws(()=>detectProject(root),/nicht automatisch erkannt/);
+ writeFileSync(path.join(root,'package.json'),JSON.stringify({scripts:{test:'npm run custom',build:'vite build'}}));
+ assert.deepEqual(detectProject(root),{check:['npm','test'],preview:{build:['npm','run','build'],directory:'dist'}});
+});
 
 test('guided personal setup persists managed repository without changing existing registrations or projects',async t=>{
  const root=mkdtempSync(path.join(os.tmpdir(),'studio-managed-project-'));t.after(()=>rmSync(root,{recursive:true,force:true}));

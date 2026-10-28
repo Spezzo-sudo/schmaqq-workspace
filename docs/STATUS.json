@@ -1,4 +1,51 @@
 {
+  "github_handoff_20261028": {
+    "entry": "docs/RELEASE_NEXT.md",
+    "verification": "211 tests:190 PASS,0 FAIL,21 platform skips; Source Guard,TypeScript,Vite PASS",
+    "linux_recovery": "NOT_VERIFIED",
+    "production_changed": false
+  },
+  "guided_runner_setup_20261028": {
+    "state": "local_implemented_focused_verified",
+    "evidence": "docs/evidence/GUIDED_RUNNER_SETUP_20261028.md",
+    "verification": "6 focused tests PASS; TypeScript, Source Guard, build PASS; actual existing pilot configured via browser without registration profile edits or project-setup restart.",
+    "limits": "First runner installation/login still local; automatic detection limited to documented Node/pilot/Vite conventions. No broad unchanged suite repeated.",
+    "production_changed": false,
+    "github_published": false
+  },
+  "personal_pilot_20261028": {
+    "state": "assisted_local_real_github_and_runner_partial_acceptance",
+    "verified": "Real personal GitHub identity confirmed; one new runner limited to selected private pilot clone. Initial Git inspection failed on missing author identity; after user-supplied email and repository-local configuration, one targeted retry passed. Task-bound branch/worktree created; one node --test execution: 2 PASS, 0 FAIL, 0 SKIP. Pilot clone and task worktree clean.",
+    "findings": "Simple runner download defaults to publish allowed without an explicit choice; private pilot profile now explicitly publish:false and workflow:pull-request. Initial Git failure details hidden before worktree exists. Project readiness wording and enabled preview/share actions overstate actual configuration. OAuth return and technical setup need clearer guidance.",
+    "not_verified": "Independent no-coder onboarding, preview, personal AI, second real human/device, GitHub writes/PR/review/merge and production. No broad unchanged suite repeated.",
+    "evidence": "docs/evidence/PERSONAL_PILOT_20261028.md",
+    "next": "Correct the documented onboarding gaps and verify only affected cases. No overall onboarding or release PASS.",
+    "product_code_changed_in_this_pilot": false,
+    "github_published": false,
+    "production_changed": false
+  },
+  "onboarding_preparation_20261028": {
+    "state": "local_ui_preparation_three_targeted_browser_checks_passed",
+    "changes": "Current runner entry and direct focus target; readiness overview instead of silent refresh; repository reference clearly separated from access confirmation.",
+    "new_checks": "TypeScript, Vite, Source Guard PASS; 3 focused deterministic UI cases PASS without devices/jobs; one fresh 390px readiness view PASS. No complete suite repeated.",
+    "inherited_evidence": "Prior source/backend and general workflow evidence retained for unchanged areas, not rerun or counted as new.",
+    "terra_followup": "NOT_TESTED: IAB unavailable; native Computer Use could not reliably determine owned Edge address. Deterministic UI checks are not a Terra PASS.",
+    "next": "Personal GitHub and runner setup with explicitly selected test repository; docs/START_MORGEN.md",
+    "evidence": "docs/evidence/ONBOARDING_PREPARATION_20261028.md",
+    "github_published": false,
+    "production_changed": false
+  },
+  "stale_review_guidance_20261027": {
+    "state": "local_ui_fix_verified_not_published",
+    "scope": "Stale code reviews disable integration and guide the responsible person to resubmit; changed completion contracts also invalidate the UI action. Unsaved drafts and active/unavailable work block resubmission. Successful submission selects its new review.",
+    "source_verification": "node selfhost/verify.mjs --local: 208 tests, 187 PASS, 0 FAIL, 21 explicit platform skips; Source Guard, TypeScript and Vite PASS. Linux/operator recovery NOT_VERIFIED.",
+    "browser": "21 existing browser groups plus 7 targeted UI regressions PASS; 67 screenshots; real local-file Git branches, two synthetic sessions and runners; changed criteria without file writes, later saved file change, dirty draft, 390px/1440px action, new selected review, independent approval and confirmed local integration verified. No unexpected HTTP or JavaScript errors.",
+    "documentation": "docs/evidence/STALE_REVIEW_GUIDANCE.md",
+    "originals": ".studio/stale-review/20261027T224057Z/",
+    "production_changed": false,
+    "github_published": false,
+    "release_approved": false
+  },
   "team_workflow_20261026": {
     "state": "local_team_workflow_candidate_not_deployed",
     "scope": "Shared project workspace, My Work, task completion contracts, general result versions, code sharing/review/integration, explicit takeover, knowledge archive/history, guided personal repository setup, guarded GitHub adapter.",

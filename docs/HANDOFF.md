@@ -1,3 +1,74 @@
+## Aktuelle Übergabe
+
+Für Veröffentlichung und Hermes zuerst [RELEASE_NEXT.md](RELEASE_NEXT.md) lesen.
+Kombinierte lokale Quellprüfung: 211 Tests, 190 PASS, 0 FAIL, 21 Plattform-Skips;
+Guard, TypeScript, Build PASS. Linux-/Betriebsabnahme separat offen.
+
+## 28.10.2026: Projektkonfiguration über Studio
+
+Bestehende Runner übernehmen Projekteinstellungen live und dauerhaft über den
+vorhandenen Eigentümerauftrag. Automatische begrenzte Erkennung von Tests/Preview,
+getrennte Freigaben, sicherer Veröffentlichungsstandard, Updatehinweis für ältere
+Runner und unmittelbare Git-Diagnose ergänzt. 6 gezielte Tests, TypeScript, Guard
+und Build bestanden; echter Pilot erfolgreich per Browser eingerichtet.
+Nachweis/Grenzen: [Geführte Einrichtung](evidence/GUIDED_RUNNER_SETUP_20261028.md).
+Einmalige lokale Installation/Anmeldung bleibt erforderlich. Kein Push/Deployment.
+
+## 28.10.2026: Persönlicher GitHub-/Runner-Pilot tatsächlich bedient
+
+Echte GitHub-Kontobestätigung und ein persönlicher Runner am lokalen aktuellen
+Stand funktionieren. Privates Pilot-Repository lesend erreicht; zunächst fehlende
+Git-Autorenidentität nach Nutzerangabe nur im Pilotklon ergänzt. Genau eine
+gezielte Git-Wiederholung bestand; eigene Aufgaben-Arbeitskopie angelegt;
+einmaliger Pilot-Testlauf über Studio: 2 PASS, 0 FAIL, 0 SKIP. Keine Quelldatei
+im Pilot geändert. Keine allgemeine unveränderte Suite erneut ausgeführt.
+
+Kein vollständiger Onboarding-PASS: fehlende konkrete Git-Diagnose vor dem
+Arbeitskopiestart; Runner-Download erlaubt Veröffentlichung standardmäßig ohne
+eigene Auswahl; private Konfiguration ausdrücklich gesperrt. Weitere Widersprüche
+in Bereitschaft/Aktionsknöpfen und technische Einrichtungsaufwände dokumentiert.
+[Verlauf, UX-Befunde und Grenzen](evidence/PERSONAL_PILOT_20261028.md).
+Nächster Schritt: diese konkreten Einstiegslücken gezielt korrigieren. Echte
+Vorschau, persönliche KI, zwei Menschen/Geräte und GitHub-Schreibablauf bleiben
+offen. Kein Push, Merge, Deployment oder neue Freigabe dafür.
+
+## 28.10.2026: Einstiegskorrekturen und Vorbereitung für morgen
+
+Die drei von Terra benannten Einstiegsstellen sind lokal korrigiert. Der
+Bereitschaftsknopf öffnet eine fokussierte Übersicht mit fehlenden Schritten;
+Rechnerverbindung ist direkt erreichbar; gespeicherte Repository-Adresse wird
+ausdrücklich von bestätigten Zugriffsrechten unterschieden. TypeScript, Build,
+Source Guard und drei gezielte deterministische Browserfälle bestanden.
+Kein erneuter Backend-/Gesamtprüflauf. Terra-Nachprüfung wegen Browseranbindung
+nicht ausgeführt und ausdrücklich offen; kein Terra-PASS daraus abgeleitet.
+
+Morgen fortsetzen: [START_MORGEN.md](START_MORGEN.md).
+[Genauer Nachweis und Grenzen](evidence/ONBOARDING_PREPARATION_20261028.md).
+Alle Änderungen liegen weiterhin lokal auf dem eigenen Folgebranch; kein Push,
+Merge, Deployment oder Eingriff in persönliche Zugänge/Runner.
+
+## 27.10.2026: Veraltete Codefreigaben direkt verständlich fortsetzen
+
+Lokaler Folgeauftrag zum über GitHub gelesenen Draft-PR #51: Nach späteren
+Dateiänderungen oder geänderten Abschlussbedingungen sperrt die Aufgabenansicht
+jetzt die Zusammenführung. Die verantwortliche Person bekommt „Neue Fassung
+zur Prüfung teilen“, der Kollege eine konkrete Erklärung. Entwürfe und laufende
+Arbeit sperren das erneute Teilen; nach Erfolg wird der neue Prüfstand ausgewählt.
+Serverregeln und Providerrechte sind unverändert.
+
+Tatsächlich ausgeführt: lokale Quellprüfung 208 Tests, 187 PASS, 0 FAIL,
+21 ausdrückliche Plattform-Skips; Source Guard, TypeScript und Vite PASS.
+Echter Edge/Playwright-Lauf: 21 Prüfgruppen und 7 gezielte UI-Regressionsfälle
+PASS, 67 Screenshots, erneute unabhängige Freigabe und tatsächliche lokale
+Git-Integration bestätigt. Keine unerwarteten HTTP-/JavaScript-Fehler.
+Originale, Wiederholungsbefehl und Grenzen:
+[Abnahmebericht](evidence/STALE_REVIEW_GUIDANCE.md).
+
+Eigener lokaler Branch `fix/stale-review-guidance-20261027`; dieser Auftrag
+veröffentlicht nichts auf GitHub und erteilt keine Merge-/Deploymentfreigabe.
+Nächster Schritt ist die Prüfung des lokalen Diffs und bei gesondertem Auftrag
+die Veröffentlichung des geprüften Folgefixes.
+
 ## Team workflow candidate
 
 The current local candidate uses one project workspace and one task flow. Read `docs/TEAM_WORKFLOW.md` for implemented contracts, personal setup, provider boundaries and acceptance scope. Existing R23/R24 operator and historical evidence below remains historical; this change does not authorize a deployment or migration. Final test and browser evidence is recorded in `docs/evidence/TEAM_WORKFLOW_ACCEPTANCE.md`.

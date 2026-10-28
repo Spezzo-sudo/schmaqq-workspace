@@ -19,7 +19,7 @@ export async function aiCapabilities(config){
  const local=config.ai?.ollama;let models=[],status=local?.enabled?'unreachable':'disabled';
  if(local?.enabled){try{models=await localModels(local);status=models.length?'ready':'no-models';}catch{}}
  let codex='disabled';if(Object.values(config.projects??{}).some(p=>p.allowCodex)){try{const output=await command([config.codex??'codex','login','status'],undefined,{timeout:8000});codex=/chatgpt/i.test(output)?'chatgpt':'not-connected';}catch{codex='not-connected';}}
- return {models,status,allowTeam:local?.allowTeam===true,projects:config.ai?.projects??[],codex,development:Object.entries(config.projects??{}).slice(0,30).map(([id,p])=>({id,check:Array.isArray(p.check)&&p.check.length>0,preview:!!(p.preview?.build?.length&&p.preview?.directory||p.preview?.argv?.length&&p.preview?.url),allowCodex:p.allowCodex===true,publish:p.publish!==false}))};
+ return {models,status,allowTeam:local?.allowTeam===true,projects:config.ai?.projects??[],codex,development:Object.entries(config.projects??{}).slice(0,30).map(([id,p])=>({id,setupVersion:1,check:Array.isArray(p.check)&&p.check.length>0,preview:!!(p.preview?.build?.length&&p.preview?.directory||p.preview?.argv?.length&&p.preview?.url),allowCodex:p.allowCodex===true,publish:p.publish!==false}))};
 }
 export async function runLocalAi(config,job,signal){
  const local=config.ai?.ollama;

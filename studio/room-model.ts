@@ -6,7 +6,7 @@ export type RoomNote={id:string;title:string;body:string;author:string;updated:n
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
 export type RoomRun={id:string;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;task:string|null};
 export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];runs:RoomRun[]};
-export type Resource={device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;check:boolean;preview:boolean;allowCodex:boolean;publish:boolean}[]};
+export type Resource={device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;publish:boolean}[]};
 export type ContextPreview={text:string;hash:string;messageIds:string[];task:string|null};
 export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect';
 export type RoomRoute={room:string;tab:RoomTab;task:string;page:'rooms'|'team'};
@@ -40,7 +40,7 @@ export function saveDraft(key:string,value:string){try{value?sessionStorage.setI
 export const stateLabel=(status:string)=>({queued:'Wartet auf Rechner',running:'Wird bearbeitet',completed:'Antwort bereit',failed:'Fehlgeschlagen',cancelled:'Abgebrochen',cancelling:'Wird gestoppt',interrupted:'Unterbrochen'}[status]??status);
 
 export type TaskContract={kind:'general'|'code';criteria:string;requiresReview:boolean;blocked:string;cancelled:boolean;revision:number};
-export type TaskResult={id:string;owner:string;body?:string;commit?:string;branch?:string;state:string;created:number;shared?:boolean;integrated?:boolean;workflow?:string;votes?:{reviewer:string;decision:string;body:string;created:number}[]};
+export type TaskResult={id:string;owner:string;body?:string;commit?:string;branch?:string;state:string;created:number;shared?:boolean;integrated?:boolean;changedAfter?:boolean;contractRevision?:number;workflow?:string;votes?:{reviewer:string;decision:string;body:string;created:number}[]};
 export type TeamTask=Task&{contract:TaskContract;completion:{ready:boolean;missing:string[];result:TaskResult|null}};
 export type TeamEvent={id:string;actor:string;project:string;task:string|null;kind:string;body:string;created:number};
 export type TeamState={tasks:TeamTask[];events:TeamEvent[];unread?:TeamEvent[]};

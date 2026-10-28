@@ -15,7 +15,7 @@ export default function RunnerConnect({project,projects,onRegistered,onClose}:{p
   setPending(true);setError('');
   try{
    const r=await fetch('/api/development',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'device',name:f.get('name')})});const d=await r.json() as {error?:string;token?:string;id:string};if(!r.ok)throw new Error(d.error);
-   if(d.token){setConfig(JSON.stringify({server:location.origin,token:d.token,stateDir:'.studio-runner',...(profile?.codex?{codex:profile.codex}:{}),projects:{[String(f.get('project'))]:{...profileProject,repo:f.get('repo'),base:f.get('base'),check,allowCodex:profileProject?.allowCodex??false}}},null,2));await onRegistered(d.id);}
+   if(d.token){setConfig(JSON.stringify({server:location.origin,token:d.token,stateDir:'.studio-runner',...(profile?.codex?{codex:profile.codex}:{}),projects:{[String(f.get('project'))]:{...profileProject,repo:f.get('repo'),base:f.get('base'),check,publish:profileProject?.publish===true,workflow:profileProject?.workflow??'pull-request',allowCodex:profileProject?.allowCodex??false}}},null,2));await onRegistered(d.id);}
   }catch(e){setError(e instanceof Error?e.message:'Runner-Zugang konnte nicht erstellt werden.');}finally{setPending(false);}
  }
  return <>{error&&<div className="form-error" role="alert">{error}</div>}<RunnerSetupPanel profile={profile} profileProject={profileProject} project={project} projects={projects} pending={pending} config={config} onImportProfile={importProfile} onRegister={register} onDownload={download} onClose={()=>{setConfig('');onClose();}}/></>;

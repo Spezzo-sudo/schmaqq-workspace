@@ -3,7 +3,7 @@ import {useRef,useState,useEffect} from 'react';
 import {parseCommand} from './setup-command';
 
 type SetupMode='github'|'existing'|'new';
-export default function ProjectStart({project,onComplete}:{project?:{id:string;title:string};onComplete:(id:string)=>void}){
+export default function ProjectStart({project,onComplete,onConnect}:{project?:{id:string;title:string};onComplete:(id:string)=>void;onConnect?:()=>void}){
  const [title,setTitle]=useState(project?.title??'');
  const [description,setDescription]=useState('');
  const [mode,setMode]=useState<SetupMode>('github');
@@ -87,7 +87,8 @@ export default function ProjectStart({project,onComplete}:{project?:{id:string;t
    <button className="button primary" disabled={pending}>{pending?'Wird vorbereitet …':'Projekt vorbereiten'}</button>
   </form>:<>
    <h3>{project?'Projekt auf deinem Rechner verbinden':'Projekt im Studio angelegt'}</h3>
-   <p>Verwende deinen <strong>bereits registrierten persönlichen Runner</strong>. Falls er noch nicht verbunden ist: unter Entwicklung → PC verbinden die vorhandene Geräteanmeldung prüfen, statt einen zweiten Runner anzulegen.</p>
+   <p>Verwende deinen <strong>bereits registrierten persönlichen Runner</strong>. Prüfe in den Projekteinstellungen unter „Rechner verbinden“, ob dein Rechner bereits registriert ist, bevor du einen zweiten Zugang anlegst.</p>
+   {onConnect&&<button className="button" onClick={onConnect}>Rechnerverbindung öffnen</button>}
    <div className="project-location-fields">
     <label>Startart<select value={mode} onChange={e=>{setMode(e.target.value as SetupMode);setApproved(false);reset();}}>
      <option value="github">Bestehendes GitHub-Repository importieren</option>
