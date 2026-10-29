@@ -32,6 +32,7 @@ export const jobActions: Record<string, string> = {
   'save-file': 'Datei speichern',
   'create-file': 'Datei erstellen',
   'connect-project': 'Projekt auf eigenem Rechner einrichten',
+  'deploy-key': 'GitHub-Schlüssel des Server-Workers',
   inspect: 'Git-Verbindung prüfen',
   prepare: 'Arbeitskopie erstellen',
   status: 'Änderungen ansehen',

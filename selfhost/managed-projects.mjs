@@ -25,7 +25,18 @@ export async function connectManagedProject(runner,job){
   if(remote.owner.toLowerCase()!==source.owner.toLowerCase()||remote.repository.toLowerCase()!==source.repository.toLowerCase())throw Error('Vorhandene Arbeitskopie gehört zu einem anderen Repository.');
  }else{
   if(existsSync(target))throw Error('Ein Projektordner ist bereits vorhanden. Nichts überschrieben; den lokalen Stand vor einem erneuten Versuch prüfen.');
-  await runner.git(runner.state,'clone','--origin','origin','--branch',p.base,'--',source.url,target);
+  // Server worker with a deploy key: SSH through the egress proxy; the repository keeps that command.
+  const ssh=runner.deployKeyCommand?.(job.project);
+  try{
+   if(ssh){
+    const url=`git@github.com:${source.owner}/${source.repository}`;
+    await runner.git(runner.state,'-c',`core.sshCommand=${ssh}`,'clone','--origin','origin','--branch',p.base,'--',url,target);
+    await runner.git(target,'config','core.sshCommand',ssh);
+   }else await runner.git(runner.state,'clone','--origin','origin','--branch',p.base,'--',source.url,target);
+  }catch(e){
+   if(ssh&&/Permission denied \(publickey\)|Repository not found|access rights/i.test(e.message))throw Error('GitHub hat den Schlüssel des Server-Workers nicht angenommen. Ist er im Repository unter Settings → Deploy keys eingetragen?');
+   throw e;
+  }
   // Retain a successful clone if metadata detection fails, so the UI can retry
   // with advanced settings. No commands/model/publish permission are granted yet.
   const pending={repo:realpathSync(target),base:p.base,check:[],publish:false,allowCodex:false,workflow:'pull-request'};

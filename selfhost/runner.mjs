@@ -23,6 +23,18 @@ export class LocalRunner{
  async execute(argv,cwd,options={}){return command(argv,cwd,{signal:this.control?.signal,onOutput:text=>this.control?.onEvent?.({type:'output',text:text.slice(-4000)}),...options});}
  /** Project code (tests, preview builds). On a server worker with a job launcher it runs
   * as a separate user that sees only this copy; on a personal PC it runs as before. */
+ /** Server worker only: per-project GitHub deploy key in the runner's private state
+  * (never visible to jobs). Returns the ssh command git uses for that repository. */
+ deployKey(project){
+  if(!/^[\w-]{1,100}$/.test(project??''))throw new Error('Ungültiges Projekt.');
+  return path.join(this.state,'keys',project,'id_ed25519');
+ }
+ deployKeyCommand(project){
+  const key=this.deployKey(project);if(!existsSync(key))return null;
+  const worker=path.join(path.dirname(fileURLToPath(import.meta.url)),'deploy','worker');
+  // ssh starts ProxyCommand with the login shell, which is nologin for the worker account.
+  return `env SHELL=/bin/sh ssh -i ${key} -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${path.join(worker,'github_known_hosts')} -o HostKeyAlias=github.com -o HostName=ssh.github.com -o Port=443 -o ProxyCommand="${process.execPath} ${path.join(worker,'ssh-connect-proxy.mjs')} %h %p"`;
+ }
  async untrusted(argv,cwd,options={}){
   if(!this.config.launcher)return this.execute(argv,cwd,options);
   return launcherCommand(this.config.launcher,argv,cwd,{signal:this.control?.signal,onOutput:text=>this.control?.onEvent?.({type:'output',text:text.slice(-4000)}),...options});
@@ -41,6 +53,14 @@ export class LocalRunner{
   this.control=control;control.signal?.throwIfAborted();control.onEvent?.({type:'status',text:'Runner hat den Auftrag übernommen.'});
   if(job.action==='local-ai')return runLocalAi(this.config,job,control.signal);
   if(job.action==='connect-project')return connectManagedProject(this,job);
+  if(job.action==='deploy-key'){
+   if(this.config.kind!=='server'||!this.config.launcher)throw new Error('Deploy-Keys gibt es nur auf dem Server-Worker. Dein PC nutzt deinen eigenen GitHub-Zugang.');
+   const key=this.deployKey(job.project);
+   if(!existsSync(key)){mkdirSync(path.dirname(key),{recursive:true,mode:0o700});await this.execute(['ssh-keygen','-q','-t','ed25519','-N','','-C',`schmaqq-worker ${job.project}`,'-f',key],path.dirname(key),{timeout:20000});}
+   const publicKey=readFileSync(key+'.pub','utf8').trim();
+   if(!/^ssh-ed25519 [A-Za-z0-9+/=]{60,100}( [\w .-]{0,120})?$/.test(publicKey))throw new Error('Öffentlicher Schlüssel unerwartet.');
+   return {publicKey};
+  }
   const p=this.project(job.project);
   if(job.payload?.expectedRepository){
    const expected=githubRepository(job.payload.expectedRepository),actual=githubRepository(await this.git(p.repo,'remote','get-url','origin'));
