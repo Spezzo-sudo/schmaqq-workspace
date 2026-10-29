@@ -16,8 +16,8 @@ Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT
 | P0: Analyse mit Lesekopie | ERLEDIGT | siehe P0 |
 | P1: Aufgaben-Kontext | ERLEDIGT | siehe P1 |
 | P2: große Dateien lesen | ERLEDIGT | siehe P2 |
-| P3: Begriffe/Fokus/KI-Übergabe | ERLEDIGT (390 px siehe P5) | siehe P3 |
-| P4: Designangleichung | OFFEN | |
+| P3: Begriffe/Fokus/KI-Übergabe | ERLEDIGT | siehe P3 und P4 (390 px) |
+| P4: Designangleichung | ERLEDIGT (Reduced Motion nur im Code geprüft) | siehe P4 |
 | P5: Abnahme/Sicherung | OFFEN | |
 
 ## P0 – Allgemeine Analyse mit Lesekopie bleibt allgemein
@@ -99,3 +99,22 @@ Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT
   ehrlichem Stand, „Hier einrichten“ wählt den Server vor, Formular sichtbar und fokussiert.
 - Nachgebessert nach Browserbefund: Fokus beim Öffnen des KI-Bereichs lag noch auf dem Knopf (Überschrift nicht
   fokussierbar) → jetzt Bereich bzw. erstes Eingabefeld. Nach dem Neubau in P5 erneut geprüft.
+
+## P4 – Designangleichung an die bestehende SCHMAQQ-Website
+
+- Neu `studio/schmaqq-convergence.css` (zuletzt geladen, nur vorhandene Tokens): Ecken 0 px für Karten,
+  Knöpfe, Felder, Reiter, Abzeichen und Rechnerliste; Knöpfe 13 px/800 mit 1 px Ink-Linie; Hover-Lift
+  `translate(-2px,-2px)` + `4px 4px 0` Ink nur mit Maus (`hover: hover`); ein Fokusbild (2 px Ink + Acid-
+  Schatten); Abzeichen in Mono; KI-Übergabe als gerahmtes Objekt mit Markenschatten. Reduced Motion schaltet
+  die Bewegung ab. Quelle und Werte: `docs/evidence/NIGHT_CLARITY_DESIGN_20261029.md`.
+- `app/studio-brand.tsx`: vorhandenes Logo mit Welle führt mit `onHome` zur Startansicht „Meine Arbeit“
+  (Menü am Handy schließt sich); ohne `onHome` unverändert (Anmeldeseite).
+- Dunkle Seitenleiste und Anmeldeseite bewusst unverändert. Keine V1-Markenfarben.
+- Vorschlag zur Einbindung in schmaqq.com nur dokumentiert (Evidence-Datei), Website nicht verändert.
+- Browser (Fixture `scripts/task-handoff-browser-fixture.mjs`, synthetisch): Vorher/Nachher Desktop 1024×768 und
+  390×844 für „Meine Arbeit“, Aufgabe, Einstellungen, KI-Übergabe; kein Seitenüberlauf (390 = 390,
+  1024 = 1024, auch Aufgabenbereich); Fokus sichtbar; Logo → „Meine Arbeit“ geprüft. Unterwegs gefunden und
+  behoben: Hover blieb am Handy nach Tippen hängen; Knopfgröße/-stärke wurde von einer alten `!important`-Regel
+  überschrieben; grünliche Textfarbe bei dezenten Knöpfen; aneinanderklebende Knöpfe; runde Rechnerkarten.
+- Bilder privat in `.studio/night-20261029/` (11 Dateien, von Git ignoriert).
+- Reduced Motion: nicht emuliert, nur Code/CSS geprüft.

@@ -18,6 +18,7 @@ import './workspace-room.css';
 import './r26-workflow.css';
 import './schmaqq-design-system.css';
 import './team-workflow.css';
+import './schmaqq-convergence.css';
 const emptyTeam:TeamState={tasks:[],events:[]};
 export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;demoMode?:boolean}){
  const [route,setRoute]=useState(readRoomRoute),[rooms,setRooms]=useState<Room[]>([]),[room,setRoom]=useState<RoomState|null>(null),[team,setTeam]=useState<TeamState>(emptyTeam);
@@ -43,7 +44,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
  const cards=(tasks:TeamTask[])=>tasks.map(t=><button className="team-work-card" key={t.id} onClick={()=>openTask(t)}><span><strong>{t.title}</strong><small>{rooms.find(r=>r.id===t.project)?.title} · {t.contract.blocked?'Blockiert: '+t.contract.blocked:t.status==='review'?'Ergebnis zur Prüfung':t.completion.ready?'Bereit zum Abschließen':'In Bearbeitung'}</small></span><ChevronRight size={17}/></button>);
  return <div className="rw-shell team-shell">
   {mobile&&<button className="rw-nav-scrim" aria-label="Navigation schließen" onClick={()=>setMobile(false)}/>}
-  <aside className={'rw-sidebar'+(mobile?' open':'')} aria-label="Workspace-Navigation"><div className="rw-brand"><StudioBrand compact/><button className="rw-icon rw-mobile-only" aria-label="Menü schließen" onClick={()=>setMobile(false)}><X size={20}/></button></div><div className="rw-workspace-label"><span className="rw-square">S</span><span><strong>SCHMAQQ Studio</strong><small>Euer gemeinsamer Arbeitsplatz</small></span></div>
+  <aside className={'rw-sidebar'+(mobile?' open':'')} aria-label="Workspace-Navigation"><div className="rw-brand"><StudioBrand compact onHome={()=>{navigate({room:'',task:'',page:'rooms'});setMobile(false);}}/><button className="rw-icon rw-mobile-only" aria-label="Menü schließen" onClick={()=>setMobile(false)}><X size={20}/></button></div><div className="rw-workspace-label"><span className="rw-square">S</span><span><strong>SCHMAQQ Studio</strong><small>Euer gemeinsamer Arbeitsplatz</small></span></div>
    <button className={'rw-nav-home'+(!route.room&&route.page==='rooms'?' selected':'')} onClick={()=>navigate({room:'',task:'',page:'rooms'})}><Folder size={18}/>Meine Arbeit</button>
    <div className="rw-section-label">PROJEKTE<button className="rw-icon" aria-label="Neues Projekt anlegen" onClick={()=>setModal({kind:'room'})}><Plus size={17}/></button></div><nav className="rw-rooms">{rooms.map(r=><button key={r.id} className={route.room===r.id&&route.page==='rooms'?'active':''} onClick={()=>navigate({room:r.id,tab:'overview',task:'',page:'rooms'})}><Hash size={17}/><span>{r.title}</span>{!!r.openTasks&&<small>{r.openTasks}</small>}</button>)}</nav>
    <div className="rw-sidebar-bottom"><button className={route.page==='team'?'active':''} onClick={()=>navigate({page:'team',task:''})}><Users size={18}/>Team & eigene Verbindungen</button><div className="rw-profile"><span className="rw-avatar">{initials(user.displayName)}</span><span><strong>{user.displayName}</strong><small>Persönliches Konto</small></span><button className="rw-icon" aria-label="Abmelden" onClick={()=>void logout()}><LogOut size={17}/></button></div></div>
