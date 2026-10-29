@@ -19,8 +19,14 @@ Datum 29.10.2026, Owner-GO im Chat („Ja, live“) nach vorgelegtem Plan.
 - Auf dem VPS geprüft: Verbindung über den Proxy ohne Schlüssel ergibt
   „Permission denied (publickey)“ (Verbindung und Host-Identität korrekt); mit falsch hinterlegtem
   Host-Schlüssel verweigert SSH („REMOTE HOST IDENTIFICATION HAS CHANGED“).
-- Noch kein echtes Projekt angebunden (braucht Auswahl des Repositorys und den Eintrag des
-  Deploy-Keys durch den Owner).
+- Erstes echtes Projekt angebunden (29.10.2026 abends): „Studio-Pilottest“ →
+  `Spezzo-sudo/schmaqq-studio-pilot` (synthetisches Test-Repository). Deploy-Key mit Schreibrecht vom
+  Owner im Repository eingetragen. Über die Vermittlung `auto` auf dem Server-Worker:
+  `inspect` ready (origin und `main` per SSH erreichbar), `prepare` aus GitHub, `check` 2/2 bestanden
+  (als `schmaqq-job`), `submit` hat Branch `studio/20678aee-1c45-4f7b-90b1-0019fd349b97` nach GitHub
+  gepusht (per `ls-remote` bestätigt). Operator-gestartet, Arbeitskopie im Verlauf des Owners
+  sichtbar. Die bisherige Pilot-Konfiguration (lokales Test-Repository, Live-Vorschau-Mini-App)
+  wurde dabei durch den GitHub-Eintrag ersetzt; Sicherung `runner.json.before-github` im Staging-Ordner.
 
 ## Full-Stack-Vorschau
 
