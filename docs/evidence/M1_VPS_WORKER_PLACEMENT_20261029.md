@@ -63,7 +63,24 @@ Projekt „Studio-Pilottest“ → Einstellungen → „Wo wird gearbeitet?“: 
 „SCHMAQQ-VPS Server-Worker · Server · Erreichbar · linux · 1 CPU · 2 GB · Projekt eingerichtet“,
 Empfehlung „→ SCHMAQQ-VPS Server-Worker (Server)“. Belegt per Screenshot des Owners.
 
-## Was nur der Owner abschließen kann
+## Owner-Abnahme über Claude (29.10.2026, ca. 14:30–14:40 UTC)
+
+- claude.ai (Brave, Owner-Konto) → benutzerdefinierter Connector `https://studio.schmaqq.com/mcp`,
+  Claude erkennt OAuth und CIMD automatisch. Studio speichert die Freigabe für Client
+  `https://claude.ai/oauth/mcp-oauth-client-metadata` (Art `metadata`, Name „Claude“),
+  Scopes `studio:read studio:code`. Claude zeigt alle 6 Werkzeuge.
+- Im Chat: `list_executors` (Server-Worker online, Lenovo offline) und `inspect` mit
+  `device: "auto"` → Job `completed` auf „SCHMAQQ-VPS Server-Worker“, Grund „Automatisch:
+  zuerst ein erreichbarer Server … (Server)“ (serverseitig in der Datenbank geprüft).
+- `check` mit `device: "auto"` in der Pilot-Arbeitskopie → Job `3c1390a4-9804-471c-9a4e-209347d901a9`
+  completed, 1/1 Test bestanden, Commit `f64389d…`, auf dem Server-Worker („Arbeitskopie liegt
+  auf diesem Ausführer“). Der PC des Owners war dafür nicht beteiligt (Lenovo offline).
+- Gefundene Lücke: Kein MCP-Werkzeug listet Arbeitskopien; Claude brauchte die Kennung vom Betreiber.
+
+Damit sind alle M1-Kriterien nachgewiesen; ChatGPT und Gemini sind über dieselben Wege
+angebunden, mit echten Konten aber noch nicht ausprobiert.
+
+## Was nur der Owner abschließen kann (Stand vor der Abnahme)
 
 1. ~~Mit eigenem Login die neue Oberfläche live ansehen~~ – erledigt (siehe oben); „Verbundene KI-Assistenten“ noch offen.
 2. Einen Auftrag selbst aus Studio oder per KI-Assistent starten, der automatisch auf dem
