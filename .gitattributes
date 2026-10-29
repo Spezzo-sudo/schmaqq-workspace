@@ -2,3 +2,4 @@
 *.sh text eol=lf
 *.service text eol=lf
 *.mount text eol=lf
+selfhost/deploy/worker/github_known_hosts text eol=lf

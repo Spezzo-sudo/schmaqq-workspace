@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import {aiCapabilities,runLocalAi} from './local-ai.mjs';
 import {command} from './process.mjs';
-import {launcherCommand} from './job-client.mjs';
+import {launcherCommand,launcherServe} from './job-client.mjs';
 import {allowedFile,readSource,saveSource,createSource} from './files.mjs';
 import {runCodex} from './codex-run.mjs';
 import {sourceRevision,stableSource} from './source-revision.mjs';
@@ -123,6 +123,14 @@ export class LocalRunner{
    return result;
   }
   if(job.action==='preview'){
+   // Server worker: a full-stack preview (app with backend) runs isolated as a live job.
+   if(this.config.launcher&&p.preview?.serve){
+    const {argv,port}=p.preview.serve;
+    if(!Array.isArray(argv)||!argv.length||!Number.isInteger(port))throw new Error('Live-Vorschau ist nicht vollständig eingerichtet.');
+    const before=await sourceRevision(w.dir,control);
+    const live=await launcherServe(this.config.launcher,argv,w.dir,{port,ttlSeconds:p.preview.serve.ttlSeconds??1800});
+    return {live:{port:live.port,expires:live.expires},source:stableSource(before,await sourceRevision(w.dir,control))};
+   }
    if(p.preview?.build&&p.preview?.directory){
     await this.excludeBuildOutput(w.dir,p);
     const before=await sourceRevision(w.dir,control);await this.untrusted(p.preview.build,w.dir);const output=path.resolve(w.dir,p.preview.directory),real=realpathSync(output),workspace=realpathSync(w.dir);

@@ -8,6 +8,7 @@
  * sandbox. Output is streamed back as NDJSON; closing the request stops the job.
  */
 import http from 'node:http';
+import net from 'node:net';
 import {spawn} from 'node:child_process';
 import {randomBytes,timingSafeEqual} from 'node:crypto';
 import {readFileSync,realpathSync,existsSync,statSync} from 'node:fs';
@@ -37,8 +38,14 @@ export function checkArgv(argv,exists=existsSync){
  return [found,...argv.slice(1)];
 }
 
-/** systemd-run arguments: fixed sandbox, only the copy is visible and writable. */
-export function jobUnitArgs({unit,dir,argv,timeoutMs}){
+/** Live previews: the app listens on LIVE_HOST; only LIVE_SOURCE (used by Studio's
+ * preview proxy and the readiness check) may connect. Nothing listens on LIVE_SOURCE,
+ * so the app cannot reach any local service from there. */
+export const LIVE_HOST='127.0.0.70',LIVE_SOURCE='127.0.0.71';
+
+/** systemd-run arguments: fixed sandbox, only the copy is visible and writable.
+ * With `serve`, the unit keeps running (no --wait) as a live preview on LIVE_HOST:port. */
+export function jobUnitArgs({unit,dir,argv,timeoutMs,serve}){
  const seconds=Math.max(1,Math.min(Math.ceil(timeoutMs/1000),3600));
  const p=[
   `User=${JOB_USER}`,`Group=${JOB_GROUP}`,'UMask=0002',
@@ -50,12 +57,20 @@ export function jobUnitArgs({unit,dir,argv,timeoutMs}){
   // read-only tmpfs; then only this one copy is bound back in, writable.
   'TemporaryFileSystem=/opt:ro /srv:ro /var/lib:ro /var/backups:ro /mnt:ro /media:ro /run:ro /etc/schmaqq-worker:ro',
   `BindPaths=${dir}`,`ReadWritePaths=${dir}`,
-  'RestrictAddressFamilies=AF_INET AF_INET6','IPAddressDeny=any','IPAddressAllow=127.0.0.60/32',
+  'RestrictAddressFamilies=AF_INET AF_INET6','IPAddressDeny=any',serve?`IPAddressAllow=127.0.0.60/32 ${LIVE_SOURCE}/32`:'IPAddressAllow=127.0.0.60/32',
   'MemoryMax=2G','MemorySwapMax=0','CPUQuota=150%','TasksMax=256',`RuntimeMaxSec=${seconds}`
  ];
- const env=[`HOME=/tmp`,`PATH=${NODE_DIR}:/usr/bin:/bin`,'NODE_ENV=production',`HTTPS_PROXY=${PROXY}`,`HTTP_PROXY=${PROXY}`,`https_proxy=${PROXY}`,`http_proxy=${PROXY}`,'NODE_USE_ENV_PROXY=1','npm_config_cache=/tmp/.npm'];
- return ['--wait','--pipe','--quiet','--collect',`--unit=${unit}`,...p.flatMap(x=>['-p',x]),...env.flatMap(x=>['-E',x]),`--working-directory=${dir}`,'--',...argv];
+ const env=[`HOME=/tmp`,`PATH=${NODE_DIR}:/usr/bin:/bin`,'NODE_ENV=production',`HTTPS_PROXY=${PROXY}`,`HTTP_PROXY=${PROXY}`,`https_proxy=${PROXY}`,`http_proxy=${PROXY}`,'NODE_USE_ENV_PROXY=1','npm_config_cache=/tmp/.npm',
+  ...(serve?[`HOST=${LIVE_HOST}`,`PORT=${serve.port}`,`NO_PROXY=${LIVE_HOST}`]:[])];
+ return [...(serve?['--quiet','--collect']:['--wait','--pipe','--quiet','--collect']),`--unit=${unit}`,...p.flatMap(x=>['-p',x]),...env.flatMap(x=>['-E',x]),`--working-directory=${dir}`,'--',...argv];
 }
+const waitForPort=(port,ms,alive)=>new Promise(resolve=>{
+ const until=Date.now()+ms;
+ const attempt=()=>{const s=net.connect({host:LIVE_HOST,port,localAddress:LIVE_SOURCE});
+  s.once('connect',()=>{s.destroy();resolve(true);});
+  s.once('error',async()=>{s.destroy();if(Date.now()>until||!(await alive()))return resolve(false);setTimeout(attempt,500);});};
+ attempt();
+});
 
 export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{stdio:['ignore','pipe','pipe']}),
  prepare=dir=>new Promise((resolve,reject)=>{
@@ -63,18 +78,40 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
   const step=(cmd,args,next)=>{const c=spawn(cmd,args,{stdio:'ignore'});c.on('error',reject);c.on('close',code=>code===0?next():reject(new Error(cmd+' failed')));};
   step('chgrp',['-R',JOB_GROUP,dir],()=>step('chmod',['-R','g+rwX',dir],resolve));
  }),
- stop=unit=>spawn('systemctl',['stop',unit],{stdio:'ignore'}),maxBody=200000,log=m=>console.error(m)}={}){
+ stop=unit=>spawn('systemctl',['stop',unit],{stdio:'ignore'}),
+ isActive=unit=>new Promise(r=>{const c=spawn('systemctl',['is-active','--quiet',unit],{stdio:'ignore'});c.on('close',code=>r(code===0));c.on('error',()=>r(false));}),
+ logs=unit=>new Promise(r=>{let out='';const c=spawn('journalctl',['-u',unit,'-n','15','-o','cat','--no-pager'],{stdio:['ignore','pipe','ignore']});c.stdout.on('data',d=>out+=d);c.on('close',()=>r(out.slice(-2000)));c.on('error',()=>r(''));}),
+ waitPort=waitForPort,readyMs=90000,maxBody=200000,log=m=>console.error(m)}={}){
  if(typeof key!=='string'||key.length<32)throw new Error('Launcher key missing.');
  const expected=Buffer.from(key);
- let busy=false;
+ let busy=false,live=null;
+ /** One live preview at a time: starting a new one stops the previous. */
+ async function serve(dir,argv,port,ttlSeconds){
+  if(live){stop(live.unit);live=null;}
+  const unit='schmaqq-live-'+randomBytes(8).toString('hex');
+  await prepare(dir);
+  const started=await new Promise(resolve=>{const c=run('systemd-run',jobUnitArgs({unit,dir,argv,timeoutMs:ttlSeconds*1000,serve:{port}}));c.on('close',code=>resolve(code===0));c.on('error',()=>resolve(false));});
+  if(!started)throw fail(502,'preview could not start');
+  if(!(await waitPort(port,readyMs,()=>isActive(unit)))){const output=await logs(unit);stop(unit);throw Object.assign(fail(502,'preview did not answer on its port'),{output});}
+  live={unit,port,expires:Date.now()+ttlSeconds*1000};
+  return {unit,host:LIVE_HOST,port,expires:live.expires};
+ }
  return http.createServer(async(req,res)=>{
   const reply=(status,body)=>{res.writeHead(status,{'Content-Type':'application/json'});res.end(JSON.stringify(body));};
   try{
    const given=Buffer.from(String(req.headers.authorization??'').replace(/^Bearer /,''));
    if(given.length!==expected.length||!timingSafeEqual(given,expected))throw fail(401,'unauthorized');
-   if(req.method!=='POST'||req.url!=='/run')throw fail(404,'not found');
+   if(req.method!=='POST'||!['/run','/serve','/stop-serve'].includes(req.url))throw fail(404,'not found');
    let size=0;const parts=[];for await(const part of req){size+=part.length;if(size>maxBody)throw fail(413,'too large');parts.push(part);}
    let body;try{body=JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'invalid json');}
+   if(req.url==='/stop-serve'){if(live){stop(live.unit);live=null;}reply(200,{ok:true});return;}
+   if(req.url==='/serve'){
+    const dir=checkJobDirectory(root,body.dir),argv=checkArgv(body.argv);
+    if(!Number.isInteger(body.port)||body.port<1024||body.port>65535)throw fail(400,'invalid port');
+    const ttl=Number.isInteger(body.ttlSeconds)?Math.min(Math.max(body.ttlSeconds,60),3600):1800;
+    try{reply(200,await serve(dir,argv,body.port,ttl));}catch(e){if(e.output!==undefined){reply(e.status,{error:e.message,output:e.output});return;}throw e;}
+    return;
+   }
    const dir=checkJobDirectory(root,body.dir),argv=checkArgv(body.argv);
    const timeoutMs=Number.isInteger(body.timeoutMs)?Math.min(Math.max(body.timeoutMs,1000),3600000):600000;
    // The worker runs one job at a time; refusing parallel requests keeps that true here.

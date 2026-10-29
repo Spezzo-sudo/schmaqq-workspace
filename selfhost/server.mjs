@@ -34,7 +34,7 @@ const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
 function parse(schema,data){const r=schema.safeParse(data);if(!r.success)throw fail(400,'Bitte Eingaben prüfen.');return r.data;}
-export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,seedProjects=demoMode,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now,pluginClients=JSON.parse(process.env.STUDIO_PLUGIN_CLIENTS??'[]'),pluginDynamicClients=process.env.STUDIO_PLUGIN_DYNAMIC_CLIENTS==='1',pluginFetchMetadata,pluginClientHosts=process.env.STUDIO_PLUGIN_CLIENT_HOSTS?process.env.STUDIO_PLUGIN_CLIENT_HOSTS.split(','):undefined}={}){
+export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,seedProjects=demoMode,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now,pluginClients=JSON.parse(process.env.STUDIO_PLUGIN_CLIENTS??'[]'),pluginDynamicClients=process.env.STUDIO_PLUGIN_DYNAMIC_CLIENTS==='1',pluginFetchMetadata,pluginClientHosts=process.env.STUDIO_PLUGIN_CLIENT_HOSTS?process.env.STUDIO_PLUGIN_CLIENT_HOSTS.split(','):undefined,liveHost=process.env.STUDIO_LIVE_HOST??'127.0.0.70',liveSource=process.env.STUDIO_LIVE_SOURCE??'127.0.0.71'}={}){
  if(!/^[a-z_]{1,60}$/.test(sessionCookie))throw new Error('Ungültiger Sitzungsname.');
  if(!Array.isArray(pluginClients)||pluginClients.length>20)throw new Error('Ungueltige Plugin-Clientliste.');
  if(new URL(origin).origin===new URL(previewOrigin).origin)throw new Error('Studio und Vorschau benötigen unterschiedliche Origins.');
@@ -172,6 +172,19 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
       transaction(db,()=>{db.prepare('INSERT INTO previews VALUES(?,?,?,?)').run(previewId,job.id,now(),JSON.stringify(bundle));});
       const preview={url:`${previewOrigin}/${previewId}/index.html`,scope:'shared',files:entries.length,bytes,source:sourceEvidence(result.source)};
       result=job.action==='preview'?preview:{...result,previewBundle:undefined,preview};
+     }
+     if(v.ok&&job.action==='preview'&&result.live){
+      // Live previews exist only on the server worker next to Studio; the app is reached on the fixed live address.
+      if(metadata(db,'executor:v1:host:'+d.id)?.kind!=='server')throw fail(403,'Live-Vorschau nur vom Server-Worker.');
+      const port=Number(result.live.port),expires=Math.min(Number(result.live.expires)||0,now()+3600000);
+      if(!Number.isInteger(port)||port<1024||port>65535||expires<=now())throw fail(400,'Ungültige Live-Vorschau.');
+      const previewId=token();
+      transaction(db,()=>{
+       // One live preview per worker: older links stop working together with the old app.
+       for(const row of db.prepare("SELECT key,value FROM workspace_meta WHERE key LIKE 'preview:v1:live:%'").all())if(JSON.parse(row.value).device===d.id||JSON.parse(row.value).expires<now())db.prepare('DELETE FROM workspace_meta WHERE key=?').run(row.key);
+       storeMetadata(db,'preview:v1:live:'+previewId,{port,job:job.id,device:d.id,expires});
+      });
+      result={url:`${previewOrigin}/${previewId}/`,scope:'live',expires,source:sourceEvidence(result.source)};
      }
      const resultText=JSON.stringify(result);
      // A 64 KiB text file can expand heavily when JSON escapes control bytes.
@@ -339,10 +352,25 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  };
  const server=http.createServer(handleRequest);
  server.once('close',()=>ledgerDb?.close());
+ const liveMeta=id=>{if(!/^[\w-]{40,60}$/.test(id??''))return null;const m=metadata(db,'preview:v1:live:'+id);return m&&m.expires>now()?m:null;};
+ const previewSecure=new URL(previewOrigin).protocol==='https:';
  const previewServer=http.createServer((req,res)=>{
   // A different origin prevents project JavaScript from reading Studio sessions.
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Cache-Control','no-store');
-  const match=new URL(req.url,previewOrigin).pathname.match(/^\/([\w-]{40,60})\/(.*)$/);if(!match){res.writeHead(404);res.end();return;}
+  const pathname=new URL(req.url,previewOrigin).pathname,match=pathname.match(/^\/([\w-]{40,60})\/(.*)$/);
+  // Live preview link: remember it in a cookie and continue at the app's own paths, so absolute links (/api/...) work.
+  if(match&&liveMeta(match[1])){res.writeHead(302,{'Set-Cookie':`schmaqq_live=${match[1]}; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600${previewSecure?'; Secure':''}`,Location:'/'+match[2]});res.end();return;}
+  const liveId=req.headers.cookie?.match(/(?:^|;\s*)schmaqq_live=([\w-]+)/)?.[1],live=(!match||!db.prepare('SELECT 1 FROM previews WHERE id=?').get(match[1]))&&liveMeta(liveId);
+  if(live){
+   // The app never sees the preview cookie itself.
+   const cookie=(req.headers.cookie??'').split(/;\s*/).filter(c=>c&&!c.startsWith('schmaqq_live=')).join('; ');
+   const headers={...req.headers,host:new URL(previewOrigin).host};if(cookie)headers.cookie=cookie;else delete headers.cookie;
+   const upstream=http.request({host:liveHost,port:live.port,localAddress:liveSource,method:req.method,path:req.url,timeout:60000,headers},response=>{res.writeHead(response.statusCode??502,response.headers);response.pipe(res);});
+   upstream.on('timeout',()=>upstream.destroy(new Error('timeout')));
+   upstream.on('error',()=>{if(!res.headersSent){res.writeHead(502,{'Content-Type':'text/plain; charset=utf-8'});res.end('Die Live-Vorschau läuft nicht mehr. Bitte neu starten.');}else res.destroy();});
+   req.pipe(upstream);return;
+  }
+  if(!match){res.writeHead(404);res.end();return;}
   const preview=db.prepare('SELECT manifest FROM previews WHERE id=?').get(match[1]);const files=preview?JSON.parse(preview.manifest):null;let name;try{name=decodeURIComponent(match[2])||'index.html';}catch{res.writeHead(400);res.end();return;}
   if(!files||!Object.hasOwn(files,name)){res.writeHead(404);res.end('Vorschau nicht gefunden oder abgelaufen.');return;}
   const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.json':'application/json','.woff2':'font/woff2'}[path.extname(name)]??'application/octet-stream';

@@ -66,6 +66,23 @@ test('launcher authenticates, streams output, reports failures and stops jobs wh
  assert.throws(()=>launcherCommand({url:'http://example.com:3129',keyFile},['node'],copy),/local address/);
 });
 
+test('launcher starts one live preview at a time, waits for its port and reports failures with logs',async t=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'launcher-serve-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const copy=path.join(root,'copy');mkdirSync(copy);
+ const stopped=[],started=[];let ready=true;
+ const fakeRun=(file,args)=>{started.push(args.find(a=>a.startsWith('--unit=')));const c=spawn(process.execPath,['-e','0'],{stdio:['ignore','pipe','pipe']});return c;};
+ const server=createJobLauncher({root,key:KEY,run:fakeRun,prepare:async()=>{},stop:u=>stopped.push(u),isActive:async()=>true,logs:async()=>'Error: Cannot find module server.mjs',waitPort:async()=>ready,log:()=>{}});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
+ const serve=body=>fetch('http://127.0.0.1:'+server.address().port+'/serve',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+KEY},body:JSON.stringify(body)});
+ const first=await serve({dir:copy,argv:[process.execPath,'server.mjs'],port:3000});
+ assert.equal(first.status,200);const live=await first.json();assert.equal(live.host,'127.0.0.70');assert.equal(live.port,3000);
+ assert.equal((await serve({dir:copy,argv:[process.execPath,'server.mjs'],port:80})).status,400,'Only unprivileged ports');
+ ready=false;
+ const broken=await serve({dir:copy,argv:[process.execPath,'server.mjs'],port:3001});
+ assert.equal(broken.status,502);assert.match((await broken.json()).output,/Cannot find module/,'The person sees why the app did not start');
+ assert.equal(stopped.length,2,'Starting a new preview stopped the old one, and the failed one was stopped too');
+});
+
 test('a runner with a launcher sends project code there and keeps git local',async t=>{
  const root=mkdtempSync(path.join(os.tmpdir(),'launcher-runner-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
  const copy=path.join(root,'copy');mkdirSync(copy);const keyFile=path.join(os.tmpdir(),path.basename(root)+'.key');writeFileSync(keyFile,KEY);t.after(()=>rmSync(keyFile,{force:true}));

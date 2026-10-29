@@ -7,10 +7,28 @@ import {readFileSync} from 'node:fs';
  * rejects with the output otherwise; aborting closes the request, which makes
  * the launcher stop the job.
  */
-export function launcherCommand({url,keyFile},argv,cwd,{timeout=600000,signal,onOutput}={}){
+function launcherTarget({url,keyFile}){
  const target=new URL(url);
  if(target.protocol!=='http:'||!['127.0.0.1','127.0.0.62','localhost'].includes(target.hostname))throw new Error('Job launcher must be a local address.');
- const key=readFileSync(keyFile,'utf8').trim();
+ return {target,key:readFileSync(keyFile,'utf8').trim()};
+}
+/** Start (or replace) the live preview of a copy: the app runs isolated like a job,
+ * listens on the launcher's live address and stops by itself after ttlSeconds. */
+export function launcherServe(launcher,argv,cwd,{port,ttlSeconds=1800,timeout=120000}={}){
+ const {target,key}=launcherTarget(launcher);
+ return new Promise((resolve,reject)=>{
+  const req=http.request({hostname:target.hostname,port:target.port,path:'/serve',method:'POST',agent:new http.Agent(),timeout,headers:{'Content-Type':'application/json',Authorization:'Bearer '+key}},res=>{
+   let text='';res.setEncoding('utf8');res.on('data',d=>text+=d);
+   res.on('end',()=>{let body;try{body=JSON.parse(text);}catch{body={};}
+    if(res.statusCode===200)resolve(body);else reject(new Error('Live-Vorschau startet nicht: '+(body.error??res.statusCode)+(body.output?'\n'+body.output:'')));});
+  });
+  req.on('timeout',()=>req.destroy(new Error('Zeitlimit beim Start der Live-Vorschau.')));
+  req.on('error',e=>reject(new Error('Job-Starter nicht erreichbar: '+e.message)));
+  req.end(JSON.stringify({dir:cwd,argv,port,ttlSeconds}));
+ });
+}
+export function launcherCommand(launcher,argv,cwd,{timeout=600000,signal,onOutput}={}){
+ const {target,key}=launcherTarget(launcher);
  signal?.throwIfAborted();
  return new Promise((resolve,reject)=>{
   let output='',buffer='',exit=null,settled=false;
