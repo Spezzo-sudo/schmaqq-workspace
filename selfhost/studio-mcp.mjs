@@ -26,7 +26,7 @@ const descriptions={
  list_executors:'List your own executors (PCs and server workers) with availability and capabilities, the project placement rule and the executor "auto" would choose now.',
  list_workspaces:'List your own working copies in a project: id (use it as worktree in start_code_job), title, linked task, branch, and the executor that holds the copy with its availability.',
  start_code_job:'Queue a bounded operation on one of your own runners. For operations inside a copy, pass worktree = an id from list_workspaces. Use device "auto" to let Studio place it by the project rule (a job in an existing copy stays on the device that holds it); the reply names the chosen device. The calling assistant supplies code through revision-bound save-file/create-file; no second model call. Poll get_code_job. Does not publish to GitHub or deploy. prepare creates an isolated task copy; read-file returns the revision required by save-file. check runs configured tests; preview builds and creates a shareable capability URL (any holder can view it). review creates a local checked Git snapshot without pushing. Requires a reachable, previously configured runner.',
- get_code_job:'Read the status and result of a job. queued/running are not success. File contents remain private to the owner.',
+ get_code_job:'Read the status and result of a job, including which executor ran it. queued/running are not success. Results are reported by the executor, not independently verified; say so when you report test results. File contents remain private to the owner.',
  cancel_code_job:'Request cancellation of your own job under the existing backend cancellation rules.'
 };
 

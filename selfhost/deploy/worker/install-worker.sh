@@ -63,5 +63,9 @@ sed -e "s|^ExecStart=.*|ExecStart=$LIB/node/bin/node $LIB/current/selfhost/deplo
     -e 's|^Description=.*|Description=SCHMAQQ server worker sandbox probe|' \
     "$RELEASE/selfhost/deploy/worker/schmaqq-studio-worker.service" > "$UNITS/schmaqq-studio-worker-probe.service"
 chmod 644 "$UNITS/schmaqq-studio-worker-probe.service"
+# 5. Egress proxy: the worker's only way out (allowlisted HTTPS hosts).
+install -m 644 "$RELEASE/selfhost/deploy/worker/schmaqq-worker-egress.service" "$UNITS/schmaqq-worker-egress.service"
 systemctl daemon-reload
+systemctl enable schmaqq-worker-egress.service >/dev/null
+systemctl restart schmaqq-worker-egress.service
 echo "Worker program $SHA installed. Configuration: /etc/schmaqq-worker/runner.json"

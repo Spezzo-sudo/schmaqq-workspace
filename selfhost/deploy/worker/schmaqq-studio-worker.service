@@ -1,8 +1,8 @@
 [Unit]
 Description=SCHMAQQ Studio server worker (isolated runner)
 Documentation=file:///usr/local/lib/schmaqq-worker/current/selfhost/deploy/worker/README.md
-After=network-online.target var-lib-schmaqq\x2dworker.mount
-Wants=network-online.target
+After=network-online.target var-lib-schmaqq\x2dworker.mount schmaqq-worker-egress.service
+Wants=network-online.target schmaqq-worker-egress.service
 Requires=var-lib-schmaqq\x2dworker.mount
 
 [Service]
@@ -12,6 +12,10 @@ WorkingDirectory=/var/lib/schmaqq-worker
 Environment=HOME=/var/lib/schmaqq-worker
 Environment=PATH=/usr/local/lib/schmaqq-worker/node/bin:/usr/bin:/bin
 Environment=NODE_ENV=production
+# All outbound traffic goes through the allowlist proxy (Node fetch, git, npm).
+Environment=HTTPS_PROXY=http://127.0.0.60:3128 HTTP_PROXY=http://127.0.0.60:3128
+Environment=https_proxy=http://127.0.0.60:3128 http_proxy=http://127.0.0.60:3128
+Environment=NODE_USE_ENV_PROXY=1
 ExecStart=/usr/local/lib/schmaqq-worker/node/bin/node /usr/local/lib/schmaqq-worker/current/selfhost/runner.mjs /etc/schmaqq-worker/runner.json
 Restart=on-failure
 RestartSec=10
@@ -42,16 +46,17 @@ ProtectHostname=yes
 ProtectProc=invisible
 ReadWritePaths=/var/lib/schmaqq-worker
 # Other services' programs and data are not visible at all.
-TemporaryFileSystem=/opt:ro /srv:ro /var/lib:ro /var/backups:ro /mnt:ro /media:ro
+# /run is replaced too: no local service sockets (database, D-Bus, snapd, ...) are visible.
+TemporaryFileSystem=/opt:ro /srv:ro /var/lib:ro /var/backups:ro /mnt:ro /media:ro /run:ro
 BindPaths=/var/lib/schmaqq-worker
 InaccessiblePaths=-/run/docker.sock -/var/run/docker.sock -/run/containerd -/etc/schmaqq-studio.env -/etc/schmaqq-r25-preview.env
 
-# Network: public internet only. No loopback services, private networks or
-# container bridges; the local DNS stub stays reachable. systemd: a matching
-# IPAddressAllow wins over IPAddressDeny, so allow only the DNS stub.
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
-IPAddressDeny=localhost link-local multicast 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 100.64.0.0/10 fc00::/7
-IPAddressAllow=127.0.0.53/32
+# Network: nothing directly – no internet, no DNS (data could leave in queries),
+# no unix sockets (also abstract ones). Only the egress proxy on 127.0.0.60 is
+# reachable. socketpair() for child process pipes is not affected.
+RestrictAddressFamilies=AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=127.0.0.60/32
 
 # Resources for all jobs together. Per-job time limits come from the runner.
 MemoryMax=2G

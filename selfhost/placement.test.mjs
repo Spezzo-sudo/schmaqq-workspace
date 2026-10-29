@@ -34,6 +34,7 @@ test('placement v1 follows the project rule, prefers reachable servers and never
   assert.equal(first.status,200);assert.equal(first.data.device,server.id);assert.equal(first.data.placement.kind,'server');
   const stored=(await request('/api/development/job?id='+first.data.id,null,a.cookie)).data.job;
   assert.equal(stored.device,server.id);assert.match(stored.payload.placement.reason,/Server/);
+  assert.deepEqual(stored.executor,{name:'VPS-Worker',kind:'server'});assert.match(stored.resultSource,/nicht unabhängig geprüft/);
 
   assert.equal((await request('/api/executors',{project:'website',mode:'pc'},b.cookie)).status,403,'Only the responsible person changes the rule');
   view=(await request('/api/executors',{project:'website',mode:'pc'},a.cookie)).data;assert.equal(view.mode,'pc');assert.equal(view.recommendation.device,pc.id);

@@ -20,19 +20,22 @@ test('server worker unit keeps jobs unprivileged, out of other services and insi
  assert.equal(values('SupplementaryGroups').length,0,'No docker or other groups');
  for(const [key,value] of [['NoNewPrivileges','yes'],['ProtectSystem','strict'],['ProtectHome','yes'],['PrivateTmp','yes'],['PrivateDevices','yes'],['RestrictSUIDSGID','yes'],['CapabilityBoundingSet','']])assert.deepEqual(values(key),[value],key);
  assert.deepEqual(values('ReadWritePaths'),['/var/lib/schmaqq-worker'],'Only the worker volume is writable');
- for(const hidden of ['/opt:ro','/var/lib:ro','/srv:ro','/var/backups:ro'])assert.ok(values('TemporaryFileSystem')[0].split(' ').includes(hidden),hidden);
+ for(const hidden of ['/opt:ro','/var/lib:ro','/srv:ro','/var/backups:ro','/run:ro'])assert.ok(values('TemporaryFileSystem')[0].split(' ').includes(hidden),hidden);
  for(const path_ of ['/var/run/docker.sock','/etc/schmaqq-studio.env'])assert.ok(values('InaccessiblePaths')[0].includes(path_),path_);
- const denied=values('IPAddressDeny').join(' ').split(' ');
- for(const range of ['localhost','link-local','10.0.0.0/8','172.16.0.0/12','192.168.0.0/16','fc00::/7'])assert.ok(denied.includes(range),range);
- assert.deepEqual(values('IPAddressAllow'),['127.0.0.53/32'],'An allow entry wins over deny in systemd; only the DNS stub may be allowed');
- assert.equal(values('IPAddressDeny').includes('any'),false);
+ // No direct network: everything denied, only the egress proxy allowed; no unix sockets at all.
+ assert.deepEqual(values('IPAddressDeny'),['any']);
+ assert.deepEqual(values('IPAddressAllow'),['127.0.0.60/32'],'An allow entry wins over deny in systemd; only the proxy may be allowed');
+ assert.deepEqual(values('RestrictAddressFamilies'),['AF_INET AF_INET6'],'No AF_UNIX: local service sockets stay unreachable');
+ const env=values('Environment').join(' ');
+ for(const variable of ['HTTPS_PROXY=http://127.0.0.60:3128','https_proxy=http://127.0.0.60:3128','NODE_USE_ENV_PROXY=1'])assert.ok(env.includes(variable),variable);
+ assert.ok(values('Wants')[0].includes('schmaqq-worker-egress.service'));
  for(const key of ['MemoryMax','CPUQuota','TasksMax','MemorySwapMax'])assert.equal(values(key).length,1,key);
  assert.match(values('ExecStart')[0],/^\/usr\/local\/lib\/schmaqq-worker\/node\/bin\/node \/usr\/local\/lib\/schmaqq-worker\/current\/selfhost\/runner\.mjs /);
 });
 
 test('runtime release contains the runner and the worker deployment files',()=>{
  const files=runtimeInventory(root).files;
- for(const file of ['selfhost/runner.mjs','selfhost/placement.mjs','selfhost/deploy/worker/schmaqq-studio-worker.service','selfhost/deploy/worker/install-worker.sh','selfhost/deploy/worker/probe-sandbox.mjs','selfhost/deploy/worker/register-worker.mjs','selfhost/deploy/worker/pilot-job.mjs'])assert.ok(files.includes(file),file);
+ for(const file of ['selfhost/runner.mjs','selfhost/placement.mjs','selfhost/deploy/worker/schmaqq-studio-worker.service','selfhost/deploy/worker/schmaqq-worker-egress.service','selfhost/deploy/worker/egress-proxy.mjs','selfhost/deploy/worker/install-worker.sh','selfhost/deploy/worker/probe-sandbox.mjs','selfhost/deploy/worker/register-worker.mjs','selfhost/deploy/worker/pilot-job.mjs'])assert.ok(files.includes(file),file);
 });
 
 test('runner starts when launched through a symlinked release directory',()=>{

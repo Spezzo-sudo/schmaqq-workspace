@@ -231,7 +231,10 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(route==='/api/development/job'&&method==='GET'){
     const m=user(req);const jid=parse(id,url.searchParams.get('id'));
     const job=db.prepare('SELECT id,owner,device,project,action,payload,status,created,started,result FROM jobs WHERE id=?').get(jid);
-    if(!job)throw fail(404,'Auftrag fehlt.');if(job.action==='local-ai'&&job.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(job.device,m.id))throw fail(403,'KI-Anfrage ist nur für Absender und Rechnerbesitzer sichtbar.');if(['files','read-file','save-file','create-file'].includes(job.action)&&job.owner!==m.id)throw fail(403,'Dateiinhalte sind nur in der eigenen Arbeitskopie verfügbar.');send({job:{...job,payload:JSON.parse(job.payload),result:job.result?JSON.parse(job.result):null}});return;
+    if(!job)throw fail(404,'Auftrag fehlt.');if(job.action==='local-ai'&&job.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(job.device,m.id))throw fail(403,'KI-Anfrage ist nur für Absender und Rechnerbesitzer sichtbar.');if(['files','read-file','save-file','create-file'].includes(job.action)&&job.owner!==m.id)throw fail(403,'Dateiinhalte sind nur in der eigenen Arbeitskopie verfügbar.');
+    // Results come from the executor itself; say so, so nobody mistakes them for an independent check.
+    const executor=db.prepare('SELECT name FROM devices WHERE id=?').get(job.device),kind=metadata(db,'executor:v1:host:'+job.device)?.kind==='server'?'server':'pc';
+    send({job:{...job,payload:JSON.parse(job.payload),result:job.result?JSON.parse(job.result):null,executor:{name:executor?.name??null,kind},resultSource:'Vom Ausführer gemeldet, nicht unabhängig geprüft. Vor einer Veröffentlichung prüft die zweite Person bzw. CI.'}});return;
    }
    if(route==='/api/development/events'&&method==='GET'){
     const m=user(req);const jid=parse(id,url.searchParams.get('job'));

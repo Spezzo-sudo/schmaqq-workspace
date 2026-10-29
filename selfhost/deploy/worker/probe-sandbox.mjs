@@ -30,8 +30,15 @@ await check('Connect Studio port on loopback',false,()=>connect('127.0.0.1',4310
 await check('Connect other loopback service (SSH)',false,()=>connect('127.0.0.1',22));
 await check('Connect docker bridge',false,()=>connect('172.17.0.1',80));
 await check('Connect cloud metadata address',false,()=>connect('169.254.169.254',80));
-await check('Resolve public DNS',true,async()=>(await dns.lookup('studio.schmaqq.com')).address);
-await check('Reach Studio over HTTPS',true,async()=>{const r=await fetch('https://studio.schmaqq.com/healthz',{signal:AbortSignal.timeout(8000)});if(!r.ok)throw new Error('status '+r.status);return r.status;});
+await check('Resolve DNS directly (exfiltration channel)',false,async()=>(await dns.lookup('studio.schmaqq.com')).address);
+await check('Connect internet directly',false,()=>connect('1.1.1.1',443));
+await check('Connect database socket',false,()=>new Promise((resolve,reject)=>{const s=net.connect({path:'/var/run/postgresql/.s.PGSQL.5432'},()=>{s.destroy();resolve('connected');});s.on('error',reject);}));
+await check('Connect D-Bus',false,()=>new Promise((resolve,reject)=>{const s=net.connect({path:'/run/dbus/system_bus_socket'},()=>{s.destroy();resolve('connected');});s.on('error',reject);}));
+await check('Connect abstract socket',false,()=>new Promise((resolve,reject)=>{const s=net.connect({path:'\0ISCSIADM_ABSTRACT_NAMESPACE'},()=>{s.destroy();resolve('connected');});s.on('error',reject);}));
+await check('See /run',false,()=>{const entries=readdirSync('/run');if(!entries.length)throw new Error('empty');return entries.join(',');});
+await check('Reach Studio over HTTPS via proxy',true,async()=>{const r=await fetch('https://studio.schmaqq.com/healthz',{signal:AbortSignal.timeout(8000)});if(!r.ok)throw new Error('status '+r.status);return r.status;});
+await check('Reach npm registry via proxy',true,async()=>{const r=await fetch('https://registry.npmjs.org/-/ping',{signal:AbortSignal.timeout(8000)});return r.status;});
+await check('Reach other website via proxy',false,async()=>{const r=await fetch('https://example.com/',{signal:AbortSignal.timeout(8000)});return r.status;});
 // cgroup v2: the limits live in this service's own cgroup directory.
 const cgroup=name=>readFileSync('/sys/fs/cgroup'+readFileSync('/proc/self/cgroup','utf8').trim().split('::')[1]+'/'+name,'utf8').trim();
 await check('Memory limit applied',true,()=>{const v=cgroup('memory.max');if(v==='max')throw new Error('unlimited');return Math.round(Number(v)/1048576)+' MB';});

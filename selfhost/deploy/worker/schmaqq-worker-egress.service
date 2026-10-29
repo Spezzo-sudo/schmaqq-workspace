@@ -1,0 +1,39 @@
+[Unit]
+Description=SCHMAQQ server worker egress proxy (allowlisted HTTPS only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+DynamicUser=yes
+Environment=EGRESS_LISTEN=127.0.0.60:3128
+EnvironmentFile=-/etc/schmaqq-worker/egress.env
+ExecStart=/usr/local/lib/schmaqq-worker/node/bin/node /usr/local/lib/schmaqq-worker/current/selfhost/deploy/worker/egress-proxy.mjs
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectProc=invisible
+RestrictNamespaces=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+TemporaryFileSystem=/opt:ro /srv:ro /var/lib:ro /var/backups:ro
+# AF_UNIX only for the resolver (nss) of this proxy; targets are checked in code.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+# The proxy listens on loopback and uses the DNS stub; it never reaches private networks.
+IPAddressDeny=link-local multicast 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 100.64.0.0/10 fc00::/7
+MemoryMax=256M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
