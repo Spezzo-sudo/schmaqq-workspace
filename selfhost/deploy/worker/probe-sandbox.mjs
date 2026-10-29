@@ -15,7 +15,11 @@ const check=async(label,expectAllowed,attempt)=>{
 const connect=(host,port)=>new Promise((resolve,reject)=>{const s=net.connect({host,port,timeout:3000},()=>{s.destroy();resolve('connected');});s.on('timeout',()=>{s.destroy();reject(Object.assign(new Error('timeout'),{code:'TIMEOUT'}));});s.on('error',reject);});
 
 await check('Runs without root',true,()=>{if(process.getuid()===0)throw new Error('root');return 'uid '+process.getuid();});
-await check('No docker group',true,()=>{const groups=process.getgroups();if(groups.length>1)throw new Error('groups '+groups);return 'gid '+groups;});
+// Allowed: the own group and schmaqq-jobs (shared with the job user for copies). Never docker or others.
+await check('Only own and job group',true,()=>{
+ const byGid=new Map(readFileSync('/etc/group','utf8').split('\n').filter(Boolean).map(l=>{const [name,,gid]=l.split(':');return [Number(gid),name];}));
+ const names=process.getgroups().map(g=>byGid.get(g)??String(g));
+ if(names.some(n=>!['schmaqq-worker','schmaqq-jobs'].includes(n)))throw new Error('groups '+names);return names.join(',');});
 await check('Write worker volume',true,()=>{writeFileSync('/var/lib/schmaqq-worker/.probe','x');rmSync('/var/lib/schmaqq-worker/.probe');});
 await check('Write system files',false,()=>writeFileSync('/usr/local/lib/schmaqq-worker/.probe','x'));
 await check('Write /etc',false,()=>writeFileSync('/etc/.schmaqq-probe','x'));

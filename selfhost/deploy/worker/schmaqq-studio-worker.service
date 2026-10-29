@@ -1,8 +1,8 @@
 [Unit]
 Description=SCHMAQQ Studio server worker (isolated runner)
 Documentation=file:///usr/local/lib/schmaqq-worker/current/selfhost/deploy/worker/README.md
-After=network-online.target var-lib-schmaqq\x2dworker.mount schmaqq-worker-egress.service
-Wants=network-online.target schmaqq-worker-egress.service
+After=network-online.target var-lib-schmaqq\x2dworker.mount schmaqq-worker-egress.service schmaqq-worker-launcher.service
+Wants=network-online.target schmaqq-worker-egress.service schmaqq-worker-launcher.service
 Requires=var-lib-schmaqq\x2dworker.mount
 
 [Service]
@@ -16,6 +16,8 @@ Environment=NODE_ENV=production
 Environment=HTTPS_PROXY=http://127.0.0.60:3128 HTTP_PROXY=http://127.0.0.60:3128
 Environment=https_proxy=http://127.0.0.60:3128 http_proxy=http://127.0.0.60:3128
 Environment=NODE_USE_ENV_PROXY=1
+# The job launcher is local and must never be reached through the proxy.
+Environment=NO_PROXY=127.0.0.62 no_proxy=127.0.0.62
 ExecStart=/usr/local/lib/schmaqq-worker/node/bin/node /usr/local/lib/schmaqq-worker/current/selfhost/runner.mjs /etc/schmaqq-worker/runner.json
 Restart=on-failure
 RestartSec=10
@@ -53,10 +55,11 @@ InaccessiblePaths=-/run/docker.sock -/var/run/docker.sock -/run/containerd -/etc
 
 # Network: nothing directly – no internet, no DNS (data could leave in queries),
 # no unix sockets (also abstract ones). Only the egress proxy on 127.0.0.60 is
-# reachable. socketpair() for child process pipes is not affected.
+# reachable, plus the job launcher on 127.0.0.62. socketpair() for child
+# process pipes is not affected.
 RestrictAddressFamilies=AF_INET AF_INET6
 IPAddressDeny=any
-IPAddressAllow=127.0.0.60/32
+IPAddressAllow=127.0.0.60/32 127.0.0.62/32
 
 # Resources for all jobs together. Per-job time limits come from the runner.
 MemoryMax=2G

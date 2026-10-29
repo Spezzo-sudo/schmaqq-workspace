@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import {aiCapabilities,runLocalAi} from './local-ai.mjs';
 import {command} from './process.mjs';
+import {launcherCommand} from './job-client.mjs';
 import {allowedFile,readSource,saveSource,createSource} from './files.mjs';
 import {runCodex} from './codex-run.mjs';
 import {sourceRevision,stableSource} from './source-revision.mjs';
@@ -20,6 +21,12 @@ export class LocalRunner{
  project(id){const project=this.config.projects?.[id];if(!project?.repo)throw new Error('Dieses Projekt ist auf diesem PC nicht freigegeben.');if(!/^[\w./-]+$/.test(project.base??'main')||(project.base??'main').startsWith('-'))throw new Error('Ungültiger Basiszweig.');return {...project,repo:realpathSync(project.repo),base:project.base??'main'};}
  worktree(job,p){const key=job.action==='prepare'||job.action==='integrate'?job.id:job.payload.worktree;if(!/^[\w-]{1,100}$/.test(key??''))throw new Error('Ungültige Arbeitskopie.');const dir=path.join(this.state,'worktrees',`${job.project}-${key}`);const branch=p.requireIssue?`codex/${job.payload.issue}-studio-${key}`:`studio/${key}`;if(p.requireIssue&&(!Number.isSafeInteger(job.payload.issue)||job.payload.issue<1))throw new Error('Für dieses Repository zuerst die Nummer des begrenzten GitHub-Issues angeben.');return {key,dir,branch};}
  async execute(argv,cwd,options={}){return command(argv,cwd,{signal:this.control?.signal,onOutput:text=>this.control?.onEvent?.({type:'output',text:text.slice(-4000)}),...options});}
+ /** Project code (tests, preview builds). On a server worker with a job launcher it runs
+  * as a separate user that sees only this copy; on a personal PC it runs as before. */
+ async untrusted(argv,cwd,options={}){
+  if(!this.config.launcher)return this.execute(argv,cwd,options);
+  return launcherCommand(this.config.launcher,argv,cwd,{signal:this.control?.signal,onOutput:text=>this.control?.onEvent?.({type:'output',text:text.slice(-4000)}),...options});
+ }
  async excludeBuildOutput(dir,p){
   if(!p.preview?.directory)return;const output=p.preview.directory;
   if(typeof output!=='string'||path.isAbsolute(output)||/[\r\n\0\\]/.test(output)||output.split('/').some(x=>!x||x==='.'||x==='..'||x==='.git'))throw new Error('Vorschau-Ausgabeordner ungültig.');
@@ -118,13 +125,15 @@ export class LocalRunner{
   if(job.action==='preview'){
    if(p.preview?.build&&p.preview?.directory){
     await this.excludeBuildOutput(w.dir,p);
-    const before=await sourceRevision(w.dir,control);await this.execute(p.preview.build,w.dir);const output=path.resolve(w.dir,p.preview.directory),real=realpathSync(output),workspace=realpathSync(w.dir);
+    const before=await sourceRevision(w.dir,control);await this.untrusted(p.preview.build,w.dir);const output=path.resolve(w.dir,p.preview.directory),real=realpathSync(output),workspace=realpathSync(w.dir);
     if(!real.startsWith(workspace+path.sep)||real===workspace)throw new Error('Vorschau-Ausgabe muss innerhalb der Arbeitskopie liegen.');
     const files={};let bytes=0,count=0;
     function collect(dir){for(const item of readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,item.name);if(lstatSync(full).isSymbolicLink())throw new Error('Symlinks sind in Vorschauen nicht erlaubt.');if(item.isDirectory())collect(full);else{const data=readFileSync(full);bytes+=data.length;if(bytes>5000000||++count>500)throw new Error('Vorschau überschreitet 5 MB oder 500 Dateien.');files[path.relative(real,full).split(path.sep).join('/')]=data.toString('base64');}}}
     collect(real);if(!files['index.html'])throw new Error('Gebauter Vorschau fehlt index.html.');return {previewBundle:files,source:stableSource(before,await sourceRevision(w.dir,control))};
    }
-   if(!p.preview?.argv||!p.preview?.url)throw new Error('Vorschau auf diesem PC noch nicht konfiguriert.');const u=new URL(p.preview.url);if(!['http:','https:'].includes(u.protocol))throw new Error('Ungültige Vorschau-Adresse.');
+   if(!p.preview?.argv||!p.preview?.url)throw new Error('Vorschau auf diesem PC noch nicht konfiguriert.');
+   // A long-running preview server would execute project code outside the job launcher.
+   if(this.config.launcher)throw new Error('Auf dem Server-Worker ist nur eine gebaute Vorschau erlaubt.');const u=new URL(p.preview.url);if(!['http:','https:'].includes(u.protocol))throw new Error('Ungültige Vorschau-Adresse.');
    const existing=this.previews.get(w.key);if(existing?.exitCode===null)return {url:p.preview.url,scope:'runner',alreadyRunning:true};
    try{const response=await fetch(p.preview.url,{signal:AbortSignal.timeout(1000)});if(response)throw new Error('An der Vorschau-Adresse läuft bereits ein anderer Prozess.');}catch(e){if(e.message.includes('anderer Prozess'))throw e;}
    let output='';const child=spawn(p.preview.argv[0],p.preview.argv.slice(1),{cwd:w.dir,shell:false,windowsHide:true,stdio:['ignore','pipe','pipe']});child.stdout.on('data',b=>output=(output+b).slice(-10000));child.stderr.on('data',b=>output=(output+b).slice(-10000));let failure;child.on('error',e=>{failure=e;});this.previews.set(w.key,child);
@@ -138,7 +147,7 @@ export class LocalRunner{
   }
   throw new Error('Unbekannter Auftrag.');
  }
- async check(dir,p){if(!p.check?.length)throw new Error('Vor Einreichung muss ein lokaler Testbefehl konfiguriert werden.');return this.execute(p.check,dir,{timeout:600000});}
+ async check(dir,p){if(!p.check?.length)throw new Error('Vor Einreichung muss ein lokaler Testbefehl konfiguriert werden.');return this.untrusted(p.check,dir,{timeout:600000});}
  close(){for(const child of this.previews.values())child.kill();}
 }
 
