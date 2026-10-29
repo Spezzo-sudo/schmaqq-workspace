@@ -94,6 +94,8 @@ Quelle `7bd7ea4ee2c04824390bd41d47161ccd8878987f`, Archiv-SHA256
 `41d12546ca315a7dd4bf04866d8b4cdccd793626617773a8915afca0c1e0b3b1`; Backup
 `predeploy-7bd7ea4-20261029T145756Z.sqlite`; Probestart und Production zeigen für die echte
 ChatGPT-Anfrage die Zustimmungsseite (200). Rückweg `54226b7…`. Owner-GO im Chat („ja, live“).
+Danach verband der Owner ChatGPT (Brave, eigenes Konto): Freigabe für Client
+`https://chatgpt.com/oauth/client.json` in der Datenbank bestätigt (ca. 15:02 UTC).
 
 ## Was nur der Owner abschließen kann (Stand vor der Abnahme)
 
