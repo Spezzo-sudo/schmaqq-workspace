@@ -17,6 +17,8 @@ export async function connectManagedProject(runner,job){
  if(p.automatic===true)p.check=['node','--test'];
  if(!Array.isArray(p.check)||!p.check.length||!p.check.every(s=>typeof s==='string'&&s.length>0&&s.length<=4096))throw Error('Ein gültiger Testbefehl ist erforderlich.');
  if(p.preview&&(!Array.isArray(p.preview.build)||!p.preview.build.length||!p.preview.build.every(s=>typeof s==='string'&&s.length>0&&s.length<=4096)||typeof p.preview.directory!=='string'||p.preview.directory.split(/[\\/]/).some(s=>!s||s==='.'||s==='..')||path.isAbsolute(p.preview.directory)))throw Error('Vorschau-Konfiguration ungültig.');
+ // Live preview (server worker): app command and port; it runs isolated like a job.
+ if(p.serve&&(!Array.isArray(p.serve.argv)||!p.serve.argv.length||p.serve.argv.length>30||!p.serve.argv.every(s=>typeof s==='string'&&s.length>0&&s.length<=4096)||!Number.isInteger(p.serve.port)||p.serve.port<1024||p.serve.port>65535))throw Error('Live-Vorschau-Konfiguration ungültig.');
  const existing=runner.config.projects?.[job.project];
  const projects=path.join(runner.state,'projects');mkdirSync(projects,{recursive:true});if(lstatSync(projects).isSymbolicLink())throw Error('Der persönliche Projektordner darf keine Verknüpfung sein.');
  const target=existing?.repo??path.join(projects,job.project);
@@ -45,9 +47,11 @@ export async function connectManagedProject(runner,job){
   runner.config.projects={...runner.config.projects,[job.project]:pending};
  }
  if(p.automatic===true){
-  const detected=detectProject(target);p={...p,...detected};
+  // With a live preview, an unknown static build output is no reason to stop.
+  const detected=detectProject(target,{staticPreviewOptional:!!p.serve});p={...p,...detected};
  }
- const config={...existing,preview:undefined,repo:realpathSync(target),base:p.base,check:p.check,publish:p.publish===true,allowCodex:p.allowCodex===true,workflow:p.workflow==='direct'?'direct':'pull-request',...(p.preview?{preview:p.preview}:{})};
+ const preview=p.preview||p.serve?{...(p.preview??{}),...(p.serve?{serve:{argv:p.serve.argv,port:p.serve.port}}:{})}:undefined;
+ const config={...existing,preview:undefined,repo:realpathSync(target),base:p.base,check:p.check,publish:p.publish===true,allowCodex:p.allowCodex===true,workflow:p.workflow==='direct'?'direct':'pull-request',...(preview?{preview}:{})};
  if(existing&&!managed[job.project]){
   saveProjectSettings(runner.state,job.project,config);
   runner.config.projects={...runner.config.projects,[job.project]:config};
@@ -76,7 +80,7 @@ export function applyProjectSettings(state,projects){
   result[id]={...current,...saved,repo:current.repo};
  }return result;
 }
-export function detectProject(repo){
+export function detectProject(repo,{staticPreviewOptional=false}={}){
  const file=path.join(repo,'package.json');
  if(!existsSync(file))throw Error('Dieses Projekt wird noch nicht automatisch erkannt. Unter erweiterten Einstellungen Tests und Vorschau angeben.');
  const info=lstatSync(file);if(!info.isFile()||info.isSymbolicLink()||info.size>128000)throw Error('Projektbeschreibung ist keine reguläre Datei.');
@@ -88,6 +92,6 @@ export function detectProject(repo){
  let preview;
  if(build==='node scripts/build.mjs')preview={build:['node','scripts/build.mjs'],directory:'dist'};
  else if(build==='vite build')preview={build:['npm','run','build'],directory:'dist'};
- else if(build)throw Error('Vorschau-Ausgabe dieses Projekts noch nicht automatisch erkannt. Erweiterte Einstellungen verwenden.');
+ else if(build&&!staticPreviewOptional)throw Error('Vorschau-Ausgabe dieses Projekts noch nicht automatisch erkannt. Erweiterte Einstellungen verwenden.');
  return {check,...(preview?{preview}:{})};
 }
