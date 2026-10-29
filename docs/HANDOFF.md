@@ -1,3 +1,17 @@
+## Live-Folgeauftrag, 29.10.2026: allgemeine Projekteinrichtung
+
+Nach aktuellem Owner-GO „ja, live“ wurden Studio und Worker auf den geprüften
+Stand aktualisiert. Release/Backup/Probestart auf Datenkopie/Schema-Prüfung PASS,
+echte Job-Isolation 10/10 und Worker-Probe 29/29 PASS. Neue Planfähigkeit wird
+vom Worker gemeldet; Datenanzahlen unverändert. Kein Push/Merge und keine
+Systeminstallation. [Release, Rückweg und Nachweise](evidence/PROJECT_CONFIGURATION_DEPLOY_20261029.md).
+
+Klimafinder noch nicht gebaut: Im isolierten Job sind Make/Python/venv/Jinja
+vorhanden, **ensurepip fehlt**. Owner soll Studio neu laden und „Projekt prüfen“
+im neuen Einrichtungsweg öffnen. Python-Abhängigkeiten gesondert konkretisieren;
+keine ungefragte Systeminstallation oder Netzfreigabe. Die folgende lokale
+Übergabe dokumentiert den Stand vor dem Rollout.
+
 ## Lokaler Folgeauftrag, 29.10.2026: allgemeine Projekteinrichtung
 
 Owner-Praxistest A stoppte an der Erkennung: Klimafinder verwendet Python/Make,

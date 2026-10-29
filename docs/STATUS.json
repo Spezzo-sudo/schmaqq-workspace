@@ -1,13 +1,15 @@
 {
   "project_configuration_20261029": {
-    "state": "local_verified_not_deployed",
+    "state": "live_verified_environment_gap_remaining",
     "implemented": "Language-independent studio.project.json contract; inspect proposal and explicit revision-bound confirmation; bounded Node, Make and pytest suggestions; non-executing program presence checks; per-copy preparation through existing job isolation; separate missing-runtime and unknown-project results; focused setup UI and legacy-runner protocol guard.",
     "verification": "271 tests: 250 PASS, 0 FAIL, 21 explicit platform skips; source guard, TypeScript and Vite PASS. Actual local Node/Python preparation, tests and static preview in separate worktrees. Synthetic local browser: confirmed proposal, unknown project, manual configuration, invalidation, missing Make; no browser errors.",
     "evidence": "docs/evidence/PROJECT_CONFIGURATION_20261029.md",
-    "limits": "No real Klimafinder build, Make execution, VPS environment or new Linux sandbox proof. Module versions and package downloads are not verified by presence checks. No PyPI/network widening or system installation. Existing source/preview limits remain. Connected AI can author a configuration; this change does not add an autonomous model call. Windows local verification is not full Linux/release acceptance.",
-    "production_changed": false,
+    "live_evidence": "docs/evidence/PROJECT_CONFIGURATION_DEPLOY_20261029.md",
+    "live_verification": "Release identity, backup, copied-data boot, schema and public/local health PASS; actual job isolation 10/10 and worker sandbox 29/29 PASS. Fresh setupPlanVersion 1; application record counts unchanged. Isolated Python probe: make/python3/venv/jinja2 present, ensurepip absent.",
+    "limits": "No actual Klimafinder build or dependency download. ensurepip absent in isolated environment; make build-bootstrap is not proven runnable. Module versions are not verified by presence checks. No PyPI/network widening or system installation. Existing source/preview limits remain. No autonomous new model call. Linux operator recovery suite not rerun; actual deployment probes are separate evidence.",
+    "production_changed": true,
     "github_published": false,
-    "next": "Review local diff; only after separate current authorization update Studio and worker and verify the isolated environment, then resume owner practical test A."
+    "next": "Owner reloads Studio and inspects the proposed setup. Resolve the bounded Python environment requirement before claiming a successful Klimafinder build; no automatic system installation."
   },
   "handoff_to_codex_20261029": {
     "state": "handoff_ready",

@@ -1,6 +1,6 @@
 # Projekte unabhängig von der Programmiersprache einrichten
 
-Lokaler Entwicklungsstand, 29.10.2026. Kein Live-Rollout. Auftrag und Grenzen:
+Seit Owner-GO am 29.10.2026 live; [Betriebsnachweis und offene Umgebungsvoraussetzungen](evidence/PROJECT_CONFIGURATION_DEPLOY_20261029.md). Auftrag und Grenzen:
 [PROJECT_SETUP_WORK_ORDER.md](PROJECT_SETUP_WORK_ORDER.md).
 
 ## Ein Ablauf
@@ -91,6 +91,8 @@ PyPI-Quellen; sie wird durch diese Änderung nicht erweitert. Auch bestehende
 Vorschaugrößen- und Quellrevisionslimits bleiben wirksam. Fehlende Voraussetzungen
 werden nicht durch globale Installationen oder Sandboxlockerung umgangen.
 
-Nächster Betriebsauftrag erst nach Prüfung/Freigabe: Studio **und** Worker auf
-diesen Stand bringen, Umgebungsvoraussetzungen prüfen, dann Owner-Praxistest
-fortsetzen. Die laufenden Klimafinder-Dienste bleiben außerhalb des Auftrags.
+Studio und Worker sind nach gesonderter Freigabe aktualisiert. Im isolierten
+Job wurden Make/Python/venv/Jinja gefunden, `ensurepip` fehlt. Nächster Schritt:
+Owner öffnet den neuen Vorschlag; vor tatsächlichem Klimafinder-Build die
+verbleibende Python-Umgebung konkretisieren. Systemänderungen brauchen einen
+eigenen begrenzten Auftrag. Laufende Klimafinder-Dienste bleiben außerhalb davon.

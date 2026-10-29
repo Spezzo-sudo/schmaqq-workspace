@@ -29,10 +29,12 @@ Der Deploy-Key im Repository `schmaqq-studio-pilot` wird nicht mehr gebraucht (O
 
 Unterbrechung im Owner-Praxistest am 29.10.: Repository gespeichert und Deploy-Key
 vom Owner eingetragen; automatische Erkennung scheiterte am Python-/Make-Projekt.
-Gesonderter Owner-Auftrag zur allgemeineren Einrichtung **lokal umgesetzt und
-geprüft**, noch nicht live: [Nachweis](evidence/PROJECT_CONFIGURATION_20261029.md).
-Klimafinders echte Worker-Umgebung bleibt ungeprüft. A deshalb nicht abhaken;
-Fortsetzung erst nach separat freigegebenem Betriebs-/Umgebungsschritt.
+Gesonderter Owner-Auftrag zur allgemeineren Einrichtung umgesetzt, geprüft und
+nach aktuellem „ja, live“ veröffentlicht:
+[Live-Nachweis](evidence/PROJECT_CONFIGURATION_DEPLOY_20261029.md).
+Make/Python/venv/Jinja im isolierten Job gefunden, ensurepip fehlt. A deshalb
+nicht abhaken: Owner lädt Studio neu und prüft den Vorschlag; echte Python-
+Buildumgebung und Klimafinder-Build weiter offen. Keine Systeminstallation erfolgt.
 
 1. [ ] Projekt „Klimafinder“ in Studio anlegen, GitHub-Repository eintragen, Zielbranch prüfen (Owner)
 2. [ ] Server-Worker per Knopf verbinden (Deploy-Key) und Projekt einrichten
