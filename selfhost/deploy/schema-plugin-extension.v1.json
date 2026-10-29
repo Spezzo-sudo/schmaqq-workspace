@@ -1,0 +1,325 @@
+{
+  "format": 1,
+  "profile": "plugin-oauth-extension",
+  "sourceModules": [
+    "selfhost/studio-plugin-auth.mjs"
+  ],
+  "note": "Optional schema of the personal plugin authorization (created only when the plugin is enabled). Accepted only complete and exact; regenerated and compared against the code by schema-plugin-profile.test.mjs.",
+  "objects": [
+    {
+      "type": "index",
+      "name": "plugin_access_grant",
+      "table": "plugin_access_tokens",
+      "sqlHash": "2c435ed0a6855c5def73e73e69ce40cef06b5749e6a97d22473b70653ffab933"
+    },
+    {
+      "type": "index",
+      "name": "plugin_grants_member",
+      "table": "plugin_grants",
+      "sqlHash": "588626dbb950af7e571556b0121863b3b72535476bd79bd6d8bcd612ead2aa16"
+    },
+    {
+      "type": "index",
+      "name": "plugin_refresh_grant",
+      "table": "plugin_refresh_tokens",
+      "sqlHash": "92fa59f45b098830f3c27b8858f29187fae33375d60a052e9bd55a7288b3bfe6"
+    },
+    {
+      "type": "table",
+      "name": "plugin_access_tokens",
+      "table": "plugin_access_tokens",
+      "sqlHash": "a0422eac95b219528c82a9d66074019f73e15db247066091c173dbd0077b73a5"
+    },
+    {
+      "type": "table",
+      "name": "plugin_clients",
+      "table": "plugin_clients",
+      "sqlHash": "c02715e4e146164a03af7c3f7f4aca012eb5c340427abd8f95f0aa625f6b9205"
+    },
+    {
+      "type": "table",
+      "name": "plugin_codes",
+      "table": "plugin_codes",
+      "sqlHash": "afe5b63ea7fb2f1da7da2547faf984bbc5cd79acf66be2134b737c8881565370"
+    },
+    {
+      "type": "table",
+      "name": "plugin_grants",
+      "table": "plugin_grants",
+      "sqlHash": "f5c045d300d7d4712123427b432569136dd0821f612bea6af95aa780dbc0a1bf"
+    },
+    {
+      "type": "table",
+      "name": "plugin_refresh_tokens",
+      "table": "plugin_refresh_tokens",
+      "sqlHash": "452965818012f6308c3c311ea6c56cdea3bc2ab28008e9ba482f0c50b1f16689"
+    }
+  ],
+  "tables": {
+    "plugin_access_tokens": {
+      "columns": [
+        {
+          "name": "hash",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "grant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "expires",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "parent": "plugin_grants",
+          "from": "grant_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ]
+    },
+    "plugin_clients": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "redirect_uris",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "kind",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "created",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "fetched",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": []
+    },
+    "plugin_codes": {
+      "columns": [
+        {
+          "name": "hash",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "grant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "redirect",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "challenge",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "expires",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "used",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        },
+        {
+          "name": "failures",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "parent": "plugin_grants",
+          "from": "grant_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ]
+    },
+    "plugin_grants": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "member",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "client",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "resource",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "scopes",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "created",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "expires",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "revoked",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "parent": "members",
+          "from": "member",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ]
+    },
+    "plugin_refresh_tokens": {
+      "columns": [
+        {
+          "name": "hash",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "grant_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "expires",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "used",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": "0",
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "parent": "plugin_grants",
+          "from": "grant_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ]
+    }
+  }
+}

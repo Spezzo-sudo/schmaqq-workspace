@@ -1,10 +1,13 @@
 import {z} from 'zod';
+import {metadata,storeMetadata} from './team-model.mjs';
 
 /** Executor availability and placement v1.
  * An executor is a runner device. Placement only ever chooses among the
  * requesting member's own, non-revoked devices: the own-device boundary for
  * code jobs is unchanged. A server worker is such a device whose runner
  * reports kind "server". Older runners without a host report count as PCs.
+ * Host facts and project rules live in workspace_meta, so the database schema
+ * stays exactly the pinned baseline (schema changes need a versioned migration).
  */
 export const ONLINE_MS=30000;
 export const placementModes=['auto','pc','server'];
@@ -15,10 +18,10 @@ export const hostSchema=z.object({
 const fail=(status,message)=>Object.assign(new Error(message),{status});
 const modeText={auto:'Automatisch: zuerst ein erreichbarer Server, sonst ein eigener PC',pc:'Nur eigener PC',server:'Nur Server-Worker'};
 
-export function recordHost(db,deviceId,host,now=Date.now()){
- db.prepare('INSERT INTO device_hosts VALUES(?,?,?) ON CONFLICT(device) DO UPDATE SET info=excluded.info,updated=excluded.updated').run(deviceId,JSON.stringify(host),now);
-}
-export function placementMode(db,project){return db.prepare('SELECT mode FROM project_placement WHERE project=?').get(project)?.mode??'auto';}
+const hostKey=device=>'executor:v1:host:'+device,placementKey=project=>'executor:v1:placement:'+project;
+export function recordHost(db,deviceId,host,now=Date.now()){storeMetadata(db,hostKey(deviceId),{...host,updated:now});}
+export function deviceHost(db,deviceId){return metadata(db,hostKey(deviceId));}
+export function placementMode(db,project){const mode=metadata(db,placementKey(project))?.mode;return placementModes.includes(mode)?mode:'auto';}
 export function canConfigurePlacement(db,member,project){
  return member.role==='owner'||db.prepare('SELECT owner FROM project_starts WHERE project=?').get(project)?.owner===member.id;
 }
@@ -26,17 +29,18 @@ export function setPlacement(db,{member,project,mode},now=Date.now()){
  if(!placementModes.includes(mode))throw fail(400,'Unbekannte Ausführungsregel.');
  if(!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt nicht gefunden.');
  if(!canConfigurePlacement(db,member,project))throw fail(403,'Nur die verantwortliche Person kann die Ausführungsregel ändern.');
- db.prepare('INSERT INTO project_placement VALUES(?,?,?,?) ON CONFLICT(project) DO UPDATE SET mode=excluded.mode,updated_by=excluded.updated_by,updated=excluded.updated').run(project,mode,member.id,now);
+ storeMetadata(db,placementKey(project),{mode,updatedBy:member.id,updated:now});
 }
 
 /** Own executors with availability and reported capabilities. */
 export function executors(db,memberId,now=Date.now()){
- return db.prepare(`SELECT d.id,d.name,d.seen,h.info,s.projects,
+ return db.prepare(`SELECT d.id,d.name,d.seen,s.projects,
   EXISTS(SELECT 1 FROM jobs j WHERE j.device=d.id AND j.status IN ('queued','running','cancelling')) AS busy
-  FROM devices d LEFT JOIN device_hosts h ON h.device=d.id LEFT JOIN runner_project_state s ON s.device=d.id
+  FROM devices d LEFT JOIN runner_project_state s ON s.device=d.id
   WHERE d.owner=? AND d.revoked=0 ORDER BY d.name`).all(memberId).map(d=>{
-  const host=d.info?JSON.parse(d.info):null,projects=d.projects?JSON.parse(d.projects).map(p=>p.id):null;
-  return {id:d.id,name:d.name,kind:host?.kind??'pc',online:now-d.seen<ONLINE_MS,seen:d.seen,busy:!!d.busy,host,projects};
+  const stored=deviceHost(db,d.id),host=stored?{kind:stored.kind,os:stored.os,arch:stored.arch,node:stored.node,cpus:stored.cpus,memoryMb:stored.memoryMb,...(stored.label?{label:stored.label}:{})}:null;
+  const projects=d.projects?JSON.parse(d.projects).map(p=>p.id):null;
+  return {id:d.id,name:d.name,kind:host?.kind==='server'?'server':'pc',online:now-d.seen<ONLINE_MS,seen:d.seen,busy:!!d.busy,host,projects};
  });
 }
 const allowed=(mode,executor)=>mode==='auto'||executor.kind===mode;
