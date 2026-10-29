@@ -28,6 +28,17 @@ Datum 29.10.2026, Owner-GO im Chat („Ja, live“) nach vorgelegtem Plan.
   sichtbar. Die bisherige Pilot-Konfiguration (lokales Test-Repository, Live-Vorschau-Mini-App)
   wurde dabei durch den GitHub-Eintrag ersetzt; Sicherung `runner.json.before-github` im Staging-Ordner.
 
+### Einrichtung aus Studio (ohne SSH auf den Server)
+
+Live seit 29.10.2026 abends (Studio und Worker `3a6e630755386271ca23a9e3fef8a12aa463db67`, Archiv-SHA256
+`a071a9ade500b4d14fbd2b1df2ae9aa5a160adbe02d646d98bd5807731242a64`, Backup
+`predeploy-3a6e630-20261029T174636Z.sqlite`, Rückweg Studio `d6d587e…`, Worker `da2aeb2…`; Owner-GO „Ja, live“).
+Projekt → Einstellungen → „Projekt auf meinem Rechner einrichten“ → Server-Worker: Schritt 1 erzeugt
+per Auftrag `deploy-key` den Schlüssel im privaten Runner-Zustand (`/var/lib/schmaqq-worker/state/keys/<projekt>`,
+0600 schmaqq-worker, für Jobs unsichtbar) und zeigt den öffentlichen Teil mit Link zur Deploy-Key-Seite;
+Schritt 2 klont per SSH über den Proxy. Auf dem VPS geprüft: `deploy-key`-Auftrag completed mit öffentlichem
+Schlüssel; Test-Schlüssel danach entfernt. Lokal im Browser abgenommen (Desktop und 375 px). 257 Tests, 236 PASS, 0 FAIL.
+
 ## Full-Stack-Vorschau
 
 - Pilotprojekt mit Mini-App (`preview.serve`): Vorschau-Job completed, Ergebnis `scope: live`

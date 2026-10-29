@@ -1,7 +1,8 @@
 ## Einstieg für den nächsten Agenten (Codex oder Claude Code), Stand 29.10.2026 abends
 
-Live: Studio `d6d587e…`, Server-Worker `da2aeb2…` (Isolation pro Auftrag, GitHub-Deploy-Keys,
-Full-Stack-Vorschau; Nachweis `evidence/GITHUB_AND_LIVE_PREVIEW_20261029.md`). Claude und ChatGPT
+Live: Studio und Server-Worker `3a6e630…` (Isolation pro Auftrag, GitHub-Deploy-Keys mit Einrichtung
+aus Studio, Full-Stack-Vorschau; Nachweis `evidence/GITHUB_AND_LIVE_PREVIEW_20261029.md`). Pilotprojekt
+ist mit `Spezzo-sudo/schmaqq-studio-pilot` verbunden. Claude und ChatGPT
 sind als KI-Assistenten verbunden. Alle Commits liegen lokal auf
 `local/studio-plugin-worker-prototype` (nicht gepusht). Live-Schalten nur nach
 [OPERATIONS.md](OPERATIONS.md) und mit aktuellem Owner-GO. Nachweise des Tages:
