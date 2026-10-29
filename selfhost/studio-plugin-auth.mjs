@@ -97,7 +97,10 @@ export function createPluginAuth({db,issuer,clients,now=Date.now,dynamic=false,f
   if(row&&now()-row.fetched<3600000)return;
   let doc;try{doc=await fetchMetadata(id);}catch{throw fail('invalid_client');}
   const redirects=doc?.redirect_uris;
-  if(!doc||typeof doc!=='object'||doc.client_id!==id||!Array.isArray(redirects)||!redirects.length||redirects.length>10||!redirects.every(exactRedirect)||doc.token_endpoint_auth_method!==undefined&&doc.token_endpoint_auth_method!=='none')throw fail('invalid_client');
+  // Studio's token endpoint only offers "none" (public client + PKCE). A client may
+  // prefer another method (ChatGPT: private_key_jwt) as long as it also lists "none".
+  const publicClient=doc?.token_endpoint_auth_method===undefined||doc.token_endpoint_auth_method==='none'||Array.isArray(doc.token_endpoint_auth_methods_supported)&&doc.token_endpoint_auth_methods_supported.includes('none');
+  if(!doc||typeof doc!=='object'||doc.client_id!==id||!Array.isArray(redirects)||!redirects.length||redirects.length>10||!redirects.every(exactRedirect)||!publicClient)throw fail('invalid_client');
   const name=typeof doc.client_name==='string'&&doc.client_name.trim()?doc.client_name.trim().slice(0,120):new URL(id).hostname;
   db.prepare("INSERT INTO plugin_clients VALUES(?,?,?,'metadata',?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,redirect_uris=excluded.redirect_uris,fetched=excluded.fetched").run(id,name,JSON.stringify(redirects),now(),now());
  }

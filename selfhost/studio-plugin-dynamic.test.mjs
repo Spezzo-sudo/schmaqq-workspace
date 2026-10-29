@@ -25,6 +25,9 @@ class MemoryProvider{
 test('official MCP SDK client connects through dynamic registration and through a client metadata document',async t=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'studio-oauth-dynamic-')),origin='http://127.0.0.1:44976',resource=origin+'/mcp';
  const documents=new Map([[metadataUrl,{client_id:metadataUrl,client_name:'Beispiel-Assistent',redirect_uris:[redirectUri],token_endpoint_auth_method:'none'}],
+  // Shape of ChatGPT's published document (29.10.2026): prefers private_key_jwt, also supports none.
+  ['https://chatgpt.fixture.example/oauth/client.json',{client_id:'https://chatgpt.fixture.example/oauth/client.json',client_name:'ChatGPT',redirect_uris:[redirectUri],token_endpoint_auth_method:'private_key_jwt',token_endpoint_auth_methods_supported:['none','private_key_jwt'],grant_types:['authorization_code','refresh_token'],response_types:['code'],token_endpoint_auth_signing_alg:'RS256',jwks_uri:'https://chatgpt.fixture.example/oauth/jwks.json'}],
+  ['https://client.fixture.example/oauth/jwt-only.json',{client_id:'https://client.fixture.example/oauth/jwt-only.json',redirect_uris:[redirectUri],token_endpoint_auth_method:'private_key_jwt',token_endpoint_auth_methods_supported:['private_key_jwt']}],
   ['https://client.fixture.example/oauth/wrong.json',{client_id:'https://other.example/x',redirect_uris:[redirectUri]}],
   ['https://client.fixture.example/oauth/wildcard.json',{client_id:'https://client.fixture.example/oauth/wildcard.json',redirect_uris:['https://*.example/cb']}]]);
  let fetches=0;
@@ -72,6 +75,9 @@ test('official MCP SDK client connects through dynamic registration and through 
  const byDocument=new MemoryProvider(metadataUrl);
  const cimd=await connectWith(byDocument,true);
  assert.equal(byDocument.saved.client.client_id,metadataUrl);assert.equal(fetches,1);
+ // A ChatGPT-shaped document that prefers private_key_jwt but also lists none is accepted.
+ const chatgpt=new MemoryProvider('https://chatgpt.fixture.example/oauth/client.json');
+ await connectWith(chatgpt,true);assert.equal(chatgpt.saved.client.client_id,'https://chatgpt.fixture.example/oauth/client.json');
  assert.equal((await cimd.callTool({name:'list_projects',arguments:{}})).isError,undefined);
  const grants=(await request('/api/plugin/grants',null,marco)).data.grants;
  assert.ok(grants.some(g=>g.clientName==='Beispiel-Assistent'));assert.ok(grants.some(g=>g.clientName==='Fremder MCP-Client'));
@@ -82,7 +88,7 @@ test('official MCP SDK client connects through dynamic registration and through 
 
  // Rejected metadata documents and registrations.
  const base={response_type:'code',redirect_uri:redirectUri,state:'s',code_challenge:'a'.repeat(43),code_challenge_method:'S256',resource};
- for(const client_id of ['https://client.fixture.example/oauth/wrong.json','https://client.fixture.example/oauth/wildcard.json','https://client.fixture.example/oauth/missing.json','http://client.fixture.example/oauth/client.json'])
+ for(const client_id of ['https://client.fixture.example/oauth/jwt-only.json','https://client.fixture.example/oauth/wrong.json','https://client.fixture.example/oauth/wildcard.json','https://client.fixture.example/oauth/missing.json','http://client.fixture.example/oauth/client.json'])
   assert.equal((await fetch(origin+'/oauth/authorize?'+new URLSearchParams({...base,client_id}),{headers:{Cookie:marco}})).status,400,client_id);
  const trustedPage=await (await fetch(origin+'/oauth/authorize?'+new URLSearchParams({...base,client_id:'trusted-client'}),{headers:{Cookie:marco}})).text();
  assert.doesNotMatch(trustedPage,/Nicht von SCHMAQQ hinterlegt/);
