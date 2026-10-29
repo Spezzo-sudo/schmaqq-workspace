@@ -35,3 +35,25 @@ systemctl enable --now schmaqq-studio-worker
 ```
 
 Abschalten: `systemctl disable --now schmaqq-studio-worker` und das Gerät in Studio widerrufen.
+
+## Echtes GitHub-Projekt anbinden (ohne neues Konto)
+
+```
+connect-github.sh key   <projekt-id>              # zeigt den öffentlichen Schlüssel
+# im bestehenden Repository: Settings -> Deploy keys -> Add deploy key
+# ("Allow write access" nur, wenn der Worker Aufgaben-Branches pushen soll)
+connect-github.sh clone <projekt-id> <owner/repo> [basis-branch] '["npm","test"]' [true|false]
+```
+
+Git nutzt SSH über Port 443 (`ssh.github.com`) durch den Egress-Proxy; GitHubs Host-Schlüssel
+ist fest hinterlegt. Der private Schlüssel liegt unter `/var/lib/schmaqq-worker/keys/<projekt>`
+und ist für Jobs unsichtbar. Widerruf: Deploy-Key im Repository löschen.
+
+## Full-Stack-Vorschau
+
+Im Projekteintrag von `runner.json`: `"preview":{"serve":{"argv":["npm","start"],"port":3000}}`.
+Die App muss auf `process.env.HOST` und `process.env.PORT` lauschen. Sie läuft wie ein Job
+(eigener Nutzer, nur die eigene Kopie, kein direktes Netz), höchstens 30 Minuten; eine neue
+Vorschau ersetzt die alte. Studio liefert einen geheimen Link auf der Vorschau-Adresse.
+Grenzen: kein WebSocket-Durchreichen, Datenbank nur eingebettet (z. B. SQLite in der Kopie),
+jeder mit dem Link kann die Vorschau öffnen.
