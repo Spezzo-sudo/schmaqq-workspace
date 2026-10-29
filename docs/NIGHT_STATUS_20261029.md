@@ -1,4 +1,4 @@
-﻿# Nachtstatus SCHMAQQ Studio
+# Nachtstatus SCHMAQQ Studio
 
 Lauf: Claude Code (Desktop-App, Code-Tab), Modell Opus 5.5 über die Abo-Anmeldung des Owners.
 Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT_HANDOFF_20261029.md).
