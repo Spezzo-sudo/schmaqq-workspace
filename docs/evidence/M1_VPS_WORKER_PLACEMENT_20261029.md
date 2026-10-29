@@ -80,6 +80,12 @@ Empfehlung „→ SCHMAQQ-VPS Server-Worker (Server)“. Belegt per Screenshot d
 Damit sind alle M1-Kriterien nachgewiesen; ChatGPT und Gemini sind über dieselben Wege
 angebunden, mit echten Konten aber noch nicht ausprobiert.
 
+Nachgereicht (29.10.2026, 14:43 UTC): Werkzeug `list_workspaces` (eigene Arbeitskopien mit
+Kennung und Ausführer) live mit Quelle `54226b746e7922a0a9922909e95203abf142b836`, Archiv-SHA256
+`88ea2ffe70143f55a1cab50c8df4242d0fd27918532bc0c890b73b4b522cec2c`; verify-release PASS, Backup
+`predeploy-54226b7-20261029T144327Z.sqlite`, Probestart (Route ohne Sitzung 401), Schema-Preflight
+PASS, Umschaltung ohne Rollback. Rückweg: `33a8dd2…`. Worker unverändert. 244 Tests, 223 PASS, 0 FAIL.
+
 ## Was nur der Owner abschließen kann (Stand vor der Abnahme)
 
 1. ~~Mit eigenem Login die neue Oberfläche live ansehen~~ – erledigt (siehe oben); „Verbundene KI-Assistenten“ noch offen.
