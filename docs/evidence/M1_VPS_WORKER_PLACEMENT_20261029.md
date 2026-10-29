@@ -56,9 +56,16 @@ Browser zeigt „KI-Assistent mit Studio verbinden – Melde dich zuerst mit dei
 Studio-Konto an“. Weiter geht es nur mit der Anmeldung des Owners; bewusst nicht ausgeführt.
 Die dabei registrierte unbenutzte Test-Registrierung verfällt automatisch nach 7 Tagen.
 
+## Owner-Sichtprüfung live (29.10.2026, 15:26, Brave, eigener Login)
+
+Projekt „Studio-Pilottest“ → Einstellungen → „Wo wird gearbeitet?“: Regel „Automatisch“,
+„Lenovo – Desktop-Audit 2026-10-26 · PC · Nicht erreichbar · Projekt nicht eingerichtet“,
+„SCHMAQQ-VPS Server-Worker · Server · Erreichbar · linux · 1 CPU · 2 GB · Projekt eingerichtet“,
+Empfehlung „→ SCHMAQQ-VPS Server-Worker (Server)“. Belegt per Screenshot des Owners.
+
 ## Was nur der Owner abschließen kann
 
-1. Mit eigenem Login die neue Oberfläche live ansehen („Wo wird gearbeitet?“, „Verbundene KI-Assistenten“).
+1. ~~Mit eigenem Login die neue Oberfläche live ansehen~~ – erledigt (siehe oben); „Verbundene KI-Assistenten“ noch offen.
 2. Einen Auftrag selbst aus Studio oder per KI-Assistent starten, der automatisch auf dem
    Server-Worker landet (bisher operator-gestartete Aufträge über dieselbe Vermittlung).
 3. ChatGPT, Claude und Gemini mit den eigenen Konten verbinden (Anleitung AI_CLIENT_SETUP.md).
