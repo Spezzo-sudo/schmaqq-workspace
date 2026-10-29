@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync,readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {mkdtempSync,rmSync,readFileSync,writeFileSync,mkdirSync,symlinkSync} from 'node:fs';
 import {execFileSync,spawnSync} from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -33,6 +33,15 @@ test('server worker unit keeps jobs unprivileged, out of other services and insi
 test('runtime release contains the runner and the worker deployment files',()=>{
  const files=runtimeInventory(root).files;
  for(const file of ['selfhost/runner.mjs','selfhost/placement.mjs','selfhost/deploy/worker/schmaqq-studio-worker.service','selfhost/deploy/worker/install-worker.sh','selfhost/deploy/worker/probe-sandbox.mjs','selfhost/deploy/worker/register-worker.mjs','selfhost/deploy/worker/pilot-job.mjs'])assert.ok(files.includes(file),file);
+});
+
+test('runner starts when launched through a symlinked release directory',()=>{
+ const dir=mkdtempSync(path.join(os.tmpdir(),'studio-runner-link-')),link=path.join(dir,'current');
+ try{
+  symlinkSync(here,link,process.platform==='win32'?'junction':'dir');
+  const started=spawnSync(process.execPath,[path.join(link,'runner.mjs')],{encoding:'utf8'});
+  assert.match(started.stderr,/Aufruf: node selfhost\/runner\.mjs/,'The entry point ran instead of silently exiting');
+ }finally{rmSync(dir,{recursive:true,force:true});}
 });
 
 test('worker registration creates one hashed owner device and refuses duplicates or ambiguous owners',()=>{

@@ -165,6 +165,8 @@ export async function startRunner(config){
   }
  }catch(e){console.error(e.message);}await new Promise(r=>setTimeout(r,3000));}
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+// Compare real paths: started through a symlinked release directory (server
+// worker: .../current/selfhost/runner.mjs) Node reports the resolved module URL.
+if(process.argv[1]&&existsSync(process.argv[1])&&realpathSync(path.resolve(process.argv[1]))===realpathSync(fileURLToPath(import.meta.url))){
  const file=process.argv[2];if(!file)throw new Error('Aufruf: node selfhost/runner.mjs PFAD_ZUR_LOKALEN_KONFIGURATION');const config=JSON.parse(readFileSync(file,'utf8'));await startRunner(config);
 }
