@@ -81,13 +81,16 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
  stop=unit=>spawn('systemctl',['stop',unit],{stdio:'ignore'}),
  isActive=unit=>new Promise(r=>{const c=spawn('systemctl',['is-active','--quiet',unit],{stdio:'ignore'});c.on('close',code=>r(code===0));c.on('error',()=>r(false));}),
  logs=unit=>new Promise(r=>{let out='';const c=spawn('journalctl',['-u',unit,'-n','15','-o','cat','--no-pager'],{stdio:['ignore','pipe','ignore']});c.stdout.on('data',d=>out+=d);c.on('close',()=>r(out.slice(-2000)));c.on('error',()=>r(''));}),
+ // All live preview units, also those started before a launcher restart (it keeps no state on disk).
+ stopAllLive=()=>new Promise(r=>{const c=spawn('systemctl',['stop','schmaqq-live-*.service'],{stdio:'ignore'});c.on('close',()=>r());c.on('error',()=>r());}),
  waitPort=waitForPort,readyMs=90000,maxBody=200000,log=m=>console.error(m)}={}){
  if(typeof key!=='string'||key.length<32)throw new Error('Launcher key missing.');
  const expected=Buffer.from(key);
  let busy=false,live=null;
  /** One live preview at a time: starting a new one stops the previous. */
  async function serve(dir,argv,port,ttlSeconds){
-  if(live){stop(live.unit);live=null;}
+  // Otherwise an older app could still hold the port and answer instead of the new code.
+  live=null;await stopAllLive();
   const unit='schmaqq-live-'+randomBytes(8).toString('hex');
   await prepare(dir);
   const started=await new Promise(resolve=>{const c=run('systemd-run',jobUnitArgs({unit,dir,argv,timeoutMs:ttlSeconds*1000,serve:{port}}));c.on('close',code=>resolve(code===0));c.on('error',()=>resolve(false));});
@@ -104,7 +107,7 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
    if(req.method!=='POST'||!['/run','/serve','/stop-serve'].includes(req.url))throw fail(404,'not found');
    let size=0;const parts=[];for await(const part of req){size+=part.length;if(size>maxBody)throw fail(413,'too large');parts.push(part);}
    let body;try{body=JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'invalid json');}
-   if(req.url==='/stop-serve'){if(live){stop(live.unit);live=null;}reply(200,{ok:true});return;}
+   if(req.url==='/stop-serve'){live=null;await stopAllLive();reply(200,{ok:true});return;}
    if(req.url==='/serve'){
     const dir=checkJobDirectory(root,body.dir),argv=checkArgv(body.argv);
     if(!Number.isInteger(body.port)||body.port<1024||body.port>65535)throw fail(400,'invalid port');

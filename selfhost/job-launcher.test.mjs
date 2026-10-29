@@ -71,7 +71,7 @@ test('launcher starts one live preview at a time, waits for its port and reports
  const copy=path.join(root,'copy');mkdirSync(copy);
  const stopped=[],started=[];let ready=true;
  const fakeRun=(file,args)=>{started.push(args.find(a=>a.startsWith('--unit=')));const c=spawn(process.execPath,['-e','0'],{stdio:['ignore','pipe','pipe']});return c;};
- const server=createJobLauncher({root,key:KEY,run:fakeRun,prepare:async()=>{},stop:u=>stopped.push(u),isActive:async()=>true,logs:async()=>'Error: Cannot find module server.mjs',waitPort:async()=>ready,log:()=>{}});
+ const server=createJobLauncher({root,key:KEY,run:fakeRun,prepare:async()=>{},stop:u=>stopped.push(u),stopAllLive:async()=>stopped.push('all live units'),isActive:async()=>true,logs:async()=>'Error: Cannot find module server.mjs',waitPort:async()=>ready,log:()=>{}});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
  const serve=body=>fetch('http://127.0.0.1:'+server.address().port+'/serve',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+KEY},body:JSON.stringify(body)});
  const first=await serve({dir:copy,argv:[process.execPath,'server.mjs'],port:3000});
@@ -80,7 +80,8 @@ test('launcher starts one live preview at a time, waits for its port and reports
  ready=false;
  const broken=await serve({dir:copy,argv:[process.execPath,'server.mjs'],port:3001});
  assert.equal(broken.status,502);assert.match((await broken.json()).output,/Cannot find module/,'The person sees why the app did not start');
- assert.equal(stopped.length,2,'Starting a new preview stopped the old one, and the failed one was stopped too');
+ // Each start first stops every live unit (also orphans from before a launcher restart); the failed one is stopped too.
+ assert.deepEqual(stopped,['all live units','all live units',started[1].slice('--unit='.length)]);
 });
 
 test('a runner with a launcher sends project code there and keeps git local',async t=>{
