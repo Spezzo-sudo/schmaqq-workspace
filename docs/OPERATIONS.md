@@ -7,7 +7,8 @@ Kein Deployment ohne aktuelles, ausdrückliches Owner-GO für genau diesen Stand
 ## Wo was liegt
 
 - Arbeitsordner: `C:\Users\hi\Documents\ChatGPT\SCHMAQQ\schmaqq-plugin-worker-prototype`,
-  Branch `local/studio-plugin-worker-prototype` (Stand 29.10. nicht gepusht).
+  Branch `local/studio-plugin-worker-prototype`, auch auf GitHub (`origin`); nur diesen eigenen
+  Branch pushen, kein Merge nach `main` ohne Owner-Entscheidung.
   `schmaqq-workspace` und `schmaqq-studio-use-candidate` sind ältere Stände.
 - Werkzeuge ohne Installation: `..\.local-tools` (`git\cmd`, `git\ucrt64` inkl. git-daemon,
   `node-v24.22.1-win-x64`). PATH nur für den Prozess setzen, `GIT_EXEC_PATH` auf
