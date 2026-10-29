@@ -1,3 +1,22 @@
+## Nachtübergabe an Claude, 29.10.2026
+
+Owner geht schlafen und möchte mit Opus 5.5 lokal weiterarbeiten lassen.
+Verbindlicher begrenzter Auftrag mit Originalquellen, P0–P5, Stop-/Blockerregeln,
+Abnahme und Sicherung: [NIGHT_HANDOFF_20261029.md](NIGHT_HANDOFF_20261029.md).
+Fortschritt: [NIGHT_STATUS_20261029.md](NIGHT_STATUS_20261029.md).
+
+**Noch kein Claude-Lauf gestartet.** Vor /goal tatsächliche Stop-Hooks prüfen;
+ohne sicher belegten Abschlussmechanismus normale Sitzung verwenden. Keine
+Login-/Limit-/Warteschleifen. Nachtarbeit lokal, Commit/normaler Push nur eigener
+Branch; keine neue Live-, Systeminstallations- oder VPS-Freigabe. Optionaler PC-
+Shutdown nur nach nachgewiesener Sicherung und den Bedingungen im Auftrag.
+
+Akuter Blocker: allgemeine Analyse wird nach Lesearbeitskopie zum Codeabschluss
+gezwungen. Weitere bestätigte Befunde: Kriterien fehlen im MCP-Kontext, große
+Dateien nicht lesbar, falscher lokaler KI-Einstieg, Fokus-/Begriffsprobleme.
+Die bisherigen Betriebsnachweise unten bleiben Historie für den ausgelieferten
+Code; keine Freigabe oder Testabnahme neuer Nachtänderungen daraus ableiten.
+
 ## Live-Folgeauftrag, 29.10.2026: allgemeine Projekteinrichtung
 
 Nach aktuellem Owner-GO „ja, live“ wurden Studio und Worker auf den geprüften

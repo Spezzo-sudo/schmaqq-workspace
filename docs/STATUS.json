@@ -1,4 +1,15 @@
 {
+  "night_handoff_20261029": {
+    "state": "prepared_not_started",
+    "requested_executor": "Claude with owner-selected Opus 5.5 via existing subscription",
+    "scope": "Local Studio fixes P0-P5: read-only-copy task kind, task context and discovery, bounded large-file reads, clarity/focus/external assistant handoff, existing SCHMAQQ design convergence and final verification.",
+    "handoff": "docs/NIGHT_HANDOFF_20261029.md",
+    "progress": "docs/NIGHT_STATUS_20261029.md",
+    "stop_rules": "Inspect active goal/stop hooks before unattended use. No repeated auth/limit block. Terminal partial/blocked/limit states allowed; independent work first, then save and stop. Four-hour/24-goal-turn clauses are not an externally enforced watchdog.",
+    "authorized": "Local implementation/tests/commits and normal backup push to existing own branch only; optional PC shutdown only after proven local+remote save and no unsaved work/active jobs or restart hook.",
+    "limits": "No Claude process or goal started by Codex, no model login/availability verified, no new deployment/server/system/marketing/Klimafinder-code authorization. No shutdown scheduled.",
+    "production_changed": false
+  },
   "project_configuration_20261029": {
     "state": "live_verified_environment_gap_remaining",
     "implemented": "Language-independent studio.project.json contract; inspect proposal and explicit revision-bound confirmation; bounded Node, Make and pytest suggestions; non-executing program presence checks; per-copy preparation through existing job isolation; separate missing-runtime and unknown-project results; focused setup UI and legacy-runner protocol guard.",

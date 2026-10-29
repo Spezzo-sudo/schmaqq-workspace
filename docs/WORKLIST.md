@@ -25,6 +25,15 @@ Der Deploy-Key im Repository `schmaqq-studio-pilot` wird nicht mehr gebraucht (O
 
 ## In Arbeit
 
+**Nachtauftrag lokal: Praxistest-Blocker und Designangleichung vorbereiten.**
+Owner-Auftrag vom 29.10. für Claude/Opus 5.5:
+[NIGHT_HANDOFF_20261029.md](NIGHT_HANDOFF_20261029.md),
+[Status](NIGHT_STATUS_20261029.md). Noch nicht gestartet. Zuerst Analyse mit
+Lesekopie reparieren, dann Aufgabenkontext/große Lesezugriffe, Begriffe/Fokus/
+KI-Übergabe und referenzgebundene Optik. Normaler Push nur eigener Branch zur
+Sicherung erlaubt; keine neue Live-/System-/VPS-Freigabe. Kein Auth-/Goal-Loop.
+Praxistest A wartet während dieses begrenzten lokalen Pakets auf die Reparatur.
+
 **A. Echter Praxistest mit Klimafinder** (echtes Projekt des Owners, Fokus bleibt Studio)
 
 Unterbrechung im Owner-Praxistest am 29.10.: Repository gespeichert und Deploy-Key
