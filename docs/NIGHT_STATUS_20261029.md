@@ -1,4 +1,4 @@
-# Nachtstatus SCHMAQQ Studio
+﻿# Nachtstatus SCHMAQQ Studio
 
 Lauf: Claude Code (Desktop-App, Code-Tab), Modell Opus 5.5 über die Abo-Anmeldung des Owners.
 Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT_HANDOFF_20261029.md).
@@ -15,7 +15,7 @@ Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT
 | Vorab: Konto/Modell/Stop-Hook | ERLEDIGT | siehe oben |
 | P0: Analyse mit Lesekopie | ERLEDIGT | siehe P0 |
 | P1: Aufgaben-Kontext | ERLEDIGT | siehe P1 |
-| P2: große Dateien lesen | OFFEN | |
+| P2: große Dateien lesen | ERLEDIGT | siehe P2 |
 | P3: Begriffe/Fokus/KI-Übergabe | OFFEN | |
 | P4: Designangleichung | OFFEN | |
 | P5: Abnahme/Sicherung | OFFEN | |
@@ -53,3 +53,19 @@ Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT
   fehlendes Projekt/Aufgabe abgewiesen.
 - Selbst ausgeführt: `node --test selfhost/studio-plugin-dynamic.test.mjs selfhost/studio-mcp.test.mjs` → 6/6 PASS;
   vorher `room*`/`router-boundaries` mitgelaufen (17 Tests, nach Korrektur der Testdaten grün).
+
+## P2 – Große Quelldateien abschnittsweise lesen
+
+- `selfhost/files.mjs`: neues `readSourceSection` nur für den Leseweg. Dateien bis 4 MiB, Abschnitte höchstens
+  64 KiB, Ende immer auf UTF-8-Zeichengrenze (bevorzugt nach Zeilenumbruch). Antwort: `offset`, `end`, `size`,
+  `startLine`, `nextOffset`, `complete`, `revision` (der ganzen Datei). Mit `revision` des ersten Abschnitts wird
+  eine zwischenzeitlich geänderte Datei gemeldet statt Versionen zu mischen. Start mitten in einem Zeichen,
+  ungültiger Offset, Binärdatei, ungültiges UTF-8, Hardlink, Symlink, gesperrte Pfade: abgewiesen.
+- Bearbeiten unverändert: `readSource`/`saveSource`/`createSource` behalten 64 KiB. Ohne `offset` bleibt
+  `read-file` wie bisher (Editor bekommt nie einen Teilinhalt) und meldet bei großen Dateien den Hinweis auf `offset`.
+- `selfhost/runner.mjs`, `selfhost/server.mjs` (`offset` nur für read-file, sonst 400), `selfhost/studio-mcp.mjs`
+  (Parameter und Beschreibung).
+- Selbst ausgeführt: `node --test selfhost/files.test.mjs selfhost/editor-*.test.mjs` → 10/10 PASS;
+  `node --test selfhost/studio-mcp.test.mjs selfhost/review.test.mjs` → 4/4 PASS (echter Runner, Git, MCP:
+  ~200-KB-Datei über Abschnitte exakt rekonstruiert, Speichern abgewiesen, `offset` bei save-file abgewiesen).
+- Kein Livezugriff auf die echten Klimafinder-Dateien; der Server-Worker hat diesen Code noch nicht.

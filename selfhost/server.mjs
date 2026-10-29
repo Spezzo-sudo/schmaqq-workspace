@@ -288,7 +288,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     }
     if(v.action==='device'){const name=parse(text,v.name),t=token(),did=uuid();db.prepare('INSERT INTO devices(id,owner,name,hash) VALUES(?,?,?,?)').run(did,m.id,name,digest(t));send({id:did,token:t});return;}
     if(v.action==='revoke'){const did=parse(id,v.id);if(!db.prepare('UPDATE devices SET revoked=1 WHERE id=? AND owner=?').run(did,m.id).changes)throw fail(404,'Gerät nicht gefunden.');db.prepare("UPDATE jobs SET status='cancelled' WHERE device=? AND status='queued'").run(did);send({ok:true});return;}
-    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','prepare','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file','deploy-key']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
+    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','prepare','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file','deploy-key']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),offset:z.number().int().min(0).max(4194304).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
     if(!db.prepare('SELECT id FROM projects WHERE id=?').get(value.project))throw fail(404,'Projekt nicht gefunden.');
     // "auto" is resolved here, once; the job row then names the executor that runs it.
     const placed=resolveDevice(db,{member:m,project:value.project,device:value.device,worktree:value.operation==='integrate'?undefined:value.worktree});
@@ -310,7 +310,8 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      if(value.operation==='save-file'&&(value.content===undefined||!value.revision))throw fail(400,'Dateistand fehlt.');
      if(['save-file','create-file'].includes(value.operation)&&Buffer.byteLength(value.content??'','utf8')>65536)throw fail(413,'UTF-8-Datei ist größer als 64 KiB.');
      if(db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device))throw fail(409,'Bitte den laufenden Auftrag zuerst beenden lassen.');
-     payload={...payload,file:value.file,revision:value.revision,content:value.content};
+     if(value.offset!==undefined&&value.operation!=='read-file')throw fail(400,'Abschnittsweises Lesen gibt es nur für read-file.');
+     payload={...payload,file:value.file,revision:value.revision,content:value.content,...(value.offset!==undefined?{offset:value.offset}:{})};
     }
     if(payload.worktree){
      const linked=db.prepare('SELECT t.* FROM tasks t JOIN workspaces w ON w.task=t.id WHERE w.job=?').get(payload.worktree);

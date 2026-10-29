@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,writeFileSync,readFileSync,mkdirSync,linkSync,rmSync} from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import {allowedFile,readSource,saveSource} from './files.mjs';
+import {allowedFile,readSource,readSourceSection,readableLimit,saveSource} from './files.mjs';
 test('editor preserves bytes and refuses stale writes, secrets, hardlinks and non-text files',()=>{
  const root=mkdtempSync(path.join(os.tmpdir(),'studio-files-'));
  try{
@@ -25,4 +25,31 @@ test('editor preserves bytes and refuses stale writes, secrets, hardlinks and no
   linkSync(filename,path.join(root,'linked'));assert.throws(()=>readSource(root,'linked'),/Textdateien/);
   mkdirSync(path.join(root,'directory'));assert.throws(()=>readSource(root,'directory'),/Textdateien/);
  }finally{assert.ok(root.startsWith(path.join(os.tmpdir(),'studio-files-')));rmSync(root,{recursive:true,force:true});}
+});
+test('files over 64 KB are read in gapless bounded sections; editing keeps the 64 KB limit',()=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'studio-sections-'));
+ try{
+  // Multi-byte characters around every possible cut, long lines without breaks and normal lines.
+  const text=('Grüße 👋 Zeile mit Umlauten äöü und Emoji 🌍\n'.repeat(3000))+'x'.repeat(70000)+'€'.repeat(30000)+'\nEnde\n';
+  writeFileSync(path.join(root,'home.js'),text);const size=Buffer.byteLength(text);assert.ok(size>3*65536);
+  assert.throws(()=>readSource(root,'home.js'),/abschnittsweise/);
+  assert.throws(()=>saveSource(root,'home.js','0'.repeat(64),'kurz'),/64 KB/);
+  let offset=0,joined='',sections=0,first;
+  while(offset!==null){
+   const part=readSourceSection(root,'home.js',offset,first?.revision);first??=part;sections++;
+   assert.equal(part.offset,offset);assert.ok(Buffer.byteLength(part.content)<=65536);assert.equal(part.size,size);
+   assert.equal(part.startLine,text.slice(0,Buffer.from(text).subarray(0,offset).toString('utf8').length).split('\n').length);
+   joined+=part.content;offset=part.nextOffset;assert.equal(part.complete,offset===null);
+  }
+  assert.equal(joined,text,'No byte or line gaps, no broken characters');assert.ok(sections>=4);
+  assert.throws(()=>readSourceSection(root,'home.js',Buffer.from(text).indexOf(Buffer.from('€'))+1),/mitten in einem Zeichen/);
+  assert.throws(()=>readSourceSection(root,'home.js',size+1),/Ungültiger/);
+  writeFileSync(path.join(root,'home.js'),text+'geändert');
+  assert.throws(()=>readSourceSection(root,'home.js',first.nextOffset,first.revision),/geändert/);
+  writeFileSync(path.join(root,'huge.json'),'a'.repeat(readableLimit+1));assert.throws(()=>readSourceSection(root,'huge.json',0),/4 MB|64 KB/);
+  for(const name of ['../outside','.env','secret.key'])assert.throws(()=>readSourceSection(root,name,0),/nicht freigegeben/);
+  linkSync(path.join(root,'home.js'),path.join(root,'linked.js'));assert.throws(()=>readSourceSection(root,'linked.js',0),/Textdateien/);
+  writeFileSync(path.join(root,'binary.bin'),Buffer.concat([Buffer.alloc(70000,65),Buffer.from([0])]));assert.throws(()=>readSourceSection(root,'binary.bin',0),/Textdatei/);
+  writeFileSync(path.join(root,'small.txt'),'klein\n');assert.deepEqual([readSourceSection(root,'small.txt',0).content,readSourceSection(root,'small.txt',0).complete],['klein\n',true]);
+ }finally{rmSync(root,{recursive:true,force:true});}
 });

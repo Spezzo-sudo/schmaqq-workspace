@@ -7,7 +7,7 @@ import {aiCapabilities,runLocalAi} from './local-ai.mjs';
 import {command} from './process.mjs';
 import {launcherCommand,launcherServe,launcherPrograms} from './job-client.mjs';
 import {projectDirectory,findPrograms,requiredPrograms} from './project-plan.mjs';
-import {allowedFile,readSource,saveSource,createSource} from './files.mjs';
+import {allowedFile,readSource,readSourceSection,saveSource,createSource} from './files.mjs';
 import {runCodex} from './codex-run.mjs';
 import {sourceRevision,stableSource} from './source-revision.mjs';
 import {managedProjects,connectManagedProject,applyProjectSettings} from './managed-projects.mjs';
@@ -140,7 +140,7 @@ export class LocalRunner{
    }
    if(!tracked.includes(job.payload.file))throw new Error('Nur bereits in Git erfasste Dateien können geöffnet werden.');
    if(job.action==='read-file'){
-    const result=readSource(w.dir,job.payload.file);
+    const result=job.payload.offset===undefined?readSource(w.dir,job.payload.file):readSourceSection(w.dir,job.payload.file,job.payload.offset,job.payload.revision);
     control.onEvent?.({type:'files',text:'Datei geöffnet: '+job.payload.file});
     return result;
    }

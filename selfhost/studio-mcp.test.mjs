@@ -44,6 +44,7 @@ test('MCP code tools: real two-person HTTP/Git/test/build/preview with own-devic
  await git(dir,'init','--bare',bare);await git(repo,'init','-b','main');await git(repo,'config','core.autocrlf','false');
  await git(repo,'config','user.name','Synthetic');await git(repo,'config','user.email','synthetic@fixture.invalid');
  writeFileSync(path.join(repo,'value.txt'),'original\n');
+ const large='const produkt = "Wärmepumpe 🌍";\n'.repeat(6000);writeFileSync(path.join(repo,'products.v1.json'),large);
  writeFileSync(path.join(repo,'check.cjs'),"const a=require('node:assert/strict');a.equal(require('node:fs').readFileSync('value.txt','utf8'),'Chat code works\\n');console.log('actual assertion passed');");
  writeFileSync(path.join(repo,'build.cjs'),"const fs=require('node:fs');fs.mkdirSync('dist',{recursive:true});fs.writeFileSync('dist/index.html','<h1>'+fs.readFileSync('value.txt','utf8')+'</h1>');");
  await git(repo,'add','.');await git(repo,'commit','-m','synthetic baseline');await git(repo,'remote','add','origin',bare);await git(repo,'push','-u','origin','main');
@@ -72,6 +73,13 @@ test('MCP code tools: real two-person HTTP/Git/test/build/preview with own-devic
  const stale=await execute('save-file',{worktree,file:'value.txt',revision:read.job.result.revision,content:'must not overwrite'});assert.equal(stale.job.status,'failed');
  assert.equal(readFileSync(path.join(prepared.job.result.path,'value.txt'),'utf8'),'Chat code works\n');
  const escape=await execute('read-file',{worktree,file:'../secret.txt'});assert.equal(escape.job.status,'failed');
+ // Files over 64 KB: whole read fails with a hint; sections through the same job contract rebuild it exactly.
+ const whole=await execute('read-file',{worktree,file:'products.v1.json'});assert.equal(whole.job.status,'failed');assert.match(whole.job.result.error,/abschnittsweise/);
+ let offset=0,revision,joined='';
+ while(offset!==null){const part=(await execute('read-file',{worktree,file:'products.v1.json',offset,...(revision?{revision}:{})})).job.result;revision??=part.revision;joined+=part.content;offset=part.nextOffset;}
+ assert.equal(joined,large);
+ const tooBig=await execute('save-file',{worktree,file:'products.v1.json',revision,content:'x'});assert.equal(tooBig.job.status,'failed');
+ assert.equal((await first.call('start_code_job',{requestId:'offset-save',device:device.id,project:'website',operation:'save-file',worktree,file:'value.txt',revision,content:'x',offset:0})).isError,true);
  const checked=await execute('check',{worktree});assert.equal(checked.job.status,'completed');assert.match(checked.job.result.checks,/actual assertion passed/);
  const preview=await execute('preview',{worktree});assert.equal(preview.job.status,'completed');
  // Current backend uses a capability link, not a new account-protected preview.
