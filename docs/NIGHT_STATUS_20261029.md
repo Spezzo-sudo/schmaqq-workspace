@@ -1,35 +1,39 @@
 # Nachtstatus SCHMAQQ Studio
 
-Stand bei Übergabe am 29.10.2026: **VORBEREITET, NICHT GESTARTET**.
+Lauf: Claude Code (Desktop-App, Code-Tab), Modell Opus 5.5 über die Abo-Anmeldung des Owners.
+Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT_HANDOFF_20261029.md).
 
-Diese Datei ist der Fortschrittsbericht für den tatsächlichen Claude-Lauf.
-Codex hat weder Claude gestartet noch Opus 5.5 angemeldet/ausgewählt,
-keinen Goal-Hook installiert und keinen Shutdown geplant.
+## Vorab: Goal/Stop-Hooks
 
-Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT_HANDOFF_20261029.md).
+- Geprüft: `~/.claude/settings.json`, `settings.local.json` sowie `.claude/settings*.json` in
+  `SCHMAQQ`, `schmaqq-plugin-worker-prototype` und `schmaqq-studio-use-candidate`: keine Datei vorhanden,
+  also keine eigenen Stop-/Goal-Hooks. Das Goal vom Vortag hatte der Owner mit `/goal clear` gelöscht.
+- Entscheidung: **kein `/goal`**, normale Sitzung, kein automatischer Wiederanlauf, keine Hooks installiert.
 
 | Paket | Status | Beleg / Blocker |
 | --- | --- | --- |
-| Vorab: Konto/Modell/Stop-Hook | OFFEN | In tatsächlicher Claude-Sitzung prüfen; ohne sicheren Hook kein /goal |
-| P0: Analyse mit Lesekopie | OFFEN | Ursache dokumentiert; noch kein Fix |
-| P1: Aufgaben-Kontext | OFFEN | Kriterienexport fehlt, Aufgaben-ID bisher manuell |
-| P2: große Dateien lesen | OFFEN | 64-KB-Grenze blockierte echte Analyse |
-| P3: Begriffe/Fokus/KI-Übergabe | OFFEN | Owner-Befunde dokumentiert |
-| P4: Designangleichung | OFFEN | Referenzen und Grenzen im Auftrag |
-| P5: Abnahme/Sicherung | OFFEN | Erst für tatsächlich neue Änderungen behaupten |
+| Vorab: Konto/Modell/Stop-Hook | ERLEDIGT | siehe oben |
+| P0: Analyse mit Lesekopie | ERLEDIGT | siehe P0 |
+| P1: Aufgaben-Kontext | OFFEN | |
+| P2: große Dateien lesen | OFFEN | |
+| P3: Begriffe/Fokus/KI-Übergabe | OFFEN | |
+| P4: Designangleichung | OFFEN | |
+| P5: Abnahme/Sicherung | OFFEN | |
 
-## Von Claude zu ergänzen
+## P0 – Allgemeine Analyse mit Lesekopie bleibt allgemein
 
-- Tatsächlicher Start, verwendetes Modell, erlaubter lokaler Sitzungsmodus.
-- Festgestellter Goal-/Stop-Mechanismus und warum er gefahrlos endet; sonst ohne Goal.
-- Je Paket: konkrete Änderungen, Dateipfade, selbst ausgeführte Tests/Exitcodes,
-  offene oder blockierte Abnahmen. Keine übernommenen fremden PASS-Berichte.
-- Letzter lokaler Commit, letzter bestätigter Remote-SHA und Arbeitsbaumzustand.
-- Eigene Hilfsprozesse beendet / offene Programme / Shutdown ausgeführt oder bewusst ausgelassen.
-- Terminaler Endzustand und genau ein nächster Schritt für morgen.
-
-## Grenzen der bisherigen Nachweise
-
-Die zuvor bestandenen 271 Tests betreffen den ausgelieferten Einrichtungsstand,
-nicht die noch offenen Nachtpakete. Kein neuer Code-/Design-/Browser-/Live-PASS
-aus dieser Übergabedatei ableiten. Keine neue Freigabe für Servereingriffe.
+- Ursache: `taskContract` setzte `kind: code`, sobald irgendeine Arbeitskopie existierte.
+- Fix (`selfhost/team-model.mjs`): neue Domänenregel `hasCodeChanges`. Codeaufgabe wird eine Aufgabe nur
+  durch Aufträge, die die Kopie ändern können: `save-file`, `create-file`, `codex`, `review`, `submit`,
+  in jedem Zustand außer `cancelled` (auch `queued`, damit ein allgemeines Ergebnis nicht an einer
+  laufenden Änderung vorbei eingereicht wird); fehlgeschlagene Datei-Speicherungen zählen nicht.
+  Lesen (`files`, `read-file`) und Kopie anlegen (`prepare`) ändern die Aufgabenart nicht.
+- `selfhost/team-http.mjs`: Rückwechsel zu „allgemein“ nur noch gesperrt, wenn tatsächlich Dateien geändert
+  wurden. Gilt auch für Altbestände, in denen ältere Server den abgeleiteten Wert `code` gespeichert haben.
+- Oberfläche (`studio/team-task.tsx`) liest dieselbe Vertragsart vom Server; Artanzeige, Ergebnisformular und
+  Abschlussregeln folgen damit derselben Regel. Keine Production-Daten verändert.
+- Regression in `selfhost/team-workflow.test.mjs`: Lesekopie + fehlgeschlagenes Speichern + abgebrochene KI →
+  allgemeines Ergebnis 200, Abschluss 200; fremde Person 403; wartendes Speichern → Ergebnis 409,
+  Wechsel zu allgemein 409, Prüfstand verlangt; Altbestand mit gespeichertem `code` → Wechsel 200.
+- Selbst ausgeführt: `node --test selfhost/team-workflow.test.mjs selfhost/github-workflow.test.mjs`
+  → 15 Tests, 15 PASS, 0 FAIL.

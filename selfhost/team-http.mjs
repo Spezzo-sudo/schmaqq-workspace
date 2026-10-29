@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {randomUUID} from 'node:crypto';
 import {transaction} from './store.mjs';
-import {metadata,storeMetadata,teamEvent,taskContract,taskView,completion,latestGeneralResult,invalidateTaskResult,teamError} from './team-model.mjs';
+import {metadata,storeMetadata,teamEvent,taskContract,taskView,completion,latestGeneralResult,invalidateTaskResult,teamError,hasCodeChanges} from './team-model.mjs';
 const id=z.string().regex(/^[\w-]{1,100}$/),revision=z.number().int().min(0);
 const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('read'),event:id}),
@@ -88,7 +88,7 @@ export function createTeamRoute({db,user,readJSON,parse}){
     db.prepare("UPDATE tasks SET assignee=?,status='doing' WHERE id=?").run(member.id,task.id);
    }else if(v.action==='contract'){
     if(task.assignee&&task.assignee!==member.id)throw teamError(403,'Abschlussbedingungen ändert die verantwortliche Person.');
-    if(v.kind==='general'&&db.prepare('SELECT job FROM workspaces WHERE task=?').get(task.id))throw teamError(409,'Eine Codebearbeitung existiert bereits; Aufgabe bleibt eine Codeaufgabe.');
+    if(v.kind==='general'&&hasCodeChanges(db,task))throw teamError(409,'In der Arbeitskopie wurden bereits Dateien geändert; Aufgabe bleibt eine Codeaufgabe.');
     if(v.title!==undefined){
      const key='taskflow:v1:brief:'+task.id,brief=metadata(db,key,{revision:0});
      if(v.briefRevision!==brief.revision)throw teamError(409,'Die Beschreibung wurde inzwischen geändert. Dein Entwurf bleibt erhalten.');

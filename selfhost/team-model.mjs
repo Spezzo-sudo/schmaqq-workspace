@@ -10,10 +10,17 @@ export function teamEvent(db,{actor,project,task=null,kind,body}){
  const value={id:randomUUID(),actor,project,task,kind,body,created:Date.now()};
  storeMetadata(db,'team:v1:event:'+value.id,value);return value;
 }
+// Reading files in a task copy keeps the task kind; only work that can change the copy
+// (queued, running or finished, also interrupted) makes it a code task with code gates.
+const changingActions=['save-file','create-file','codex','review','submit'];
+export function hasCodeChanges(db,task){
+ return !!db.prepare(`SELECT j.id FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree')
+ WHERE w.task=? AND j.action IN (${changingActions.map(()=>'?').join(',')}) AND j.status!='cancelled'
+ AND NOT (j.action IN ('save-file','create-file') AND j.status='failed') LIMIT 1`).get(task.id,...changingActions);
+}
 export function taskContract(db,task){
  const saved=metadata(db,'team:v1:task:'+task.id,{});
- const code=!!db.prepare('SELECT job FROM workspaces WHERE task=? LIMIT 1').get(task.id);
- return {criteria:'',requiresReview:false,blocked:'',cancelled:false,revision:0,...saved,kind:code?'code':saved.kind??'general'};
+ return {criteria:'',requiresReview:false,blocked:'',cancelled:false,revision:0,...saved,kind:hasCodeChanges(db,task)?'code':saved.kind??'general'};
 }
 export function latestCodeResult(db,task){
  const job=db.prepare(`SELECT j.* FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree')

@@ -6,7 +6,7 @@ import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createStudioServer} from './server.mjs';
 import {createInvite,openStore} from './store.mjs';
-import {completion,metadata} from './team-model.mjs';
+import {completion,metadata,taskContract} from './team-model.mjs';
 import {createSource} from './files.mjs';
 import {parseCommand} from '../app/setup-command.ts';
 async function fixture(t){
@@ -86,6 +86,33 @@ test('archiving a personal copy keeps historical review diff accessible; code co
  f.app.db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created,result) VALUES(?,?,?,?,?,?,?,?,?)').run('fixture-review',f.a.id,device.id,f.project,'review',JSON.stringify({worktree:id}),'completed',2,JSON.stringify({commit:'a'.repeat(40),diff:'diff --git a/a b/a\n+new',checks:'Tests pass'}));
  assert.equal((await f.request(`/api/collaboration/task-diff?task=${task}&review=fixture-review`,null,f.b.cookie)).status,200);
  assert.equal(completion(f.app.db,f.app.db.prepare('SELECT * FROM tasks WHERE id=?').get(task)).ready,false);
+});
+test('a read-only task copy keeps a general analysis general; real file changes keep the code gates',async t=>{
+ const f=await fixture(t),db=f.app.db,device=(await f.request('/api/development',{action:'device',name:'Marco PC'},f.a.cookie)).body;
+ const row=id=>db.prepare('SELECT * FROM tasks WHERE id=?').get(id);
+ const copy=(id,task)=>{db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created,result) VALUES(?,?,?,?,?,?,?,?,?)').run(id,f.a.id,device.id,f.project,'prepare','{}','completed',1,'{}');db.prepare('INSERT INTO workspaces(job,title,scope,task) VALUES(?,?,?,?)').run(id,'Lesekopie','',task);};
+ const job=(id,worktree,action,status)=>db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created,result) VALUES(?,?,?,?,?,?,?,?,?)').run(id,f.a.id,device.id,f.project,action,JSON.stringify({worktree}),status,2,'{}');
+ const analysis=await f.task();await f.request('/api/collaboration/task',{action:'claim',task:analysis},f.a.cookie);
+ copy('read-copy',analysis);job('list','read-copy','files','completed');job('read','read-copy','read-file','completed');
+ job('failed-save','read-copy','save-file','failed');job('cancelled-ai','read-copy','codex','cancelled');
+ assert.equal(taskContract(db,row(analysis)).kind,'general','Reading files keeps the explicit task kind');
+ assert.equal((await f.team(f.b,'result',{task:analysis,id:randomUUID(),body:'Fremdes Ergebnis',revision:0})).status,403);
+ assert.equal((await f.team(f.a,'result',{task:analysis,id:randomUUID(),body:'Analyse mit Befunden.',revision:0})).status,200);
+ assert.equal((await f.request('/api/collaboration/task',{action:'status',task:analysis,status:'done'},f.a.cookie)).status,200);
+
+ const edited=await f.task();await f.request('/api/collaboration/task',{action:'claim',task:edited},f.a.cookie);
+ copy('edit-copy',edited);job('queued-save','edit-copy','save-file','queued');
+ assert.equal((await f.team(f.a,'result',{task:edited,id:randomUUID(),body:'Würde Codegates umgehen',revision:0})).status,409);
+ assert.equal((await f.team(f.a,'contract',{task:edited,revision:0,kind:'general',criteria:'x',requiresReview:false})).status,409);
+ assert.deepEqual(completion(db,row(edited)).missing,['Ein getesteter Prüfstand fehlt.']);
+
+ // Legacy: older servers persisted the derived "code" kind for read-only copies; switching back is allowed.
+ const legacy=await f.task();await f.request('/api/collaboration/task',{action:'claim',task:legacy},f.a.cookie);
+ copy('legacy-copy',legacy);job('legacy-read','legacy-copy','read-file','completed');
+ db.prepare('UPDATE workspace_meta SET value=? WHERE key=?').run(JSON.stringify({...metadata(db,'team:v1:task:'+legacy),kind:'code',requiresReview:true}),'team:v1:task:'+legacy);
+ assert.equal(completion(db,row(legacy)).missing[0],'Ein getesteter Prüfstand fehlt.');
+ assert.equal((await f.team(f.a,'contract',{task:legacy,revision:0,kind:'general',criteria:'Analyse dokumentiert',requiresReview:false})).status,200);
+ assert.equal(completion(db,row(legacy)).missing[0],'Das erreichte Ergebnis bitte zuerst festhalten.');
 });
 
 test('setup plans require own updated runner and explicit revision; inspection never grants publishing or model access',async t=>{
