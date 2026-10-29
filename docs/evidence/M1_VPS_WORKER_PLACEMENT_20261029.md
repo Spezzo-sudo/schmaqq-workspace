@@ -49,6 +49,20 @@ Studio-Besitzers „SCHMAQQ-VPS Server-Worker“), alle über Vermittlung `auto`
 „Arbeitskopie liegt auf diesem Ausführer“. Diese Aufträge erscheinen im Verlauf des
 Besitzers; die Arbeitskopie heißt „VPS-Worker Pilot (vom Betrieb gestartet)“.
 
+Live gegen Production mit dem offiziellen MCP-SDK-Client (`.studio/live-mcp-client-check.mjs`):
+401 → Discovery → dynamische Registrierung → PKCE-Autorisierungsanfrage (S256, Scopes
+`studio:read studio:code`, Resource `https://studio.schmaqq.com/mcp`). Die Seite im
+Browser zeigt „KI-Assistent mit Studio verbinden – Melde dich zuerst mit deinem eigenen
+Studio-Konto an“. Weiter geht es nur mit der Anmeldung des Owners; bewusst nicht ausgeführt.
+Die dabei registrierte unbenutzte Test-Registrierung verfällt automatisch nach 7 Tagen.
+
+## Was nur der Owner abschließen kann
+
+1. Mit eigenem Login die neue Oberfläche live ansehen („Wo wird gearbeitet?“, „Verbundene KI-Assistenten“).
+2. Einen Auftrag selbst aus Studio oder per KI-Assistent starten, der automatisch auf dem
+   Server-Worker landet (bisher operator-gestartete Aufträge über dieselbe Vermittlung).
+3. ChatGPT, Claude und Gemini mit den eigenen Konten verbinden (Anleitung AI_CLIENT_SETUP.md).
+
 ## Unterwegs gefundene und behobene Fehler
 
 1. Plugin-Tabellen (seit Aktivierung am 28.10.) ließen den Schema-Preflight von
