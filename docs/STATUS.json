@@ -1,4 +1,13 @@
 {
+  "stage1_job_isolation_20261029": {
+    "state": "live_on_worker",
+    "implemented": "Project code (tests, preview builds) runs through a root job launcher as user schmaqq-job in one transient systemd unit per job that sees only its own copy; worker config/token, other copies, runner state and repositories hidden; no direct network; own limits. Launcher on loopback with a worker-only key.",
+    "verification": "Job sandbox check 10/10 PASS through the launcher, worker sandbox probe 29/29, real check job completed via job units; 249 tests, 228 PASS, 0 FAIL.",
+    "evidence": "docs/evidence/STAGE1_JOB_ISOLATION_20261029.md",
+    "limits": "Tests needing git do not work inside jobs; runner process still sees own copies and token but runs no project code; team sharing still needs per-person grants, quotas and separate Git access.",
+    "production_changed": true,
+    "github_published": false
+  },
   "worker_hardening_20261029": {
     "state": "live",
     "implemented": "Worker without direct network (IPAddressDeny=any, no AF_UNIX, /run replaced) and allowlist HTTPS egress proxy; self-registered AI clients only from claude.ai/claude.com/chatgpt.com or loopback; job results labelled as executor-reported.",

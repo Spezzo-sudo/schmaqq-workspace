@@ -39,8 +39,12 @@ genügt, solange nur der Besitzer selbst dort Aufträge startet.
 Ziel: Marco gibt seinen Server-Worker (oder PC) für Markus frei, ohne dass Markus'
 Aufträge Marcos Daten oder Zugänge sehen.
 
+Stand 29.10.2026: Die Isolation pro Auftrag ist gebaut und live (Job-Starter, eigener Nutzer
+`schmaqq-job`, eine Unit pro Auftrag; Nachweis `evidence/STAGE1_JOB_ISOLATION_20261029.md`).
+Für das Teilen fehlen noch Freigaben, Kontingente und getrennte Git-Zugänge.
+
 Voraussetzungen:
-- **Isolation pro Auftrag:** eigener kurzlebiger Nutzer oder Container je Auftrag
+- **Isolation pro Auftrag (erledigt):** eigener kurzlebiger Nutzer oder Container je Auftrag
   (z. B. systemd `DynamicUser` oder rootless Container), eigenes Dateisystem je
   Arbeitskopie, Gerätetoken außerhalb der Reichweite des Auftrags.
 - Freigaben wie bei lokalen KI-Modellen heute: Besitzer → Person → Projekt, sofort widerrufbar.
