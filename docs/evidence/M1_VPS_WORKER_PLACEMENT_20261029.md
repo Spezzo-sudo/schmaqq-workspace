@@ -86,6 +86,15 @@ Kennung und Ausführer) live mit Quelle `54226b746e7922a0a9922909e95203abf142b83
 `predeploy-54226b7-20261029T144327Z.sqlite`, Probestart (Route ohne Sitzung 401), Schema-Preflight
 PASS, Umschaltung ohne Rollback. Rückweg: `33a8dd2…`. Worker unverändert. 244 Tests, 223 PASS, 0 FAIL.
 
+ChatGPT-Anbindung (29.10.2026, 14:58 UTC): ChatGPT nutzt ebenfalls ein Client-Metadatendokument
+(`https://chatgpt.com/oauth/client.json`, bevorzugt `private_key_jwt`, unterstützt auch `none`).
+Studio lehnte es ab (`invalid_client`), weil nur der bevorzugte Wert geprüft wurde. Fix: Dokument
+gilt, wenn `none` Standard oder unterstützt ist; reine JWT-Clients bleiben abgelehnt. Live mit
+Quelle `7bd7ea4ee2c04824390bd41d47161ccd8878987f`, Archiv-SHA256
+`41d12546ca315a7dd4bf04866d8b4cdccd793626617773a8915afca0c1e0b3b1`; Backup
+`predeploy-7bd7ea4-20261029T145756Z.sqlite`; Probestart und Production zeigen für die echte
+ChatGPT-Anfrage die Zustimmungsseite (200). Rückweg `54226b7…`. Owner-GO im Chat („ja, live“).
+
 ## Was nur der Owner abschließen kann (Stand vor der Abnahme)
 
 1. ~~Mit eigenem Login die neue Oberfläche live ansehen~~ – erledigt (siehe oben); „Verbundene KI-Assistenten“ noch offen.
