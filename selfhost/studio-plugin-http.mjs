@@ -17,8 +17,8 @@ async function readForm(req){
  let length=0;const parts=[];for await(const p of req){length+=p.length;if(length>16000)throw fail(413,'Formular zu gross.');parts.push(p);}return canonical(new URLSearchParams(Buffer.concat(parts).toString('utf8')));
 }
 
-export function createPluginHttpRoutes({db,ledgerDb,origin,clients,dynamic=false,fetchMetadata,user,readJSON,execute,now=Date.now}){
- const auth=createPluginAuth({db,issuer:origin,clients,now,dynamic,...(fetchMetadata?{fetchMetadata}:{})});
+export function createPluginHttpRoutes({db,ledgerDb,origin,clients,dynamic=false,fetchMetadata,clientHosts,user,readJSON,execute,now=Date.now}){
+ const auth=createPluginAuth({db,issuer:origin,clients,now,dynamic,...(fetchMetadata?{fetchMetadata}:{}),...(clientHosts?{clientHosts}:{})});
  const metadataUrl=origin+'/.well-known/oauth-protected-resource';
  const challenge=`Bearer resource_metadata="${metadataUrl}"`;
  const redirects=(request,values)=>{const url=new URL(request.redirectUri);for(const [key,value] of Object.entries(values))if(key!=='state'||value)url.searchParams.set(key,value);return url.href;};

@@ -56,7 +56,14 @@ export function fetchClientMetadata(url,{timeout=5000,limit=16384}={}){
  * metadata document URL; those stay untrusted and the consent page says so.
  * Plain credentials are returned once, stored only hashed.
  */
-export function createPluginAuth({db,issuer,clients,now=Date.now,dynamic=false,fetchMetadata=fetchClientMetadata}={}){
+/** Hosts whose assistants may connect without operator configuration. Local
+ * programs (Gemini CLI, Claude Code) use loopback redirects and are always allowed. */
+export const defaultClientHosts=Object.freeze(['claude.ai','claude.com','chatgpt.com']);
+export function createPluginAuth({db,issuer,clients,now=Date.now,dynamic=false,fetchMetadata=fetchClientMetadata,clientHosts=defaultClientHosts}={}){
+ const hosts=new Set(clientHosts.map(h=>String(h).trim().toLowerCase()).filter(Boolean));
+ const loopback=uri=>{const u=new URL(uri);return u.protocol==='http:'&&['127.0.0.1','localhost','[::1]'].includes(u.hostname);};
+ // A self-identified client may only send codes back to its own trusted host or to this computer.
+ const trustedRedirect=uri=>exactRedirect(uri)&&(loopback(uri)||hosts.has(new URL(uri).hostname));
  const origin=safeUrl(issuer);
  if(origin.origin!==issuer||origin.pathname!=='/'||origin.search)throw new Error('Plugin issuer must be a canonical HTTPS or loopback origin.');
  if(!Array.isArray(clients)||clients.length>30)throw new Error('Plugin clients must be explicitly configured.');
@@ -88,11 +95,15 @@ export function createPluginAuth({db,issuer,clients,now=Date.now,dynamic=false,f
   if(configured.has(id))return {...configured.get(id),trusted:true,kind:'configured'};
   if(!dynamic||typeof id!=='string')return null;
   const row=db.prepare('SELECT * FROM plugin_clients WHERE id=?').get(id);
-  return row?{id:row.id,name:row.name,redirectUris:JSON.parse(row.redirect_uris),trusted:false,kind:row.kind}:null;
+  if(!row)return null;
+  const redirectUris=JSON.parse(row.redirect_uris);
+  // Re-checked on every use, so narrowing the trusted hosts also ends existing connections.
+  if(!redirectUris.every(trustedRedirect)||row.kind==='metadata'&&!hosts.has(new URL(row.id).hostname))return null;
+  return {id:row.id,name:row.name,redirectUris,trusted:false,kind:row.kind};
  }
  /** Load or refresh a metadata-document client before authorization. */
  async function prepareClient(id){
-  if(!dynamic||configured.has(id)||!isMetadataClientId(id))return;
+  if(!dynamic||configured.has(id)||!isMetadataClientId(id)||!hosts.has(new URL(id).hostname))return;
   const row=db.prepare('SELECT fetched FROM plugin_clients WHERE id=?').get(id);
   if(row&&now()-row.fetched<3600000)return;
   let doc;try{doc=await fetchMetadata(id);}catch{throw fail('invalid_client');}
@@ -100,7 +111,7 @@ export function createPluginAuth({db,issuer,clients,now=Date.now,dynamic=false,f
   // Studio's token endpoint only offers "none" (public client + PKCE). A client may
   // prefer another method (ChatGPT: private_key_jwt) as long as it also lists "none".
   const publicClient=doc?.token_endpoint_auth_method===undefined||doc.token_endpoint_auth_method==='none'||Array.isArray(doc.token_endpoint_auth_methods_supported)&&doc.token_endpoint_auth_methods_supported.includes('none');
-  if(!doc||typeof doc!=='object'||doc.client_id!==id||!Array.isArray(redirects)||!redirects.length||redirects.length>10||!redirects.every(exactRedirect)||!publicClient)throw fail('invalid_client');
+  if(!doc||typeof doc!=='object'||doc.client_id!==id||!Array.isArray(redirects)||!redirects.length||redirects.length>10||!redirects.every(trustedRedirect)||!publicClient)throw fail('invalid_client');
   const name=typeof doc.client_name==='string'&&doc.client_name.trim()?doc.client_name.trim().slice(0,120):new URL(id).hostname;
   db.prepare("INSERT INTO plugin_clients VALUES(?,?,?,'metadata',?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,redirect_uris=excluded.redirect_uris,fetched=excluded.fetched").run(id,name,JSON.stringify(redirects),now(),now());
  }
@@ -110,7 +121,7 @@ export function createPluginAuth({db,issuer,clients,now=Date.now,dynamic=false,f
   if(!dynamic)throw fail('invalid_request',404);
   const value=body&&typeof body==='object'&&!Array.isArray(body)?body:{};
   const redirects=value.redirect_uris;
-  if(!Array.isArray(redirects)||!redirects.length||redirects.length>5||!redirects.every(exactRedirect))throw fail('invalid_redirect_uri');
+  if(!Array.isArray(redirects)||!redirects.length||redirects.length>5||!redirects.every(trustedRedirect))throw fail('invalid_redirect_uri');
   if(value.token_endpoint_auth_method!==undefined&&value.token_endpoint_auth_method!=='none')throw fail('invalid_client_metadata');
   const grants=value.grant_types??['authorization_code'],responses=value.response_types??['code'];
   if(!Array.isArray(grants)||!grants.length||grants.some(g=>!['authorization_code','refresh_token'].includes(g))||!Array.isArray(responses)||responses.some(r=>r!=='code'))throw fail('invalid_client_metadata');

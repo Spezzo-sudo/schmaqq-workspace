@@ -7,7 +7,7 @@ import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import {createStudioServer} from './server.mjs';
 import {createInvite} from './store.mjs';
-import {publicAddress,isMetadataClientId,fetchClientMetadata} from './studio-plugin-auth.mjs';
+import {publicAddress,isMetadataClientId,fetchClientMetadata,createPluginAuth} from './studio-plugin-auth.mjs';
 
 const redirectUri='http://127.0.0.1:44977/callback';
 const metadataUrl='https://client.fixture.example/oauth/client.json';
@@ -31,7 +31,10 @@ test('official MCP SDK client connects through dynamic registration and through 
   ['https://client.fixture.example/oauth/wrong.json',{client_id:'https://other.example/x',redirect_uris:[redirectUri]}],
   ['https://client.fixture.example/oauth/wildcard.json',{client_id:'https://client.fixture.example/oauth/wildcard.json',redirect_uris:['https://*.example/cb']}]]);
  let fetches=0;
+ documents.set('https://evil.fixture.example/oauth/client.json',{client_id:'https://evil.fixture.example/oauth/client.json',redirect_uris:['https://evil.fixture.example/cb']});
+ documents.set('https://client.fixture.example/oauth/foreign-redirect.json',{client_id:'https://client.fixture.example/oauth/foreign-redirect.json',redirect_uris:['https://evil.fixture.example/cb']});
  const app=createStudioServer({filename:path.join(dir,'studio.sqlite'),origin,previewOrigin:'http://127.0.0.1:44978',seedProjects:true,resetMailer:null,pluginDynamicClients:true,
+  pluginClientHosts:['client.fixture.example','chatgpt.fixture.example','claude.ai'],
   pluginClients:[{id:'trusted-client',name:'Hinterlegter Client',redirectUris:[redirectUri]}],
   pluginFetchMetadata:async url=>{fetches++;if(!documents.has(url))throw new Error('unreachable');return documents.get(url);}});
  await new Promise(r=>app.server.listen(44976,'127.0.0.1',r));
@@ -82,18 +85,22 @@ test('official MCP SDK client connects through dynamic registration and through 
  const grants=(await request('/api/plugin/grants',null,marco)).data.grants;
  assert.ok(grants.some(g=>g.clientName==='Beispiel-Assistent'));assert.ok(grants.some(g=>g.clientName==='Fremder MCP-Client'));
 
+ // Narrowing the trusted hosts ends existing connections of clients outside the list.
+ const narrowed=createPluginAuth({db:app.db,issuer:origin,clients:[],dynamic:true,clientHosts:['claude.ai']});
+ assert.equal(narrowed.resolve(byDocument.saved.tokens.access_token),null);
+ assert.ok(createPluginAuth({db:app.db,issuer:origin,clients:[],dynamic:true,clientHosts:['client.fixture.example']}).resolve(byDocument.saved.tokens.access_token));
  // Revocation applies to dynamic clients exactly as to configured ones.
  for(const grant of grants)assert.equal((await request('/api/plugin/revoke',{grantId:grant.id},marco)).status,200);
  const revoked=await fetch(resource,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+byDocument.saved.tokens.access_token},body:'{}'});assert.equal(revoked.status,401);
 
  // Rejected metadata documents and registrations.
  const base={response_type:'code',redirect_uri:redirectUri,state:'s',code_challenge:'a'.repeat(43),code_challenge_method:'S256',resource};
- for(const client_id of ['https://client.fixture.example/oauth/jwt-only.json','https://client.fixture.example/oauth/wrong.json','https://client.fixture.example/oauth/wildcard.json','https://client.fixture.example/oauth/missing.json','http://client.fixture.example/oauth/client.json'])
+ for(const client_id of ['https://evil.fixture.example/oauth/client.json','https://client.fixture.example/oauth/foreign-redirect.json','https://client.fixture.example/oauth/jwt-only.json','https://client.fixture.example/oauth/wrong.json','https://client.fixture.example/oauth/wildcard.json','https://client.fixture.example/oauth/missing.json','http://client.fixture.example/oauth/client.json'])
   assert.equal((await fetch(origin+'/oauth/authorize?'+new URLSearchParams({...base,client_id}),{headers:{Cookie:marco}})).status,400,client_id);
  const trustedPage=await (await fetch(origin+'/oauth/authorize?'+new URLSearchParams({...base,client_id:'trusted-client'}),{headers:{Cookie:marco}})).text();
  assert.doesNotMatch(trustedPage,/Nicht von SCHMAQQ hinterlegt/);
  const register=body=>fetch(origin+'/oauth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
- for(const redirect_uris of [['http://evil.example/cb'],['https://evil.example/cb#x'],['https://*.example/cb'],[]])assert.equal((await register({redirect_uris})).status,400,JSON.stringify(redirect_uris));
+ for(const redirect_uris of [['https://evil.example/cb'],['https://claude.ai.evil.example/cb'],['http://evil.example/cb'],['https://evil.example/cb#x'],['https://*.example/cb'],[]])assert.equal((await register({redirect_uris})).status,400,JSON.stringify(redirect_uris));
  assert.equal((await register({redirect_uris:[redirectUri],token_endpoint_auth_method:'client_secret_basic'})).status,400);
  assert.equal((await register({redirect_uris:[redirectUri],grant_types:['client_credentials']})).status,400);
  let limited=0;for(let i=0;i<32;i++)if((await register({redirect_uris:['https://claude.ai/api/mcp/auth_callback'],client_name:'Claude'})).status===429)limited++;
