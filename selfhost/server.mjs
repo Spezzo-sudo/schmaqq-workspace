@@ -357,9 +357,9 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  const previewServer=http.createServer((req,res)=>{
   // A different origin prevents project JavaScript from reading Studio sessions.
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Cache-Control','no-store');
-  const pathname=new URL(req.url,previewOrigin).pathname,match=pathname.match(/^\/([\w-]{40,60})\/(.*)$/);
+  const requested=new URL(req.url,previewOrigin),pathname=requested.pathname,match=pathname.match(/^\/([\w-]{40,60})\/(.*)$/);
   // Live preview link: remember it in a cookie and continue at the app's own paths, so absolute links (/api/...) work.
-  if(match&&liveMeta(match[1])){res.writeHead(302,{'Set-Cookie':`schmaqq_live=${match[1]}; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600${previewSecure?'; Secure':''}`,Location:'/'+match[2]});res.end();return;}
+  if(match&&liveMeta(match[1])){res.writeHead(302,{'Set-Cookie':`schmaqq_live=${match[1]}; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600${previewSecure?'; Secure':''}`,Location:'/'+match[2]+requested.search});res.end();return;}
   const liveId=req.headers.cookie?.match(/(?:^|;\s*)schmaqq_live=([\w-]+)/)?.[1],live=(!match||!db.prepare('SELECT 1 FROM previews WHERE id=?').get(match[1]))&&liveMeta(liveId);
   if(live){
    // The app never sees the preview cookie itself.

@@ -28,5 +28,6 @@ test('GitHub access is pinned and allowed only through ssh.github.com',()=>{
  // Published by GitHub (SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU).
  assert.equal(known,'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl');
  const script=readFileSync(new URL('./deploy/worker/connect-github.sh',import.meta.url),'utf8');
+ assert.ok(script.includes('SSHCMD="env SHELL=/bin/sh ssh'),'ProxyCommand must not depend on the nologin shell');
  for(const option of ['StrictHostKeyChecking=yes','IdentitiesOnly=yes','HostKeyAlias=github.com','HostName=ssh.github.com','Port=443'])assert.ok(script.includes(option),option);
 });

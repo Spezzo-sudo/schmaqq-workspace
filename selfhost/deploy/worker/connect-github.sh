@@ -17,7 +17,8 @@ ACTION=${1:-}; PROJECT=${2:-}
 [[ "$PROJECT" =~ ^[A-Za-z0-9_-]{1,100}$ ]] || { echo "Usage: connect-github.sh key|clone <project-id> ..." >&2; exit 1; }
 WORKER=schmaqq-worker; DATA=/var/lib/schmaqq-worker; LIB=/usr/local/lib/schmaqq-worker; NODE=$LIB/node/bin/node
 KEYDIR=$DATA/keys/$PROJECT; KEY=$KEYDIR/id_ed25519; DEPLOY=$LIB/current/selfhost/deploy/worker
-SSHCMD="ssh -i $KEY -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$DEPLOY/github_known_hosts -o HostKeyAlias=github.com -o HostName=ssh.github.com -o Port=443 -o ProxyCommand=\"$NODE $DEPLOY/ssh-connect-proxy.mjs %h %p\""
+# ssh starts the ProxyCommand with the account's login shell, which is nologin for the worker.
+SSHCMD="env SHELL=/bin/sh ssh -i $KEY -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$DEPLOY/github_known_hosts -o HostKeyAlias=github.com -o HostName=ssh.github.com -o Port=443 -o ProxyCommand=\"$NODE $DEPLOY/ssh-connect-proxy.mjs %h %p\""
 
 case "$ACTION" in
  key)

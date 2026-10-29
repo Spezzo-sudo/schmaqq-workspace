@@ -45,7 +45,7 @@ test('a live preview from the server worker becomes a secret link that proxies t
  const result=(await request('/api/development/job?id='+server.queued.id,null,owner.cookie)).data.job.result;
  assert.equal(result.scope,'live');assert.ok(result.url.startsWith(previewOrigin+'/'));
  const entry=await fetch(result.url+'dashboard?x=1',{redirect:'manual'});
- assert.equal(entry.status,302);assert.equal(entry.headers.get('location'),'/dashboard');
+ assert.equal(entry.status,302);assert.equal(entry.headers.get('location'),'/dashboard?x=1','Query parameters survive the entry redirect');
  const previewCookie=entry.headers.get('set-cookie').split(';')[0];assert.match(entry.headers.get('set-cookie'),/HttpOnly/);
  const page=await (await fetch(previewOrigin+'/api/items',{headers:{Cookie:previewCookie+'; app_session=abc'}})).text();
  assert.equal(page,'app GET /api/items cookie=app_session=abc','Absolute paths reach the app; the preview cookie is not forwarded');
