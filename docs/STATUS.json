@@ -1,4 +1,13 @@
 {
+  "worker_hardening_20261029": {
+    "state": "live",
+    "implemented": "Worker without direct network (IPAddressDeny=any, no AF_UNIX, /run replaced) and allowlist HTTPS egress proxy; self-registered AI clients only from claude.ai/claude.com/chatgpt.com or loopback; job results labelled as executor-reported.",
+    "verification": "Sandbox probe 29/29 PASS on the VPS; real check job completed after hardening; probe on DB copy and schema preflight PASS; 245 tests, 224 PASS, 0 FAIL.",
+    "evidence": "docs/evidence/WORKER_HARDENING_20261029.md",
+    "limits": "No per-job isolation yet (jobs can read the worker token and other own copies); exfiltration via allowed GitHub with foreign credentials remains possible; kernel exploits remain a residual risk.",
+    "production_changed": true,
+    "github_published": false
+  },
   "m1_vps_worker_placement_20261029": {
     "state": "accepted_by_owner_via_claude_chatgpt_gemini_real_accounts_untested",
     "owner_acceptance": "29.10.2026: owner saw the executor view live; Claude (claude.ai, CIMD) connected and ran list_executors, inspect and check (1/1 pass) with device auto on the VPS server worker while the owner PC was offline. Gap: no MCP tool to list workspaces.",

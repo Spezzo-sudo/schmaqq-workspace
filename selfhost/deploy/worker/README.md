@@ -10,7 +10,10 @@ Studio wie jeder PC sehen und widerrufen.
 - Eigener Systemnutzer `schmaqq-worker`: kein root, keine Zusatzgruppen (kein docker), keine Capabilities.
 - Schreibbar ist nur `/var/lib/schmaqq-worker`: ein 3-GB-Volume (Loop-Image), also hartes Speicherlimit.
 - `/opt`, `/srv`, `/var/lib` (außer dem Worker), `/var/backups`, Home-Verzeichnisse, Docker-Socket und Studio-Secrets sind unsichtbar oder gesperrt.
-- Netzwerk: öffentliches Internet ja; Loopback-Dienste, private Netze, Docker-Brücken und Metadatenadressen nein (DNS-Stub erlaubt).
+- Netzwerk: kein direkter Zugang (kein Internet, kein DNS, keine Unix-Sockets, `/run` leer).
+  Nach außen nur über `schmaqq-worker-egress.service`: HTTPS zu einer Allowlist
+  (Studio, npm-Registry, GitHub), nur zu öffentlichen Adressen. Liste anpassbar über
+  `EGRESS_ALLOW` in `/etc/schmaqq-worker/egress.env`.
 - Gemeinsame Limits aller Jobs: 2 GB RAM ohne Swap, 1,5 CPU, 256 Prozesse; Zeitlimits je Befehl kommen vom Runner.
 - `schmaqq-studio-worker-probe.service` hat exakt dieselben Sandbox-Zeilen und prüft sie (`probe-sandbox.mjs`).
 
