@@ -118,3 +118,27 @@ Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT
   überschrieben; grünliche Textfarbe bei dezenten Knöpfen; aneinanderklebende Knöpfe; runde Rechnerkarten.
 - Bilder privat in `.studio/night-20261029/` (11 Dateien, von Git ignoriert).
 - Reduced Motion: nicht emuliert, nur Code/CSS geprüft.
+
+## P5 – Gemeinsame Abnahme und Sicherung
+
+- Gesamtprüfung `node selfhost/verify.mjs --local` (lokales Git aus `.local-tools`): erster Lauf 1 FAIL
+  (`studio-mcp-http.test.mjs` zählte 7 Werkzeuge; durch `list_tasks` sind es 8) → Erwartung angepasst;
+  zweiter Lauf Exit 0: 273 Tests, 252 PASS, 0 FAIL, 21 Plattform-Skips; Source Guard (503 Dateien),
+  TypeScript, Vite-Build PASS. `linuxOperatorRecovery: NOT_VERIFIED` (Windows), kein Release-PASS.
+- Sichtbarer Browserablauf: siehe P3/P4 (synthetische Fixture, Desktop und 390 px).
+- Kein lesender Gegenreview durch einen zweiten Agenten gestartet (optional laut Auftrag; aus Kostengründen
+  ausgelassen). Empfehlung: Diff vor dem Release prüfen lassen.
+- Eigene Hilfsprozesse beendet (Fixtures auf 45781/45791, keine verbliebenen Node-Prozesse dieser Skripte).
+  Browseransicht wieder auf Desktop. Kein PC-Shutdown ausgeführt (nicht beauftragt; PC bleibt an).
+- HANDOFF (oberster Abschnitt), WORKLIST, STATUS.json und ein neuer Vault-Eingangsvorschlag aktualisiert.
+
+## Endzustand
+
+**FERTIG (lokal)** für P0–P4 mit den genannten Grenzen; nicht live. Commit- und Remote-Stand stehen im
+Abschluss-Commit und werden nach dem Push mit `git ls-remote` verglichen (siehe Chatbericht).
+
+Offen: Reduced Motion nur im Code geprüft; kein Test mit Owner-Konto, ChatGPT/Claude oder echtem Worker;
+dunkle Seitenleiste bewusst unverändert; Studio-Link auf schmaqq.com nur als Vorschlag.
+
+**Genau ein nächster Schritt für morgen:** Owner sieht sich den Stand lokal an
+(`node scripts/task-handoff-browser-fixture.mjs`, dann http://127.0.0.1:45791) und entscheidet über „ja, live“.

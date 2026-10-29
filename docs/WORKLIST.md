@@ -25,14 +25,10 @@ Der Deploy-Key im Repository `schmaqq-studio-pilot` wird nicht mehr gebraucht (O
 
 ## In Arbeit
 
-**Nachtauftrag lokal: Praxistest-Blocker und Designangleichung vorbereiten.**
-Owner-Auftrag vom 29.10. für Claude/Opus 5.5:
-[NIGHT_HANDOFF_20261029.md](NIGHT_HANDOFF_20261029.md),
-[Status](NIGHT_STATUS_20261029.md). Noch nicht gestartet. Zuerst Analyse mit
-Lesekopie reparieren, dann Aufgabenkontext/große Lesezugriffe, Begriffe/Fokus/
-KI-Übergabe und referenzgebundene Optik. Normaler Push nur eigener Branch zur
-Sicherung erlaubt; keine neue Live-/System-/VPS-Freigabe. Kein Auth-/Goal-Loop.
-Praxistest A wartet während dieses begrenzten lokalen Pakets auf die Reparatur.
+**Nachtauftrag lokal: lokal fertig, wartet auf Owner-Ansicht und „ja, live“.**
+P0–P4 umgesetzt und lokal geprüft ([Status](NIGHT_STATUS_20261029.md),
+[Nachweis](evidence/NIGHT_CLARITY_DESIGN_20261029.md)); nicht ausgeliefert. Danach Praxistest A fortsetzen
+(die Analyseaufgabe mit Lesekopie ist erst nach dem Release als allgemeines Ergebnis abschließbar).
 
 **A. Echter Praxistest mit Klimafinder** (echtes Projekt des Owners, Fokus bleibt Studio)
 
@@ -53,7 +49,7 @@ Buildumgebung und Klimafinder-Build weiter offen. Keine Systeminstallation erfol
 
 **B. Klarheits-Paket für die Oberfläche** (Befunde vom 29.10.)
 1. [ ] Einstellungen als 3 Schritte: Repository (mit echtem Zugriffsstatus) · Wo gearbeitet wird · KI-Assistenten
-2. [ ] Ein Begriff „Rechner“ (PC/Server); Knopf „Projekt auf meinem Rechner einrichten“ ehrlich benennen
+2. [x] Knöpfe ehrlich benannt: „PC oder Server hinzufügen“, „<Projekt> einrichten“ (Nachtlauf, lokal)
 3. [ ] Branches von GitHub auswählen statt tippen (Worker liest per Deploy-Key mit `git ls-remote`)
 4. [ ] Zwei Vorschau-Arten (statisch / Live-App) in der Oberfläche erklären
 5. [ ] Vom Betrieb gestartete Aufträge nicht im persönlichen Verlauf mischen
@@ -70,9 +66,9 @@ Laufzeit auf 1 CPU messen, Studio hört auf `HOST`/`PORT` für die Live-Vorschau
 - Live-Vorschau im Pilotprojekt wieder einrichten (jetzt über die Projekteinstellungen möglich).
 - Teamfreigabe des Server-Workers (Freigaben pro Person/Projekt, Kontingente, eigene Git-Zugänge).
 - Live-Vorschau: WebSockets durchreichen.
-- Design an schmaqq.com angleichen (nur Optik): eckige Ecken, Knöpfe/Hover-Schatten/Fokus wie Website,
-  alle Farben aus einer Token-Datei. Markenrichtung V1 erst übernehmen, wenn schmaqq.com sie nutzt.
-  Dunkle Seitenleiste: Owner-Entscheidung nach Screenshot-Vergleich. (Befund 29.10.2026)
+- Design: Formen/Knöpfe/Fokus im Nachtlauf lokal angeglichen. Offen: dunkle Seitenleiste (Owner-Entscheidung
+  nach Screenshot-Vergleich, Bilder in `.studio/night-20261029/`), Studio-Link auf schmaqq.com (Vorschlag im
+  Nachweis), Markenrichtung V1 erst übernehmen, wenn schmaqq.com sie nutzt.
 - Fremde Agent-Skills vor Nutzung mit NVIDIA SkillSpector prüfen (Installation nur nach Owner-OK).
 
 ## Erledigt (29.10.2026)

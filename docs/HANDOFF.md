@@ -1,21 +1,23 @@
-## Nachtübergabe an Claude, 29.10.2026
+## Nachtlauf Claude, 29./30.10.2026: P0–P4 lokal umgesetzt, nicht live
 
-Owner geht schlafen und möchte mit Opus 5.5 lokal weiterarbeiten lassen.
-Verbindlicher begrenzter Auftrag mit Originalquellen, P0–P5, Stop-/Blockerregeln,
-Abnahme und Sicherung: [NIGHT_HANDOFF_20261029.md](NIGHT_HANDOFF_20261029.md).
-Fortschritt: [NIGHT_STATUS_20261029.md](NIGHT_STATUS_20261029.md).
+Ergebnis und Belege: [NIGHT_STATUS_20261029.md](NIGHT_STATUS_20261029.md),
+[Nachweis](evidence/NIGHT_CLARITY_DESIGN_20261029.md). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT_HANDOFF_20261029.md).
+Normale Sitzung ohne `/goal` (keine Stop-/Goal-Hooks vorhanden). Commits auf diesem Branch, normal gepusht.
 
-**Noch kein Claude-Lauf gestartet.** Vor /goal tatsächliche Stop-Hooks prüfen;
-ohne sicher belegten Abschlussmechanismus normale Sitzung verwenden. Keine
-Login-/Limit-/Warteschleifen. Nachtarbeit lokal, Commit/normaler Push nur eigener
-Branch; keine neue Live-, Systeminstallations- oder VPS-Freigabe. Optionaler PC-
-Shutdown nur nach nachgewiesener Sicherung und den Bedingungen im Auftrag.
+- P0: Lesekopie macht aus einer allgemeinen Analyse keine Codeaufgabe mehr; nur ändernde Aufträge
+  (save/create/KI-Bearbeitung/review/submit) aktivieren die Codegates. Altbestände können zurückwechseln.
+- P1: KI-Kontext enthält Aufgabenart und vollständige Abschlusskriterien; neues MCP-Werkzeug `list_tasks`.
+- P2: Dateien über 64 KB (bis 4 MB) abschnittsweise lesbar; Bearbeiten bleibt bei 64 KB.
+- P3: „PC oder Server hinzufügen“, „<Projekt> einrichten“, ehrlicher Einrichtungsstand mit „Hier einrichten“,
+  „Mit ChatGPT oder Claude bearbeiten“ (kopierbarer Auftrag) getrennt von lokaler KI, früher nächster Schritt,
+  sichtbarer Fokus.
+- P4: Formen, Knöpfe, Hover und Fokus wie schmaqq.com; Logo führt zu „Meine Arbeit“. Seitenleiste unverändert.
+- Lokal geprüft: 273 Tests, 252 PASS, 0 FAIL, 21 Plattform-Skips; Source Guard, TypeScript, Build PASS;
+  synthetischer Browserlauf Desktop und 390 px. Kein Live-, Worker- oder Owner-Konto-Test.
 
-Akuter Blocker: allgemeine Analyse wird nach Lesearbeitskopie zum Codeabschluss
-gezwungen. Weitere bestätigte Befunde: Kriterien fehlen im MCP-Kontext, große
-Dateien nicht lesbar, falscher lokaler KI-Einstieg, Fokus-/Begriffsprobleme.
-Die bisherigen Betriebsnachweise unten bleiben Historie für den ausgelieferten
-Code; keine Freigabe oder Testabnahme neuer Nachtänderungen daraus ableiten.
+**Nächster Schritt:** Owner sieht den Stand an (Fixture: `node scripts/task-handoff-browser-fixture.mjs`,
+dann http://127.0.0.1:45791, Testkonto in der Datei). Erst mit aktuellem „ja, live“ nach OPERATIONS.md
+ausliefern; P2 wirkt auf dem Server-Worker erst nach dessen Release.
 
 ## Live-Folgeauftrag, 29.10.2026: allgemeine Projekteinrichtung
 

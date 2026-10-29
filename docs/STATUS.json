@@ -1,13 +1,17 @@
 {
   "night_handoff_20261029": {
-    "state": "prepared_not_started",
+    "state": "local_done_not_live",
+    "result": "P0-P4 implemented locally by Claude Code (Opus 5.5, normal session without /goal; no stop/goal hooks configured). P0 task kind from changing jobs only; P1 criteria/kind/revision in project_context plus list_tasks; P2 read-only sections up to 4 MiB, edit limit 64 KiB unchanged; P3 setup labels, honest setup state, external assistant handoff, early next step, focus; P4 square shapes, website buttons/hover/focus, logo to Meine Arbeit (dark sidebar unchanged).",
+    "verification": "273 tests: 252 PASS, 0 FAIL, 21 platform skips; source guard, TypeScript, Vite PASS. Synthetic browser fixture scripts/task-handoff-browser-fixture.mjs at desktop 1024x768 and 390x844: no page overflow, visible focus, polling keeps focus/draft/scroll. Reduced motion checked in code only.",
+    "evidence": "docs/evidence/NIGHT_CLARITY_DESIGN_20261029.md",
+    "next": "Owner review of the local fixture; release only after a current 'ja, live' per docs/OPERATIONS.md (Studio and worker, P2 needs the worker release).",
     "requested_executor": "Claude with owner-selected Opus 5.5 via existing subscription",
     "scope": "Local Studio fixes P0-P5: read-only-copy task kind, task context and discovery, bounded large-file reads, clarity/focus/external assistant handoff, existing SCHMAQQ design convergence and final verification.",
     "handoff": "docs/NIGHT_HANDOFF_20261029.md",
     "progress": "docs/NIGHT_STATUS_20261029.md",
     "stop_rules": "Inspect active goal/stop hooks before unattended use. No repeated auth/limit block. Terminal partial/blocked/limit states allowed; independent work first, then save and stop. Four-hour/24-goal-turn clauses are not an externally enforced watchdog.",
     "authorized": "Local implementation/tests/commits and normal backup push to existing own branch only; optional PC shutdown only after proven local+remote save and no unsaved work/active jobs or restart hook.",
-    "limits": "No Claude process or goal started by Codex, no model login/availability verified, no new deployment/server/system/marketing/Klimafinder-code authorization. No shutdown scheduled.",
+    "limits": "No deployment, server, system, marketing or Klimafinder-code change. Not tested with the owner account, ChatGPT/Claude or the real worker. No shutdown performed or scheduled.",
     "production_changed": false
   },
   "project_configuration_20261029": {
