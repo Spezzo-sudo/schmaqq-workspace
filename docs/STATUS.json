@@ -1,4 +1,13 @@
 {
+  "github_access_and_live_preview_20261029": {
+    "state": "live_github_unconnected_preview_verified",
+    "implemented": "Per-project GitHub deploy keys over SSH 443 through the egress proxy with pinned host key (connect-github.sh); full-stack live preview started by the job launcher as an isolated unit on 127.0.0.70, proxied by Studio via a secret preview link with cookie, 30 min limit, one per worker.",
+    "verification": "GitHub SSH via proxy: publickey denial (path and host key OK), wrong pinned key refused. Pilot live preview: secret link serves the app incl. absolute paths and query; without link 404; one unit after replacement. 254 tests, 233 PASS, 0 FAIL.",
+    "evidence": "docs/evidence/GITHUB_AND_LIVE_PREVIEW_20261029.md",
+    "limits": "No real repository connected yet; no WebSockets; embedded databases only; preview is a capability link; one live preview per worker.",
+    "production_changed": true,
+    "github_published": false
+  },
   "stage1_job_isolation_20261029": {
     "state": "live_on_worker",
     "implemented": "Project code (tests, preview builds) runs through a root job launcher as user schmaqq-job in one transient systemd unit per job that sees only its own copy; worker config/token, other copies, runner state and repositories hidden; no direct network; own limits. Launcher on loopback with a worker-only key.",
