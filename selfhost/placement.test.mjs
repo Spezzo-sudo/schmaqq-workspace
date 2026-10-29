@@ -49,6 +49,10 @@ test('placement v1 follows the project rule, prefers reachable servers and never
   const prepared=await request('/api/development',{action:'job',device:'auto',project:'website',operation:'prepare',title:'Server-Kopie'},a.cookie);
   assert.equal(prepared.data.device,server.id);
   app.db.prepare("UPDATE jobs SET status='completed' WHERE device=?").run(server.id);
+  const copies=(await request('/api/development/workspaces?project=website',null,a.cookie)).data.workspaces;
+  assert.equal(copies.length,1);assert.equal(copies[0].id,prepared.data.id);assert.equal(copies[0].title,'Server-Kopie');assert.equal(copies[0].deviceKind,'server');
+  assert.deepEqual((await request('/api/development/workspaces?project=website',null,b.cookie)).data.workspaces,[],'Copies of another member are not listed');
+  assert.equal((await request('/api/development/workspaces?project=website')).status,401);
   const inCopy=await request('/api/development',{action:'job',device:'auto',project:'website',operation:'check',worktree:prepared.data.id},a.cookie);
   assert.equal(inCopy.status,200);assert.equal(inCopy.data.device,server.id);assert.match(inCopy.data.placement.reason,/Arbeitskopie/);
 

@@ -60,7 +60,9 @@ test('official MCP SDK client connects through dynamic registration and through 
  const dcr=await connectWith(registered,true);
  assert.match(registered.saved.client.client_id,/^dyn_/);
  const tools=(await dcr.listTools()).tools.map(tool=>tool.name);
- assert.ok(tools.includes('list_executors')&&tools.includes('start_code_job'));
+ assert.ok(tools.includes('list_executors')&&tools.includes('list_workspaces')&&tools.includes('start_code_job'));
+ const copies=await dcr.callTool({name:'list_workspaces',arguments:{project:'website'}});
+ assert.equal(copies.isError,undefined,JSON.stringify(copies));assert.deepEqual(JSON.parse(copies.content[0].text).workspaces,[]);
  const executors=await dcr.callTool({name:'list_executors',arguments:{project:'website'}});
  assert.equal(executors.isError,undefined,JSON.stringify(executors));assert.equal(JSON.parse(executors.content[0].text).mode,'auto');
  const placed=await dcr.callTool({name:'start_code_job',arguments:{requestId:'auto-without-executor',device:'auto',project:'website',operation:'inspect'}});

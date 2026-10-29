@@ -25,7 +25,7 @@ import {createTeamRoute} from './team-http.mjs';
 import {createGithubWorkflow,githubMemberTokens} from './github-workflow.mjs';
 import {taskContract,completion,teamEvent,storeMetadata,metadata} from './team-model.mjs';
 import { openStore,digest,token,transaction } from './store.mjs';
-import {resolveDevice,placementView,setPlacement,placementModes} from './placement.mjs';
+import {resolveDevice,placementView,setPlacement,placementModes,executors} from './placement.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dataDir=path.resolve(process.env.STUDIO_DATA_DIR??path.join(root,'.studio'));
@@ -70,7 +70,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  // This dispatcher is private to the validated plugin host. Network request
  // headers cannot set its WeakMap identity; ordinary API auth stays unchanged.
  async function executeAsMember(memberId,route,value){
-  if(!/^\/api\/(rooms|room\/context|development(?:\/job)?|executors)(?:\?|$)/.test(route)||route.startsWith('/api/executors')&&value)throw fail(403,'Pluginoperation nicht freigegeben.');
+  if(!/^\/api\/(rooms|room\/context|development(?:\/job|\/workspaces)?|executors)(?:\?|$)/.test(route)||/^\/api\/(executors|development\/workspaces)/.test(route)&&value)throw fail(403,'Pluginoperation nicht freigegeben.');
   const req=Readable.from(value?[Buffer.from(JSON.stringify(value))]:[]);req.url=route;req.method=value?'POST':'GET';req.headers={origin,'content-type':'application/json'};req.socket={remoteAddress:'127.0.0.1'};
   internalMembers.set(req,memberId);
   let status=200,body;
@@ -310,6 +310,13 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
       if(value.task)db.prepare("UPDATE tasks SET assignee=?,status=CASE WHEN status='todo' THEN 'doing' ELSE status END WHERE id=?").run(m.id,value.task);
      }
     });send({ok:true,id:jid,device:value.device,placement:payload.placement});return;
+   }
+   if(route==='/api/development/workspaces'&&method==='GET'){
+    // Own copies only: code jobs can run only in a copy the member prepared.
+    const m=user(req),project=parse(id,url.searchParams.get('project')),archived=url.searchParams.get('archived')==='1';
+    if(!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt nicht gefunden.');
+    const kinds=new Map(executors(db,m.id).map(e=>[e.id,e]));
+    send({workspaces:listWorkspaces(db).filter(w=>w.owner===m.id&&w.project===project&&!w.revoked&&(archived||!w.archived)).map(w=>({id:w.id,title:w.title,status:w.status,created:w.created,branch:w.branch,scope:w.scope,task:w.taskId?{id:w.taskId,title:w.taskTitle}:null,archived:!!w.archived,device:w.device,deviceName:w.deviceName,deviceKind:kinds.get(w.device)?.kind??'pc',deviceOnline:!!kinds.get(w.device)?.online}))});return;
    }
    if(route==='/api/executors'){
     const m=user(req);

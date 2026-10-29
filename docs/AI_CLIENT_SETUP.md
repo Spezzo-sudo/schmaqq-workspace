@@ -16,6 +16,7 @@ ist **noch nicht getestet**. Das ist der nächste Schritt, und er geht nur mit d
 | --- | --- | --- |
 | `list_projects`, `project_context` | Lesen | Projekte und Aufgabenkontext lesen |
 | `list_executors` | Lesen | Eigene PCs/Server-Worker, Projektregel und aktuelle Empfehlung |
+| `list_workspaces` | Lesen | Eigene Arbeitskopien eines Projekts mit Kennung, Aufgabe und Ausführer |
 | `start_code_job` | Lesen + Code | Begrenzte Aufträge in einer eigenen Arbeitskopie; `device: "auto"` lässt Studio den Ausführer wählen |
 | `get_code_job`, `cancel_code_job` | Lesen / Code | Ergebnis abfragen, eigenen Auftrag abbrechen |
 
