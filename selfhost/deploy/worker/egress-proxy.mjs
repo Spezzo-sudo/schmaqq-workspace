@@ -10,6 +10,7 @@ import http from 'node:http';
 import net from 'node:net';
 import dns from 'node:dns';
 import path from 'node:path';
+import {existsSync,realpathSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {publicAddress} from '../../studio-plugin-auth.mjs';
 
@@ -44,7 +45,8 @@ export function createEgressProxy({allow=defaultAllow,maxConnections=64,idleMs=6
  return server;
 }
 
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+// Real paths: the unit starts .../current/selfhost/... through the release symlink.
+if(process.argv[1]&&existsSync(process.argv[1])&&realpathSync(path.resolve(process.argv[1]))===realpathSync(fileURLToPath(import.meta.url))){
  const [host,port]=(process.env.EGRESS_LISTEN??'127.0.0.60:3128').split(':');
  const allow=process.env.EGRESS_ALLOW?process.env.EGRESS_ALLOW.split(','):defaultAllow;
  createEgressProxy({allow}).listen(Number(port),host,()=>console.log(`egress proxy on ${host}:${port}, allowed: ${allow.join(', ')}`));

@@ -44,6 +44,9 @@ test('runner starts when launched through a symlinked release directory',()=>{
   symlinkSync(here,link,process.platform==='win32'?'junction':'dir');
   const started=spawnSync(process.execPath,[path.join(link,'runner.mjs')],{encoding:'utf8'});
   assert.match(started.stderr,/Aufruf: node selfhost\/runner\.mjs/,'The entry point ran instead of silently exiting');
+  // The egress proxy is started the same way and must listen instead of exiting.
+  const proxy=spawnSync(process.execPath,[path.join(link,'deploy','worker','egress-proxy.mjs')],{encoding:'utf8',timeout:3000,env:{...process.env,EGRESS_LISTEN:'127.0.0.1:0'}});
+  assert.match(proxy.stdout,/egress proxy on 127\.0\.0\.1:0/,'The egress proxy started through the link');
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
 
