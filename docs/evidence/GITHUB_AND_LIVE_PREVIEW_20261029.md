@@ -55,6 +55,17 @@ Schlüssel; Test-Schlüssel danach entfernt. Lokal im Browser abgenommen (Deskto
    antwortete statt der neuen (EADDRINUSE) → vor jedem Start werden alle `schmaqq-live-*` gestoppt;
    danach genau eine Unit, kein Portkonflikt.
 
+### Einstellbar in Studio (29.10.2026 abends)
+
+Projekt-Einrichtung mit Server-Worker: „Live-Vorschau mit Backend (optional)“ mit Startbefehl und Port;
+gespeichert beim Projekt im Worker (überlebt Neustarts, auch für bereits verbundene Projekte ohne neuen
+Schlüssel). Unbekannte statische Builds stoppen die automatische Einrichtung bei gesetzter Live-Vorschau
+nicht mehr. Live: Studio und Worker `d6762de8d53748cb9994f78c325c3208c876ed92`, Archiv-SHA256
+`f2da6b4bf3301b8395c63d33347ef68e7680060988a4cb7759808be6b40270cd`, Backup
+`predeploy-d6762de-20261029T175941Z.sqlite`, Rückweg `3a6e630…`; Probestart, Schema-Preflight, Job-Prüfung
+10/10, Worker-Probe PASS, `deploy-key`-Smoke-Test OK (Testschlüssel entfernt). Owner-GO „Ja, live“.
+258 Tests, 237 PASS, 0 FAIL. Lokal im Browser geprüft (Hinweis für verbundene Projekte, Felder sichtbar).
+
 ## Grenzen
 
 Keine WebSockets; Datenbank nur eingebettet (z. B. SQLite); Vorschau ist ein geheimer Link
