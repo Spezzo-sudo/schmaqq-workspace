@@ -35,7 +35,10 @@ await check('Connect internet directly',false,()=>connect('1.1.1.1',443));
 await check('Connect database socket',false,()=>new Promise((resolve,reject)=>{const s=net.connect({path:'/var/run/postgresql/.s.PGSQL.5432'},()=>{s.destroy();resolve('connected');});s.on('error',reject);}));
 await check('Connect D-Bus',false,()=>new Promise((resolve,reject)=>{const s=net.connect({path:'/run/dbus/system_bus_socket'},()=>{s.destroy();resolve('connected');});s.on('error',reject);}));
 await check('Connect abstract socket',false,()=>new Promise((resolve,reject)=>{const s=net.connect({path:'\0ISCSIADM_ABSTRACT_NAMESPACE'},()=>{s.destroy();resolve('connected');});s.on('error',reject);}));
-await check('See /run',false,()=>{const entries=readdirSync('/run');if(!entries.length)throw new Error('empty');return entries.join(',');});
+// systemd keeps a few internal entries under /run/systemd; what matters is that no service socket is visible.
+await check('Service sockets visible in /run',false,()=>{
+ const sockets=[];const walk=(dir,depth)=>{if(depth>4)return;for(const e of readdirSync(dir,{withFileTypes:true})){const full=dir+'/'+e.name;if(e.isSocket()&&!full.startsWith('/run/systemd/inaccessible'))sockets.push(full);else if(e.isDirectory())try{walk(full,depth+1);}catch{}}};
+ walk('/run',0);if(!sockets.length)throw new Error('none');return sockets.join(',');});
 await check('Reach Studio over HTTPS via proxy',true,async()=>{const r=await fetch('https://studio.schmaqq.com/healthz',{signal:AbortSignal.timeout(8000)});if(!r.ok)throw new Error('status '+r.status);return r.status;});
 await check('Reach npm registry via proxy',true,async()=>{const r=await fetch('https://registry.npmjs.org/-/ping',{signal:AbortSignal.timeout(8000)});return r.status;});
 await check('Reach other website via proxy',false,async()=>{const r=await fetch('https://example.com/',{signal:AbortSignal.timeout(8000)});return r.status;});

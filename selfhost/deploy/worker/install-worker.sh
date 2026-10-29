@@ -68,4 +68,7 @@ install -m 644 "$RELEASE/selfhost/deploy/worker/schmaqq-worker-egress.service" "
 systemctl daemon-reload
 systemctl enable schmaqq-worker-egress.service >/dev/null
 systemctl restart schmaqq-worker-egress.service
+# The proxy needs a moment to listen; the worker and the probe must not start before.
+for i in $(seq 1 40); do ss -ltn | grep -q '127.0.0.60:3128' && break; sleep 0.25; done
+ss -ltn | grep -q '127.0.0.60:3128' || { echo "Egress proxy did not start." >&2; exit 1; }
 echo "Worker program $SHA installed. Configuration: /etc/schmaqq-worker/runner.json"
