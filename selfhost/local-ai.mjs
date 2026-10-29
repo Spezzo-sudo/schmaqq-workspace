@@ -6,7 +6,7 @@ import {command} from './process.mjs';
 export function hostInfo(config){
  const limit=process.constrainedMemory?.()||0,total=os.totalmem(),memory=limit>0&&limit<total?limit:total;
  const label=typeof config.label==='string'&&config.label.trim()?config.label.trim().slice(0,80):undefined;
- return {kind:config.kind==='server'?'server':'pc',os:process.platform,arch:process.arch,node:process.version,cpus:Math.max(1,Math.min(config.cpus??os.availableParallelism(),os.availableParallelism())),memoryMb:Math.max(1,Math.round(memory/1048576)),...(label?{label}:{})};
+ return {kind:config.kind==='server'?'server':'pc',os:process.platform,arch:process.arch,node:process.version,setupPlanVersion:1,cpus:Math.max(1,Math.min(config.cpus??os.availableParallelism(),os.availableParallelism())),memoryMb:Math.max(1,Math.round(memory/1048576)),...(label?{label}:{})};
 }
 
 function endpoint(config){

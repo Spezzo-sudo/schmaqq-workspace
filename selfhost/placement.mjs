@@ -13,7 +13,7 @@ export const ONLINE_MS=30000;
 export const placementModes=['auto','pc','server'];
 export const hostSchema=z.object({
  kind:z.enum(['pc','server']),os:z.string().max(40),arch:z.string().max(20),node:z.string().max(40),
- cpus:z.number().int().min(1).max(4096),memoryMb:z.number().int().min(1).max(16777216),label:z.string().trim().max(80).optional()
+ cpus:z.number().int().min(1).max(4096),memoryMb:z.number().int().min(1).max(16777216),label:z.string().trim().max(80).optional(),setupPlanVersion:z.literal(1).optional()
 });
 const fail=(status,message)=>Object.assign(new Error(message),{status});
 const modeText={auto:'Automatisch: zuerst ein erreichbarer Server, sonst ein eigener PC',pc:'Nur eigener PC',server:'Nur Server-Worker'};
@@ -40,7 +40,7 @@ export function executors(db,memberId,now=Date.now()){
   WHERE d.owner=? AND d.revoked=0 ORDER BY d.name`).all(memberId).map(d=>{
   const stored=deviceHost(db,d.id),host=stored?{kind:stored.kind,os:stored.os,arch:stored.arch,node:stored.node,cpus:stored.cpus,memoryMb:stored.memoryMb,...(stored.label?{label:stored.label}:{})}:null;
   const projects=d.projects?JSON.parse(d.projects).map(p=>p.id):null;
-  return {id:d.id,name:d.name,kind:host?.kind==='server'?'server':'pc',online:now-d.seen<ONLINE_MS,seen:d.seen,busy:!!d.busy,host,projects};
+  return {id:d.id,name:d.name,kind:host?.kind==='server'?'server':'pc',online:now-d.seen<ONLINE_MS,seen:d.seen,busy:!!d.busy,host,projects,setupPlanVersion:stored?.setupPlanVersion??0};
  });
 }
 const allowed=(mode,executor)=>mode==='auto'||executor.kind===mode;

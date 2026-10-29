@@ -2,6 +2,8 @@ import {existsSync,lstatSync,mkdirSync,readFileSync,realpathSync,writeFileSync,r
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {githubRepository} from './github-import.mjs';
+import {proposeProjectPlan,requiredPrograms,findPrograms} from './project-plan.mjs';
+import {launcherPrograms} from './job-client.mjs';
 
 export function managedProjects(state){
  const file=path.join(state,'connected-projects.private.json');if(!existsSync(file))return {};
@@ -14,7 +16,7 @@ export function managedProjects(state){
 export async function connectManagedProject(runner,job){
  let p={...job.payload};const source=githubRepository(p.repository),managed=managedProjects(runner.state);
  if(!/^[\w-]{1,100}$/.test(job.project)||!/^[\w./-]{1,100}$/.test(p.base??'')||p.base.startsWith('-')||p.base.includes('..'))throw Error('Projekt oder Zielbranch ungültig.');
- if(p.automatic===true)p.check=['node','--test'];
+ if(p.automatic===true||p.mode)p.check=['node','--test'];
  if(!Array.isArray(p.check)||!p.check.length||!p.check.every(s=>typeof s==='string'&&s.length>0&&s.length<=4096))throw Error('Ein gültiger Testbefehl ist erforderlich.');
  if(p.preview&&(!Array.isArray(p.preview.build)||!p.preview.build.length||!p.preview.build.every(s=>typeof s==='string'&&s.length>0&&s.length<=4096)||typeof p.preview.directory!=='string'||p.preview.directory.split(/[\\/]/).some(s=>!s||s==='.'||s==='..')||path.isAbsolute(p.preview.directory)))throw Error('Vorschau-Konfiguration ungültig.');
  // Live preview (server worker): app command and port; it runs isolated like a job.
@@ -46,12 +48,33 @@ export async function connectManagedProject(runner,job){
   writeFileSync(temporary,JSON.stringify({...managed,[job.project]:pending}),{flag:'wx',mode:0o600});renameSync(temporary,path.join(runner.state,'connected-projects.private.json'));
   runner.config.projects={...runner.config.projects,[job.project]:pending};
  }
- if(p.automatic===true){
+ let confirmed;
+ if(p.mode){
+  if(!['plan','apply'].includes(p.mode))throw Error('Unbekannter Einrichtungsschritt.');
+  const head=await runner.git(target,'rev-parse','HEAD');
+  const plan=proposeProjectPlan(target,{configuration:p.configuration,serve:p.serve,head});
+  if(plan.configuration){
+   const names=requiredPrograms(plan.configuration);
+   plan.tools=runner.config.launcher?await launcherPrograms(runner.config.launcher,names,{signal:runner.control?.signal}):findPrograms(names);
+   if(plan.tools.some(t=>!t.available)){
+    plan.state='missing_tools';
+    plan.notes.push('Auf diesem Rechner fehlen benötigte Programme. Die Einrichtung installiert keine Systemsoftware. Einen passenden Rechner wählen oder die Umgebung gesondert bereitstellen lassen.');
+   }
+   if(plan.configuration.preview?.serve&&(!runner.config.launcher||runner.config.kind!=='server')){
+    plan.state='needs_configuration';plan.notes.push('Diese Live-Vorschau benötigt einen Server-Worker mit isoliertem Job-Starter.');
+   }
+  }
+  if(p.mode==='plan')return {setupPlan:plan};
+  if(!p.expectedPlan||p.expectedPlan!==plan.revision)throw Error('Der Projektstand oder die Konfiguration hat sich geändert. Projekt erneut prüfen und den neuen Vorschlag bestätigen.');
+  if(plan.state!=='proposed')throw Error('Die Einrichtung ist noch nicht vollständig: '+plan.notes.join(' '));
+  confirmed=plan.configuration;
+  p={...p,...confirmed};
+ }else if(p.automatic===true){
   // With a live preview, an unknown static build output is no reason to stop.
   const detected=detectProject(target,{staticPreviewOptional:!!p.serve});p={...p,...detected};
  }
  const preview=p.preview||p.serve?{...(p.preview??{}),...(p.serve?{serve:{argv:p.serve.argv,port:p.serve.port}}:{})}:undefined;
- const config={...existing,preview:undefined,repo:realpathSync(target),base:p.base,check:p.check,publish:p.publish===true,allowCodex:p.allowCodex===true,workflow:p.workflow==='direct'?'direct':'pull-request',...(preview?{preview}:{})};
+ const config={...existing,preview:undefined,prepare:[],requires:[],generated:[],projectPlanVersion:undefined,repo:realpathSync(target),base:p.base,check:p.check,publish:p.publish===true,allowCodex:p.allowCodex===true,workflow:p.workflow==='direct'?'direct':'pull-request',...(preview?{preview}:{}),...(confirmed?{prepare:confirmed.prepare,requires:confirmed.requires,generated:confirmed.generated,projectPlanVersion:1}:{})};
  if(existing&&!managed[job.project]){
   saveProjectSettings(runner.state,job.project,config);
   runner.config.projects={...runner.config.projects,[job.project]:config};

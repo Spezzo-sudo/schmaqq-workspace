@@ -1,3 +1,20 @@
+## Lokaler Folgeauftrag, 29.10.2026: allgemeine Projekteinrichtung
+
+Owner-Praxistest A stoppte an der Erkennung: Klimafinder verwendet Python/Make,
+die bisherige Automatik verlangte package.json. Auf aktuellen Owner-Auftrag
+lokal erweitert: [Projektkonfiguration](PROJECT_CONFIGURATION.md), Vorschlag
+prüfen und ausdrücklich bestätigen, fehlende Programme getrennt anzeigen,
+Vorbereitung pro Arbeitskopie mit bestehender Isolation. Kein kompletter UI-Neubau.
+
+Selbst geprüft: 271 Tests, 250 PASS, 0 FAIL, 21 Plattform-Skips; Guard,
+TypeScript, Build und synthetischer lokaler Browserablauf bestanden.
+[Genauer Nachweis und Grenzen](evidence/PROJECT_CONFIGURATION_20261029.md).
+Uncommitteter lokaler Diff auf dem bestehenden Arbeitsbranch. Kein Push,
+Deployment oder VPS-Eingriff. Klimafinder-Laufzeit und Paketquellen weiterhin
+ungeprüft; diese Änderung installiert keine Systemsoftware und erweitert kein Netz.
+Nächster Schritt: lokalen Diff prüfen, Betriebsprüfung nur mit neuem aktuellem
+Auftrag; danach Owner-Praxistest fortsetzen. Die folgende Übergabe ist Historie.
+
 ## Übergabe Claude Code → Codex, 29.10.2026 spätabends
 
 **Reihenfolge zum Einlesen:** dieser Abschnitt → [WORKLIST.md](WORKLIST.md) (eine Aufgabe „in Arbeit“)

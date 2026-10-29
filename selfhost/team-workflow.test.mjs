@@ -87,6 +87,23 @@ test('archiving a personal copy keeps historical review diff accessible; code co
  assert.equal((await f.request(`/api/collaboration/task-diff?task=${task}&review=fixture-review`,null,f.b.cookie)).status,200);
  assert.equal(completion(f.app.db,f.app.db.prepare('SELECT * FROM tasks WHERE id=?').get(task)).ready,false);
 });
+
+test('setup plans require own updated runner and explicit revision; inspection never grants publishing or model access',async t=>{
+ const f=await fixture(t),device=(await f.request('/api/development',{action:'device',name:'Setup PC'},f.a.cookie)).body;
+ await f.request('/api/room',{action:'repository',project:f.project,url:'https://github.com/example/shared',revision:0},f.a.cookie);
+ const setup={project:f.project,device:device.id,mode:'plan',automatic:true,publish:true,allowCodex:true,workflow:'pull-request'};
+ assert.equal((await f.request('/api/team/project-connect',setup,f.a.cookie)).status,409,'Old runner must not silently interpret new planning as legacy setup');
+ assert.equal((await f.request('/api/team/project-connect',setup,f.b.cookie)).status,403);
+ const capabilities={models:[],status:'disabled',allowTeam:false,projects:[],codex:'disabled',development:[],host:{kind:'pc',os:'fixture',arch:'x64',node:'24.15',cpus:1,memoryMb:1024,setupPlanVersion:1}};
+ assert.equal((await f.request('/api/runner/capabilities',capabilities,null,device.token)).status,200);
+ assert.equal((await f.request('/api/team/project-connect',{...setup,mode:'apply'},f.a.cookie)).status,400);
+ assert.equal((await f.request('/api/team/project-connect',{...setup,configuration:{version:1,check:[]}},f.a.cookie)).status,400);
+ const queued=await f.request('/api/team/project-connect',setup,f.a.cookie);assert.equal(queued.status,200);
+ const payload=JSON.parse(f.app.db.prepare('SELECT payload FROM jobs WHERE id=?').get(queued.body.id).payload);
+ assert.equal(payload.mode,'plan');assert.equal(payload.publish,false);assert.equal(payload.allowCodex,false);
+ const executors=await f.request('/api/executors?project='+f.project,null,f.a.cookie);
+ assert.equal(executors.body.executors.find(e=>e.id===device.id).setupPlanVersion,1);
+});
 test('explicit offline takeover preserves work, rejects active online execution and invalidates the old lease',async t=>{
  const f=await fixture(t),task=await f.task('code');await f.request('/api/collaboration/task',{action:'claim',task},f.a.cookie);
  const device=(await f.request('/api/development',{action:'device',name:'Marco PC'},f.a.cookie)).body;

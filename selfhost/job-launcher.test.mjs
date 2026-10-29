@@ -5,7 +5,7 @@ import {spawn} from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 import {createJobLauncher,checkJobDirectory,checkArgv,jobUnitArgs} from './deploy/worker/job-launcher.mjs';
-import {launcherCommand} from './job-client.mjs';
+import {launcherCommand,launcherPrograms} from './job-client.mjs';
 import {LocalRunner} from './runner.mjs';
 
 const KEY='k'.repeat(48);
@@ -47,6 +47,17 @@ async function startLauncher(t,{root,run,stop=()=>{}}){
 }
 // Stand-in for systemd-run: runs the requested program directly on this machine.
 const localRun=(file,args)=>{const argv=args.slice(args.indexOf('--')+1);return spawn(process.execPath,argv.slice(1),{stdio:['ignore','pipe','pipe']});};
+
+test('launcher program discovery is authenticated, bounded, and starts no job',async t=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'launcher-probe-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const keyFile=path.join(root,'key');writeFileSync(keyFile,KEY);
+ const url=await startLauncher(t,{root,run:()=>assert.fail('Presence lookup must not execute code')});
+ const post=(programs,auth='Bearer '+KEY)=>fetch(url+'/programs',{method:'POST',headers:{'Content-Type':'application/json',Authorization:auth},body:JSON.stringify({programs})});
+ assert.equal((await post(['node'],'wrong')).status,401);
+ for(const invalid of [['../script'],['/tmp/script'],Array(31).fill('node'),null])assert.equal((await post(invalid)).status,400);
+ const tools=await launcherPrograms({url,keyFile},['studio-test-absent-program']);
+ assert.deepEqual(tools,[{program:'studio-test-absent-program',available:false}]);
+});
 
 test('launcher authenticates, streams output, reports failures and stops jobs whose caller left',async t=>{
  const root=mkdtempSync(path.join(os.tmpdir(),'launcher-api-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
@@ -94,4 +105,21 @@ test('a runner with a launcher sends project code there and keeps git local',asy
  const pc=new LocalRunner({stateDir:path.join(root,'state-pc'),projects:{}});
  assert.equal(await pc.check(copy,{check:[process.execPath,'-e','console.log("local")']}),'local');assert.equal(calls,1,'A PC without launcher runs locally as before');
  runner.close();pc.close();
+});
+
+test('versioned preparation and tests both use the launcher and the same job copy',async t=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'launcher-project-plan-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const copy=path.join(root,'copy');mkdirSync(copy);const keyFile=path.join(root,'key');writeFileSync(keyFile,KEY);
+ const {command}=await import('./process.mjs');
+ for(const args of [['init','-b','main'],['config','user.name','Fixture'],['config','user.email','fixture@invalid.local']])await command(['git',...args],copy);
+ writeFileSync(path.join(copy,'tracked.txt'),'original');await command(['git','add','.'],copy);await command(['git','commit','-m','fixture'],copy);
+ const calls=[];
+ const url=await startLauncher(t,{root,run:(file,args)=>{
+  const argv=args.slice(args.indexOf('--')+1),cwd=args.find(a=>a.startsWith('--working-directory=')).slice('--working-directory='.length);
+  calls.push({argv,cwd});return spawn(argv[0],argv.slice(1),{cwd,stdio:['ignore','pipe','pipe']});
+ }});
+ const runner=new LocalRunner({stateDir:path.join(root,'state'),projects:{},launcher:{url,keyFile}});t.after(()=>runner.close());
+ const p={projectPlanVersion:1,requires:[],generated:['.prepared'],prepare:[[process.execPath,'-e',`require('fs').mkdirSync('.prepared',{recursive:true});require('fs').writeFileSync('.prepared/ready','yes')`]],check:[process.execPath,'-e',`if(require('fs').readFileSync('.prepared/ready','utf8')!=='yes')process.exit(1);console.log('isolated sequence')`]};
+ assert.equal(await runner.check(copy,p),'isolated sequence');assert.equal(calls.length,2);assert.ok(calls.every(c=>c.cwd===copy));
+ assert.equal(await command(['git','status','--porcelain'],copy),'');
 });

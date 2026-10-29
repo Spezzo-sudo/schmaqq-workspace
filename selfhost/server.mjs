@@ -25,7 +25,8 @@ import {createTeamRoute} from './team-http.mjs';
 import {createGithubWorkflow,githubMemberTokens} from './github-workflow.mjs';
 import {taskContract,completion,teamEvent,storeMetadata,metadata} from './team-model.mjs';
 import { openStore,digest,token,transaction } from './store.mjs';
-import {resolveDevice,placementView,setPlacement,placementModes,executors} from './placement.mjs';
+import {resolveDevice,placementView,setPlacement,placementModes,executors,deviceHost} from './placement.mjs';
+import {validateProjectPlan} from './project-plan.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dataDir=path.resolve(process.env.STUDIO_DATA_DIR??path.join(root,'.studio'));
@@ -98,12 +99,16 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(route==='/api/team/project-connect'){
     const member=user(req);if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     const command=z.array(z.string().min(1).max(4096)).min(1).max(30);
-    const value=parse(z.object({project:id,device:id,check:command.optional(),automatic:z.boolean().optional(),publish:z.boolean(),allowCodex:z.boolean(),workflow:z.enum(['direct','pull-request']),preview:z.object({build:command,directory:z.string().min(1).max(240)}).optional(),serve:z.object({argv:command,port:z.number().int().min(1024).max(65535)}).optional()}),await readJSON(req));
+    const value=parse(z.object({project:id,device:id,mode:z.enum(['plan','apply']).optional(),expectedPlan:z.string().regex(/^[a-f0-9]{64}$/).optional(),configuration:z.unknown().optional(),check:command.optional(),automatic:z.boolean().optional(),publish:z.boolean(),allowCodex:z.boolean(),workflow:z.enum(['direct','pull-request']),preview:z.object({build:command,directory:z.string().min(1).max(240)}).optional(),serve:z.object({argv:command,port:z.number().int().min(1024).max(65535)}).optional()}),await readJSON(req));
+    if(value.configuration!==undefined){try{value.configuration=validateProjectPlan(value.configuration);}catch(e){throw fail(400,e.message);}}
+    if(value.mode==='apply'&&!value.expectedPlan)throw fail(400,'Zuerst Projekt prüfen und den Einrichtungsplan bestätigen.');
+    if(value.configuration&&!value.mode)throw fail(400,'Projektkonfiguration zuerst als Plan prüfen.');
     if(!db.prepare('SELECT id FROM devices WHERE id=? AND owner=? AND revoked=0').get(value.device,member.id))throw fail(403,'Nur deinen eigenen Rechner einrichten.');
+    if(value.mode&&deviceHost(db,value.device)?.setupPlanVersion!==1)throw fail(409,'Dieser Runner unterstützt den Einrichtungsplan noch nicht. Runner aktualisieren und seine neue Bereitschaftsmeldung abwarten.');
     const meta=metadata(db,'room:v1:project:'+value.project);if(!meta?.teamShared||!meta.repository)throw fail(409,'Zuerst das gemeinsame Repository in diesem Projekt festlegen.');
     if(value.workflow!==(meta.workflow??'pull-request'))throw fail(409,'Die gewählte Übernahmeregel passt nicht zum gemeinsamen Projekt.');
     if(db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device))throw fail(409,'Den laufenden Vorgang auf deinem Rechner zuerst abschließen lassen.');
-    const job=uuid(),payload={repository:meta.repository,base:meta.base??'main',check:value.check,automatic:value.automatic,publish:value.publish,allowCodex:value.allowCodex,workflow:value.workflow,...(value.preview?{preview:value.preview}:{}),...(value.serve?{serve:value.serve}:{})};
+    const job=uuid(),payload={repository:meta.repository,base:meta.base??'main',check:value.check,automatic:value.automatic,publish:value.mode==='plan'?false:value.publish,allowCodex:value.mode==='plan'?false:value.allowCodex,workflow:value.workflow,...(value.mode?{mode:value.mode,expectedPlan:value.expectedPlan}:{}),...(value.configuration?{configuration:value.configuration}:{}),...(value.preview?{preview:value.preview}:{}),...(value.serve?{serve:value.serve}:{})};
     db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created) VALUES(?,?,?,?,?,?,?,?)').run(job,member.id,value.device,value.project,'connect-project',JSON.stringify(payload),'queued',now());send({id:job});return;
    }
    if(route==='/api/github-project'){

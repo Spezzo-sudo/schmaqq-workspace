@@ -12,6 +12,18 @@ function launcherTarget({url,keyFile}){
  if(target.protocol!=='http:'||!['127.0.0.1','127.0.0.62','localhost'].includes(target.hostname))throw new Error('Job launcher must be a local address.');
  return {target,key:readFileSync(keyFile,'utf8').trim()};
 }
+/** Presence only in the launcher's fixed system PATH; never executes a program. */
+export async function launcherPrograms(launcher,programs,{signal}={}){
+ const {target,key}=launcherTarget(launcher);
+ return new Promise((resolve,reject)=>{
+  const req=http.request({hostname:target.hostname,port:target.port,path:'/programs',method:'POST',agent:new http.Agent(),signal,timeout:10000,headers:{'Content-Type':'application/json',Authorization:'Bearer '+key}},res=>{
+   let text='';res.on('data',d=>{text+=d;if(text.length>20000)req.destroy(new Error('Programmprüfung zu groß.'));});res.on('end',()=>{
+    try{const data=JSON.parse(text);if(res.statusCode!==200||!Array.isArray(data.tools))throw Error(data.error??'Programmprüfung fehlgeschlagen.');resolve(data.tools);}catch(e){reject(e);}
+   });
+  });
+  req.on('timeout',()=>req.destroy(new Error('Zeitlimit bei der Programmprüfung.')));req.on('error',reject);req.end(JSON.stringify({programs}));
+ });
+}
 /** Start (or replace) the live preview of a copy: the app runs isolated like a job,
  * listens on the launcher's live address and stops by itself after ttlSeconds. */
 export function launcherServe(launcher,argv,cwd,{port,ttlSeconds=1800,timeout=120000}={}){

@@ -26,6 +26,14 @@ Der Deploy-Key im Repository `schmaqq-studio-pilot` wird nicht mehr gebraucht (O
 ## In Arbeit
 
 **A. Echter Praxistest mit Klimafinder** (echtes Projekt des Owners, Fokus bleibt Studio)
+
+Unterbrechung im Owner-Praxistest am 29.10.: Repository gespeichert und Deploy-Key
+vom Owner eingetragen; automatische Erkennung scheiterte am Python-/Make-Projekt.
+Gesonderter Owner-Auftrag zur allgemeineren Einrichtung **lokal umgesetzt und
+geprüft**, noch nicht live: [Nachweis](evidence/PROJECT_CONFIGURATION_20261029.md).
+Klimafinders echte Worker-Umgebung bleibt ungeprüft. A deshalb nicht abhaken;
+Fortsetzung erst nach separat freigegebenem Betriebs-/Umgebungsschritt.
+
 1. [ ] Projekt „Klimafinder“ in Studio anlegen, GitHub-Repository eintragen, Zielbranch prüfen (Owner)
 2. [ ] Server-Worker per Knopf verbinden (Deploy-Key) und Projekt einrichten
 3. [ ] Mit Claude/ChatGPT eine kleine echte Aufgabe umsetzen: ändern → testen → Vorschau → Branch → PR

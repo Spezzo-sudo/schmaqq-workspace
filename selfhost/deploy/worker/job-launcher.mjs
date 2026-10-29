@@ -14,6 +14,7 @@ import {randomBytes,timingSafeEqual} from 'node:crypto';
 import {readFileSync,realpathSync,existsSync,statSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {findPrograms} from '../../project-plan.mjs';
 
 export const JOB_USER='schmaqq-job',JOB_GROUP='schmaqq-jobs';
 const NODE_DIR='/usr/local/lib/schmaqq-worker/node/bin';
@@ -104,9 +105,13 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
   try{
    const given=Buffer.from(String(req.headers.authorization??'').replace(/^Bearer /,''));
    if(given.length!==expected.length||!timingSafeEqual(given,expected))throw fail(401,'unauthorized');
-   if(req.method!=='POST'||!['/run','/serve','/stop-serve'].includes(req.url))throw fail(404,'not found');
+   if(req.method!=='POST'||!['/run','/serve','/stop-serve','/programs'].includes(req.url))throw fail(404,'not found');
    let size=0;const parts=[];for await(const part of req){size+=part.length;if(size>maxBody)throw fail(413,'too large');parts.push(part);}
    let body;try{body=JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'invalid json');}
+   if(req.url==='/programs'){
+    let tools;try{tools=findPrograms(body.programs,{directories:[NODE_DIR,'/usr/bin','/bin'],platform:'linux'});}catch{throw fail(400,'invalid program names');}
+    reply(200,{tools});return;
+   }
    if(req.url==='/stop-serve'){live=null;await stopAllLive();reply(200,{ok:true});return;}
    if(req.url==='/serve'){
     const dir=checkJobDirectory(root,body.dir),argv=checkArgv(body.argv);

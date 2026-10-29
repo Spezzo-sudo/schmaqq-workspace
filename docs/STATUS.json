@@ -1,4 +1,14 @@
 {
+  "project_configuration_20261029": {
+    "state": "local_verified_not_deployed",
+    "implemented": "Language-independent studio.project.json contract; inspect proposal and explicit revision-bound confirmation; bounded Node, Make and pytest suggestions; non-executing program presence checks; per-copy preparation through existing job isolation; separate missing-runtime and unknown-project results; focused setup UI and legacy-runner protocol guard.",
+    "verification": "271 tests: 250 PASS, 0 FAIL, 21 explicit platform skips; source guard, TypeScript and Vite PASS. Actual local Node/Python preparation, tests and static preview in separate worktrees. Synthetic local browser: confirmed proposal, unknown project, manual configuration, invalidation, missing Make; no browser errors.",
+    "evidence": "docs/evidence/PROJECT_CONFIGURATION_20261029.md",
+    "limits": "No real Klimafinder build, Make execution, VPS environment or new Linux sandbox proof. Module versions and package downloads are not verified by presence checks. No PyPI/network widening or system installation. Existing source/preview limits remain. Connected AI can author a configuration; this change does not add an autonomous model call. Windows local verification is not full Linux/release acceptance.",
+    "production_changed": false,
+    "github_published": false,
+    "next": "Review local diff; only after separate current authorization update Studio and worker and verify the isolated environment, then resume owner practical test A."
+  },
   "handoff_to_codex_20261029": {
     "state": "handoff_ready",
     "summary": "Claude Code hands over to Codex. Live: Studio and server worker with per-job isolation, deploy-key GitHub access set up from Studio, full-stack live preview, Claude and ChatGPT connected. Studio project data reset on owner request (backup kept); no projects exist.",

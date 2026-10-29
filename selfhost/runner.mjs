@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 import {aiCapabilities,runLocalAi} from './local-ai.mjs';
 import {command} from './process.mjs';
-import {launcherCommand,launcherServe} from './job-client.mjs';
+import {launcherCommand,launcherServe,launcherPrograms} from './job-client.mjs';
+import {projectDirectory,findPrograms,requiredPrograms} from './project-plan.mjs';
 import {allowedFile,readSource,saveSource,createSource} from './files.mjs';
 import {runCodex} from './codex-run.mjs';
 import {sourceRevision,stableSource} from './source-revision.mjs';
@@ -36,18 +37,41 @@ export class LocalRunner{
   return `env SHELL=/bin/sh ssh -i ${key} -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${path.join(worker,'github_known_hosts')} -o HostKeyAlias=github.com -o HostName=ssh.github.com -o Port=443 -o ProxyCommand="${process.execPath} ${path.join(worker,'ssh-connect-proxy.mjs')} %h %p"`;
  }
  async untrusted(argv,cwd,options={}){
+  if(!path.isAbsolute(argv[0])&&/[\\/]/.test(argv[0])){
+   const relative=argv[0].replaceAll('\\','/').replace(/^(?:\.\/)+/,'');
+   if(!projectDirectory(relative))throw new Error('Relatives Programm muss innerhalb der Arbeitskopie liegen.');
+   argv=[path.resolve(cwd,relative),...argv.slice(1)];
+  }
   if(!this.config.launcher)return this.execute(argv,cwd,options);
   return launcherCommand(this.config.launcher,argv,cwd,{signal:this.control?.signal,onOutput:text=>this.control?.onEvent?.({type:'output',text:text.slice(-4000)}),...options});
  }
  async excludeBuildOutput(dir,p){
-  if(!p.preview?.directory)return;const output=p.preview.directory;
-  if(typeof output!=='string'||path.isAbsolute(output)||/[\r\n\0\\]/.test(output)||output.split('/').some(x=>!x||x==='.'||x==='..'||x==='.git'))throw new Error('Vorschau-Ausgabeordner ungültig.');
+  const outputs=[...new Set([...(p.generated??[]),...(p.preview?.directory?[p.preview.directory]:[])])];
+  if(!outputs.length)return;
+  if(!outputs.every(projectDirectory))throw new Error('Vorschau-Ausgabeordner oder generierter Ordner ungültig.');
   const filename=path.resolve(dir,await this.git(dir,'rev-parse','--git-path','info/exclude'));
   mkdirSync(path.dirname(filename),{recursive:true});
   if(lstatSync(path.dirname(filename)).isSymbolicLink()||existsSync(filename)&&(lstatSync(filename).isSymbolicLink()||lstatSync(filename).nlink!==1))throw new Error('Lokale Git-Ausnahmen sind keine reguläre Datei.');
-  const line='/'+output.replace(/[ *?\[\]#!]/g,'\\$&')+'/';
   const existing=existsSync(filename)?readFileSync(filename,'utf8'):'';
-  if(!existing.split(/\r?\n/).includes(line))appendFileSync(filename,'\n'+line+'\n',{mode:0o600});
+  const lines=outputs.map(output=>'/'+output.replace(/[ *?\[\]#!]/g,'\\$&')+'/').filter(line=>!existing.split(/\r?\n/).includes(line));
+  if(lines.length)appendFileSync(filename,'\n'+lines.join('\n')+'\n',{mode:0o600});
+ }
+ async prepareEnvironment(dir,p){
+  if(!p.projectPlanVersion)return;
+  await this.excludeBuildOutput(dir,p);
+  const names=requiredPrograms({...p,prepare:p.prepare??[],requires:p.requires??[]});
+  const tools=this.config.launcher?await launcherPrograms(this.config.launcher,names,{signal:this.control?.signal}):findPrograms(names);
+  const missing=tools.filter(t=>!t.available).map(t=>t.program);
+  if(missing.length)throw new Error('Benötigte Programme fehlen auf diesem Rechner: '+missing.join(', ')+'. Die Umgebung muss gesondert bereitgestellt werden.');
+  if(!p.prepare?.length)return;
+  const before=await sourceRevision(dir,this.control);
+  if(!before.revision)throw new Error('Vorbereitung gestoppt: Der Quellstand ist nicht vollständig prüfbar.');
+  for(const argv of p.prepare){
+   this.control?.onEvent?.({type:'status',text:'Projektumgebung wird in der Arbeitskopie vorbereitet.'});
+   try{await this.untrusted(argv,dir,{timeout:600000});}catch(e){this.control?.signal?.throwIfAborted();throw new Error('Projektvorbereitung fehlgeschlagen. Benötigte Pakete oder erlaubte Downloadquellen prüfen. '+e.message);}
+  }
+  const after=await sourceRevision(dir,this.control);
+  if(!after.revision||before.revision!==after.revision)throw new Error('Die Vorbereitung hat Quelldateien verändert oder nicht deklarierte Dateien erzeugt. Generierte Ordner in der Projektkonfiguration prüfen; vor Tests und Veröffentlichung stoppen.');
  }
  async run(job,control={}){
   this.control=control;control.signal?.throwIfAborted();control.onEvent?.({type:'status',text:'Runner hat den Auftrag übernommen.'});
@@ -125,6 +149,7 @@ export class LocalRunner{
    return {...saved,source};
   }
   if(job.action==='status')return {branch:w.branch,status:await this.git(w.dir,'status','--short'),diff:(await this.git(w.dir,'diff','HEAD','--')).slice(0,50000),commit:await this.git(w.dir,'rev-parse','HEAD'),source:await sourceRevision(w.dir,control)};
+  if(['check','review','submit','preview'].includes(job.action))await this.excludeBuildOutput(w.dir,p);
   if(job.action==='check'){const before=await sourceRevision(w.dir,control),checks=await this.check(w.dir,p);return {checks,commit:await this.git(w.dir,'rev-parse','HEAD'),source:stableSource(before,await sourceRevision(w.dir,control))};}
   if(['review','submit'].includes(job.action)){
    await this.git(w.dir,'fetch','origin');
@@ -143,6 +168,7 @@ export class LocalRunner{
    return result;
   }
   if(job.action==='preview'){
+   await this.prepareEnvironment(w.dir,p);
    // Server worker: a full-stack preview (app with backend) runs isolated as a live job.
    if(this.config.launcher&&p.preview?.serve){
     const {argv,port}=p.preview.serve;
@@ -175,7 +201,7 @@ export class LocalRunner{
   }
   throw new Error('Unbekannter Auftrag.');
  }
- async check(dir,p){if(!p.check?.length)throw new Error('Vor Einreichung muss ein lokaler Testbefehl konfiguriert werden.');return this.untrusted(p.check,dir,{timeout:600000});}
+ async check(dir,p){if(!p.check?.length)throw new Error('Vor Einreichung muss ein lokaler Testbefehl konfiguriert werden.');await this.prepareEnvironment(dir,p);return this.untrusted(p.check,dir,{timeout:600000});}
  close(){for(const child of this.previews.values())child.kill();}
 }
 
