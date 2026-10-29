@@ -15,23 +15,36 @@ Iststand mit Nachweisen: [STATUS.json](STATUS.json). Fernziel: [NETWORK_ROADMAP.
 - Studio-Projekte: „SCHMAQQ Studio“ (Studio selbst), „Studio-Pilottest“ (Test-Repository
   `schmaqq-studio-pilot`). Andere Projekte unverändert.
 
+## Neustart 29.10.2026 abends
+
+Auf Owner-Wunsch („war bis jetzt eh alles nur ein Test“) wurden in Studio alle Projekte mit Aufgaben,
+Gesprächen, Wissen, Aufträgen und Vorschauen gelöscht; Konto, Rechner, KI-Verbindungen und Einladung
+blieben. Auf dem Server-Worker wurden Repository-Kopien, Arbeitskopien und der Pilot-Schlüssel entfernt.
+GitHub unverändert. Backup: `/var/lib/schmaqq-studio/backups/before-fresh-start-20261029T182657Z.sqlite`.
+Der Deploy-Key im Repository `schmaqq-studio-pilot` wird nicht mehr gebraucht (Owner kann ihn löschen).
+
 ## In Arbeit
 
-**A. Studio mit Studio entwickeln** (Projekt „SCHMAQQ Studio“, Repository `schmaqq-workspace`)
-1. [x] Projekt in Studio angelegt, Repository eingetragen (Owner, 29.10.)
-2. [ ] Zielbranch auf `local/studio-plugin-worker-prototype` speichern (Owner)
-3. [ ] Deploy-Key über „Projekt einrichten → Server-Worker → Schlüssel anzeigen“ bei GitHub eintragen,
-       mit Schreibrecht (Owner)
-4. [ ] Testbefehl für Studio im Job: Abhängigkeiten installieren + `node selfhost/verify.mjs --local`
-5. [ ] Jobs dürfen die Git-Daten ihrer eigenen Kopie **lesend** sehen (Source Guard u. a. brauchen Git)
-6. [ ] Laufzeit der Studio-Prüfung auf dem VPS (1 CPU) messen; Zeitlimit ggf. anpassen
-7. [ ] Studio hört auf `HOST`/`PORT`, damit eine geänderte Studio-Version als Live-Vorschau läuft
-8. [ ] Erste kleine Studio-Änderung komplett über Studio (KI → Tests → Branch → Pull Request)
+**A. Echter Praxistest mit Klimafinder** (echtes Projekt des Owners, Fokus bleibt Studio)
+1. [ ] Projekt „Klimafinder“ in Studio anlegen, GitHub-Repository eintragen, Zielbranch prüfen (Owner)
+2. [ ] Server-Worker per Knopf verbinden (Deploy-Key) und Projekt einrichten
+3. [ ] Mit Claude/ChatGPT eine kleine echte Aufgabe umsetzen: ändern → testen → Vorschau → Branch → PR
+4. [ ] Alles notieren, was unklar oder umständlich war → fließt in B
+   Hinweis: Auf dem VPS laufen Klimafinder-Dienste; der Worker sieht und berührt sie nicht (Sandbox).
+
+**B. Klarheits-Paket für die Oberfläche** (Befunde vom 29.10.)
+1. [ ] Einstellungen als 3 Schritte: Repository (mit echtem Zugriffsstatus) · Wo gearbeitet wird · KI-Assistenten
+2. [ ] Ein Begriff „Rechner“ (PC/Server); Knopf „Projekt auf meinem Rechner einrichten“ ehrlich benennen
+3. [ ] Branches von GitHub auswählen statt tippen (Worker liest per Deploy-Key mit `git ls-remote`)
+4. [ ] Zwei Vorschau-Arten (statisch / Live-App) in der Oberfläche erklären
+5. [ ] Vom Betrieb gestartete Aufträge nicht im persönlichen Verlauf mischen
+6. [ ] Hinweis „Standard ist schmaqq-workspace“ in der übergeordneten SCHMAQQ-Anleitung korrigieren
 
 ## Als Nächstes
 
-**B. Branches von GitHub auswählen statt tippen** – der Server-Worker liest per Deploy-Key die
-Branches (`git ls-remote`); Auswahlliste beim Zielbranch und bei der Einrichtung.
+**C. Studio mit Studio entwickeln** – Projekt für `schmaqq-workspace` (Zielbranch
+`local/studio-plugin-worker-prototype`), Testbefehl im Job, Jobs dürfen Git-Daten ihrer Kopie lesend sehen,
+Laufzeit auf 1 CPU messen, Studio hört auf `HOST`/`PORT` für die Live-Vorschau.
 
 ## Später
 
