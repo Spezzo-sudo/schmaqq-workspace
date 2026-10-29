@@ -1,4 +1,13 @@
 {
+  "handoff_to_codex_20261029": {
+    "state": "handoff_ready",
+    "summary": "Claude Code hands over to Codex. Live: Studio and server worker with per-job isolation, deploy-key GitHub access set up from Studio, full-stack live preview, Claude and ChatGPT connected. Studio project data reset on owner request (backup kept); no projects exist.",
+    "next": "docs/WORKLIST.md task A: Klimafinder practical test (owner provides exact repository name), then B clarity package, then C Studio-in-Studio.",
+    "design": "Studio already uses the schmaqq.com tokens, fonts and wordmark; small convergence (square corners, buttons, hover shadow, one token file) deferred by owner. Brand direction V1 not adopted until schmaqq.com uses it.",
+    "limits": "Logged-in Studio area not visually reviewed by the agent (owner account). No new live deployment in this step.",
+    "production_changed": false,
+    "github_published": false
+  },
   "github_access_and_live_preview_20261029": {
     "state": "live_github_unconnected_preview_verified",
     "implemented": "Per-project GitHub deploy keys over SSH 443 through the egress proxy with pinned host key (connect-github.sh); full-stack live preview started by the job launcher as an isolated unit on 127.0.0.70, proxied by Studio via a secret preview link with cookie, 30 min limit, one per worker.",

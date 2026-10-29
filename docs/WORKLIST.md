@@ -51,6 +51,9 @@ Laufzeit auf 1 CPU messen, Studio hört auf `HOST`/`PORT` für die Live-Vorschau
 - Live-Vorschau im Pilotprojekt wieder einrichten (jetzt über die Projekteinstellungen möglich).
 - Teamfreigabe des Server-Workers (Freigaben pro Person/Projekt, Kontingente, eigene Git-Zugänge).
 - Live-Vorschau: WebSockets durchreichen.
+- Design an schmaqq.com angleichen (nur Optik): eckige Ecken, Knöpfe/Hover-Schatten/Fokus wie Website,
+  alle Farben aus einer Token-Datei. Markenrichtung V1 erst übernehmen, wenn schmaqq.com sie nutzt.
+  Dunkle Seitenleiste: Owner-Entscheidung nach Screenshot-Vergleich. (Befund 29.10.2026)
 - Fremde Agent-Skills vor Nutzung mit NVIDIA SkillSpector prüfen (Installation nur nach Owner-OK).
 
 ## Erledigt (29.10.2026)

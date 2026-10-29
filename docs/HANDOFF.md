@@ -1,17 +1,46 @@
-## Einstieg für den nächsten Agenten (Codex oder Claude Code), Stand 29.10.2026 abends
+## Übergabe Claude Code → Codex, 29.10.2026 spätabends
 
-**Zuerst [WORKLIST.md](WORKLIST.md) lesen:** dort steht, was gerade in Arbeit ist und was als Nächstes kommt.
+**Reihenfolge zum Einlesen:** dieser Abschnitt → [WORKLIST.md](WORKLIST.md) (eine Aufgabe „in Arbeit“)
+→ [OPERATIONS.md](OPERATIONS.md) (Live-Schalten, Stolperfallen) → Nachweise des Tages in `evidence/*_20261029.md`.
 
-Live: Studio und Server-Worker `d6762de…` (Isolation pro Auftrag, GitHub-Deploy-Keys mit Einrichtung
-aus Studio, Full-Stack-Vorschau mit Startbefehl/Port in den Projekteinstellungen; Nachweis `evidence/GITHUB_AND_LIVE_PREVIEW_20261029.md`). Pilotprojekt
-ist mit `Spezzo-sudo/schmaqq-studio-pilot` verbunden. Claude und ChatGPT
-sind als KI-Assistenten verbunden. Alle Commits liegen auf
-`local/studio-plugin-worker-prototype`, seit 29.10.2026 auch auf GitHub (`origin`, kein Merge, kein PR). Live-Schalten nur nach
-[OPERATIONS.md](OPERATIONS.md) und mit aktuellem Owner-GO. Nachweise des Tages:
-[M1](evidence/M1_VPS_WORKER_PLACEMENT_20261029.md), [Härtung](evidence/WORKER_HARDENING_20261029.md),
-[Stufe 1](evidence/STAGE1_JOB_ISOLATION_20261029.md). Offene Richtung: Teamfreigabe des Workers
-(Freigaben, Kontingente, eigene Git-Zugänge), Full-Stack-Vorschau, GitHub-Zugang des Workers,
-Onboarding Markus. Plan: [NETWORK_ROADMAP.md](NETWORK_ROADMAP.md).
+**Wo gearbeitet wird:** nur `C:\Users\hi\Documents\ChatGPT\SCHMAQQ\schmaqq-plugin-worker-prototype`,
+Branch `local/studio-plugin-worker-prototype` (auch auf GitHub `origin`, kein PR, kein Merge nach `main`).
+`schmaqq-workspace`, `schmaqq-studio-use-candidate`, `schmaqq-studio-stale-review` sind ältere Stände.
+Git auf diesem PC: `C:\Users\hi\Documents\ChatGPT\SCHMAQQ\.local-tools\git\cmd\git.exe` (nicht im PATH).
+Tatsächlichen Commit immer mit Git ermitteln, nicht aus diesem Text.
+
+**Was live ist** (studio.schmaqq.com, Studio und Server-Worker auf `d6762de…`, Rückweg `3a6e630…`):
+- Server-Worker auf dem VPS, isoliert; jeder Projektbefehl als `schmaqq-job` in eigener systemd-Unit,
+  Netz nur über Allowlist-Proxy. Vermittlung `auto`/PC/Server pro Projekt.
+- KI-Assistenten über MCP + OAuth: Claude und ChatGPT sind mit dem Owner-Konto verbunden (Gemini möglich).
+- GitHub-Zugang des Workers per Deploy-Key pro Repository, Einrichtung per Knopf in den
+  Projekteinstellungen (Schritt 1 Schlüssel, Schritt 2 Einrichtung). Kein zusätzliches Konto.
+- Full-Stack-Live-Vorschau (Startbefehl/Port in den Projekteinstellungen, geheimer Link, 30 min).
+- **Neustart der Studio-Daten am 29.10. abends:** keine Projekte mehr; Konto, Rechner, KI-Verbindungen
+  bleiben. Backup `/var/lib/schmaqq-studio/backups/before-fresh-start-20261029T182657Z.sqlite`.
+
+**Nächste Aufgabe (A in der Arbeitsliste): Klimafinder-Praxistest.** Owner legt Projekt an und nennt den
+genauen Repository-Namen (noch offen). Dann Deploy-Key per Knopf, kleine echte Aufgabe mit KI bis zum PR,
+Reibungspunkte in Paket B notieren. Danach B (Klarheitspaket), dann C (Studio mit Studio).
+Design-Angleichung an schmaqq.com ist bewertet und bewusst auf „Später“ gestellt (Befund in der Arbeitsliste).
+
+**Spielregeln des Owners (gelten weiter):**
+- Live-Schalten nur nach OPERATIONS.md (sauberer Commit, Release-Prüfung, Backup, Probestart auf
+  Datenkopie, Schema-Preflight, Umschalten mit Rollback, Nachweis) **und** mit aktuellem „ja, live“ für
+  genau diesen Stand. Push nur auf den eigenen Branch und nur nach Nachfrage.
+- VPS: nur `schmaqq-studio` und `schmaqq-studio-worker*` anfassen. NetzKontor, Klimafinder-Dienste,
+  Hermes, Firewall, SSH-Konfiguration sind tabu.
+- Keine neuen Konten, keine Kosten, keine Geheimnisse in Git/Chat, keine fremden Runner, nichts löschen.
+- Nicht als Owner anmelden; Schritte im Owner-Browser macht der Owner, klar angesagt und nummeriert.
+- Ehrlich: nur Getestetes behaupten. Letzte lokale Gesamtprüfung: 258 Tests, 237 PASS, 0 FAIL, 21 Skips.
+
+**Bekannte Fallen (Details in OPERATIONS.md):** Shell-Skripte für den VPS als LF-Datei schreiben und per
+`scp` übertragen (PowerShell-Pipe fügt BOM/CR ein); `docs/HANDOFF.md` nur mit Editor-Werkzeug ändern
+(Get-/Set-Content zerstört Umlaute); Commit-Nachrichten über Here-String und `git commit -F -`;
+neue Tabellen nur mit Migration, sonst blockiert der Schema-Preflight (Daten in `workspace_meta`).
+
+**Offen beim Owner:** Klimafinder-Repository-Name; alten Deploy-Key im Repository
+`schmaqq-studio-pilot` löschen (optional).
 
 ## 29.10.2026: M1 – VPS als Hauptrechner, offen für jede KI
 
