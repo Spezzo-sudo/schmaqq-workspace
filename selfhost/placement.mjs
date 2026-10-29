@@ -39,8 +39,10 @@ export function executors(db,memberId,now=Date.now()){
   FROM devices d LEFT JOIN runner_project_state s ON s.device=d.id
   WHERE d.owner=? AND d.revoked=0 ORDER BY d.name`).all(memberId).map(d=>{
   const stored=deviceHost(db,d.id),host=stored?{kind:stored.kind,os:stored.os,arch:stored.arch,node:stored.node,cpus:stored.cpus,memoryMb:stored.memoryMb,...(stored.label?{label:stored.label}:{})}:null;
-  const projects=d.projects?JSON.parse(d.projects).map(p=>p.id):null;
-  return {id:d.id,name:d.name,kind:host?.kind==='server'?'server':'pc',online:now-d.seen<ONLINE_MS,seen:d.seen,busy:!!d.busy,host,projects,setupPlanVersion:stored?.setupPlanVersion??0};
+  const reported=d.projects?JSON.parse(d.projects):null,projects=reported?.map(p=>p.id)??null;
+  // A reported project may only be a repository copy; a configured test command is reported separately.
+  const testable=reported?.filter(p=>p.check===true).map(p=>p.id)??null;
+  return {id:d.id,name:d.name,kind:host?.kind==='server'?'server':'pc',online:now-d.seen<ONLINE_MS,seen:d.seen,busy:!!d.busy,host,projects,testable,setupPlanVersion:stored?.setupPlanVersion??0};
  });
 }
 const allowed=(mode,executor)=>mode==='auto'||executor.kind===mode;

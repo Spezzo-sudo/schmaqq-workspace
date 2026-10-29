@@ -16,7 +16,7 @@ Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT
 | P0: Analyse mit Lesekopie | ERLEDIGT | siehe P0 |
 | P1: Aufgaben-Kontext | ERLEDIGT | siehe P1 |
 | P2: große Dateien lesen | ERLEDIGT | siehe P2 |
-| P3: Begriffe/Fokus/KI-Übergabe | OFFEN | |
+| P3: Begriffe/Fokus/KI-Übergabe | ERLEDIGT (390 px siehe P5) | siehe P3 |
 | P4: Designangleichung | OFFEN | |
 | P5: Abnahme/Sicherung | OFFEN | |
 
@@ -69,3 +69,33 @@ Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT
   `node --test selfhost/studio-mcp.test.mjs selfhost/review.test.mjs` → 4/4 PASS (echter Runner, Git, MCP:
   ~200-KB-Datei über Abschnitte exakt rekonstruiert, Speichern abgewiesen, `offset` bei save-file abgewiesen).
 - Kein Livezugriff auf die echten Klimafinder-Dateien; der Server-Worker hat diesen Code noch nicht.
+## P3 – Begriffe, KI-Übergabe, Fokus und Ergebnisrückweg
+
+- Beschriftungen: „PC oder Server hinzufügen“ und „<Projektname> einrichten“ (`studio/team-workspace.tsx`,
+  `studio/project-connect.tsx`, Hinweistext in `app/project-start.tsx`).
+- Ehrliche Einrichtungsstände: `selfhost/placement.mjs` meldet je Rechner zusätzlich `testable` (Testbefehl
+  konfiguriert). `app/executors.tsx` zeigt „Projekt nicht eingerichtet“, „Repository-Kopie vorhanden · Tests nicht
+  konfiguriert“ oder „Konfiguriert · Testbefehl hinterlegt“ statt pauschal „Projekt eingerichtet“, mit Knopf
+  „Hier einrichten“, der die Einrichtung mit diesem Rechner vorausgewählt öffnet. Projektkarte entsprechend.
+- Einrichtungsvorschlag: Überschrift „Einrichtungsvorschlag für <Projekt>“, verständliche Bedeutung oben,
+  Projektart/Befehle/Ausgabeordner/JSON unter „Technische Details“. Hinweis, dass vorhandene Programme keine
+  installierten Module (z. B. Python/ensurepip) belegen.
+- Aufgabe: zwei ehrlich getrennte Wege statt „KI hinzunehmen“: „Mit ChatGPT oder Claude bearbeiten“ (neu
+  `studio/external-assistant.tsx`: kopierbarer Auftrag mit Projekt-/Aufgaben-ID und Vorgehen über die Studio-
+  Werkzeuge, kein Modellstart, keine Zugangsdaten, kein Anbieter-Deeplink, „Antwort als Ergebnis festhalten“)
+  und „Lokale KI auf meinem Rechner fragen“ (bisheriger Assistent).
+- Früher nächster Schritt: ohne Ergebnis „Nächster Schritt: Aufgabe bearbeiten und das Ergebnis festhalten“
+  mit Knopf „Ergebnis festhalten“ (öffnet „Bearbeitung“ und fokussiert das Ergebnisfeld) bzw. bei Codeaufgaben
+  „Zur Bearbeitung“. Fehlende Bedingungen erscheinen erst danach.
+- Fokus: geöffnete Bereiche werden sichtbar gescrollt (`block: nearest`) und fokussiert; Schließen gibt den Fokus
+  an den auslösenden Knopf zurück (Assistent, „PC oder Server hinzufügen“, Einrichtung).
+- Regression: `selfhost/placement.test.mjs` (`testable`).
+- Selbst ausgeführt: TypeScript `tsc --noEmit` Exit 0; `placement.test.mjs` 2/2; Studio-Build PASS.
+- Browser (synthetische Fixture `night-ui-fixture.mjs` im Scratchpad, 127.0.0.1:45791, Testkonto aus der Fixture,
+  kein Owner-Login), Desktop 1024×768: Aufgabe mit Lesekopie zeigt „Allgemeine Aufgabe“ und den neuen nächsten
+  Schritt; „Ergebnis festhalten“ öffnet Bearbeitung, Fokus im Ergebnisfeld (sichtbar 533–653 px von 768);
+  Entwurf getippt, nach 11 s Polling Wert, Fokus und Scrollposition unverändert; KI-Übergabe sichtbar
+  aufgeklappt, Text mit IDs geprüft; Schließen → Fokus zurück auf den Knopf; Einstellungen: beide Rechner mit
+  ehrlichem Stand, „Hier einrichten“ wählt den Server vor, Formular sichtbar und fokussiert.
+- Nachgebessert nach Browserbefund: Fokus beim Öffnen des KI-Bereichs lag noch auf dem Knopf (Überschrift nicht
+  fokussierbar) → jetzt Bereich bzw. erstes Eingabefeld. Nach dem Neubau in P5 erneut geprüft.

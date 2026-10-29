@@ -6,9 +6,9 @@ type Configuration={version:1;prepare:string[][];check:string[];requires:string[
 type SetupPlan={revision:string;source:string;label:string;state:'proposed'|'needs_configuration'|'missing_tools';configuration:Configuration|null;notes:string[];tools:{program:string;available:boolean}[]};
 type JobResult={error?:string;publicKey?:string;setupPlan?:SetupPlan;configured?:boolean};
 
-export default function ProjectConnect({project,resources,userId,onDone}:{project:string;resources:Resource[];userId:string;onDone:()=>Promise<void>}){
+export default function ProjectConnect({project,projectTitle='Projekt',initialDevice='',resources,userId,onDone}:{project:string;projectTitle?:string;initialDevice?:string;resources:Resource[];userId:string;onDone:()=>Promise<void>}){
  const own=resources.filter(r=>r.owner===userId);
- const [device,setDevice]=useState(own.find(r=>r.online)?.device??''),[automatic,setAutomatic]=useState(true);
+ const [device,setDevice]=useState(own.some(r=>r.device===initialDevice)?initialDevice:own.find(r=>r.online)?.device??''),[automatic,setAutomatic]=useState(true);
  const [check,setCheck]=useState(''),[prepare,setPrepare]=useState(''),[requires,setRequires]=useState(''),[generated,setGenerated]=useState(''),[configurationJSON,setConfigurationJSON]=useState('');
  const [build,setBuild]=useState(''),[directory,setDirectory]=useState('dist'),[publish,setPublish]=useState(false),[codex,setCodex]=useState(false);
  const [busy,setBusy]=useState(false),[operation,setOperation]=useState<'plan'|'apply'>('plan'),[error,setError]=useState(''),[notice,setNotice]=useState(''),[plan,setPlan]=useState<SetupPlan|null>(null),[advanced,setAdvanced]=useState(false);
@@ -78,9 +78,9 @@ export default function ProjectConnect({project,resources,userId,onDone}:{projec
   }catch(e){if(alive.current){setError((e as Error).message);setNotice('');if(mode==='apply')setPlan(null);}}finally{if(alive.current)setBusy(false);}
  }
  const proposed=plan?.configuration;
- return <form className="team-form team-callout" aria-label="Projekt einrichten" onSubmit={e=>{e.preventDefault();void connect('plan');}}>
-  <h3>Projekt auf PC oder Server einrichten</h3>
-  <p>Wähle deinen Rechner. Studio liest die Projektkonfiguration oder schlägt einen Ablauf aus den vorhandenen Projektdateien vor. Du prüfst den Vorschlag vor dem Speichern.</p>
+ return <form className="team-form team-callout" aria-label={projectTitle+' einrichten'} onSubmit={e=>{e.preventDefault();void connect('plan');}}>
+  <h3>{projectTitle} einrichten</h3>
+  <p>Wähle den PC oder Server, auf dem {projectTitle} bearbeitet werden soll. Studio liest die Projektkonfiguration oder schlägt einen Ablauf aus den vorhandenen Projektdateien vor. Du prüfst den Vorschlag vor dem Speichern.</p>
   <label>Rechner auswählen<select value={device} onChange={e=>setDevice(e.target.value)} disabled={busy||keyBusy}><option value="">Rechner auswählen …</option>{own.map(r=><option key={r.device} value={r.device}>{r.name}{kinds[r.device]==='server'?' (Server)':''} · {r.online?'Erreichbar':'Nicht erreichbar'}</option>)}</select></label>
   {server&&<section className="server-github" aria-label="GitHub-Zugang des Server-Workers">
    <h4>1. GitHub-Zugang</h4>
@@ -122,14 +122,17 @@ export default function ProjectConnect({project,resources,userId,onDone}:{projec
   {outdated&&device&&<p role="status">Dieser Runner unterstützt die Projektprüfung noch nicht. Aktualisiere ihn und öffne die Einrichtung anschließend erneut. Es wird kein Einrichtungsauftrag an den alten Runner gesendet.</p>}
   <div ref={feedback} tabIndex={-1} aria-label="Ergebnis der Projektprüfung">
    {notice&&<p role="status">{notice}</p>}{error&&<p className="rw-error" role="alert">{error}</p>}
-   {plan&&<section className="team-callout" aria-label="Einrichtungsplan"><h4>{plan.label}</h4>
-    <p>{plan.state==='missing_tools'?'Auf diesem Rechner fehlen benötigte Programme. Es wird keine Software automatisch auf dem Server installiert.':plan.state==='needs_configuration'?'Für dieses Projekt fehlt noch eine vollständige Konfiguration.':'Vorschlag zur Einrichtung. Die Programme sind vorhanden; Abhängigkeiten und erfolgreicher Ablauf sind noch nicht geprüft.'}</p>
-    {plan.tools.length>0&&<ul>{plan.tools.map(tool=><li key={tool.program}><code>{tool.program}</code>: {tool.available?'vorhanden':'fehlt'}</li>)}</ul>}
-    {plan.notes.length>0&&<ul>{plan.notes.map((note,index)=><li key={index}>{note}</li>)}</ul>}
-    {proposed&&<><p><strong>Vorbereitung:</strong> {proposed.prepare.length?`${proposed.prepare.length} Schritt${proposed.prepare.length===1?'':'e'} vor Tests und Vorschau in der jeweiligen Arbeitskopie.`:'Keine zusätzlichen Vorbereitungsschritte konfiguriert.'}</p>
-     <p><strong>Tests:</strong> <code>{proposed.check.map(arg=>/^[\w./:@=-]+$/.test(arg)?arg:JSON.stringify(arg)).join(' ')}</code></p>
-     <p><strong>Vorschau:</strong> {proposed.preview?('serve' in proposed.preview?'Live-App auf dem Server':`Gebauter Ausgabeordner ${proposed.preview.directory}`):'Noch nicht konfiguriert. Tests sind unabhängig davon möglich.'}</p>
-     <details><summary>Befehle und Konfiguration ansehen</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify(proposed,null,2)}</pre></details>
+   {plan&&<section className="team-callout" aria-label={'Einrichtungsvorschlag für '+projectTitle}><h4>Einrichtungsvorschlag für {projectTitle}</h4>
+    <p>{plan.state==='missing_tools'?'Auf diesem Rechner fehlen benötigte Programme. Es wird keine Software automatisch auf dem Server installiert.':plan.state==='needs_configuration'?'Für dieses Projekt fehlt noch eine vollständige Konfiguration.':'Studio kann Tests und Vorschau für dieses Projekt so ausführen. Bestätigen speichert nur den Ablauf; ob Abhängigkeiten passen, zeigt erst der erste Testlauf.'}</p>
+    {plan.tools.length>0&&<><p><strong>Programme auf diesem Rechner:</strong> {plan.tools.map(tool=>`${tool.program} ${tool.available?'vorhanden':'fehlt'}`).join(' · ')}</p>
+     <p className="muted">Vorhandene Programme belegen nicht, dass benötigte Module oder Pakete (zum Beispiel Python-Module wie ensurepip) installiert sind.</p></>}
+    {plan.notes.length>0&&<ul aria-label="Hinweise zur Prüfung">{plan.notes.map((note,index)=><li key={index}>{note}</li>)}</ul>}
+    {proposed&&<><p><strong>Vorbereitung:</strong> {proposed.prepare.length?`${proposed.prepare.length} Schritt${proposed.prepare.length===1?'':'e'} vor Tests und Vorschau in der jeweiligen Arbeitskopie.`:'Keine zusätzlichen Vorbereitungsschritte.'}</p>
+     <p><strong>Tests:</strong> {proposed.check.length?'Testbefehl erkannt.':'Kein Testbefehl.'} <strong>Vorschau:</strong> {proposed.preview?('serve' in proposed.preview?'Live-App auf dem Server.':'Gebaute Website.'):'Noch nicht konfiguriert; Tests sind unabhängig davon möglich.'}</p>
+     <details><summary>Technische Details: {plan.label}, Befehle und Konfiguration</summary>
+      <p><strong>Testbefehl:</strong> <code>{proposed.check.map(arg=>/^[\w./:@=-]+$/.test(arg)?arg:JSON.stringify(arg)).join(' ')}</code></p>
+      {proposed.preview&&!('serve' in proposed.preview)&&<p><strong>Ausgabeordner:</strong> <code>{proposed.preview.directory}</code></p>}
+      <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify(proposed,null,2)}</pre></details>
      <p>Mit der Bestätigung speicherst du diese Konfiguration{publish?' und erlaubst das Hochladen von Aufgabenbranches':''}. Projektbefehle und mögliche Paketdownloads starten erst, wenn du Tests oder Vorschau ausführst.</p>
     </>}
     {plan.state==='needs_configuration'&&<button type="button" className="rw-button" disabled={busy} onClick={()=>{setAutomatic(false);setAdvanced(true);requestAnimationFrame(()=>{advancedPanel.current?.scrollIntoView({block:'start'});advancedPanel.current?.focus({preventScroll:true});});}}>Konfiguration ergänzen</button>}

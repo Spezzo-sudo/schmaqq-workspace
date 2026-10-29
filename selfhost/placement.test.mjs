@@ -29,6 +29,7 @@ test('placement v1 follows the project rule, prefers reachable servers and never
   assert.equal(view.mode,'auto');assert.equal(view.canEdit,true);assert.equal(view.executors.length,2,'Only own executors are listed');
   assert.equal(view.recommendation.device,server.id);assert.match(view.recommendation.reason,/VPS-Worker \(Server\)/);
   assert.equal(view.executors.find(e=>e.id===server.id).host.memoryMb,2048);
+  assert.deepEqual(view.executors.find(e=>e.id===server.id).testable,view.executors.find(e=>e.id===server.id).projects,'Projects with a test command are reported separately from mere copies');
 
   const first=await request('/api/development',{action:'job',device:'auto',project:'website',operation:'inspect'},a.cookie);
   assert.equal(first.status,200);assert.equal(first.data.device,server.id);assert.equal(first.data.placement.kind,'server');

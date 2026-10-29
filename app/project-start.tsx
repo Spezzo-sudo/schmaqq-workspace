@@ -87,7 +87,7 @@ export default function ProjectStart({project,onComplete,onConnect}:{project?:{i
    <button className="button primary" disabled={pending}>{pending?'Wird vorbereitet …':'Projekt vorbereiten'}</button>
   </form>:<>
    <h3>{project?'Projekt auf deinem Rechner verbinden':'Projekt im Studio angelegt'}</h3>
-   <p>Verwende deinen <strong>bereits registrierten persönlichen Runner</strong>. Prüfe in den Projekteinstellungen unter „Rechner verbinden“, ob dein Rechner bereits registriert ist, bevor du einen zweiten Zugang anlegst.</p>
+   <p>Verwende deinen <strong>bereits registrierten persönlichen Runner</strong>. Prüfe in den Projekteinstellungen unter „PC oder Server hinzufügen“, ob dein Rechner bereits registriert ist, bevor du einen zweiten Zugang anlegst.</p>
    {onConnect&&<button className="button" onClick={onConnect}>Rechnerverbindung öffnen</button>}
    <div className="project-location-fields">
     <label>Startart<select value={mode} onChange={e=>{setMode(e.target.value as SetupMode);setApproved(false);reset();}}>

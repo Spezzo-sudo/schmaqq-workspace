@@ -4,12 +4,19 @@ import {Server,Laptop,RefreshCw} from 'lucide-react';
 
 /** Own executors (PCs and server workers), the project placement rule and the
  * executor Studio would choose now. Placement never offers another person's device. */
-type Executor={id:string;name:string;kind:'pc'|'server';online:boolean;busy:boolean;projects:string[]|null;host:{os:string;cpus:number;memoryMb:number;label?:string}|null};
+type Executor={id:string;name:string;kind:'pc'|'server';online:boolean;busy:boolean;projects:string[]|null;testable?:string[]|null;host:{os:string;cpus:number;memoryMb:number;label?:string}|null};
 type View={mode:string;modes:{id:string;text:string}[];canEdit:boolean;executors:Executor[];recommendation:{device?:string;reason?:string;error?:string}};
 const memory=(mb:number)=>mb>=1024?`${Math.round(mb/102.4)/10} GB`:`${mb} MB`;
 
 /** embedded: inside another card (project room) – no own panel frame and no device selection. */
-export default function Executors({project,selected='',onChoose,embedded=false}:{project:string;selected?:string;onChoose?:(id:string)=>void;embedded?:boolean}){
+/** Honest project state: a repository copy alone is not a configured or tested project. */
+function projectState(e:Executor,project:string){
+ if(!e.projects)return 'Projektstand unbekannt';
+ if(!e.projects.includes(project))return 'Projekt nicht eingerichtet';
+ if(e.testable&&!e.testable.includes(project))return 'Repository-Kopie vorhanden · Tests nicht konfiguriert';
+ return e.testable?'Konfiguriert · Testbefehl hinterlegt, Ergebnis in den Aufgaben':'Repository-Kopie vorhanden';
+}
+export default function Executors({project,selected='',onChoose,onSetup,embedded=false}:{project:string;selected?:string;onChoose?:(id:string)=>void;onSetup?:(id:string)=>void;embedded?:boolean}){
  const [view,setView]=useState<View|null>(null),[error,setError]=useState(''),[saving,setSaving]=useState(false);
  const load=useCallback(async()=>{
   if(!project)return;
@@ -29,11 +36,12 @@ export default function Executors({project,selected='',onChoose,embedded=false}:
   <label>Ausführungsregel für dieses Projekt<select value={view.mode} disabled={!view.canEdit||saving} onChange={e=>void setMode(e.target.value)}>{view.modes.map(m=><option key={m.id} value={m.id}>{m.text}</option>)}</select></label>
   {!view.canEdit&&<p className="muted">Die verantwortliche Person des Projekts legt die Regel fest.</p>}
   {!view.executors.length?<p className="muted">Noch kein Ausführer verbunden.</p>:<ul className="executor-list">{view.executors.map(e=>{
-   const configured=e.projects?.includes(project);
+   const ready=!!e.projects?.includes(project)&&(!e.testable||e.testable.includes(project));
    return <li key={e.id} className={`executor${e.id===selected?' selected':''}`}>
     {e.kind==='server'?<Server size={18} aria-hidden/>:<Laptop size={18} aria-hidden/>}
     <div><strong>{e.name}</strong> <span className="label neutral">{e.kind==='server'?'Server':'PC'}</span>
-     <small>{e.online?e.busy?'Erreichbar · arbeitet gerade':'Erreichbar':'Nicht erreichbar'}{e.host?` · ${e.host.os} · ${e.host.cpus} CPU · ${memory(e.host.memoryMb)}`:''} · {configured?'Projekt eingerichtet':e.projects?'Projekt nicht eingerichtet':'Projektstand unbekannt'}</small></div>
+     <small>{e.online?e.busy?'Erreichbar · arbeitet gerade':'Erreichbar':'Nicht erreichbar'}{e.host?` · ${e.host.os} · ${e.host.cpus} CPU · ${memory(e.host.memoryMb)}`:''} · {projectState(e,project)}</small></div>
+    {onSetup&&!ready&&e.online&&<button className={button} onClick={()=>onSetup(e.id)}>Hier einrichten</button>}
     {onChoose&&e.id!==selected&&<button className={button} onClick={()=>onChoose(e.id)}>Verwenden</button>}
    </li>;})}</ul>}
   <p className="execution-note" role="status">{recommended?<>Empfehlung: <strong>{view.recommendation.reason}</strong>{onChoose&&recommended!==selected&&<> <button className="text-button" onClick={()=>onChoose(recommended)}>Übernehmen</button></>}</>:view.recommendation.error}</p>
