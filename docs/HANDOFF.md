@@ -1,5 +1,7 @@
 ## Einstieg für den nächsten Agenten (Codex oder Claude Code), Stand 29.10.2026 abends
 
+**Zuerst [WORKLIST.md](WORKLIST.md) lesen:** dort steht, was gerade in Arbeit ist und was als Nächstes kommt.
+
 Live: Studio und Server-Worker `d6762de…` (Isolation pro Auftrag, GitHub-Deploy-Keys mit Einrichtung
 aus Studio, Full-Stack-Vorschau mit Startbefehl/Port in den Projekteinstellungen; Nachweis `evidence/GITHUB_AND_LIVE_PREVIEW_20261029.md`). Pilotprojekt
 ist mit `Spezzo-sudo/schmaqq-studio-pilot` verbunden. Claude und ChatGPT
