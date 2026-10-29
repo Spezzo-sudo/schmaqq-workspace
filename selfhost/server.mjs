@@ -71,7 +71,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  // This dispatcher is private to the validated plugin host. Network request
  // headers cannot set its WeakMap identity; ordinary API auth stays unchanged.
  async function executeAsMember(memberId,route,value){
-  if(!/^\/api\/(rooms|room\/context|development(?:\/job|\/workspaces)?|executors)(?:\?|$)/.test(route)||/^\/api\/(executors|development\/workspaces)/.test(route)&&value)throw fail(403,'Pluginoperation nicht freigegeben.');
+  if(!/^\/api\/(rooms|room\/(?:context|tasks)|development(?:\/job|\/workspaces)?|executors)(?:\?|$)/.test(route)||/^\/api\/(executors|development\/workspaces|room\/tasks)/.test(route)&&value)throw fail(403,'Pluginoperation nicht freigegeben.');
   const req=Readable.from(value?[Buffer.from(JSON.stringify(value))]:[]);req.url=route;req.method=value?'POST':'GET';req.headers={origin,'content-type':'application/json'};req.socket={remoteAddress:'127.0.0.1'};
   internalMembers.set(req,memberId);
   let status=200,body;

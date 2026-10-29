@@ -14,7 +14,7 @@ Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT
 | --- | --- | --- |
 | Vorab: Konto/Modell/Stop-Hook | ERLEDIGT | siehe oben |
 | P0: Analyse mit Lesekopie | ERLEDIGT | siehe P0 |
-| P1: Aufgaben-Kontext | OFFEN | |
+| P1: Aufgaben-Kontext | ERLEDIGT | siehe P1 |
 | P2: große Dateien lesen | OFFEN | |
 | P3: Begriffe/Fokus/KI-Übergabe | OFFEN | |
 | P4: Designangleichung | OFFEN | |
@@ -37,3 +37,19 @@ Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT
   Wechsel zu allgemein 409, Prüfstand verlangt; Altbestand mit gespeichertem `code` → Wechsel 200.
 - Selbst ausgeführt: `node --test selfhost/team-workflow.test.mjs selfhost/github-workflow.test.mjs`
   → 15 Tests, 15 PASS, 0 FAIL.
+
+## P1 – Vollständiger Aufgaben-Kontext und auffindbare Aufgabe
+
+- `selfhost/room-http.mjs`, `buildRoomContext`: Aufgabenblock enthält jetzt ID, Status, Aufgabenart und die
+  vollständigen gespeicherten Abschlusskriterien mit Fassung; zusätzlich strukturiert als `taskContract`.
+  Der Kopf (Projekt, Aufgabe, Kriterien) wird nie gekürzt (durch Feldgrenzen beschränkt); Wissen und Nachrichten
+  füllen das bisherige 8000-Zeichen-Budget. Wird gekürzt, steht ein sichtbarer Hinweis im Text und `truncated: true`.
+- Neu `GET /api/room/tasks?project=&q=&done=1` und MCP-Werkzeug `list_tasks`: Suche nach Titelteil, nur
+  lesend, höchstens 50 Treffer, `complete` zeigt unvollständige Listen an. Im Plugin-Freigabefilter
+  (`server.mjs`) nur als GET erlaubt. Unbekanntes Projekt 404, fremde Aufgabe 400 (bestehende Regeln).
+- Doku: `docs/AI_CLIENT_SETUP.md` Werkzeugtabelle.
+- Regression in `selfhost/studio-plugin-dynamic.test.mjs` über den echten MCP-SDK-Client: Aufgabe per Titel
+  gefunden, Kriterien (4000 Zeichen) identisch mit gespeichertem Vertrag, Text ≤ 8000 und als gekürzt markiert,
+  fehlendes Projekt/Aufgabe abgewiesen.
+- Selbst ausgeführt: `node --test selfhost/studio-plugin-dynamic.test.mjs selfhost/studio-mcp.test.mjs` → 6/6 PASS;
+  vorher `room*`/`router-boundaries` mitgelaufen (17 Tests, nach Korrektur der Testdaten grün).

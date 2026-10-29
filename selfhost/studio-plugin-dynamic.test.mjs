@@ -73,6 +73,18 @@ test('official MCP SDK client connects through dynamic registration and through 
  assert.equal(executors.isError,undefined,JSON.stringify(executors));assert.equal(JSON.parse(executors.content[0].text).mode,'auto');
  const placed=await dcr.callTool({name:'start_code_job',arguments:{requestId:'auto-without-executor',device:'auto',project:'website',operation:'inspect'}});
  assert.equal(placed.isError,true);assert.match(placed.content[0].text,/409/,'auto placement reports that no executor is set up');
+ // A task is found by its title, and its context carries the complete stored completion criteria.
+ const criteria=('Fundstellen mit Datei und Zeile; Hypothesen getrennt von Nachweisen. '+'Detail. '.repeat(400)).slice(0,4000).trim();
+ const created=await request('/api/room',{action:'task',id:'analysis-task',project:'website',title:'Klimafinder Hauptseite analysieren',description:'Nur lesen. '.repeat(180).trim(),kind:'general',criteria:criteria.slice(0,4000)},marco);assert.equal(created.status,200,JSON.stringify(created.data));
+ for(let i=0;i<30;i++)await request('/api/room',{action:'message',id:'filler-'+i,project:'website',body:'Lange Raumnachricht '.repeat(12)},marco);
+ const found=JSON.parse((await dcr.callTool({name:'list_tasks',arguments:{project:'website',query:'hauptseite'}})).content[0].text);
+ assert.deepEqual(found.tasks.map(t=>[t.title,t.kind,t.status]),[['Klimafinder Hauptseite analysieren','general','todo']]);assert.equal(found.complete,true);
+ assert.deepEqual(JSON.parse((await dcr.callTool({name:'list_tasks',arguments:{project:'website',query:'gibt es nicht'}})).content[0].text).tasks,[]);
+ const context=JSON.parse((await dcr.callTool({name:'project_context',arguments:{project:'website',task:found.tasks[0].id}})).content[0].text);
+ assert.equal(context.taskContract.criteria,criteria.slice(0,4000));assert.equal(context.taskContract.kind,'general');assert.equal(context.taskContract.revision,0);
+ assert.ok(context.text.includes(criteria.slice(0,4000)),'Criteria are never cut from the text');assert.ok(context.text.length<=8000);assert.equal(context.truncated,true);
+ assert.match((await dcr.callTool({name:'list_tasks',arguments:{project:'missing-project'}})).content[0].text,/404/);
+ assert.match((await dcr.callTool({name:'project_context',arguments:{project:'website',task:'missing-task'}})).content[0].text,/400/);
 
  // Client ID metadata document (URL as client_id).
  const byDocument=new MemoryProvider(metadataUrl);
