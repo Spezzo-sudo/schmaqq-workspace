@@ -1,4 +1,15 @@
 {
+  "m1_vps_worker_placement_20261029": {
+    "state": "deployed_worker_running_placement_live_ai_clients_untested_with_real_accounts",
+    "live": "Production schmaqq-studio and schmaqq-studio-worker on source 33a8dd24fbc4e6df1f99bfaf2da30f3adcb24138 (archive 3b1db220a07abb3b66f6cce99947cf25763e9345edee4483842567a08c2b637b); STUDIO_PLUGIN_DYNAMIC_CLIENTS=1.",
+    "implemented": "Executor host facts (pc/server, OS, CPUs, memory) and project placement rule (auto/pc/server) in workspace_meta; jobs accept device auto (servers first, copy-bound jobs stay on their device, no fallback outside the rule, own devices only) with the reason stored on the job; /api/executors and MCP list_executors; executor panel in the project room. OAuth dynamic client registration and client metadata documents (opt-in) for Claude, Gemini and other MCP clients, consent warning for self-registered clients, revocation UI. Isolated systemd server worker (own user, 3 GB volume, hidden foreign data, no loopback/private networks, 2 GB/1.5 CPU/256 tasks) with probe unit, install/configure scripts and owner device registration. Schema preflight pins the plugin extension.",
+    "verification": "244 tests: 223 PASS, 0 FAIL, 21 platform skips; Source Guard, TypeScript, Vite PASS. Official MCP SDK client via DCR and via metadata document. Local browser acceptance of executor panel (desktop and 375 px) and assistant revocation. Production: probe on DB copy and schema preflight PASS; worker sandbox probe 22/22; systemd-analyze 1.5 OK; real auto-placed inspect/prepare/check(1/1)/preview completed on the VPS worker.",
+    "evidence": "docs/evidence/M1_VPS_WORKER_PLACEMENT_20261029.md",
+    "limits": "No real ChatGPT/Claude/Gemini account connection yet (owner step). No production login or live view of the new UI. Worker jobs share one Unix user and can read the worker token, so only the owner's own jobs (team sharing needs per-job isolation, roadmap stage 1). Worker has no private GitHub access; pilot uses a local repository. Personal PC runners not updated.",
+    "next": "docs/NETWORK_ROADMAP.md (stage 1: per-job isolation and team sharing); setup per assistant: docs/AI_CLIENT_SETUP.md",
+    "production_changed": true,
+    "github_published": false
+  },
   "plugin_oauth_20261029": {
     "state": "deployed_to_production_plugin_client_enabled_chatgpt_connection_untested",
     "plugin_client": "schmaqq-chatgpt with redirect https://chatgpt.com/connector_platform_oauth_redirect enabled 29.10.2026; live discovery, 401 challenge and redirect allowlist checked.",

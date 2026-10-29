@@ -5,6 +5,18 @@ Status 29.10.2026: lokal implementiert in `selfhost/studio-plugin-auth.mjs` und
 Browserdurchlauf Zustimmung -> Code -> Tokenaustausch bestanden (synthetisches
 Konto, `.studio/oauth-visual-demo.mjs`). Kein Nachweis im echten ChatGPT-Chat.
 
+Ergänzung M1 (29.10.2026, live): Über den „ersten Clientvertrag“ hinaus sind mit
+`STUDIO_PLUGIN_DYNAMIC_CLIENTS=1` auch dynamische Registrierung (RFC 7591) und
+Client-ID-Metadatendokumente erlaubt, damit Claude, Gemini und andere MCP-Clients
+sich verbinden können. Diese Clients gelten als **nicht vertrauenswürdig**: Die
+Zustimmungsseite warnt und nennt das Rücksprungziel. Registrierungen sind begrenzt
+und verfallen unbenutzt. Metadaten werden nur von öffentlichen Adressen geladen,
+ohne Weiterleitung, mit Zeit- und Größenlimit. `state`, `scope` und `resource` sind
+nach OAuth 2.1 optional; Standard ist diese Ressource, und die Zustimmungsseite zeigt
+die Scopes. Widerruf ist unter „Verbundene KI-Assistenten“ bedienbar. Details:
+[AI_CLIENT_SETUP.md](AI_CLIENT_SETUP.md), Nachweis
+[M1](evidence/M1_VPS_WORKER_PLACEMENT_20261029.md).
+
 ## Rollen
 
 Studio authentifiziert Menschen bisher ueber eigene Cookies und Geraete ueber

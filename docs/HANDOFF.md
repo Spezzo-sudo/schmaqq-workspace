@@ -1,3 +1,20 @@
+## 29.10.2026: M1 – VPS als Hauptrechner, offen für jede KI
+
+Live auf studio.schmaqq.com (Quelle und Rückweg im [Nachweis](evidence/M1_VPS_WORKER_PLACEMENT_20261029.md)):
+- **Server-Worker** auf dem VPS, isoliert (eigener Nutzer, 3-GB-Volume, keine fremden
+  Dienste/Daten, kein Loopback/private Netze, RAM/CPU/Prozess-Limits); Sandbox-Probe 22/22.
+  Ein echter Ablauf Prüfen → Arbeitskopie → Test 1/1 → Vorschau lief dort automatisch vermittelt.
+- **Vermittlung v1:** Runner melden PC/Server und Fähigkeiten; Projektregel automatisch /
+  nur PC / nur Server; `device: "auto"`; Grund steht am Auftrag. Nur eigene Geräte.
+- **Mehrere KIs:** dynamische Registrierung und Client-Metadatendokumente zusätzlich zum
+  ChatGPT-Client; Warnhinweis für selbst registrierte Clients; Trennen unter
+  „Verbundene KI-Assistenten“. Anleitung: [AI_CLIENT_SETUP.md](AI_CLIENT_SETUP.md).
+- Schema-Preflight von Production war seit der Plugin-Aktivierung BLOCKED; behoben.
+Prüfung: 244 Tests, 223 PASS, 0 FAIL, 21 Plattform-Skips; Guard, TypeScript, Build PASS.
+Offen: echte Kontoverbindungen ChatGPT/Claude/Gemini (Owner), Live-Sicht mit echtem Login,
+Isolation pro Auftrag vor Teamfreigabe. Weg dahin: [NETWORK_ROADMAP.md](NETWORK_ROADMAP.md).
+Kein Push, PR oder Merge.
+
 ## Lokaler Plugin-/Workerprototyp
 
 Neue lokale Arbeit: [Umfang und Grenzen](STUDIO_PLUGIN_WORKER_PROTOTYPE.md).
