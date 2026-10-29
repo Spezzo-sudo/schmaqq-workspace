@@ -14,7 +14,8 @@ import {existsSync,realpathSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {publicAddress} from '../../studio-plugin-auth.mjs';
 
-export const defaultAllow=Object.freeze(['studio.schmaqq.com','registry.npmjs.org','github.com','codeload.github.com','objects.githubusercontent.com']);
+// ssh.github.com: git over SSH on port 443 with per-repository deploy keys.
+export const defaultAllow=Object.freeze(['studio.schmaqq.com','registry.npmjs.org','github.com','ssh.github.com','codeload.github.com','objects.githubusercontent.com']);
 const hostPattern=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
 
 export function createEgressProxy({allow=defaultAllow,maxConnections=64,idleMs=600000,
