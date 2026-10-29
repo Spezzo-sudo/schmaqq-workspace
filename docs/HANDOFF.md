@@ -1,3 +1,14 @@
+## Einstieg für den nächsten Agenten (Codex oder Claude Code), Stand 29.10.2026 abends
+
+Live: Studio `9f1bf1f…`, Server-Worker `bff2951…` (Isolation pro Auftrag). Claude und ChatGPT
+sind als KI-Assistenten verbunden. Alle Commits liegen lokal auf
+`local/studio-plugin-worker-prototype` (nicht gepusht). Live-Schalten nur nach
+[OPERATIONS.md](OPERATIONS.md) und mit aktuellem Owner-GO. Nachweise des Tages:
+[M1](evidence/M1_VPS_WORKER_PLACEMENT_20261029.md), [Härtung](evidence/WORKER_HARDENING_20261029.md),
+[Stufe 1](evidence/STAGE1_JOB_ISOLATION_20261029.md). Offene Richtung: Teamfreigabe des Workers
+(Freigaben, Kontingente, eigene Git-Zugänge), Full-Stack-Vorschau, GitHub-Zugang des Workers,
+Onboarding Markus. Plan: [NETWORK_ROADMAP.md](NETWORK_ROADMAP.md).
+
 ## 29.10.2026: M1 – VPS als Hauptrechner, offen für jede KI
 
 Live auf studio.schmaqq.com (Quelle und Rückweg im [Nachweis](evidence/M1_VPS_WORKER_PLACEMENT_20261029.md)):
