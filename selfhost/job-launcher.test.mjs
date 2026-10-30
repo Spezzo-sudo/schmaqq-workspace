@@ -40,8 +40,8 @@ test('job unit runs as the job user and sees only its own copy',()=>{
  assert.deepEqual(args.slice(-2),['--','/usr/bin/true']);
 });
 
-async function startLauncher(t,{root,run,stop=()=>{}}){
- const server=createJobLauncher({root,key:KEY,run,prepare:async()=>{},stop,log:()=>{}});
+async function startLauncher(t,{root,run,stop=()=>{},prepare=async()=>{}}){
+ const server=createJobLauncher({root,key:KEY,run,prepare,stop,log:()=>{}});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
  return 'http://127.0.0.1:'+server.address().port;
 }
@@ -75,6 +75,16 @@ test('launcher authenticates, streams output, reports failures and stops jobs wh
  await assert.rejects(pending,{name:'AbortError'});
  await new Promise(r=>setTimeout(r,200));assert.equal(stopped.length,1,'The launcher stops the job unit when the caller leaves');
  assert.throws(()=>launcherCommand({url:'http://example.com:3129',keyFile},['node'],copy),/local address/);
+});
+
+test('launcher restores group access after a job, also when it fails, before reporting the end',async t=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'launcher-settle-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const copy=path.join(root,'copy');mkdirSync(copy);const keyFile=path.join(root,'..',path.basename(root)+'.key');writeFileSync(keyFile,KEY);t.after(()=>rmSync(keyFile,{force:true}));
+ const calls=[];const url=await startLauncher(t,{root,run:localRun,prepare:async dir=>{calls.push(dir);}});
+ assert.equal(await launcherCommand({url,keyFile},[process.execPath,'-e','console.log("built")'],copy,{timeout:20000}),'built');
+ assert.deepEqual(calls,[copy,copy],'Before and after the job');
+ await assert.rejects(launcherCommand({url,keyFile},[process.execPath,'-e','process.exit(2)'],copy,{timeout:20000}),/Befehl fehlgeschlagen \(2\)/);
+ assert.equal(calls.length,4,'A failed job is settled too');
 });
 
 test('launcher starts one live preview at a time, waits for its port and reports failures with logs',async t=>{

@@ -133,7 +133,10 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
    child.stdout.on('data',d=>send({type:'output',text:String(d)}));child.stderr.on('data',d=>send({type:'output',text:String(d)}));
    let finished=false;
    const end=(code,error)=>{if(finished)return;finished=true;busy=false;send({type:'exit',code,...(error?{error}:{})});res.end();};
-   child.on('error',e=>end(-1,e.message));child.on('close',code=>end(code??-1));
+   // Project builds may create owner-only output (for example via mkdtemp). Restore group
+   // access before reporting the end, so the worker can read results such as a preview.
+   const settle=(code,error)=>prepare(dir).catch(()=>log('could not restore group access: '+unit)).then(()=>end(code,error));
+   child.on('error',e=>settle(-1,e.message));child.on('close',code=>settle(code??-1));
    // Caller gone (cancel, timeout on its side, worker restart): stop the job unit.
    res.on('close',()=>{if(!finished){stop(unit);log('job stopped: '+unit);}});
   }catch(e){if(!res.headersSent)reply(e.status??500,{error:e.status?e.message:'launcher error'});else res.end();if(e.status!==409)log('launcher refused: '+(e.message??'error'));}
