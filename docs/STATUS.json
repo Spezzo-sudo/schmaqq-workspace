@@ -1,10 +1,11 @@
 {
   "project_overview_20261030": {
-    "state": "local_done_not_live",
+    "state": "live_verified",
+    "deployed": "2026-10-30 after current owner 'Ja, live': Studio and worker on d72d823, rollback 5c3208a, backup predeploy-d72d823-20261030T093111Z.sqlite; release verify, copied-data boot, schema preflight, job isolation 10/10, sandbox probe 29/29, public checks PASS. Evidence docs/evidence/PROJECT_OVERVIEW_DEPLOY_20261030.md. Not viewed in the owner account.",
     "result": "Project overview restructured: state line (repository, executor, open tasks), work by responsibility with one derived next step per task, running jobs (GET /api/team active: id/owner/action/status/task only), waiting on others, grouped history (max 5, task title, relative time). Background job kinds (inspect, prepare, status, files, read-file, deploy-key, worktree) no longer create project events and older ones are filtered from the feed but kept in storage. 'Ergebnis festhalten' opens the task at the result field (pane=result).",
     "verification": "277 tests: 256 PASS, 0 FAIL, 21 platform skips; source guard, TypeScript, build PASS. Synthetic fixture browser check at 1280 and 390 px: legacy read noise hidden, three saves grouped, no page overflow, focus lands in the result field, closing returns to the overview, offline executor warning shown.",
-    "next": "Owner decides on release with a current 'ja, live' per docs/OPERATIONS.md (Studio only is enough; worker unchanged but released together by the scripts).",
-    "production_changed": false
+    "next": "Owner reloads Studio, opens Klimafinder overview and records the analysis result.",
+    "production_changed": true
   },
   "night_handoff_20261029": {
     "state": "live_verified",

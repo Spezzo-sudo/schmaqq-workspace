@@ -1,4 +1,9 @@
-## Lokal, 30.10.2026: aufgeräumte Projektübersicht (nicht live)
+## Live seit 30.10.2026 vormittags: aufgeräumte Projektübersicht (Studio und Worker auf d72d823)
+
+Nach aktuellem Owner-„Ja, live“ ausgeliefert, alle Prüfungen PASS, Rückweg 5c3208a. Nachweis:
+[PROJECT_OVERVIEW_DEPLOY_20261030.md](evidence/PROJECT_OVERVIEW_DEPLOY_20261030.md).
+
+## Lokal, 30.10.2026: aufgeräumte Projektübersicht (inzwischen live, siehe oben)
 
 Owner-Befund: „Zuletzt passiert“ voller gleicher Einträge („Bearbeitung aktualisiert“ je gelesener Datei).
 Umgesetzt: Lesen/Auflisten/Einrichten (`quietJobActions`) erzeugt keinen Projektverlauf mehr, ältere solche
