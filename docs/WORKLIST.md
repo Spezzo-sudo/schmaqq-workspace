@@ -32,6 +32,11 @@ danach kleine Teams mit etwas Technik; Kunden ohne Technik später als eigener S
 3–5 Personen testen und klären, ob ChatGPT-/Claude-Abos automatisches Arbeiten in der Werkstatt erlauben. Bis
 dahin keine neuen Funktionen, nur Vereinfachung.
 
+**KI-Abo entschieden (30.10.2026, Owner):** Claude Team mit zwei Standard-Sitzen (Marco, Markus), zuerst monatlich.
+Abschluss durch den Owner. Danach: Console-Organisation verknüpfen (API-Guthaben), Ausgabenlimit setzen, damit
+nichts nachberechnet wird. Erst dann Werkstatt für persönliche Claude-Code-Anmeldung pro Person vorbereiten.
+Grundlage: [AI_SUBSCRIPTION_TERMS_20261030.md](evidence/AI_SUBSCRIPTION_TERMS_20261030.md).
+
 ## In Arbeit
 
 **Nachtauftrag: live seit 30.10.2026** (Studio und Worker auf 5c3208a,
