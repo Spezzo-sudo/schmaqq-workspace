@@ -25,10 +25,9 @@ Der Deploy-Key im Repository `schmaqq-studio-pilot` wird nicht mehr gebraucht (O
 
 ## In Arbeit
 
-**Nachtauftrag lokal: lokal fertig, wartet auf Owner-Ansicht und „ja, live“.**
-P0–P4 umgesetzt und lokal geprüft ([Status](NIGHT_STATUS_20261029.md),
-[Nachweis](evidence/NIGHT_CLARITY_DESIGN_20261029.md)); nicht ausgeliefert. Danach Praxistest A fortsetzen
-(die Analyseaufgabe mit Lesekopie ist erst nach dem Release als allgemeines Ergebnis abschließbar).
+**Nachtauftrag: live seit 30.10.2026** (Studio und Worker auf 5c3208a,
+[Live-Nachweis](evidence/NIGHT_RELEASE_DEPLOY_20261030.md), [Status](NIGHT_STATUS_20261029.md)).
+Jetzt Praxistest A fortsetzen: die Analyseaufgabe mit Lesekopie als allgemeines Ergebnis festhalten.
 
 **A. Echter Praxistest mit Klimafinder** (echtes Projekt des Owners, Fokus bleibt Studio)
 

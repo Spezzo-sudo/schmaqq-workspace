@@ -142,3 +142,9 @@ dunkle Seitenleiste bewusst unverändert; Studio-Link auf schmaqq.com nur als Vo
 
 **Genau ein nächster Schritt für morgen:** Owner sieht sich den Stand lokal an
 (`node scripts/task-handoff-browser-fixture.mjs`, dann http://127.0.0.1:45791) und entscheidet über „ja, live“.
+
+## Nachtrag 30.10.2026: live
+
+Owner hat mit „Ja, live“ freigegeben. Studio und Worker laufen auf `5c3208a`; alle Release-, Backup-,
+Probestart-, Isolations- und Live-Prüfungen PASS. Nachweis:
+[NIGHT_RELEASE_DEPLOY_20261030.md](evidence/NIGHT_RELEASE_DEPLOY_20261030.md).

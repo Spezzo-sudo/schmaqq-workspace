@@ -1,4 +1,11 @@
-## Nachtlauf Claude, 29./30.10.2026: P0–P4 lokal umgesetzt, nicht live
+## Live seit 30.10.2026 früh: Nachtlauf P0–P4 (Studio und Worker auf 5c3208a)
+
+Nach aktuellem Owner-„Ja, live“ nach OPERATIONS.md ausgeliefert; alle Prüfungen PASS, Rückweg f139419.
+Nachweis: [NIGHT_RELEASE_DEPLOY_20261030.md](evidence/NIGHT_RELEASE_DEPLOY_20261030.md). Nicht im
+Owner-Konto oder mit echtem ChatGPT/Claude geprüft. **Nächster Schritt:** Klimafinder-Praxistest
+fortsetzen (Analyse jetzt als allgemeines Ergebnis abschließbar).
+
+## Nachtlauf Claude, 29./30.10.2026: P0–P4 lokal umgesetzt (inzwischen live, siehe oben)
 
 Ergebnis und Belege: [NIGHT_STATUS_20261029.md](NIGHT_STATUS_20261029.md),
 [Nachweis](evidence/NIGHT_CLARITY_DESIGN_20261029.md). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT_HANDOFF_20261029.md).
