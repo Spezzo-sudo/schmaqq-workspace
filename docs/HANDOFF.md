@@ -1,3 +1,11 @@
+## Live seit 30.10.2026 abends: Klimafinder-Praxistest, Studio und Worker auf fed02f9
+
+Analyse erledigt, Code-Aufgabe „Leise-Priorität“ in der Worker-Kopie fertig und getestet (Vorschau ok), Prüfstand
+blockiert durch vorbestehenden `test_backend.mjs` (Loopback in der Job-Sandbox verboten). Live behoben: Rechte nach
+Jobs (`94a51ca`), absolute Pfade in statischen Vorschauen (`fed02f9`). VPS: python3.12-venv installiert,
+Klimafinder ohne Paketdownload eingerichtet. Details und Rückwege:
+[KLIMAFINDER_PRACTICE_20261030.md](evidence/KLIMAFINDER_PRACTICE_20261030.md).
+
 ## Live seit 30.10.2026 vormittags: aufgeräumte Projektübersicht (Studio und Worker auf d72d823)
 
 Nach aktuellem Owner-„Ja, live“ ausgeliefert, alle Prüfungen PASS, Rückweg 5c3208a. Nachweis:

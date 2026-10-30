@@ -32,6 +32,11 @@ Jetzt Praxistest A fortsetzen: die Analyseaufgabe mit Lesekopie als allgemeines 
 **Projektübersicht aufgeräumt: live seit 30.10.2026** (Befund des Owners: Verlauf voller „Bearbeitung
 aktualisiert“). [Live-Nachweis](evidence/PROJECT_OVERVIEW_DEPLOY_20261030.md).
 
+**Stand 30.10. abends** ([Nachweis](evidence/KLIMAFINDER_PRACTICE_20261030.md)): Analyse erledigt; Code-Aufgabe
+„Leise-Priorität“ umgesetzt, alle Finder-Tests grün, Vorschau funktioniert. **Blocker:** vorbestehender
+`tests/test_backend.mjs` braucht Loopback im Job (Sandbox verbietet das) → kein Prüfstand. Zwei Studio-Fehler
+(Rechte, Vorschau-Pfade) live behoben (`94a51ca`, `fed02f9`). Nächstes: Entscheidung Job-Netz für lokale Testserver.
+
 **A. Echter Praxistest mit Klimafinder** (echtes Projekt des Owners, Fokus bleibt Studio)
 
 Unterbrechung im Owner-Praxistest am 29.10.: Repository gespeichert und Deploy-Key

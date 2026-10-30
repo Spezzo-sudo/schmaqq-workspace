@@ -1,4 +1,13 @@
 {
+  "klimafinder_practice_20261030": {
+    "state": "partial_blocked_review",
+    "result": "Analysis task done (owner recorded result). Code task 'Leise-Priorität' implemented in worker copy ff3f7e80 (finder_experience.js src+site, new test p64a, Makefile line); all finder tests PASS incl. P64A; preview works. Review blocked by pre-existing tests/test_backend.mjs failing in the job sandbox (loopback server denied; baseline fails identically).",
+    "live": "Studio and worker on fed02f9 (rollback 94a51ca, then d72d823): launcher restores group access after jobs; static previews answer root-absolute paths via HttpOnly cookie.",
+    "system_changes": "Owner-approved: python3.12-venv installed on VPS; Klimafinder worker project uses system Python/Jinja2 without downloads (backup of connected-projects.private.json kept). Proxy allowlist unchanged.",
+    "evidence": "docs/evidence/KLIMAFINDER_PRACTICE_20261030.md",
+    "next": "Owner decision on job networking for local test servers (own loopback per job) before the review/branch step; then usability work: AI tools to configure projects and record results.",
+    "production_changed": true
+  },
   "project_overview_20261030": {
     "state": "live_verified",
     "deployed": "2026-10-30 after current owner 'Ja, live': Studio and worker on d72d823, rollback 5c3208a, backup predeploy-d72d823-20261030T093111Z.sqlite; release verify, copied-data boot, schema preflight, job isolation 10/10, sandbox probe 29/29, public checks PASS. Evidence docs/evidence/PROJECT_OVERVIEW_DEPLOY_20261030.md. Not viewed in the owner account.",
