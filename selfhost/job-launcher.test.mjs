@@ -40,6 +40,19 @@ test('job unit runs as the job user and sees only its own copy',()=>{
  assert.deepEqual(args.slice(-2),['--','/usr/bin/true']);
 });
 
+test('tests and builds can run in an own network with only their own loopback',()=>{
+ const props=a=>a.filter((x,i)=>a[i-1]==='-p'),env=a=>a.filter((x,i)=>a[i-1]==='-E');
+ const isolated=jobUnitArgs({unit:'schmaqq-job-y',dir:'/var/lib/schmaqq-worker/state/worktrees/p-1',argv:['/usr/bin/true'],timeoutMs:600000,network:'private'});
+ assert.ok(props(isolated).includes('PrivateNetwork=yes'));
+ assert.ok(!props(isolated).some(p=>p.startsWith('IPAddress')),'Address filters would also block the own loopback');
+ assert.ok(!env(isolated).some(e=>/PROXY=http/.test(e)),'No proxy: the namespace cannot reach it anyway');
+ for(const kept of ['User=schmaqq-job','ProtectSystem=strict','NoNewPrivileges=yes','RestrictAddressFamilies=AF_INET AF_INET6'])assert.ok(props(isolated).includes(kept),kept);
+ const proxy=jobUnitArgs({unit:'schmaqq-job-z',dir:'/var/lib/schmaqq-worker/state/worktrees/p-1',argv:['/usr/bin/true'],timeoutMs:600000});
+ assert.ok(!props(proxy).includes('PrivateNetwork=yes')&&props(proxy).includes('IPAddressAllow=127.0.0.60/32'),'Default (preparation) keeps the proxy path');
+ const live=jobUnitArgs({unit:'schmaqq-live-a',dir:'/var/lib/schmaqq-worker/state/worktrees/p-1',argv:['/usr/bin/true'],timeoutMs:600000,serve:{port:4500},network:'private'});
+ assert.ok(!props(live).includes('PrivateNetwork=yes'),'Live previews must stay reachable for Studio');
+});
+
 async function startLauncher(t,{root,run,stop=()=>{},prepare=async()=>{}}){
  const server=createJobLauncher({root,key:KEY,run,prepare,stop,log:()=>{}});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise(r=>server.close(r)));
@@ -85,6 +98,17 @@ test('launcher restores group access after a job, also when it fails, before rep
  assert.deepEqual(calls,[copy,copy],'Before and after the job');
  await assert.rejects(launcherCommand({url,keyFile},[process.execPath,'-e','process.exit(2)'],copy,{timeout:20000}),/Befehl fehlgeschlagen \(2\)/);
  assert.equal(calls.length,4,'A failed job is settled too');
+});
+
+test('launcher passes the network mode through and rejects unknown modes',async t=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'launcher-net-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const copy=path.join(root,'copy');mkdirSync(copy);const keyFile=path.join(root,'..',path.basename(root)+'.key');writeFileSync(keyFile,KEY);t.after(()=>rmSync(keyFile,{force:true}));
+ const seen=[];const url=await startLauncher(t,{root,run:(file,args)=>{seen.push(args.includes('PrivateNetwork=yes'));return localRun(file,args);}});
+ await launcherCommand({url,keyFile},[process.execPath,'-e','1'],copy,{timeout:20000,network:'private'});
+ await launcherCommand({url,keyFile},[process.execPath,'-e','1'],copy,{timeout:20000});
+ assert.deepEqual(seen,[true,false]);
+ const bad=await fetch(url+'/run',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+KEY},body:JSON.stringify({dir:copy,argv:[process.execPath,'-e','1'],network:'host'})});
+ assert.equal(bad.status,400);
 });
 
 test('launcher starts one live preview at a time, waits for its port and reports failures with logs',async t=>{

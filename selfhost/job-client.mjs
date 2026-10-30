@@ -39,7 +39,7 @@ export function launcherServe(launcher,argv,cwd,{port,ttlSeconds=1800,timeout=12
   req.end(JSON.stringify({dir:cwd,argv,port,ttlSeconds}));
  });
 }
-export function launcherCommand(launcher,argv,cwd,{timeout=600000,signal,onOutput}={}){
+export function launcherCommand(launcher,argv,cwd,{timeout=600000,signal,onOutput,network}={}){
  const {target,key}=launcherTarget(launcher);
  signal?.throwIfAborted();
  return new Promise((resolve,reject)=>{
@@ -61,6 +61,6 @@ export function launcherCommand(launcher,argv,cwd,{timeout=600000,signal,onOutpu
   const timer=setTimeout(()=>{req.destroy();finish(reject,new Error('Zeitlimit erreicht. '+output));},timeout+5000);
   signal?.addEventListener('abort',abort,{once:true});
   req.on('error',e=>finish(reject,new Error('Job-Starter nicht erreichbar: '+e.message)));
-  req.end(JSON.stringify({dir:cwd,argv,timeoutMs:timeout}));
+  req.end(JSON.stringify({dir:cwd,argv,timeoutMs:timeout,...(network?{network}:{})}));
  });
 }

@@ -42,7 +42,8 @@ export class LocalRunner{
    if(!projectDirectory(relative))throw new Error('Relatives Programm muss innerhalb der Arbeitskopie liegen.');
    argv=[path.resolve(cwd,relative),...argv.slice(1)];
   }
-  if(!this.config.launcher)return this.execute(argv,cwd,options);
+  // A PC runs project code as its owner; the network mode only applies to the server's job launcher.
+  if(!this.config.launcher){const {network:_,...local}=options;return this.execute(argv,cwd,local);}
   return launcherCommand(this.config.launcher,argv,cwd,{signal:this.control?.signal,onOutput:text=>this.control?.onEvent?.({type:'output',text:text.slice(-4000)}),...options});
  }
  async excludeBuildOutput(dir,p){
@@ -179,7 +180,7 @@ export class LocalRunner{
    }
    if(p.preview?.build&&p.preview?.directory){
     await this.excludeBuildOutput(w.dir,p);
-    const before=await sourceRevision(w.dir,control);await this.untrusted(p.preview.build,w.dir);const output=path.resolve(w.dir,p.preview.directory),real=realpathSync(output),workspace=realpathSync(w.dir);
+    const before=await sourceRevision(w.dir,control);await this.untrusted(p.preview.build,w.dir,{network:'private'});const output=path.resolve(w.dir,p.preview.directory),real=realpathSync(output),workspace=realpathSync(w.dir);
     if(!real.startsWith(workspace+path.sep)||real===workspace)throw new Error('Vorschau-Ausgabe muss innerhalb der Arbeitskopie liegen.');
     const files={};let bytes=0,count=0;
     function collect(dir){for(const item of readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,item.name);if(lstatSync(full).isSymbolicLink())throw new Error('Symlinks sind in Vorschauen nicht erlaubt.');if(item.isDirectory())collect(full);else{const data=readFileSync(full);bytes+=data.length;if(bytes>5000000||++count>500)throw new Error('Vorschau überschreitet 5 MB oder 500 Dateien.');files[path.relative(real,full).split(path.sep).join('/')]=data.toString('base64');}}}
@@ -201,7 +202,7 @@ export class LocalRunner{
   }
   throw new Error('Unbekannter Auftrag.');
  }
- async check(dir,p){if(!p.check?.length)throw new Error('Vor Einreichung muss ein lokaler Testbefehl konfiguriert werden.');await this.prepareEnvironment(dir,p);return this.untrusted(p.check,dir,{timeout:600000});}
+ async check(dir,p){if(!p.check?.length)throw new Error('Vor Einreichung muss ein lokaler Testbefehl konfiguriert werden.');await this.prepareEnvironment(dir,p);return this.untrusted(p.check,dir,{timeout:600000,network:'private'});}
  close(){for(const child of this.previews.values())child.kill();}
 }
 

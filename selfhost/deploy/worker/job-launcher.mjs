@@ -45,9 +45,13 @@ export function checkArgv(argv,exists=existsSync){
 export const LIVE_HOST='127.0.0.70',LIVE_SOURCE='127.0.0.71';
 
 /** systemd-run arguments: fixed sandbox, only the copy is visible and writable.
- * With `serve`, the unit keeps running (no --wait) as a live preview on LIVE_HOST:port. */
-export function jobUnitArgs({unit,dir,argv,timeoutMs,serve}){
+ * With `serve`, the unit keeps running (no --wait) as a live preview on LIVE_HOST:port.
+ * network 'private' (tests, builds): an own network namespace with only its own loopback,
+ * so test servers on 127.0.0.1 work while Studio, the proxy and the internet stay unreachable. */
+export function jobUnitArgs({unit,dir,argv,timeoutMs,serve,network='proxy'}){
  const seconds=Math.max(1,Math.min(Math.ceil(timeoutMs/1000),3600));
+ const isolated=network==='private'&&!serve;
+ const net=isolated?['PrivateNetwork=yes']:['IPAddressDeny=any',serve?`IPAddressAllow=127.0.0.60/32 ${LIVE_SOURCE}/32`:'IPAddressAllow=127.0.0.60/32'];
  const p=[
   `User=${JOB_USER}`,`Group=${JOB_GROUP}`,'UMask=0002',
   'NoNewPrivileges=yes','CapabilityBoundingSet=','RestrictSUIDSGID=yes','LockPersonality=yes','RestrictRealtime=yes','RestrictNamespaces=yes',
@@ -58,10 +62,11 @@ export function jobUnitArgs({unit,dir,argv,timeoutMs,serve}){
   // read-only tmpfs; then only this one copy is bound back in, writable.
   'TemporaryFileSystem=/opt:ro /srv:ro /var/lib:ro /var/backups:ro /mnt:ro /media:ro /run:ro /etc/schmaqq-worker:ro',
   `BindPaths=${dir}`,`ReadWritePaths=${dir}`,
-  'RestrictAddressFamilies=AF_INET AF_INET6','IPAddressDeny=any',serve?`IPAddressAllow=127.0.0.60/32 ${LIVE_SOURCE}/32`:'IPAddressAllow=127.0.0.60/32',
+  'RestrictAddressFamilies=AF_INET AF_INET6',...net,
   'MemoryMax=2G','MemorySwapMax=0','CPUQuota=150%','TasksMax=256',`RuntimeMaxSec=${seconds}`
  ];
- const env=[`HOME=/tmp`,`PATH=${NODE_DIR}:/usr/bin:/bin`,'NODE_ENV=production',`HTTPS_PROXY=${PROXY}`,`HTTP_PROXY=${PROXY}`,`https_proxy=${PROXY}`,`http_proxy=${PROXY}`,'NODE_USE_ENV_PROXY=1','npm_config_cache=/tmp/.npm',
+ const proxy=isolated?['NO_PROXY=*']:[`HTTPS_PROXY=${PROXY}`,`HTTP_PROXY=${PROXY}`,`https_proxy=${PROXY}`,`http_proxy=${PROXY}`,'NODE_USE_ENV_PROXY=1'];
+ const env=[`HOME=/tmp`,`PATH=${NODE_DIR}:/usr/bin:/bin`,'NODE_ENV=production',...proxy,'npm_config_cache=/tmp/.npm',
   ...(serve?[`HOST=${LIVE_HOST}`,`PORT=${serve.port}`,`NO_PROXY=${LIVE_HOST}`]:[])];
  return [...(serve?['--quiet','--collect']:['--wait','--pipe','--quiet','--collect']),`--unit=${unit}`,...p.flatMap(x=>['-p',x]),...env.flatMap(x=>['-E',x]),`--working-directory=${dir}`,'--',...argv];
 }
@@ -122,13 +127,14 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
    }
    const dir=checkJobDirectory(root,body.dir),argv=checkArgv(body.argv);
    const timeoutMs=Number.isInteger(body.timeoutMs)?Math.min(Math.max(body.timeoutMs,1000),3600000):600000;
+   if(body.network!==undefined&&!['proxy','private'].includes(body.network))throw fail(400,'invalid network');
    // The worker runs one job at a time; refusing parallel requests keeps that true here.
    if(busy)throw fail(409,'another job is running');
    busy=true;
    const unit='schmaqq-job-'+randomBytes(8).toString('hex');
    try{await prepare(dir);}catch(e){busy=false;throw fail(500,'could not prepare copy');}
    res.writeHead(200,{'Content-Type':'application/x-ndjson'});
-   const child=run('systemd-run',jobUnitArgs({unit,dir,argv,timeoutMs}));
+   const child=run('systemd-run',jobUnitArgs({unit,dir,argv,timeoutMs,network:body.network}));
    const send=obj=>{if(!res.writableEnded)res.write(JSON.stringify(obj)+'\n');};
    child.stdout.on('data',d=>send({type:'output',text:String(d)}));child.stderr.on('data',d=>send({type:'output',text:String(d)}));
    let finished=false;
