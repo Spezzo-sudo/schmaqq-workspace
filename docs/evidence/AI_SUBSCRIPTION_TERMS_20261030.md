@@ -40,3 +40,25 @@ Die Nutzungsbedingungen selbst waren nicht abrufbar (HTTP 403) und sind daher ni
    API-Keys. Das ist eine Owner-Entscheidung, auch wegen der Regel „keine zusätzlichen kostenpflichtigen APIs“.
 4. Für Zielgruppe B (andere Teams nutzen Studio) braucht SCHMAQQ die Commercial Terms von Anthropic; jedes Team
    bringt eigene Zugänge mit.
+
+## Team-Pläne im Vergleich (Stand 30.10.2026, Preise in USD ohne Steuer)
+
+| | Claude Team | ChatGPT Business |
+|---|---|---|
+| Preis Standard-Sitz | 25 $/Monat monatlich, 20 $ bei Jahreszahlung | 25 $/Monat monatlich, 20 $ bei Jahreszahlung |
+| Mindestens | 2 Sitze | 2 Nutzer |
+| Für euch zwei | 50 $/Monat (40 $ jährlich) | 50 $/Monat (40 $ jährlich) |
+| Coding-Agent | Claude Code enthalten | Codex enthalten (Plus-Niveau) |
+| Bedingungen | geschäftlich (Commercial Terms) | geschäftlich |
+| Automatik in der Werkstatt | monatliche API-Guthaben, nutzbar für `claude -p`/Agent SDK mit API-Key aus verknüpfter Console-Organisation; laut Preisseite gemeinsam bis 500 $/Monat | API-Key empfohlen (nach Verbrauch bezahlt); Zugriffstokens für Automatik, Planzuordnung unklar |
+| Mehr Nutzung | Premium-Sitz 125 $/Monat (100 $ jährlich), 5× | Premium-Sitz laut Drittquellen 100–125 $ |
+
+Quellen: [claude.com/pricing](https://claude.com/pricing),
+[Agent SDK mit Claude-Plan](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan),
+[Codex Pricing](https://learn.chatgpt.com/docs/pricing). Nicht offiziell bestätigt: Höhe des API-Guthabens pro
+Standard-Sitz (Drittquellen: 20 $), Verhalten bei aufgebrauchtem Guthaben, Premium-Preis ChatGPT Business.
+
+**Empfehlung:** Claude Team mit zwei Standard-Sitzen, zuerst monatlich. Gründe: geschäftliche Bedingungen, Claude
+Code enthalten, und die enthaltenen API-Guthaben decken die Automatik in der Werkstatt ohne Zusatzkosten ab,
+solange sie reichen. Vor dem Abschluss im Console-Konto prüfen, dass bei leerem Guthaben nichts automatisch
+nachberechnet wird (Ausgabenlimit). ChatGPT Business nur, falls Markus Codex bevorzugt.
