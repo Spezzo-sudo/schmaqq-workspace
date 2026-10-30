@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {randomUUID} from 'node:crypto';
 import {transaction} from './store.mjs';
-import {metadata,storeMetadata,teamEvent,taskContract,taskView,completion,latestGeneralResult,invalidateTaskResult,teamError,hasCodeChanges} from './team-model.mjs';
+import {metadata,storeMetadata,teamEvent,taskContract,taskView,completion,latestGeneralResult,invalidateTaskResult,teamError,hasCodeChanges,quietJobActions} from './team-model.mjs';
 const id=z.string().regex(/^[\w-]{1,100}$/),revision=z.number().int().min(0);
 const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('read'),event:id}),
@@ -34,9 +34,13 @@ export function createTeamRoute({db,user,readJSON,parse}){
   if(method==='GET'){
    const project=url.searchParams.get('project');
    const tasks=db.prepare('SELECT * FROM tasks WHERE (? IS NULL OR project=?) ORDER BY created DESC,id').all(project,project).map(t=>taskView(db,t));
-   const events=db.prepare("SELECT value FROM workspace_meta WHERE key LIKE 'team:v1:event:%' AND (? IS NULL OR json_extract(value,'$.project')=?) ORDER BY json_extract(value,'$.created') DESC,rowid DESC LIMIT 40").all(project,project).map(r=>JSON.parse(r.value));
+   const quiet=quietJobActions.map(()=>'?').join(',');
+   const events=db.prepare(`SELECT value FROM workspace_meta WHERE key LIKE 'team:v1:event:%' AND (? IS NULL OR json_extract(value,'$.project')=?) AND json_extract(value,'$.kind') NOT IN (${quiet}) ORDER BY json_extract(value,'$.created') DESC,rowid DESC LIMIT 40`).all(project,project,...quietJobActions).map(r=>JSON.parse(r.value));
    const unread=events.filter(e=>e.actor!==member.id&&!metadata(db,'team:v1:read:'+member.id+':'+e.id));
-   send({tasks,events,unread});return true;
+   // Only kind and state of unfinished work, never payloads or results.
+   const active=db.prepare(`SELECT j.id,j.owner,j.project,j.action,j.status,j.created,w.task FROM jobs j LEFT JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree')
+    WHERE j.status IN ('queued','running','cancelling') AND (? IS NULL OR j.project=?) ORDER BY j.created DESC LIMIT 20`).all(project,project);
+   send({tasks,events,unread,active});return true;
   }
   if(method!=='POST')throw teamError(405,'Methode nicht erlaubt.');
   const v=parse(actions,await readJSON(req));

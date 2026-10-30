@@ -23,7 +23,7 @@ import {createWorkspaceHttpRoute} from './workspace-http.mjs';
 import {createRoomRoute} from './room-http.mjs';
 import {createTeamRoute} from './team-http.mjs';
 import {createGithubWorkflow,githubMemberTokens} from './github-workflow.mjs';
-import {taskContract,completion,teamEvent,storeMetadata,metadata} from './team-model.mjs';
+import {taskContract,completion,teamEvent,storeMetadata,metadata,jobEventLabels} from './team-model.mjs';
 import { openStore,digest,token,transaction } from './store.mjs';
 import {resolveDevice,placementView,setPlacement,placementModes,executors,deviceHost} from './placement.mjs';
 import {validateProjectPlan} from './project-plan.mjs';
@@ -202,7 +202,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
        const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(copy.task);
        if(task&&job.action==='submit'&&result.published===true)db.prepare("UPDATE tasks SET status='review' WHERE id=?").run(task.id);
        if(task&&['save-file','create-file','codex'].includes(job.action)&&task.status==='review')db.prepare("UPDATE tasks SET status='doing' WHERE id=?").run(task.id);
-       if(task)teamEvent(db,{actor:job.owner,project:job.project,task:task.id,kind:job.action,body:({submit:'Code zur Prüfung geteilt','save-file':'Datei gespeichert','create-file':'Datei erstellt',review:'Prüfstand erstellt',check:'Tests abgeschlossen',preview:'Vorschau erstellt',codex:'KI-Bearbeitung abgeschlossen'})[job.action]??'Bearbeitung aktualisiert'});
+       if(task&&jobEventLabels[job.action])teamEvent(db,{actor:job.owner,project:job.project,task:task.id,kind:job.action,body:jobEventLabels[job.action]});
       }
       if(job.action==='integrate'){
        const source=db.prepare('SELECT payload FROM jobs WHERE id=?').get(payload.reviewJob),base=source?JSON.parse(source.payload).worktree:null;

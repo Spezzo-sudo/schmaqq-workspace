@@ -6,6 +6,10 @@ import {reviewState} from './reviews.mjs';
 export const teamError=(status,message)=>Object.assign(new Error(message),{status});
 export function metadata(db,key,fallback=null){const r=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get(key);return r?JSON.parse(r.value):fallback;}
 export function storeMetadata(db,key,value){db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key,JSON.stringify(value));}
+// The project history keeps milestones and real work. Background jobs (reading, listing,
+// copying, setup checks) stay in the task's job log; older stored entries are filtered out.
+export const jobEventLabels={submit:'Code zur Prüfung geteilt','save-file':'Datei gespeichert','create-file':'Datei erstellt',review:'Prüfstand erstellt',check:'Tests abgeschlossen',preview:'Vorschau erstellt',codex:'KI-Bearbeitung abgeschlossen'};
+export const quietJobActions=['inspect','prepare','status','files','read-file','deploy-key','worktree'];
 export function teamEvent(db,{actor,project,task=null,kind,body}){
  const value={id:randomUUID(),actor,project,task,kind,body,created:Date.now()};
  storeMetadata(db,'team:v1:event:'+value.id,value);return value;

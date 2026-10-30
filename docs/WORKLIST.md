@@ -29,6 +29,9 @@ Der Deploy-Key im Repository `schmaqq-studio-pilot` wird nicht mehr gebraucht (O
 [Live-Nachweis](evidence/NIGHT_RELEASE_DEPLOY_20261030.md), [Status](NIGHT_STATUS_20261029.md)).
 Jetzt Praxistest A fortsetzen: die Analyseaufgabe mit Lesekopie als allgemeines Ergebnis festhalten.
 
+**Projektübersicht aufgeräumt: lokal fertig, wartet auf „ja, live“** (Befund des Owners vom 30.10.:
+Verlauf voller „Bearbeitung aktualisiert“). Details im obersten Abschnitt von [HANDOFF](HANDOFF.md).
+
 **A. Echter Praxistest mit Klimafinder** (echtes Projekt des Owners, Fokus bleibt Studio)
 
 Unterbrechung im Owner-Praxistest am 29.10.: Repository gespeichert und Deploy-Key

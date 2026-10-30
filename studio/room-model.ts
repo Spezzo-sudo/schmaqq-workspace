@@ -43,4 +43,5 @@ export type TaskContract={kind:'general'|'code';criteria:string;requiresReview:b
 export type TaskResult={id:string;owner:string;body?:string;commit?:string;branch?:string;state:string;created:number;shared?:boolean;integrated?:boolean;changedAfter?:boolean;contractRevision?:number;workflow?:string;votes?:{reviewer:string;decision:string;body:string;created:number}[]};
 export type TeamTask=Task&{contract:TaskContract;completion:{ready:boolean;missing:string[];result:TaskResult|null}};
 export type TeamEvent={id:string;actor:string;project:string;task:string|null;kind:string;body:string;created:number};
-export type TeamState={tasks:TeamTask[];events:TeamEvent[];unread?:TeamEvent[]};
+export type TeamJob={id:string;owner:string;project:string;action:string;status:string;created:number;task:string|null};
+export type TeamState={tasks:TeamTask[];events:TeamEvent[];unread?:TeamEvent[];active?:TeamJob[]};

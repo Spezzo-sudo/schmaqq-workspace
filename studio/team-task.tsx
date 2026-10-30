@@ -13,7 +13,9 @@ type Detail={source?:{id:string;body:string;authorName:string;created:number}|nu
 type Pane='conversation'|'work'|'review';
 export default function TeamTaskView({taskId,room,resources,userId,onClose,onRefresh,onConnect}:{taskId:string;room:RoomState;resources:Resource[];userId:string;onClose:()=>void;onRefresh:()=>Promise<void>;onConnect:()=>void}){
  const [detail,setDetail]=useState<Detail|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[wide,setWide]=useState(false);
- const [pane,setPane]=useState<Pane>(()=>{const p=new URLSearchParams(location.search).get('pane');return p==='work'||p==='review'?p:'conversation';});
+ const [pane,setPane]=useState<Pane>(()=>{const p=new URLSearchParams(location.search).get('pane');return p==='work'||p==='review'?p:p==='result'?'work':'conversation';});
+ // "Ergebnis festhalten" from the overview opens the task directly at the result field once it is rendered.
+ const wantsResult=useRef(new URLSearchParams(location.search).get('pane')==='result');
  const [editing,setEditing]=useState(false),[assistant,setAssistant]=useState<''|'local'|'external'>(''),[selectedReview,setSelectedReview]=useState('');
  const assistantPanel=useRef<HTMLDivElement|null>(null),localButton=useRef<HTMLButtonElement|null>(null),externalButton=useRef<HTMLButtonElement|null>(null),resultField=useRef<HTMLTextAreaElement|null>(null),tabs=useRef<HTMLElement|null>(null);
  // Deliberate clicks reveal what they opened below the sticky header; background polling never scrolls or moves focus.
@@ -40,6 +42,7 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
  useEffect(()=>{if(contract?.kind==='general')roomRequest<{history:TaskResult[]}>('/api/team/results?task='+encodeURIComponent(taskId)).then(r=>setGeneralHistory(r.history)).catch(e=>setError((e as Error).message));},[taskId,currentResult?.id,contract?.kind]);
  const device=resources.find(r=>r.owner===userId&&r.online&&r.development?.some(p=>p.id===room.project.id));
  function changePane(next:Pane){setPane(next);const url=new URL(location.href);url.searchParams.set('pane',next);history.replaceState(null,'',url);}
+ useEffect(()=>{if(!wantsResult.current||!detail)return;wantsResult.current=false;changePane('work');if(resultField.current)reveal(resultField.current);},[detail]);
  async function action(path:string,data:Record<string,unknown>){setBusy(true);setError('');try{await roomRequest(path,data);await Promise.all([refresh(),onRefresh()]);return true;}catch(e){setError((e as Error).message);return false;}finally{setBusy(false);}}
  const taskAction=(data:Record<string,unknown>)=>action('/api/collaboration/task',{task:taskId,...data});
  const teamAction=(data:Record<string,unknown>)=>action('/api/team',{task:taskId,...data});

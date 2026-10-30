@@ -32,6 +32,17 @@ for(const action of ['files','read-file'])db.prepare('INSERT INTO jobs(id,owner,
 const fresh=randomUUID();
 db.prepare("INSERT INTO tasks(id,project,title,description,status,priority,assignee,created) VALUES(?,?,?,?,?,'normal',?,?)").run(fresh,project,'Neue Recherche','Gerade übernommen, noch nichts erarbeitet.','todo','night-owner',now-1);
 storeMetadata(db,'team:v1:task:'+fresh,{kind:'general',criteria:'',requiresReview:false,blocked:'',cancelled:false,revision:0});
+// Overview fixture: a colleague's task, legacy read noise like the live 29.10. history, real work and one queued test run.
+db.prepare('INSERT INTO members(id,email,name,role,password,seen) VALUES(?,?,?,?,?,?)').run('night-colleague','colleague@fixture.invalid','Kollege Test','member',passwordHash('Synthetic-Colleague-2026'),now);
+const colleague=randomUUID();
+db.prepare("INSERT INTO tasks(id,project,title,description,status,priority,assignee,created) VALUES(?,?,?,?,?,'normal',?,?)").run(colleague,project,'Texte der Startseite kürzen','Kürzere Einleitung.','doing','night-colleague',now-2);
+storeMetadata(db,'team:v1:task:'+colleague,{kind:'general',criteria:'',requiresReview:false,blocked:'',cancelled:false,revision:0});
+const minute=60_000,event=(actor,taskId,kind,body,ago)=>storeMetadata(db,'team:v1:event:'+randomUUID(),{id:randomUUID(),actor,project,task:taskId,kind,body,created:now-ago*minute});
+event('night-owner',task,'create','Aufgabe angelegt: Hauptseite analysieren',900);
+for(let i=0;i<12;i++)event('night-owner',task,'read-file','Bearbeitung aktualisiert',800-i*3);
+for(let i=0;i<3;i++)event('night-colleague',colleague,'save-file','Datei gespeichert',120-i*4);
+event('night-colleague',null,'message','Neue Nachricht im Projektgespräch',60);
+db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created,result) VALUES(?,?,?,?,?,?,?,?,?)').run(randomUUID(),'night-owner','night-server',project,'check',JSON.stringify({worktree:copy}),'queued',now,null);
 await new Promise(r=>app.server.listen(45791,'127.0.0.1',r));
 // Report capabilities like a runner would, so the UI sees both executors (synthetic tokens only).
 for(const [id,kind,development] of [['night-pc','pc',[]],['night-server','server',[{id:project,setupVersion:1,check:false,preview:false,allowCodex:false,publish:false}]]]){

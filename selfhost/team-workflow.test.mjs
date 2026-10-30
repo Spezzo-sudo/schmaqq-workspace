@@ -6,7 +6,7 @@ import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createStudioServer} from './server.mjs';
 import {createInvite,openStore} from './store.mjs';
-import {completion,metadata,taskContract} from './team-model.mjs';
+import {completion,metadata,taskContract,teamEvent} from './team-model.mjs';
 import {createSource} from './files.mjs';
 import {parseCommand} from '../app/setup-command.ts';
 async function fixture(t){
@@ -86,6 +86,21 @@ test('archiving a personal copy keeps historical review diff accessible; code co
  f.app.db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created,result) VALUES(?,?,?,?,?,?,?,?,?)').run('fixture-review',f.a.id,device.id,f.project,'review',JSON.stringify({worktree:id}),'completed',2,JSON.stringify({commit:'a'.repeat(40),diff:'diff --git a/a b/a\n+new',checks:'Tests pass'}));
  assert.equal((await f.request(`/api/collaboration/task-diff?task=${task}&review=fixture-review`,null,f.b.cookie)).status,200);
  assert.equal(completion(f.app.db,f.app.db.prepare('SELECT * FROM tasks WHERE id=?').get(task)).ready,false);
+});
+test('project history keeps real work; background reads stay out and unfinished jobs are listed without payloads',async t=>{
+ const f=await fixture(t),db=f.app.db,device=(await f.request('/api/development',{action:'device',name:'Marco PC'},f.a.cookie)).body;
+ const task=await f.task(),insert=(id,action,status,payload)=>db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created,result) VALUES(?,?,?,?,?,?,?,?,?)').run(id,f.a.id,device.id,f.project,action,JSON.stringify(payload),status,Date.now(),status==='completed'?'{}':null);
+ insert('copy','prepare','completed',{});db.prepare('INSERT INTO workspaces(job,title,scope,task) VALUES(?,?,?,?)').run('copy','Lesekopie','',task);
+ const run=async(id,action)=>{insert(id,action,'queued',{worktree:'copy',file:'secret-path.txt'});const job=(await f.request('/api/runner/poll',{},null,device.token)).body.job;assert.equal(job.id,id);
+  assert.equal((await f.request('/api/runner/report',{id:job.id,lease:job.lease,ok:true,result:{}},null,device.token)).status,200);};
+ await run('read-1','read-file');await run('list-1','files');await run('save-1','save-file');
+ teamEvent(db,{actor:f.a.id,project:f.project,task,kind:'read-file',body:'Bearbeitung aktualisiert'});// stored by older servers
+ insert('check-1','check','queued',{worktree:'copy',file:'secret-path.txt'});
+ const state=(await f.request('/api/team?project='+f.project,null,f.a.cookie)).body;
+ assert.deepEqual(state.events.filter(e=>e.task===task).map(e=>[e.kind,e.body]),[['save-file','Datei gespeichert']]);
+ assert.equal(db.prepare("SELECT count(*) AS n FROM workspace_meta WHERE key LIKE 'team:v1:event:%' AND json_extract(value,'$.kind')='read-file'").get().n,1,'Older entries stay stored');
+ assert.deepEqual(state.active.map(j=>[j.id,j.action,j.status,j.task]),[['check-1','check','queued',task]]);
+ assert.equal(JSON.stringify(state.active).includes('secret-path'),false);
 });
 test('a read-only task copy keeps a general analysis general; real file changes keep the code gates',async t=>{
  const f=await fixture(t),db=f.app.db,device=(await f.request('/api/development',{action:'device',name:'Marco PC'},f.a.cookie)).body;

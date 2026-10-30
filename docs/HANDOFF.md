@@ -1,3 +1,15 @@
+## Lokal, 30.10.2026: aufgeräumte Projektübersicht (nicht live)
+
+Owner-Befund: „Zuletzt passiert“ voller gleicher Einträge („Bearbeitung aktualisiert“ je gelesener Datei).
+Umgesetzt: Lesen/Auflisten/Einrichten (`quietJobActions`) erzeugt keinen Projektverlauf mehr, ältere solche
+Einträge werden ausgeblendet (gespeichert bleiben sie). Neue Übersicht `studio/project-overview.tsx`:
+Zustandszeile (Repository, Rechner, offene Aufgaben), „Jetzt dran – bei dir“ mit genau einem nächsten Schritt
+(`project-overview-model.ts`, aus den Abschlussregeln), „Läuft gerade“ (neu `active` in `GET /api/team`, nur
+Art/Status/Aufgabe, keine Payloads), „Wartet auf andere“, Verlauf gruppiert, max. 5, mit Aufgabe und
+„heute/gestern“. „Ergebnis festhalten“ öffnet die Aufgabe direkt im Ergebnisfeld (`pane=result`).
+Geprüft: 277 Tests, 256 PASS, 0 FAIL, 21 Plattform-Skips; Browser mit erweiterter Fixture auf 1280 px und 390 px
+(kein Überlauf, Fokus im Ergebnisfeld, Rückkehr zur Übersicht). Live erst nach aktuellem „ja, live“.
+
 ## Live seit 30.10.2026 früh: Nachtlauf P0–P4 (Studio und Worker auf 5c3208a)
 
 Nach aktuellem Owner-„Ja, live“ nach OPERATIONS.md ausgeliefert; alle Prüfungen PASS, Rückweg f139419.
