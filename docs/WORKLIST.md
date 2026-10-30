@@ -23,6 +23,15 @@ blieben. Auf dem Server-Worker wurden Repository-Kopien, Arbeitskopien und der P
 GitHub unverändert. Backup: `/var/lib/schmaqq-studio/backups/before-fresh-start-20261029T182657Z.sqlite`.
 Der Deploy-Key im Repository `schmaqq-studio-pilot` wird nicht mehr gebraucht (Owner kann ihn löschen).
 
+## Richtungsentscheid 30.10.2026 (Owner)
+
+Studio ist in der heutigen Form für Nutzer unverständlich (Einrichtung, Aufgaben, Rechnerwahl). Zielbild
+„Studio Zielbild Einfach“ (privates Artifact https://claude.ai/artifact/WS34uruQ4y2CSACNgjXBvP): GitHub = Code,
+Studio = Raum (Team + KI im Gespräch), Werkstatt = unsichtbarer Server. **Zielgruppe zuerst Marco und Markus,
+danach kleine Teams mit etwas Technik; Kunden ohne Technik später als eigener Schritt.** Vor dem Bau: Skizze mit
+3–5 Personen testen und klären, ob ChatGPT-/Claude-Abos automatisches Arbeiten in der Werkstatt erlauben. Bis
+dahin keine neuen Funktionen, nur Vereinfachung.
+
 ## In Arbeit
 
 **Nachtauftrag: live seit 30.10.2026** (Studio und Worker auf 5c3208a,
