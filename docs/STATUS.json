@@ -1,6 +1,7 @@
 {
   "klimafinder_practice_20261030": {
-    "state": "partial_blocked_review",
+    "state": "review_ready_not_shared",
+    "update": "Own network namespace per test/build job live (a4c1667, rollback fed02f9). Klimafinder check fully green incl. test_backend; review commit 67b1cab on studio/ff3f7e80 with preview; not published (worker upload not permitted).",
     "result": "Analysis task done (owner recorded result). Code task 'Leise-Priorität' implemented in worker copy ff3f7e80 (finder_experience.js src+site, new test p64a, Makefile line); all finder tests PASS incl. P64A; preview works. Review blocked by pre-existing tests/test_backend.mjs failing in the job sandbox (loopback server denied; baseline fails identically).",
     "live": "Studio and worker on fed02f9 (rollback 94a51ca, then d72d823): launcher restores group access after jobs; static previews answer root-absolute paths via HttpOnly cookie.",
     "system_changes": "Owner-approved: python3.12-venv installed on VPS; Klimafinder worker project uses system Python/Jinja2 without downloads (backup of connected-projects.private.json kept). Proxy allowlist unchanged.",

@@ -34,8 +34,10 @@ aktualisiert“). [Live-Nachweis](evidence/PROJECT_OVERVIEW_DEPLOY_20261030.md).
 
 **Stand 30.10. abends** ([Nachweis](evidence/KLIMAFINDER_PRACTICE_20261030.md)): Analyse erledigt; Code-Aufgabe
 „Leise-Priorität“ umgesetzt, alle Finder-Tests grün, Vorschau funktioniert. **Blocker:** vorbestehender
-`tests/test_backend.mjs` braucht Loopback im Job (Sandbox verbietet das) → kein Prüfstand. Zwei Studio-Fehler
-(Rechte, Vorschau-Pfade) live behoben (`94a51ca`, `fed02f9`). Nächstes: Entscheidung Job-Netz für lokale Testserver.
+`tests/test_backend.mjs` braucht Loopback im Job → gelöst mit eigenem Netz pro Job (`a4c1667`, live). Testlauf
+komplett grün, **Prüfstand `67b1cab` mit Vorschau steht**. Drei Studio-Fehler live behoben (`94a51ca`, `fed02f9`,
+`a4c1667`). Nächstes: Hochladen-Freigabe für den Worker → Branch/PR teilen; dann Bedienbarkeit (KI richtet ein und
+hält fest).
 
 **A. Echter Praxistest mit Klimafinder** (echtes Projekt des Owners, Fokus bleibt Studio)
 

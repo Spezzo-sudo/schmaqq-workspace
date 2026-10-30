@@ -1,3 +1,8 @@
+## Nachtrag 30.10. spät: Studio und Worker auf a4c1667, Klimafinder-Prüfstand steht
+
+Tests/Builds laufen in eigenem Netz pro Job (eigenes Loopback, sonst nichts erreichbar). Klimafinder-Testlauf
+komplett grün, Prüfstand `67b1cab` mit Vorschau; Teilen zu GitHub wartet auf Owner-Freigabe zum Hochladen.
+
 ## Live seit 30.10.2026 abends: Klimafinder-Praxistest, Studio und Worker auf fed02f9
 
 Analyse erledigt, Code-Aufgabe „Leise-Priorität“ in der Worker-Kopie fertig und getestet (Vorschau ok), Prüfstand

@@ -46,13 +46,25 @@ Probestart auf Datenkopie, Schema PASS, Job-Isolation 10/10, Sandbox-Probe, öff
 Rückweg `fed02f9` → `94a51ca` → `d72d823`. Backups `predeploy-94a51ca-20261030T183304Z.sqlite`,
 `predeploy-fed02f9-20261030T190609Z.sqlite`.
 
+## Nachtrag: eigenes Netz pro Job (`a4c1667`) und Prüfstand
+
+- Owner-Entscheidung „Eigenes Netz pro Job“: Tests und Vorschau-Builds laufen mit `PrivateNetwork=yes` (eigenes
+  Loopback; Studio, Proxy, Internet unerreichbar), Vorbereitung weiter nur über den Proxy, Live-Vorschau
+  unverändert. Vorab auf dem VPS mit einer transienten Einheit belegt: eigener Server ok, `127.0.0.1:4310`
+  ECONNREFUSED, Proxy ECONNREFUSED, Internet EAI_AGAIN. Live nach OPERATIONS (Owner-„Ja, live“), alle Prüfungen
+  PASS, Rückweg `fed02f9`, Backup `predeploy-a4c1667-20261030T192931Z.sqlite`.
+- Klimafinder-Testlauf (Job `f734adc4`): **komplett grün**, inkl. `BACKEND TESTS PASSED`.
+- **Prüfstand** (Job `00b7273e`): Commit `67b1cabdfe8c8e533b28d777522030fe29bfd4f7` auf
+  `studio/ff3f7e80-13d5-4f33-b423-817e68fb1a99` (Basis `f60408a`), Vorschau
+  https://studio-preview.schmaqq.com/eaDmpdpj7AwhSGj13S47FjGZ1QKQRzYfuyoCHijD_TY/index.html, `published:false`
+  (Hochladen zu GitHub ist für den Worker nicht freigegeben).
+
 ## Offen
 
-- **`test_backend.mjs` im Job**: startet einen Server auf `127.0.0.1`; die Job-Sandbox erlaubt nur den Proxy
-  (`IPAddressDeny=any`). Freigabe von Loopback würde Studio/andere Dienste für Jobs erreichbar machen. Lösung
-  braucht ein eigenes Netz pro Job (z. B. eigener Netzwerk-Namespace mit eigenem Loopback, Proxy-Weg separat) –
-  Designentscheidung.
-- Ohne grünen Testlauf kein Prüfstand, kein Branch auf GitHub (Hochladen ist ohnehin nicht freigegeben).
+- Teilen als GitHub-Branch/PR braucht die Owner-Freigabe „Aufgabenbranches hochladen“ und einen Deploy-Key mit
+  Schreibrecht; danach Freigabe durch zweite Person, dann Merge.
+- Projekttests, die selbst Pakete aus dem Internet laden, scheitern jetzt im Testschritt (gewollt; Downloads
+  gehören in die Vorbereitung).
 - Bedienbarkeit: Der Owner musste Felder suchen, IDs kopieren, Programme wechseln. Wichtigster Befund:
   KI-Werkzeuge zum Einrichten und Ergebnis-Festhalten, damit der Owner nur bestätigt.
 - Assistenten mit älterer Werkzeugliste kennen `offset`/`list_tasks` erst nach Neuverbinden; `get_code_job`
