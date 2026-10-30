@@ -367,7 +367,8 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Cache-Control','no-store');
   const requested=new URL(req.url,previewOrigin),pathname=requested.pathname,match=pathname.match(/^\/([\w-]{40,60})\/(.*)$/);
   // Live preview link: remember it in a cookie and continue at the app's own paths, so absolute links (/api/...) work.
-  if(match&&liveMeta(match[1])){res.writeHead(302,{'Set-Cookie':`schmaqq_live=${match[1]}; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600${previewSecure?'; Secure':''}`,Location:'/'+match[2]+requested.search});res.end();return;}
+  const cookieOf=(name,value,age=3600)=>`${name}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${age}${previewSecure?'; Secure':''}`;
+  if(match&&liveMeta(match[1])){res.writeHead(302,{'Set-Cookie':[cookieOf('schmaqq_live',match[1]),cookieOf('schmaqq_static','',0)],Location:'/'+match[2]+requested.search});res.end();return;}
   const liveId=req.headers.cookie?.match(/(?:^|;\s*)schmaqq_live=([\w-]+)/)?.[1],live=(!match||!db.prepare('SELECT 1 FROM previews WHERE id=?').get(match[1]))&&liveMeta(liveId);
   if(live){
    // The app never sees the preview cookie itself.
@@ -378,11 +379,15 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    upstream.on('error',()=>{if(!res.headersSent){res.writeHead(502,{'Content-Type':'text/plain; charset=utf-8'});res.end('Die Live-Vorschau läuft nicht mehr. Bitte neu starten.');}else res.destroy();});
    req.pipe(upstream);return;
   }
-  if(!match){res.writeHead(404);res.end();return;}
-  const preview=db.prepare('SELECT manifest FROM previews WHERE id=?').get(match[1]);const files=preview?JSON.parse(preview.manifest):null;let name;try{name=decodeURIComponent(match[2])||'index.html';}catch{res.writeHead(400);res.end();return;}
+  // Static sites often use root-absolute paths (/assets/app.js). Like live previews, the opened
+  // preview is remembered in a cookie and such paths are answered from that preview only.
+  const staticId=match&&db.prepare('SELECT 1 FROM previews WHERE id=?').get(match[1])?match[1]:req.headers.cookie?.match(/(?:^|;\s*)schmaqq_static=([\w-]{40,60})/)?.[1];
+  if(!staticId){res.writeHead(404);res.end();return;}
+  const preview=db.prepare('SELECT manifest FROM previews WHERE id=?').get(staticId);const files=preview?JSON.parse(preview.manifest):null;let name;try{name=decodeURIComponent(match&&staticId===match[1]?match[2]:pathname.slice(1))||'index.html';}catch{res.writeHead(400);res.end();return;}
+  if(files&&name.endsWith('/')&&Object.hasOwn(files,name+'index.html'))name+='index.html';
   if(!files||!Object.hasOwn(files,name)){res.writeHead(404);res.end('Vorschau nicht gefunden oder abgelaufen.');return;}
-  const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.json':'application/json','.woff2':'font/woff2'}[path.extname(name)]??'application/octet-stream';
-  res.writeHead(200,{'Content-Type':mime});res.end(Buffer.from(files[name],'base64'));
+  const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.json':'application/json','.woff2':'font/woff2','.ico':'image/x-icon','.webmanifest':'application/manifest+json','.xml':'application/xml','.txt':'text/plain; charset=utf-8'}[path.extname(name)]??'application/octet-stream';
+  res.writeHead(200,{'Content-Type':mime,...(match&&staticId===match[1]?{'Set-Cookie':[cookieOf('schmaqq_static',staticId),cookieOf('schmaqq_live','',0)]}:{})});res.end(Buffer.from(files[name],'base64'));
  });
  return {server,previewServer,db};
 }
