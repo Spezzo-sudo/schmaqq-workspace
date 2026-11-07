@@ -3,3 +3,16 @@
 @media(max-width:650px){.team-shell .rw-room-nav>nav{display:none}.team-mobile-section{display:grid;gap:7px;font-size:13px;width:100%;margin-top:14px}.team-mobile-section select{font-size:16px;min-height:46px}}
 @media(max-width:1000px){.team-shell .rw-room-nav{flex-wrap:wrap}.team-shell .rw-room-nav nav{width:100%}.team-shell .rw-search{width:100%;margin:10px 0}.team-home-columns,.team-overview{grid-template-columns:1fr}.team-task.expanded{width:100vw}}
 @media(max-width:650px){.team-shell .rw-room-nav nav{gap:20px;justify-content:flex-start}.team-shell .rw-room-nav nav button{min-height:46px;font-size:12px}.team-shell .rw-search{display:flex}.team-shell .rw-board{display:flex;flex-direction:column;gap:22px;overflow:visible}.team-shell .rw-board>section{width:100%;height:auto;min-height:100px}.team-shell .rw-task-card h3{font-size:15px}.team-task,.team-task.expanded{width:100vw}.team-task-summary,.team-task-pane{padding:20px 16px}.team-task-tabs{gap:16px;padding:0 16px;overflow:auto}.team-task-tabs button{font-size:12px;white-space:nowrap;min-height:48px}.team-task .rw-assistant{margin:12px 16px}.team-task textarea,.team-task input,.team-form textarea,.team-form input,.team-form select{font-size:16px}.team-overview,.team-results{padding:16px}.team-work-card{padding:14px}.team-shell .rw-topbar .rw-sync{display:none}.team-shell .rw-knowledge{padding:20px 16px}.team-task .team-goal{font-size:15px}.team-shell .rw-room-heading .rw-title-row h1{overflow-wrap:anywhere}.team-callout .rw-button{margin:6px 6px 6px 0}.team-task>header .rw-drawer-heading{min-width:0}.team-task>header h2{overflow-wrap:anywhere}.team-shell .rw-conversation{min-height:450px}}
+
+/* Phone: only the slim top bar stays; the project heading scrolls away with the content,
+   so the content gets the whole screen instead of the lower third. */
+@media(max-width:650px){
+ .team-shell .rw-main{overflow-y:auto;overscroll-behavior:contain}
+ .team-shell .rw-topbar{position:sticky;top:0;z-index:20;background:var(--rw-paper,#f6f6f1)}
+ .team-shell .team-project-content{overflow:visible;flex:none;min-height:auto}
+ .team-shell .rw-room-heading .rw-eyebrow{display:none}
+ .team-shell .rw-room-heading .rw-title-row{gap:12px}
+ .team-shell .rw-room-heading .rw-title-row h1{font-size:26px;line-height:1.1}
+ .team-shell .rw-room-heading .rw-title-row p{display:none}
+ .team-shell .rw-room-heading .rw-title-row .rw-button{min-height:40px;padding:8px 14px}
+}
