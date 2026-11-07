@@ -72,3 +72,17 @@ test('Studio hands a repository token only to the server worker and never stores
  const job=(await request('/api/runner/poll',{},null,srv.token)).data.job;
  assert.equal(job.action,'deploy-key');assert.equal(job.github,undefined);
 });
+
+test('with a GitHub App token the server worker may share a task branch despite an old profile without upload',async t=>{
+ const dir=mkdtempSync(path.join(os.tmpdir(),'github-app-publish-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const repo=path.join(dir,'repo');mkdirSync(repo);await command(['git','init','-q'],repo);
+ const runner=new LocalRunner({stateDir:path.join(dir,'state'),projects:{website:{repo,base:'main',check:['true'],publish:false,workflow:'pull-request'}},kind:'server',launcher:{url:'http://127.0.0.62:3129',keyFile:'x'}});
+ t.after(()=>runner.close?.());
+ const job={id:'job-1',action:'submit',project:'website',payload:{worktree:'copy-1'}};
+ await assert.rejects(runner.run(job),/noch gesperrt/,'without the app the old profile still blocks');
+ await assert.rejects(runner.run({...job,github:{repository:'owner/site',token:TOKEN}}),e=>!/noch gesperrt/.test(e.message),'with the app token the profile no longer blocks (later steps may still fail here)');
+ // A personal PC keeps its own rule even if a token were passed.
+ const pc=new LocalRunner({stateDir:path.join(dir,'pc'),projects:{website:{repo,base:'main',check:['true'],publish:false,workflow:'pull-request'}}});
+ t.after(()=>pc.close?.());
+ await assert.rejects(pc.run({...job,github:{repository:'owner/site',token:TOKEN}}),/noch gesperrt/);
+});
