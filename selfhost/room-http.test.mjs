@@ -199,3 +199,22 @@ test('a new task can be taken by its creator right away',async t=>{
  assert.deepEqual({...app.db.prepare('SELECT assignee,status FROM tasks WHERE id=?').get(mine.data.task)},{assignee:member,status:'doing'});
  assert.deepEqual({...app.db.prepare('SELECT assignee,status FROM tasks WHERE id=?').get(open.data.task)},{assignee:null,status:'todo'});
 });
+
+test('only the owner decides how a project goes live, and the room shows it',async t=>{
+ const {mkdtempSync,rmSync}=await import('node:fs');const os=await import('node:os');const path=await import('node:path');
+ const {createStudioServer}=await import('./server.mjs');const {createInvite}=await import('./store.mjs');
+ const dir=mkdtempSync(path.join(os.tmpdir(),'room-live-')),origin='http://127.0.0.1:44641';
+ const app=createStudioServer({filename:path.join(dir,'s.sqlite'),origin,previewOrigin:'http://127.0.0.1:44642',seedProjects:true});
+ await new Promise(r=>app.server.listen(44641,'127.0.0.1',r));t.after(async()=>{await new Promise(r=>app.server.close(r));app.db.close();rmSync(dir,{recursive:true,force:true});});
+ const request=async(route,value,cookie)=>{const r=await fetch(origin+route,{method:value?'POST':'GET',headers:{...(value?{Origin:origin,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:value?JSON.stringify(value):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};};
+ const owner=await request('/api/auth/register',{invite:createInvite(app.db,'o@fixture.invalid','owner'),name:'O',password:'fixture-password-1234'});
+ const member=await request('/api/auth/register',{invite:createInvite(app.db,'m@fixture.invalid'),name:'M',password:'fixture-password-1234'});
+ app.db.prepare("UPDATE members SET role='member' WHERE email='m@fixture.invalid'").run();
+ const revision=(await request('/api/room?project=website',null,owner.cookie)).data.meta.revision;
+ assert.equal((await request('/api/team',{action:'live',project:'website',revision,live:'manual'},member.cookie)).status,403);
+ assert.equal((await request('/api/team',{action:'live',project:'website',revision:revision+5,live:'manual'},owner.cookie)).status,409);
+ assert.equal((await request('/api/team',{action:'live',project:'website',revision,live:'everywhere'},owner.cookie)).status,400);
+ assert.equal((await request('/api/team',{action:'live',project:'website',revision,live:'manual'},owner.cookie)).status,200);
+ const meta=(await request('/api/room?project=website',null,member.cookie)).data.meta;
+ assert.equal(meta.live,'manual');assert.equal(meta.revision,revision+1);
+});

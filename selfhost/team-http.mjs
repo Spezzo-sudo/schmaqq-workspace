@@ -13,6 +13,7 @@ const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('cancel'),task:id,revision,reason:z.string().trim().min(1).max(2000)}),
  z.object({action:z.literal('reopen'),task:id,revision}),
  z.object({action:z.literal('note'),project:id,note:id,revision,title:z.string().trim().min(1).max(160),body:z.string().trim().min(1).max(12000),archived:z.boolean()}),
+ z.object({action:z.literal('live'),project:id,revision,live:z.enum(['merge','manual'])}),
  z.object({action:z.literal('project'),project:id,revision,title:z.string().trim().min(1).max(160),description:z.string().trim().max(12000),archived:z.boolean(),base:z.string().regex(/^[\w./-]{1,100}$/).refine(s=>!s.includes('..')&&!s.startsWith('-')).optional(),workflow:z.enum(['direct','pull-request']).optional()})
 ]);
 export function createTeamRoute({db,user,readJSON,parse}){
@@ -57,6 +58,15 @@ export function createTeamRoute({db,user,readJSON,parse}){
     db.prepare('UPDATE documents SET title=?,body=?,author=?,revision=revision+1,updated=? WHERE id=?').run(v.title,v.body,member.id,Date.now(),note.id);
     storeMetadata(db,'room:v1:note:'+note.id,{...meta,archived:v.archived});
     teamEvent(db,{actor:member.id,project:v.project,kind:'knowledge',body:(v.archived?'Wissen archiviert: ':'Wissen aktualisiert: ')+v.title});return;
+   }
+   if(v.action==='live'){
+    // How finished changes reach the real website: automatically when merged, or by a separate step (e.g. Hermes).
+    if(!db.prepare('SELECT id FROM projects WHERE id=?').get(v.project))throw teamError(404,'Projekt fehlt.');
+    const meta=metadata(db,'room:v1:project:'+v.project,{revision:0,repository:null});
+    if(meta.revision!==v.revision)throw teamError(409,'Projekteinstellungen inzwischen geändert. Bitte neu laden.');
+    if(member.role!=='owner'&&meta.createdBy!==member.id)throw teamError(403,'Wie das Projekt live geht, legt der Inhaber fest.');
+    storeMetadata(db,'room:v1:project:'+v.project,{...meta,live:v.live,revision:meta.revision+1});
+    teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:v.live==='merge'?'Live-Weg: automatisch beim Übernehmen':'Live-Weg: eigener Schritt nach dem Übernehmen'});return;
    }
    if(v.action==='project'){
     const p=db.prepare('SELECT * FROM projects WHERE id=?').get(v.project);if(!p)throw teamError(404,'Projekt fehlt.');

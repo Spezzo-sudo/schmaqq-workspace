@@ -2,10 +2,11 @@ import {useState} from 'react';
 import {ChevronRight} from 'lucide-react';
 import type {Resource,RoomMember,RoomState,TeamEvent,TeamJob,TeamTask} from './room-model';
 import {nextStep,groupEvents,when,runningLabels,type Step,type TaskPane} from './project-overview-model';
+import ProjectReady from './project-ready';
 import './project-overview.css';
 export type {TaskPane};
 
-export default function ProjectOverview({room,tasks,events,active,members,resources,userId,onOpenTask,onTab}:{room:RoomState;tasks:TeamTask[];events:TeamEvent[];active:TeamJob[];members:RoomMember[];resources:Resource[];userId:string;onOpenTask:(task:TeamTask,pane?:TaskPane)=>void;onTab:(tab:'talk'|'connect')=>void}){
+export default function ProjectOverview({room,tasks,events,active,members,resources,userId,onOpenTask,onTab,onRepository,onRefresh}:{room:RoomState;tasks:TeamTask[];events:TeamEvent[];active:TeamJob[];members:RoomMember[];resources:Resource[];userId:string;onOpenTask:(task:TeamTask,pane?:TaskPane)=>void;onTab:(tab:'talk'|'connect')=>void;onRepository:()=>void;onRefresh:()=>Promise<void>}){
  const [all,setAll]=useState(false);
  const names=new Map(members.map(m=>[m.id,m.name])),titles=new Map(tasks.map(t=>[t.id,t.title])),byId=new Map(tasks.map(t=>[t.id,t]));
  const open=tasks.filter(t=>t.status!=='done'&&!t.contract.cancelled).map(t=>({task:t,step:nextStep(t,userId,names)}));
@@ -13,7 +14,6 @@ export default function ProjectOverview({room,tasks,events,active,members,resour
  const runs=room.runs.filter(r=>r.status==='queued'||r.status==='running').map(r=>({id:r.id,task:r.task,action:'codex',owner:r.owner}));
  const working=[...active.map(j=>({id:j.id,task:j.task,action:j.action,owner:j.owner})),...runs];
  const running=[...working.reduce((m,j)=>{const key=j.task+':'+j.action,g=m.get(key);if(g)g.count++;else m.set(key,{...j,count:1});return m;},new Map<string,{id:string;task:string|null;action:string;owner:string;count:number}>()).values()];
- const configured=resources.filter(r=>r.development?.some(p=>p.id===room.project.id)),online=configured.filter(r=>r.online);
  const groups=groupEvents(events,titles),shown=all?groups:groups.slice(0,5);
  const card=({task,step}:{task:TeamTask;step:Step},primary:boolean)=><article className={'po-task'+(primary?' primary':'')} key={task.id}>
   <button className="po-task-title" onClick={()=>onOpenTask(task)}><strong>{task.title}</strong><ChevronRight size={16} aria-hidden="true"/></button>
@@ -22,11 +22,7 @@ export default function ProjectOverview({room,tasks,events,active,members,resour
   {primary&&<button className="rw-button lime" onClick={()=>onOpenTask(task,step.pane)}>{step.action}</button>}
  </article>;
  return <div className="project-overview">
-  <ul className="po-state" aria-label="Zustand des Projekts">
-   <li className={room.meta.repository?'ok':'warn'}>{room.meta.repository?'Repository verbunden':<button onClick={()=>onTab('connect')}>Kein Repository verbunden</button>}</li>
-   <li className={online.length?'ok':'warn'}>{online.length?(online.length===1?online[0].name+' bereit':online.length+' Rechner bereit'):<button onClick={()=>onTab('connect')}>{configured.length?'Eingerichteter Rechner offline':'Noch kein Rechner eingerichtet'}</button>}</li>
-   <li>{open.length===1?'1 offene Aufgabe':open.length+' offene Aufgaben'}</li>
-  </ul>
+  <ProjectReady room={room} resources={resources} members={members} userId={userId} onRepository={onRepository} onRefresh={onRefresh}/>
   <div className="po-columns">
    <div>
     <section aria-labelledby="po-mine"><h2 id="po-mine">Jetzt dran – bei dir <span>{mine.length}</span></h2>

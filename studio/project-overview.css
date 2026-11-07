@@ -39,3 +39,17 @@
   .po-task.primary { box-shadow: 3px 3px 0 var(--schmaqq-paper-deep) }
 }
 @media (prefers-reduced-motion: reduce) { .po-pulse { animation: none } }
+
+/* Startklar: one ordered list of setup steps; collapses to one line when complete. */
+.po-ready { border: 2px solid var(--schmaqq-ink); background: var(--schmaqq-paper-light); padding: 16px; margin-bottom: 24px; display: grid; gap: 12px }
+.po-ready.done { border-width: 1px; border-color: var(--schmaqq-rule-strong); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 14px }
+.po-ready.done p { margin: 0; display: flex; align-items: center; gap: 6px }
+.project-overview .po-ready h2 { margin: 0 }
+.po-ready ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px }
+.po-ready li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; align-items: start }
+.po-ready li > div { display: grid; gap: 8px; min-width: 0 }
+.po-ready li p { margin: 0; font-size: 14px; line-height: 1.5 }
+.po-ready li.ok strong { color: var(--schmaqq-muted) }
+.po-ready-mark { width: 22px; height: 22px; border: 1.5px solid var(--schmaqq-ink); display: grid; place-items: center; background: var(--schmaqq-paper-light) }
+.po-ready li.ok .po-ready-mark { background: var(--schmaqq-acid) }
+.po-ready .rw-link { all: unset; cursor: pointer; text-decoration: underline; text-underline-offset: 3px }

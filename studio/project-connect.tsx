@@ -1,15 +1,11 @@
 import {useState,useEffect,useRef} from 'react';
 import {parseCommand} from '../app/setup-command';
 import {roomRequest,type Resource} from './room-model';
+import {githubState,githubNotice,linkGithub as openGithub,type GithubApp,type GithubAccess} from './github-link';
 
 type Configuration={version:1;prepare:string[][];check:string[];requires:string[];generated:string[];preview?:{build:string[];directory:string}|{serve:{argv:string[];port:number}}};
 type SetupPlan={revision:string;source:string;label:string;state:'proposed'|'needs_configuration'|'missing_tools';configuration:Configuration|null;notes:string[];tools:{program:string;available:boolean}[]};
 type JobResult={error?:string;publicKey?:string;setupPlan?:SetupPlan;configured?:boolean};
-type GithubApp={configured:boolean;canCreate:boolean};
-type GithubAccess={repository:string|null;base:string;configured:boolean;access:boolean;protected:boolean|null};
-// Studio's own address to return to after GitHub, without earlier GitHub notices.
-function returnHere(){const url=new URL(location.href);url.searchParams.delete('github_app');url.searchParams.delete('github_app_error');return url.pathname+url.search;}
-
 export default function ProjectConnect({project,projectTitle='Projekt',initialDevice='',resources,userId,onDone}:{project:string;projectTitle?:string;initialDevice?:string;resources:Resource[];userId:string;onDone:()=>Promise<void>}){
  const own=resources.filter(r=>r.owner===userId);
  const [device,setDevice]=useState(own.some(r=>r.device===initialDevice)?initialDevice:own.find(r=>r.online)?.device??''),[automatic,setAutomatic]=useState(true);
@@ -31,23 +27,15 @@ export default function ProjectConnect({project,projectTitle='Projekt',initialDe
  // With the Studio GitHub App, sharing finished changes as a pull request is part of connecting the repository.
  useEffect(()=>{setPublish(appAccess&&server||cap?.publish===true);setCodex(cap?.allowCodex===true);},[device,cap?.publish,cap?.allowCodex,appAccess,server]);
  useEffect(()=>{let active=true;
-  Promise.all([roomRequest<GithubApp>('/api/github-app'),roomRequest<GithubAccess>('/api/github-app/access?project='+encodeURIComponent(project))]).then(([a,b])=>{if(active){setGithubApp(a);setAccess(b);}}).catch(()=>{if(active){setGithubApp({configured:false,canCreate:false});setAccess({repository:null,base:'main',configured:false,access:false,protected:null});}});
-  const params=new URLSearchParams(location.search),done=params.get('github_app'),failed=params.get('github_app_error');
-  if(done||failed){setNotice(done==='created'?'Studio ist jetzt bei GitHub angemeldet. Gib Studio als Nächstes Zugriff auf das Repository.':done==='installed'?'Studio hat jetzt Zugriff auf GitHub.':'');if(failed)setError('GitHub hat den Vorgang nicht abgeschlossen. Bitte erneut versuchen.');history.replaceState(null,'',returnHere());}
+  githubState(project).then(({app,access})=>{if(active){setGithubApp(app);setAccess(access);}});
+  const back=githubNotice();if(back){setNotice(back.notice);if(back.error)setError(back.error);}
   return()=>{active=false;};
  },[project]);
  async function linkGithub(kind:'create'|'install'){
   setLinkBusy(true);setError('');
-  try{
-   if(kind==='create'){
-    // GitHub's manifest flow expects a form POST; GitHub shows the requested permissions before anything is created.
-    const {action,manifest}=await roomRequest<{action:string;manifest:string}>('/api/github-app/create',{returnTo:returnHere()});
-    const form=document.createElement('form');form.method='post';form.action=action;const field=document.createElement('input');field.type='hidden';field.name='manifest';field.value=manifest;form.appendChild(field);document.body.appendChild(form);form.submit();
-   }else{
-    const {url}=await roomRequest<{url:string}>('/api/github-app/install',{returnTo:returnHere()});location.assign(url);
-   }
-  }catch(e){if(alive.current){setError((e as Error).message);setLinkBusy(false);}}
+  try{await openGithub(kind);}catch(e){if(alive.current){setError((e as Error).message);setLinkBusy(false);}}
  }
+
  useEffect(()=>{setPublicKey('');setCopied(false);},[device]);
  useEffect(()=>{setPlan(null);setNotice('');setError('');},[project,device,repository,automatic,check,prepare,requires,generated,configurationJSON,build,directory,serveCommand,servePort,publish,codex]);
  useEffect(()=>{let active=true;setExecutorsLoaded(false);
