@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {copyRuntime} from './runtime-package.mjs';
+import {packArchive} from './release-archive.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function git(...args) {
@@ -74,7 +75,7 @@ inspect(directory);
 manifest.sort((a, b) => a.path.localeCompare(b.path));
 writeFileSync(path.join(directory, 'release-manifest.json'), JSON.stringify({version, files: manifest}, null, 2));
 const archive = directory + '.tar.gz';
-execFileSync('tar', ['-czf', archive, '-C', directory, '.'], {windowsHide: true, timeout: 60000});
+packArchive(archive, directory);
 console.log(JSON.stringify({
   directory, archive, sourceCommit, sourceTree, files: manifest.length,
   unpackedBytes: manifest.reduce((sum, file) => sum + file.bytes, 0),
