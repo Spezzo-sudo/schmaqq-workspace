@@ -164,6 +164,25 @@ Studio-Server eingebunden. Auf einem kleinen VPS wird SQLite für zwei Benutzer
 verwendet; vor einer späteren größeren Installation muss die Datenhaltung
 erneut bewertet werden.
 
+### Login-Schutz hinter dem Reverse-Proxy
+
+Die Passwortanmeldung zählt pro normalisierter Konto-E-Mail maximal zwölf
+Versuche pro Minute, zusätzlich zur quellbezogenen Begrenzung. Ohne weitere
+Konfiguration wird **kein** vom Browser gelieferter X-Forwarded-For-Header
+vertraut. Eine einzelne Proxy-Socket-Adresse erhält dann einen höheren
+Sicherheitsgrenzwert von 240 Versuchen/Minute, sodass normale getrennte
+Studio-Konten sich nicht schon nach zwölf Fehlversuchen gegenseitig blockieren.
+
+Ein betreiberseitig geprüftes Traefik-Setup kann optional ausschliesslich
+die **exakte direkte Proxy-Peer-IP** in STUDIO_TRUSTED_PROXY_IPS
+kommagetrennt freigeben, zum Beispiel nur dann 127.0.0.1, wenn Traefik
+tatsächlich unter dieser Adresse mit Node verbunden ist. Traefik muss
+die Client-IP verlässlich an den Forwarded-Header **anhängen oder diesen
+ersetzen**. Ungeprüfte Proxy-Ketten, pauschale Docker-Subnetze oder
+CIDR-Bereiche nicht freigeben. Bei Unsicherheit das Setting leer lassen.
+Siehe docs/R24_G1_LOGIN_SECURITY.md. Kein Konfigurationswechsel erfolgt
+automatisch durch den Quellcode.
+
 ## Tests und Backups
 
 ```text
@@ -306,7 +325,7 @@ Das ist noch kein gemeinsamer Live-Test mit Markus über das Internet.
 
 ### Dateien in der eigenen Arbeitskopie bearbeiten
 
-Unter Entwicklung nach Auswahl einer vorbereiteten Arbeitskopie die Dateiliste laden. Der lokale Runner öffnet bestehende Git-Dateien und speichert UTF-8-Text bis 24 KB. Nicht erfasste Dateien, bekannte Geheimnisdateien, Binärdateien sowie symbolische und harte Verknüpfungen sind gesperrt. Neue Dateien weiterhin mit Codex erstellen. Dateiinhalte werden als Auftragsergebnisse im Studio gespeichert; nur der Auftragseigentümer kann diese Ergebnisse abrufen. Die Filter erkennen Dateinamen, nicht beliebige in Quellcode eingebettete Geheimnisse.
+Unter Entwicklung nach Auswahl einer vorbereiteten Arbeitskopie die Dateiliste laden. Der lokale Runner öffnet bestehende Git-Dateien und speichert UTF-8-Text bis 64 KB. Nicht erfasste Dateien, bekannte Geheimnisdateien, Binärdateien sowie symbolische und harte Verknüpfungen sind gesperrt. Neue Dateien weiterhin mit Codex erstellen. Dateiinhalte werden als Auftragsergebnisse im Studio gespeichert; nur der Auftragseigentümer kann diese Ergebnisse abrufen. Die Filter erkennen Dateinamen, nicht beliebige in Quellcode eingebettete Geheimnisse.
 
 Speichern vergleicht einen SHA-256-Dateistand. Bei zwischenzeitlichen Änderungen bleibt der Entwurf im Editor erhalten. Über „Aktuellen Stand vergleichen“ können Änderungen abgeglichen und der Vergleichsstand ausdrücklich als neue Basis übernommen werden. Runner-Aufträge laufen seriell; beliebige gleichzeitig schreibende externe Programme können damit nicht vollständig verriegelt werden. Vor Wechsel der Arbeitskopie oder Verlassen des Entwicklungsbereichs Entwürfe speichern oder herunterladen. Dies ist ein kleiner Texteditor, kein gleichzeitiger Mehrpersonen-Editor derselben Datei. Zusammenarbeit erfolgt über getrennte Arbeitskopien und Teamprüfung.
 
@@ -323,7 +342,7 @@ Nur der Eigentümer kann einen Arbeitsbereich bearbeiten oder abschließen. Lauf
 
 Nach `npm run studio:build` erzeugt `npm run studio:release` ein eigenes datiertes Verzeichnis und tar.gz unter `.studio/releases`. Es enthält nur die gebaute Oberfläche, benötigte Servermodule, Zod und Einrichtungsvorlagen. Keine persönlichen Konten, Gerätetokens, lokalen Profile, Git-Repositories oder vorhandenen Datenbanken werden kopiert. Anleitung und lesender Vorabcheck liegen unter `selfhost/deploy`.
 
-`STUDIO_DATA_DIR` legt das dauerhafte Serverdatenverzeichnis fest, unabhängig vom Programmrelease. Die Bereitstellung, TLS-Einrichtung und Ressourcenprüfung auf dem echten Hostinger-VPS sind noch ausstehend.
+`STUDIO_DATA_DIR` legt das dauerhafte Serverdatenverzeichnis fest, unabhängig vom Programmrelease. Die damalige R4-Planung ist historisch: R23 wurde am 19.10.2026 auf dem VPS ausgerollt und mit separat geschützten Hermes-Nachweisen geprüft. Für einen späteren VPS-Umzug gelten die dokumentierten Release- und Disaster-Recovery-Gates. Keine automatische Freigabe.
 
 
 ## Lokaler Zwei-Personen-Probelauf ohne VPS
@@ -337,7 +356,7 @@ Die beiden Rollen in getrennten Browserprofilen testen oder dazwischen abmelden.
 
 ## Bedienung und Entwürfe
 
-Die selbst betriebene Oberfläche startet direkt in Entwicklung. Der eigene verbundene PC und eine vorhandene eigene Arbeitskopie werden vorausgewählt. Ein neuer Arbeitsbereich erscheint nach erfolgreicher Erstellung automatisch im Editor. Neue Arbeitsbereiche und technische Protokolle sind bei Bedarf aufklappbar; Tests, Änderungen und Vorschau öffnen ihr Ergebnis unmittelbar. Die lokale Demo ist auf Anmeldung und Arbeitsfläche ausdrücklich markiert.
+Die selbst betriebene Oberfläche startet in der gemeinsamen Projektübersicht. Dort Projekt wählen, eine Aufgabe übernehmen und Kommentare direkt am Thema festhalten. „Weiterarbeiten“ öffnet die passende eigene Arbeitskopie oder bereitet das Formular für eine neue vor. Aufgaben-Prüfstände lassen sich direkt von dort öffnen; nur eine andere Person kann die Codefreigabe erteilen. Projekt und Ansicht bleiben beim Neuladen über die URL erhalten. Der eigene verbundene PC und eine vorhandene eigene Arbeitskopie werden vorausgewählt. Ein neuer Arbeitsbereich erscheint nach erfolgreicher Erstellung automatisch im Editor. Neue Arbeitsbereiche und technische Protokolle sind bei Bedarf aufklappbar; Tests, Änderungen und Vorschau öffnen ihr Ergebnis unmittelbar. Die lokale Demo ist auf Anmeldung und Arbeitsfläche ausdrücklich markiert.
 
 Ungespeicherte Editor-Entwürfe bleiben pro Benutzer, Gerät, Projekt und Arbeitskopie im Arbeitsspeicher des Browser-Tabs erhalten, auch beim Wechsel zu Aufgaben oder Team-Chat. Sie werden nicht im Browser-Dauerspeicher abgelegt. Vor Neuladen/Schließen warnt der Browser; Abmelden verlangt bei offenen Entwürfen eine ausdrückliche Bestätigung. Nach Schließen des Tabs sind diese Entwürfe weg, daher zuerst speichern oder herunterladen. Speicherrevisionen werden auch bei wiederhergestellten Entwürfen unverändert geprüft.
 
@@ -346,7 +365,7 @@ Die UI-Änderungen sind gebaut und typgeprüft; ein visueller Browser-Abnahmetes
 
 ## KI-Anbieter und freigegebene lokale Modelle
 
-Unter **KI & Rechner** zeigt Studio den vom eigenen Runner gemeldeten Codex-Anmeldestatus und die ausdrücklich freigegebenen lokalen Ollama-Modelle. Der Runner prüft den Codex-Status nur, wenn Codex für ein lokales Projekt bereits aktiviert wurde. OAuth-Tokens, API-Keys und Auth-Caches werden weder gelesen noch zum Studio übertragen. Persönliche Codex-Konten bleiben nicht teilbar; Codex-Aufträge dürfen weiterhin nur auf dem eigenen Gerät ausgeführt werden.
+Unter **Verbindungen** zeigt Studio den vom eigenen Runner gemeldeten Codex-Anmeldestatus und die ausdrücklich freigegebenen lokalen Ollama-Modelle. Der Runner prüft den Codex-Status nur, wenn Codex für ein lokales Projekt bereits aktiviert wurde. OAuth-Tokens, API-Keys und Auth-Caches werden weder gelesen noch zum Studio übertragen. Persönliche Codex-Konten bleiben nicht teilbar; Codex-Aufträge dürfen weiterhin nur auf dem eigenen Gerät ausgeführt werden.
 
 Für ChatGPT unterstützt die bestehende Codex-Integration `codex login` sowie `codex login --device-auth`; Studio besitzt jetzt einen separaten OIDC-Login für registrierte ChatGPT-Website-Clients (Aktivierung unten). Ein eigener Provider-Device-Code-Flow für Modellnutzung ist nicht implementiert. Offizielle Quellen, geprüft am 17.10.2026:
 - https://learn.chatgpt.com/docs/auth
@@ -408,7 +427,7 @@ Die isolierte lokale Demo aktiviert grundsätzlich keine echten Anbieter-Logins.
    Bei den beiden letzten Methoden auch `STUDIO_CHATGPT_CLIENT_SECRET` setzen.
    Geheimnisse niemals ins Repository oder in Browser-Code schreiben. Server neu starten.
 4. Bestehende Mitglieder melden sich zuerst mit ihrem Studio-Passwort an und wählen
-   **KI & Rechner → Deine Anmeldung im Studio → ChatGPT-Konto verbinden**.
+   **Verbindungen → Deine Anmeldung im Studio → ChatGPT-Konto verbinden**.
    Danach funktioniert **Mit ChatGPT anmelden** auf der Startseite.
 5. Neue Mitglieder öffnen ihre persönliche Einladung und melden sich dort mit ChatGPT an.
    Ihre beim Anbieter bestätigte E-Mail muss zur Einladung passen. Ohne Einladung oder
@@ -431,3 +450,121 @@ Verknüpfung, E-Mail-Verifikation, Logout während der Verknüpfung, PKCE, Brows
 Wiederholungen, falsche Nonce/Audience/Issuer, abgelaufene Tokens und Origin-Prüfung.
 Ein Live-Login bei OpenAI ist ohne registrierten Client noch nicht nachgewiesen.
 Referenz: https://developers.openai.com/siwc/website
+
+
+## Persönliche Dienste unter „Verbindungen“
+
+Der neue Bereich zeigt GitHub, ChatGPT/Codex, Claude und Copilot mit ihrem
+jeweiligen tatsächlichen Integrationsstand. Eine erkannte Codex-Anmeldung wird
+nur aus der vorhandenen eigenen Runner-Telemetrie angezeigt. Claude und Copilot
+sind noch nicht als ausführbare Studio-Adapter integriert. Lokale Ollama-Freigaben
+bleiben unterhalb dieser Übersicht erreichbar.
+
+GitHub-Kontoverknüpfung (kein Repository-Zugriff und kein Copilot-Adapter):
+
+1. Der Betreiber registriert eine eigene GitHub OAuth App mit der exakten
+   Callback-URL `<STUDIO_ORIGIN>/api/connections/github/callback`.
+2. `STUDIO_GITHUB_CLIENT_ID` und `STUDIO_GITHUB_CLIENT_SECRET` ausschließlich in
+   der privaten Serverumgebung konfigurieren. Keine bestehenden fremden Clients
+   wiederverwenden. Ein Live-Neustart/Deployment benötigt separate Freigabe.
+3. Angemeldete Mitglieder wählen unter Verbindungen „Mit GitHub verbinden“.
+   GitHub übernimmt die persönliche Anmeldung. Ohne App-Konfiguration erklärt
+   Studio den fehlenden Betreiberschritt; es zeigt keinen funktionslosen Login.
+4. Studio prüft die Antwort mit State, PKCE, Browserbindung, ursprünglicher
+   gültiger Sitzung und GitHub-Profilabfrage. Gespeichert werden nur stabile
+   GitHub-ID, Benutzername, Studio-Mitglied und Bestätigungszeit, keine Anbieter-
+   Access-/Refresh-Tokens. Die ID wird nicht still anhand von E-Mail verknüpft.
+5. „Verknüpfung entfernen“ entfernt ausschließlich die Zuordnung in Studio und
+   beendet offene Versuche. Die App-Autorisierung bei GitHub bleibt bis zum
+   dortigen Widerruf bestehen. Git-Anmeldung/Arbeitskopien auf dem PC bleiben
+   unabhängig. Die Bestätigung ist kein laufender Repo- oder Berechtigungscheck.
+
+Die lokale Demo deaktiviert echte GitHub-/ChatGPT-Provider unabhängig von ENV.
+Automatisierte GitHub-OAuth-Tests verwenden einen ausdrücklich lokalen Testanbieter.
+Eine tatsächliche GitHub-Registrierung und persönliche Live-Autorisierung sind
+noch nicht erfolgt. Es wurden keine KI-Aufträge ausgeführt.
+
+Offizielle Integrationswege (geprüft 17.10.2026):
+- GitHub OAuth: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+- Copilot SDK: https://docs.github.com/en/copilot/how-tos/copilot-sdk/setup/github-oauth
+- ChatGPT-Plan-Nutzung: https://developers.openai.com/siwc/token-sharing-open-source
+- Claude Agent SDK/Plan: https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan
+
+Die letzten drei Links beschreiben Anbieterfähigkeiten, keine implementierten
+zusätzlichen Studio-Adapter. Ein direkter ChatGPT-Plan-Flow ist gesondert nach
+Einsatzform zu prüfen (lokale/OSS-Apps gegenüber gehosteter Anwendung).
+
+
+## Parallel am selben Projekt arbeiten
+
+1. Jede Person meldet sich mit eigenem Studio-Konto an und verbindet ihren eigenen
+   Rechner. Die gemeinsame Projektübersicht ist der Einstieg.
+2. Projekt wählen und konkrete Aufgaben anlegen. „Aufgabe übernehmen“ weist genau
+   eine Person zu; bei gleichzeitiger Übernahme erhält die andere eine Meldung.
+3. Rückfragen, Brainstorming und Entscheidungen direkt an der jeweiligen Aufgabe
+   kommentieren. Kommentare sind für die Mitglieder dieses privaten Studios
+   sichtbar und werden dauerhaft in SQLite gespeichert. Entwürfe bleiben nur
+   im geöffneten Tab; vor dem Schließen senden. Der Browser warnt vor Verlust.
+4. „Weiterarbeiten“ öffnet die eigene verknüpfte Arbeitskopie. Fehlt sie noch,
+   werden Aufgabe und Titel vorausgewählt. Geplanten Datei-/Ordnerbereich bewusst
+   angeben, damit Überschneidungen vor Beginn auffallen.
+5. In getrennten Kopien bearbeiten, speichern, testen und Vorschau prüfen.
+   Unterschiedliche verbundene PCs können gleichzeitig Aufträge ausführen;
+   auf demselben Runner werden Aufträge weiterhin seriell ausgeführt.
+6. „Zur Teamprüfung“ erstellt einen echten geprüften Git-Stand. Die zweite Person
+   öffnet ihn über „Prüfstand ansehen“ an der Aufgabe. Rückmeldungen gelten genau
+   diesem Stand. Der Aufgabenstatus wird bewusst manuell gepflegt.
+7. Anschließende Veröffentlichung/Übernahme richtet sich nach dem Repository-
+   Workflow. Eine Studio-Freigabe ist noch kein GitHub-Merge. Arbeitsbereiche
+   werden unter Entwicklung bewusst abgeschlossen; das gibt reservierte Bereiche
+   frei und bewahrt Dateien/Branches.
+
+Die Reservierung ist eine Abstimmung über angegebene Bereiche, keine Garantie
+gegen sämtliche Codekonflikte. Getrennte Kopien sind kein gleichzeitiger Editor
+für dieselbe Datei. Ein ausgeschalteter persönlicher PC führt keine Jobs aus.
+
+Das neue Schema ergänzt nur `task_comments` und einen Index; vorhandene Aufgaben,
+Dateien und Git-Historien bleiben erhalten. Neues Frontend und Backend müssen
+zusammen ausgerollt bzw. lokal zusammen gestartet werden. Alte laufende Server
+kennen die neuen Collaboration-Endpunkte nicht. Betreiber führen vor einem
+separat freigegebenen Live-Rollout ein konsistentes Backup aus.
+
+
+## Geführter Projektstart und persönliche Bereitschaft (S2, Kandidat)
+
+Unter Projekte → Neues Projekt werden Ziel und lokaler Einstieg gemeinsam erfasst.
+Drei Wege sind vorgesehen: ein bestehendes privates GitHub-Repository sicher auf den eigenen Rechner importieren, einen bereits vorhandenen lokalen Git-Stammordner verbinden oder ein neues lokales Startprojekt mit Startseite, node:test und statischem Build anlegen.
+Ein neues Startprojekt hat zunächst nur ein lokales Bare-Remote; es ist dadurch
+noch nicht vom Rechner des Kollegen erreichbar. Gemeinsames externes Remote
+separat bereitstellen; keine automatische GitHub-Anlage oder Veröffentlichung.
+
+Der heruntergeladene Plan enthält lokale Pfade und gewählte Befehle, aber keine
+Runner-/Anbietertokens. Nur eigene bekannte Test-/Buildbefehle verwenden. Der
+Plan ändert allein noch keine lokalen Dateien; im aktuellen Quell-/Runnerpaket:
+
+```text
+node selfhost/project-setup.mjs --apply PFAD_ZUM_PLAN PFAD_ZUM_BESTEHENDEN_RUNNERPROFIL
+```
+
+Der Helfer erhält Zugang und bestehende Projekte, legt eine private Sicherung an,
+verweigert eine vorhandene Projektzuordnung und überschreibt keinen Zielordner.
+Neue Freigaben setzen allowCodex=false und publish=false. Bestehende Repositorys
+werden nur auf Git-Stamm und origin geprüft; keine Tests/Builds beim Einrichten.
+Vorschau ist optional als Build-Argumentliste und relativer Ausgabeordner möglich.
+Privates Runnerprofil außerhalb der Git-Arbeitskopien und gemeinsamer Ordner halten;
+POSIX-Dateien werden mit 0600 angelegt, unter Windows gilt die Ordner-ACL.
+Keine Sandbox für fremden Projektcode oder signierter Ein-Klick-Installer.
+
+Danach bisherigen Runner beenden und genau einmal mit ergänztem Profil starten:
+
+```text
+node selfhost/runner.mjs PFAD_ZUM_BESTEHENDEN_RUNNERPROFIL
+```
+
+Start-Pilot.command/pilot-runner bleiben bewusst auf das einzelne Pilotprojekt
+beschränkt und können ein erweitertes Mehrprojektprofil nicht starten. Kein
+neues Gerät registrieren. In Studio Git-Verbindung prüfen und eigene Kopie anlegen.
+Die Bereitschaft unterscheidet PC-Heartbeat, aktuelle Projektfreigabe, historischen
+Git-Lesecheck, persönliche KI und Veröffentlichung. Ein Git-Check beweist keine
+Schreibrechte. Alte Runner ohne Projektmeldung bleiben unbestätigt. Die Meldung
+ist eine Bedienhilfe; der Runner erzwingt weiterhin seine lokalen Freigaben.

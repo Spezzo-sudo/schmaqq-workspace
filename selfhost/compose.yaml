@@ -8,6 +8,8 @@ services:
     environment:
       STUDIO_ORIGIN: ${STUDIO_ORIGIN:?Set the full HTTPS Studio origin}
       STUDIO_PREVIEW_ORIGIN: ${STUDIO_PREVIEW_ORIGIN:?Set a different HTTPS preview origin}
+      # Optional exact proxy peer allowlist; empty = ignore all forwarded IPs.
+      STUDIO_TRUSTED_PROXY_IPS: ${STUDIO_TRUSTED_PROXY_IPS:-}
     ports:
       - "127.0.0.1:4310:4310"
       - "127.0.0.1:4311:4311"

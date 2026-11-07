@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "checks": [
+    "one-owner-task-has-direct-invite-not-technical-menu",
+    "owner-creates-one-time-personal-invite-without-leaving-task",
+    "recipient-joins-as-separate-member-with-own-password",
+    "invite-reuse-rejected",
+    "owner-hands-task-to-new-member",
+    "new-teammate-replies-on-same-task-visible-to-owner",
+    "no-uncaught-browser-errors"
+  ],
+  "checksPassed": 7,
+  "twoSeparateAccounts": true,
+  "realPersonalAccounts": false,
+  "liveDataUsed": false,
+  "productionChanged": false,
+  "releaseSource": null
+}

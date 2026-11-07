@@ -25,7 +25,7 @@ test('OIDC: verified invitations, explicit linking, PKCE, browser binding, repla
  });
  await new Promise(r=>idp.listen(0,'127.0.0.1',r));issuer='http://127.0.0.1:'+idp.address().port;
  const base='http://127.0.0.1:44339';
- const studio=createStudioServer({filename:path.join(dir,'db.sqlite'),origin:base,previewOrigin:'http://127.0.0.1:44340',oidcProvider:{issuer,clientId:'studio-fixture',method:'none',authorize:issuer+'/authorize',tokenUrl:issuer+'/token',jwks:issuer+'/jwks'}});
+ const studio=createStudioServer({seedProjects:true,filename:path.join(dir,'db.sqlite'),origin:base,previewOrigin:'http://127.0.0.1:44340',oidcProvider:{issuer,clientId:'studio-fixture',method:'none',authorize:issuer+'/authorize',tokenUrl:issuer+'/token',jwks:issuer+'/jwks'}});
  await new Promise(r=>studio.server.listen(44339,'127.0.0.1',r));
  const request=(route,data,cookie)=>fetch(base+route,{method:data?'POST':'GET',headers:{...(data?{Origin:base,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:data?JSON.stringify(data):undefined,redirect:'manual'});
  async function start(options={},cookie){const r=await request('/api/auth/provider/start',{provider:'chatgpt',purpose:'login',...options},cookie);assert.equal(r.status,200);const url=new URL((await r.json()).url);assert.equal(url.searchParams.get('scope'),'openid profile email');assert.equal(url.searchParams.get('code_challenge_method'),'S256');return {url,cookie:r.headers.get('set-cookie').split(';')[0]};}

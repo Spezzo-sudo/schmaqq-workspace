@@ -1,0 +1,24 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "schmaqq-studio": {
+      "type": "streamable-http",
+      "url": "https://studio.schmaqq.com/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": {
+              "mode": "provided",
+              "clientId": "schmaqq-chatgpt",
+              "tokenEndpointAuthMethod": "none"
+            },
+            "authorizationUrl": "https://studio.schmaqq.com/oauth/authorize",
+            "tokenUrl": "https://studio.schmaqq.com/oauth/token",
+            "baseScopes": ["studio:read", "studio:code"]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+[Unit]
+Description=SCHMAQQ server worker job launcher (one isolated unit per job)
+After=network-online.target var-lib-schmaqq\x2dworker.mount
+Requires=var-lib-schmaqq\x2dworker.mount
+
+[Service]
+# Root only to start transient units as the job user and to set group access on a copy.
+User=root
+Environment=LAUNCHER_LISTEN=127.0.0.62:3129
+Environment=LAUNCHER_ROOT=/var/lib/schmaqq-worker/state/worktrees
+ExecStart=/usr/local/lib/schmaqq-worker/node/bin/node /usr/local/lib/schmaqq-worker/current/selfhost/deploy/worker/job-launcher.mjs
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/schmaqq-worker/state/worktrees
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+LockPersonality=yes
+RestrictRealtime=yes
+# AF_UNIX to talk to systemd; network only on loopback (it listens there, it never calls out).
+RestrictAddressFamilies=AF_INET AF_UNIX
+IPAddressDeny=any
+IPAddressAllow=localhost
+MemoryMax=128M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

@@ -76,7 +76,7 @@ Früh nötig sind saubere Kosten-/Verbrauchszuordnung, Budgetgrenzen, Abbruch, I
 ## Verbindliche Querverweise
 
 - Technisches Zielbild: [ARCHITECTURE.md](ARCHITECTURE.md)
-- Priorisierte Nachweise: [ROADMAP.md](ROADMAP.md)
+- Priorisierte Nachweise: [ROADMAP.md](archive/ROADMAP.md)
 - Bestehende Funktionen und offene Evidence: [STATUS.json](STATUS.json)
-- Technische Übergabe: [HANDOFF.md](HANDOFF.md)
-- Integrationsgrenzen: [INTEGRATION_BOUNDARIES.md](INTEGRATION_BOUNDARIES.md)
+- Technische Übergabe: [HANDOFF.md](archive/HANDOFF.md)
+- Integrationsgrenzen: [INTEGRATION_BOUNDARIES.md](archive/INTEGRATION_BOUNDARIES.md)

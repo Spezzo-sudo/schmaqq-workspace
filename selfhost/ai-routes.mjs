@@ -1,6 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {transaction} from './store.mjs';
+import {hostSchema,recordHost} from './placement.mjs';
 const id=z.string().regex(/^[\w-]{1,100}$/),model=z.string().min(1).max(200);
 const fail=(status,message)=>Object.assign(new Error(message),{status});
 export function aiAccess(db,job){
@@ -11,14 +12,20 @@ export function aiAccess(db,job){
 }
 export async function aiRoute({route,method,req,db,user,device,send,readJSON,parse}){
  if(route==='/api/runner/capabilities'&&method==='POST'){
-  const d=device(req),v=parse(z.object({models:z.array(model).max(30),status:z.enum(['disabled','unreachable','no-models','ready']),allowTeam:z.boolean(),projects:z.array(id).max(30),codex:z.enum(['disabled','not-connected','chatgpt'])}),await readJSON(req));
-  db.prepare('INSERT INTO ai_resources VALUES(?,?,?,?,?,?,?) ON CONFLICT(device) DO UPDATE SET models=excluded.models,status=excluded.status,allow_team=excluded.allow_team,projects=excluded.projects,codex=excluded.codex,updated=excluded.updated').run(d.id,JSON.stringify(v.models),v.status,Number(v.allowTeam),JSON.stringify(v.projects),v.codex,Date.now());send({ok:true});return true;
+  const d=device(req),v=parse(z.object({models:z.array(model).max(30),status:z.enum(['disabled','unreachable','no-models','ready']),allowTeam:z.boolean(),projects:z.array(id).max(30),codex:z.enum(['disabled','not-connected','chatgpt']),development:z.array(z.object({id,setupVersion:z.number().int().min(1).optional(),check:z.boolean(),preview:z.boolean(),allowCodex:z.boolean(),publish:z.boolean()})).max(30).optional(),host:hostSchema.optional()}),await readJSON(req));
+  transaction(db,()=>{
+   if(v.host)recordHost(db,d.id,v.host);
+   db.prepare('INSERT INTO ai_resources VALUES(?,?,?,?,?,?,?) ON CONFLICT(device) DO UPDATE SET models=excluded.models,status=excluded.status,allow_team=excluded.allow_team,projects=excluded.projects,codex=excluded.codex,updated=excluded.updated').run(d.id,JSON.stringify(v.models),v.status,Number(v.allowTeam),JSON.stringify(v.projects),v.codex,Date.now());
+   db.prepare('DELETE FROM runner_project_state WHERE device=?').run(d.id);
+   if(v.development)db.prepare('INSERT INTO runner_project_state VALUES(?,?,?)').run(d.id,JSON.stringify(v.development),Date.now());
+  });send({ok:true});return true;
  }
  if(route!=='/api/ai')return false;
  const m=user(req);
  if(method==='GET'){
   const resources=db.prepare('SELECT r.device,r.models,r.status,r.allow_team AS allowTeam,r.projects,r.codex,r.updated,d.owner,d.name,m.name AS ownerName FROM ai_resources r JOIN devices d ON r.device=d.id JOIN members m ON d.owner=m.id WHERE d.revoked=0 AND (d.owner=? OR (r.allow_team=1 AND EXISTS(SELECT 1 FROM ai_grants g WHERE g.device=d.id AND g.member=?)))').all(m.id,m.id).map(r=>({...r,models:JSON.parse(r.models),projects:JSON.parse(r.projects),grants:r.owner===m.id?db.prepare('SELECT member FROM ai_grants WHERE device=?').all(r.device).map(x=>x.member):[],codex:r.owner===m.id?r.codex:'private',online:Date.now()-r.updated<60000}));
   const jobs=db.prepare("SELECT j.id,j.owner,j.device,j.project,j.status,j.created,json_extract(j.payload,'$.model') AS model FROM jobs j JOIN devices d ON d.id=j.device WHERE j.action='local-ai' AND (j.owner=? OR d.owner=?) ORDER BY j.created DESC LIMIT 30").all(m.id,m.id);
+  for(const resource of resources){const state=db.prepare('SELECT projects FROM runner_project_state WHERE device=?').get(resource.device);resource.development=resource.owner===m.id&&state?JSON.parse(state.projects):[];}
   send({resources,jobs,members:db.prepare('SELECT id,name FROM members').all()});return true;
  }
  if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');const v=await readJSON(req);

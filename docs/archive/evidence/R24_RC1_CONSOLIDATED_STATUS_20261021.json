@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "project": "SCHMAQQ Studio",
+  "milestone": "R24-RC1 consolidated",
+  "comparisonBase": {
+    "branch": "work/studio-r23-local-20261019",
+    "sha": "aef64f85efeeb40f6c0f3a7dc43986a52a20f09f",
+    "runningProduction": true
+  },
+  "reviewLineage": {
+    "r24H3Head": "1c4c75ba81b1239734bc7f85336dd1a6eae2747d",
+    "commitsSinceR23BeforeRC1": 15,
+    "allAncestorsInSingleLinearSequence": true,
+    "mainRemoteSha": "cd549a0c16df8a2d3d939ff50603af9ed32d2ced",
+    "mainAncestorProof": "UNAVAILABLE_IN_SHALLOW_CLONE",
+    "mergeWithMain": "NOT_PERFORMED"
+  },
+  "ownerDecision": {
+    "githubActions": "NOT_REQUIRED",
+    "workflowRemovalFromCandidate": true,
+    "hostedCIResult": "NOT_RUN_NOT_REQUIRED"
+  },
+  "directSyntheticTests": {
+    "latestH3BaselineBackend": "114/114 PASS",
+    "newRC1SourceFullSuite": "114/114 PASS in pre-commit worktree",
+    "newRC1ExactHeadManifestAndRuntime": "PENDING_FINAL_COMMIT",
+    "newRC1ChromiumDesktopMobile": "PENDING_FINAL_COMMIT",
+    "newRC1TypescriptAndVite": "PASS in pre-commit worktree"
+  },
+  "reportedHermesEvidence": {
+    "r23Schema": "PASS_REPORTED",
+    "r24H2PhysicalRestore": "PASS_REPORTED",
+    "r24H3Scope": "PASS_SCOPED_REPORTED",
+    "historicalReview": "PASS_OPERATOR_ATTESTED_REPORTED",
+    "snapshotSha256": "516f5b8eef8c051f83929b496d5bcf492fa5aa1c57d6c0c556ce31a7e923c9be",
+    "completeHostRecovery": "NOT_ATTESTED"
+  },
+  "candidateRuntime": {
+    "allChangesFromR23": "REVIEWABLE",
+    "newMobileCloseButton": "PREPARED_TEST_PENDING",
+    "backendMigration": "NONE_EXECUTED"
+  },
+  "production": {
+    "releaseSha": "aef64f85efeeb40f6c0f3a7dc43986a52a20f09f",
+    "deployment": "NOT_PERFORMED",
+    "dbWrites": false,
+    "servicesRestarted": false,
+    "merge": false
+  },
+  "futureGates": [
+    "Owner GO for any production change",
+    "fresh final backup/restore immediately before authorized deployment",
+    "Hermes exact artifact preflight and rollback",
+    "authenticated human live pilot after authorized switch"
+  ],
+  "offsiteBackups": "OWNER_DEFERRED",
+  "proxyTrustedForwardedIp": "UNSET_REQUIRED"
+}

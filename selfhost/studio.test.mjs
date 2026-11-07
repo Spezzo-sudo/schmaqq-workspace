@@ -10,7 +10,7 @@ import {LocalRunner,command} from './runner.mjs';
 
 test('two members: private sessions, isolated devices, jobs, documents and shared preview',async()=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-test-'));
- const studio=createStudioServer({filename:path.join(dir,'studio.sqlite'),origin:'http://127.0.0.1:44310',previewOrigin:'http://127.0.0.1:44311'});
+ const studio=createStudioServer({seedProjects:true,filename:path.join(dir,'studio.sqlite'),origin:'http://127.0.0.1:44310',previewOrigin:'http://127.0.0.1:44311'});
  await new Promise(r=>studio.server.listen(44310,'127.0.0.1',r));await new Promise(r=>studio.previewServer.listen(44311,'127.0.0.1',r));
  const base='http://127.0.0.1:44310';
  async function request(route,data,cookie,authorization){const r=await fetch(base+route,{method:data?'POST':'GET',headers:{...(data?{'Content-Type':'application/json',Origin:base}:{}),...(cookie?{Cookie:cookie}:{}),...(authorization?{Authorization:`Bearer ${authorization}`}:{})},body:data?JSON.stringify(data):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};}
@@ -39,6 +39,15 @@ test('two members: private sessions, isolated devices, jobs, documents and share
   assert.equal((await request('/api/workspace',{action:'document',id:docId,title:'Briefing',body:'Veraltet',revision:1},second.cookie)).status,409);
   const preview=await request('/api/development',{action:'job',device:mine.data.id,project:'website',operation:'preview',worktree:claimed.id},owner.cookie);
   const previewClaim=(await request('/api/runner/poll',{},null,mine.data.token)).data.job;
+  const oversizedEvents=Array.from({length:41},(_,i)=>({seq:i+1,type:'message',text:'untrusted'}));
+  const oversizedArray=await request('/api/runner/report',{id:preview.data.id,lease:previewClaim.lease,heartbeat:true,events:oversizedEvents},null,mine.data.token);
+  assert.equal(oversizedArray.status,400,'Zod 4 must reject oversized event arrays');
+  assert.equal(oversizedArray.data.error,'Bitte Eingaben prüfen.','Do not expose schema internals');
+  const oversizedBundle=Object.fromEntries(Array.from({length:501},(_,i)=>['untrusted-'+i+'.txt','a']));
+  oversizedBundle['index.html']='a';
+  const tooManyFiles=await request('/api/runner/report',{id:preview.data.id,lease:previewClaim.lease,ok:true,result:{previewBundle:oversizedBundle}},null,mine.data.token);
+  assert.equal(tooManyFiles.status,413,'Reject oversized record before Zod object traversal');
+  assert.equal(studio.db.prepare('SELECT status FROM jobs WHERE id=?').get(preview.data.id).status,'running','Invalid reports must not write job state');
   const report=await request('/api/runner/report',{id:preview.data.id,lease:previewClaim.lease,ok:true,result:{previewBundle:{'index.html':Buffer.from('<h1>Gemeinsame Vorschau</h1>').toString('base64')}}},null,mine.data.token);assert.equal(report.status,200);
   const state=await request('/api/development',null,second.cookie),url=state.data.jobs.find(j=>j.id===preview.data.id).result.url;
   assert.equal(new URL(url).origin,'http://127.0.0.1:44311');assert.match(await (await fetch(url)).text(),/Gemeinsame Vorschau/);
@@ -107,7 +116,7 @@ test('two real Git workspaces: tests, reviewed merge, conflict stop and static p
 test('first owner setup is one-time and origin protected',async()=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-setup-'));
  const origin='http://127.0.0.1:44312',setup='fixture-setup-token-long-enough';
- const app=createStudioServer({filename:path.join(dir,'studio.sqlite'),origin});
+ const app=createStudioServer({seedProjects:true,filename:path.join(dir,'studio.sqlite'),origin});
  app.db.prepare("INSERT INTO workspace_meta VALUES('bootstrap',?)").run(digest(setup));
  await new Promise(r=>app.server.listen(44312,'127.0.0.1',r));
  try{

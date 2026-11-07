@@ -127,7 +127,7 @@ Persönliche Runner-Konfigurationen, Code-Credentials, lokale Models und auth ca
 - `studio.schmaqq.com` ist derzeit nur ein **Namensvorschlag**. Domains, Cookies, Callback-URLs und TLS müssen änderbar konfiguriert werden.
 - Zentraler Login später über expliziten Identity-Provider/SSO-Vertrag; keine geteilten Datenbanktabellen und kein stilles Übernehmen der Plattform-Sitzung.
 - Review Control und weitere Dienste haben stabile interne Service-IDs; die Subdomain `bewertung.schmaqq.com` kann später separat migriert werden.
-- Integrations-/Änderungsregeln siehe [INTEGRATION_BOUNDARIES.md](INTEGRATION_BOUNDARIES.md).
+- Integrations-/Änderungsregeln siehe [INTEGRATION_BOUNDARIES.md](archive/INTEGRATION_BOUNDARIES.md).
 
 Ein GitHub-Push ist kein Deployment. Ein grüner Build ist keine visuelle UX-Abnahme. VPS-Aktionen benötigen gesonderte Freigabe und echten Preflight.
 
@@ -140,4 +140,4 @@ Ein GitHub-Push ist kein Deployment. Ein grüner Build ist keine visuelle UX-Abn
 - Externe Pilotnutzer erst nach getesteter Identität, Tenant-Scope, Backup/Restore und Zugriffskontrolle.
 - Bestehende, lokal bestandene Tests sind kein Linux-/VPS-/Browser-Nachweis.
 
-**Entscheidungsvorschläge:** [ADR-0001](DECISIONS/0001-modular-core.md), [ADR-0002](DECISIONS/0002-execution-and-providers.md), [ADR-0003](DECISIONS/0003-identity-and-federation.md). Meilensteine: [ROADMAP.md](ROADMAP.md).
+**Entscheidungsvorschläge:** [ADR-0001](DECISIONS/0001-modular-core.md), [ADR-0002](DECISIONS/0002-execution-and-providers.md), [ADR-0003](DECISIONS/0003-identity-and-federation.md). Meilensteine: [ROADMAP.md](archive/ROADMAP.md).

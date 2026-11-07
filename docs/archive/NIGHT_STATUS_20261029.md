@@ -1,0 +1,150 @@
+# Nachtstatus SCHMAQQ Studio
+
+Lauf: Claude Code (Desktop-App, Code-Tab), Modell Opus 5.5 über die Abo-Anmeldung des Owners.
+Start 29.10.2026 23:42 (lokale Zeit). Auftrag: [NIGHT_HANDOFF_20261029.md](NIGHT_HANDOFF_20261029.md).
+
+## Vorab: Goal/Stop-Hooks
+
+- Geprüft: `~/.claude/settings.json`, `settings.local.json` sowie `.claude/settings*.json` in
+  `SCHMAQQ`, `schmaqq-plugin-worker-prototype` und `schmaqq-studio-use-candidate`: keine Datei vorhanden,
+  also keine eigenen Stop-/Goal-Hooks. Das Goal vom Vortag hatte der Owner mit `/goal clear` gelöscht.
+- Entscheidung: **kein `/goal`**, normale Sitzung, kein automatischer Wiederanlauf, keine Hooks installiert.
+
+| Paket | Status | Beleg / Blocker |
+| --- | --- | --- |
+| Vorab: Konto/Modell/Stop-Hook | ERLEDIGT | siehe oben |
+| P0: Analyse mit Lesekopie | ERLEDIGT | siehe P0 |
+| P1: Aufgaben-Kontext | ERLEDIGT | siehe P1 |
+| P2: große Dateien lesen | ERLEDIGT | siehe P2 |
+| P3: Begriffe/Fokus/KI-Übergabe | ERLEDIGT | siehe P3 und P4 (390 px) |
+| P4: Designangleichung | ERLEDIGT (Reduced Motion nur im Code geprüft) | siehe P4 |
+| P5: Abnahme/Sicherung | OFFEN | |
+
+## P0 – Allgemeine Analyse mit Lesekopie bleibt allgemein
+
+- Ursache: `taskContract` setzte `kind: code`, sobald irgendeine Arbeitskopie existierte.
+- Fix (`selfhost/team-model.mjs`): neue Domänenregel `hasCodeChanges`. Codeaufgabe wird eine Aufgabe nur
+  durch Aufträge, die die Kopie ändern können: `save-file`, `create-file`, `codex`, `review`, `submit`,
+  in jedem Zustand außer `cancelled` (auch `queued`, damit ein allgemeines Ergebnis nicht an einer
+  laufenden Änderung vorbei eingereicht wird); fehlgeschlagene Datei-Speicherungen zählen nicht.
+  Lesen (`files`, `read-file`) und Kopie anlegen (`prepare`) ändern die Aufgabenart nicht.
+- `selfhost/team-http.mjs`: Rückwechsel zu „allgemein“ nur noch gesperrt, wenn tatsächlich Dateien geändert
+  wurden. Gilt auch für Altbestände, in denen ältere Server den abgeleiteten Wert `code` gespeichert haben.
+- Oberfläche (`studio/team-task.tsx`) liest dieselbe Vertragsart vom Server; Artanzeige, Ergebnisformular und
+  Abschlussregeln folgen damit derselben Regel. Keine Production-Daten verändert.
+- Regression in `selfhost/team-workflow.test.mjs`: Lesekopie + fehlgeschlagenes Speichern + abgebrochene KI →
+  allgemeines Ergebnis 200, Abschluss 200; fremde Person 403; wartendes Speichern → Ergebnis 409,
+  Wechsel zu allgemein 409, Prüfstand verlangt; Altbestand mit gespeichertem `code` → Wechsel 200.
+- Selbst ausgeführt: `node --test selfhost/team-workflow.test.mjs selfhost/github-workflow.test.mjs`
+  → 15 Tests, 15 PASS, 0 FAIL.
+
+## P1 – Vollständiger Aufgaben-Kontext und auffindbare Aufgabe
+
+- `selfhost/room-http.mjs`, `buildRoomContext`: Aufgabenblock enthält jetzt ID, Status, Aufgabenart und die
+  vollständigen gespeicherten Abschlusskriterien mit Fassung; zusätzlich strukturiert als `taskContract`.
+  Der Kopf (Projekt, Aufgabe, Kriterien) wird nie gekürzt (durch Feldgrenzen beschränkt); Wissen und Nachrichten
+  füllen das bisherige 8000-Zeichen-Budget. Wird gekürzt, steht ein sichtbarer Hinweis im Text und `truncated: true`.
+- Neu `GET /api/room/tasks?project=&q=&done=1` und MCP-Werkzeug `list_tasks`: Suche nach Titelteil, nur
+  lesend, höchstens 50 Treffer, `complete` zeigt unvollständige Listen an. Im Plugin-Freigabefilter
+  (`server.mjs`) nur als GET erlaubt. Unbekanntes Projekt 404, fremde Aufgabe 400 (bestehende Regeln).
+- Doku: `docs/AI_CLIENT_SETUP.md` Werkzeugtabelle.
+- Regression in `selfhost/studio-plugin-dynamic.test.mjs` über den echten MCP-SDK-Client: Aufgabe per Titel
+  gefunden, Kriterien (4000 Zeichen) identisch mit gespeichertem Vertrag, Text ≤ 8000 und als gekürzt markiert,
+  fehlendes Projekt/Aufgabe abgewiesen.
+- Selbst ausgeführt: `node --test selfhost/studio-plugin-dynamic.test.mjs selfhost/studio-mcp.test.mjs` → 6/6 PASS;
+  vorher `room*`/`router-boundaries` mitgelaufen (17 Tests, nach Korrektur der Testdaten grün).
+
+## P2 – Große Quelldateien abschnittsweise lesen
+
+- `selfhost/files.mjs`: neues `readSourceSection` nur für den Leseweg. Dateien bis 4 MiB, Abschnitte höchstens
+  64 KiB, Ende immer auf UTF-8-Zeichengrenze (bevorzugt nach Zeilenumbruch). Antwort: `offset`, `end`, `size`,
+  `startLine`, `nextOffset`, `complete`, `revision` (der ganzen Datei). Mit `revision` des ersten Abschnitts wird
+  eine zwischenzeitlich geänderte Datei gemeldet statt Versionen zu mischen. Start mitten in einem Zeichen,
+  ungültiger Offset, Binärdatei, ungültiges UTF-8, Hardlink, Symlink, gesperrte Pfade: abgewiesen.
+- Bearbeiten unverändert: `readSource`/`saveSource`/`createSource` behalten 64 KiB. Ohne `offset` bleibt
+  `read-file` wie bisher (Editor bekommt nie einen Teilinhalt) und meldet bei großen Dateien den Hinweis auf `offset`.
+- `selfhost/runner.mjs`, `selfhost/server.mjs` (`offset` nur für read-file, sonst 400), `selfhost/studio-mcp.mjs`
+  (Parameter und Beschreibung).
+- Selbst ausgeführt: `node --test selfhost/files.test.mjs selfhost/editor-*.test.mjs` → 10/10 PASS;
+  `node --test selfhost/studio-mcp.test.mjs selfhost/review.test.mjs` → 4/4 PASS (echter Runner, Git, MCP:
+  ~200-KB-Datei über Abschnitte exakt rekonstruiert, Speichern abgewiesen, `offset` bei save-file abgewiesen).
+- Kein Livezugriff auf die echten Klimafinder-Dateien; der Server-Worker hat diesen Code noch nicht.
+## P3 – Begriffe, KI-Übergabe, Fokus und Ergebnisrückweg
+
+- Beschriftungen: „PC oder Server hinzufügen“ und „<Projektname> einrichten“ (`studio/team-workspace.tsx`,
+  `studio/project-connect.tsx`, Hinweistext in `app/project-start.tsx`).
+- Ehrliche Einrichtungsstände: `selfhost/placement.mjs` meldet je Rechner zusätzlich `testable` (Testbefehl
+  konfiguriert). `app/executors.tsx` zeigt „Projekt nicht eingerichtet“, „Repository-Kopie vorhanden · Tests nicht
+  konfiguriert“ oder „Konfiguriert · Testbefehl hinterlegt“ statt pauschal „Projekt eingerichtet“, mit Knopf
+  „Hier einrichten“, der die Einrichtung mit diesem Rechner vorausgewählt öffnet. Projektkarte entsprechend.
+- Einrichtungsvorschlag: Überschrift „Einrichtungsvorschlag für <Projekt>“, verständliche Bedeutung oben,
+  Projektart/Befehle/Ausgabeordner/JSON unter „Technische Details“. Hinweis, dass vorhandene Programme keine
+  installierten Module (z. B. Python/ensurepip) belegen.
+- Aufgabe: zwei ehrlich getrennte Wege statt „KI hinzunehmen“: „Mit ChatGPT oder Claude bearbeiten“ (neu
+  `studio/external-assistant.tsx`: kopierbarer Auftrag mit Projekt-/Aufgaben-ID und Vorgehen über die Studio-
+  Werkzeuge, kein Modellstart, keine Zugangsdaten, kein Anbieter-Deeplink, „Antwort als Ergebnis festhalten“)
+  und „Lokale KI auf meinem Rechner fragen“ (bisheriger Assistent).
+- Früher nächster Schritt: ohne Ergebnis „Nächster Schritt: Aufgabe bearbeiten und das Ergebnis festhalten“
+  mit Knopf „Ergebnis festhalten“ (öffnet „Bearbeitung“ und fokussiert das Ergebnisfeld) bzw. bei Codeaufgaben
+  „Zur Bearbeitung“. Fehlende Bedingungen erscheinen erst danach.
+- Fokus: geöffnete Bereiche werden sichtbar gescrollt (`block: nearest`) und fokussiert; Schließen gibt den Fokus
+  an den auslösenden Knopf zurück (Assistent, „PC oder Server hinzufügen“, Einrichtung).
+- Regression: `selfhost/placement.test.mjs` (`testable`).
+- Selbst ausgeführt: TypeScript `tsc --noEmit` Exit 0; `placement.test.mjs` 2/2; Studio-Build PASS.
+- Browser (synthetische Fixture `night-ui-fixture.mjs` im Scratchpad, 127.0.0.1:45791, Testkonto aus der Fixture,
+  kein Owner-Login), Desktop 1024×768: Aufgabe mit Lesekopie zeigt „Allgemeine Aufgabe“ und den neuen nächsten
+  Schritt; „Ergebnis festhalten“ öffnet Bearbeitung, Fokus im Ergebnisfeld (sichtbar 533–653 px von 768);
+  Entwurf getippt, nach 11 s Polling Wert, Fokus und Scrollposition unverändert; KI-Übergabe sichtbar
+  aufgeklappt, Text mit IDs geprüft; Schließen → Fokus zurück auf den Knopf; Einstellungen: beide Rechner mit
+  ehrlichem Stand, „Hier einrichten“ wählt den Server vor, Formular sichtbar und fokussiert.
+- Nachgebessert nach Browserbefund: Fokus beim Öffnen des KI-Bereichs lag noch auf dem Knopf (Überschrift nicht
+  fokussierbar) → jetzt Bereich bzw. erstes Eingabefeld. Nach dem Neubau in P5 erneut geprüft.
+
+## P4 – Designangleichung an die bestehende SCHMAQQ-Website
+
+- Neu `studio/schmaqq-convergence.css` (zuletzt geladen, nur vorhandene Tokens): Ecken 0 px für Karten,
+  Knöpfe, Felder, Reiter, Abzeichen und Rechnerliste; Knöpfe 13 px/800 mit 1 px Ink-Linie; Hover-Lift
+  `translate(-2px,-2px)` + `4px 4px 0` Ink nur mit Maus (`hover: hover`); ein Fokusbild (2 px Ink + Acid-
+  Schatten); Abzeichen in Mono; KI-Übergabe als gerahmtes Objekt mit Markenschatten. Reduced Motion schaltet
+  die Bewegung ab. Quelle und Werte: `docs/evidence/NIGHT_CLARITY_DESIGN_20261029.md`.
+- `app/studio-brand.tsx`: vorhandenes Logo mit Welle führt mit `onHome` zur Startansicht „Meine Arbeit“
+  (Menü am Handy schließt sich); ohne `onHome` unverändert (Anmeldeseite).
+- Dunkle Seitenleiste und Anmeldeseite bewusst unverändert. Keine V1-Markenfarben.
+- Vorschlag zur Einbindung in schmaqq.com nur dokumentiert (Evidence-Datei), Website nicht verändert.
+- Browser (Fixture `scripts/task-handoff-browser-fixture.mjs`, synthetisch): Vorher/Nachher Desktop 1024×768 und
+  390×844 für „Meine Arbeit“, Aufgabe, Einstellungen, KI-Übergabe; kein Seitenüberlauf (390 = 390,
+  1024 = 1024, auch Aufgabenbereich); Fokus sichtbar; Logo → „Meine Arbeit“ geprüft. Unterwegs gefunden und
+  behoben: Hover blieb am Handy nach Tippen hängen; Knopfgröße/-stärke wurde von einer alten `!important`-Regel
+  überschrieben; grünliche Textfarbe bei dezenten Knöpfen; aneinanderklebende Knöpfe; runde Rechnerkarten.
+- Bilder privat in `.studio/night-20261029/` (11 Dateien, von Git ignoriert).
+- Reduced Motion: nicht emuliert, nur Code/CSS geprüft.
+
+## P5 – Gemeinsame Abnahme und Sicherung
+
+- Gesamtprüfung `node selfhost/verify.mjs --local` (lokales Git aus `.local-tools`): erster Lauf 1 FAIL
+  (`studio-mcp-http.test.mjs` zählte 7 Werkzeuge; durch `list_tasks` sind es 8) → Erwartung angepasst;
+  zweiter Lauf Exit 0: 273 Tests, 252 PASS, 0 FAIL, 21 Plattform-Skips; Source Guard (503 Dateien),
+  TypeScript, Vite-Build PASS. `linuxOperatorRecovery: NOT_VERIFIED` (Windows), kein Release-PASS.
+- Sichtbarer Browserablauf: siehe P3/P4 (synthetische Fixture, Desktop und 390 px).
+- Kein lesender Gegenreview durch einen zweiten Agenten gestartet (optional laut Auftrag; aus Kostengründen
+  ausgelassen). Empfehlung: Diff vor dem Release prüfen lassen.
+- Eigene Hilfsprozesse beendet (Fixtures auf 45781/45791, keine verbliebenen Node-Prozesse dieser Skripte).
+  Browseransicht wieder auf Desktop. Kein PC-Shutdown ausgeführt (nicht beauftragt; PC bleibt an).
+- HANDOFF (oberster Abschnitt), WORKLIST, STATUS.json und ein neuer Vault-Eingangsvorschlag aktualisiert.
+
+## Endzustand
+
+**FERTIG (lokal)** für P0–P4 mit den genannten Grenzen; nicht live. Commit- und Remote-Stand stehen im
+Abschluss-Commit und werden nach dem Push mit `git ls-remote` verglichen (siehe Chatbericht).
+
+Offen: Reduced Motion nur im Code geprüft; kein Test mit Owner-Konto, ChatGPT/Claude oder echtem Worker;
+dunkle Seitenleiste bewusst unverändert; Studio-Link auf schmaqq.com nur als Vorschlag.
+
+**Genau ein nächster Schritt für morgen:** Owner sieht sich den Stand lokal an
+(`node scripts/task-handoff-browser-fixture.mjs`, dann http://127.0.0.1:45791) und entscheidet über „ja, live“.
+
+## Nachtrag 30.10.2026: live
+
+Owner hat mit „Ja, live“ freigegeben. Studio und Worker laufen auf `5c3208a`; alle Release-, Backup-,
+Probestart-, Isolations- und Live-Prüfungen PASS. Nachweis:
+[NIGHT_RELEASE_DEPLOY_20261030.md](evidence/NIGHT_RELEASE_DEPLOY_20261030.md).
