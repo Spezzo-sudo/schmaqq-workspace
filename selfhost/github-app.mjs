@@ -15,6 +15,9 @@ const fail=(status,message)=>Object.assign(new Error(message),{status});
 const repoName=/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/;
 // Path segments such as '..' would let a crafted name address other API routes.
 const validRepository=value=>typeof value==='string'&&repoName.test(value)&&value.split('/').every(s=>s!=='.'&&s!=='..');
+// Return paths after GitHub must stay inside Studio (no other host, no protocol-relative URL).
+export const safeReturn=value=>typeof value==='string'&&value.length<=500&&/^\/(?!\/)[\w\-./?=&%]*$/.test(value)?value:'/';
+export function withNotice(returnTo,key,value){const url=new URL(safeReturn(returnTo),'http://studio.invalid');url.searchParams.set(key,value);return url.pathname+url.search;}
 export const githubAppPermissions=Object.freeze({contents:'write',pull_requests:'write',metadata:'read'});
 
 export function githubAppManifest(origin){
@@ -116,11 +119,11 @@ export function createGithubApp({db,origin,credentialsFile,api='https://api.gith
  }
  // Browser redirects from github.com are cross-site, so the Strict session cookie is absent there.
  // Each attempt is bound to the member, a Lax browser cookie and a single-use state instead.
- function attempt(member,purpose){
+ function attempt(member,purpose,returnTo){
   const state=token(),browser=token();
   const open=Object.fromEntries(Object.entries(metadata(db,'github-app:v1:attempts',{})).filter(([,v])=>v.expires>=now()&&v.member!==member.id));
   if(Object.keys(open).length>=50)throw fail(429,'Zu viele offene Vorgänge. Bitte später erneut versuchen.');
-  storeMetadata(db,'github-app:v1:attempts',{...open,[digest(state)]:{member:member.id,browser:digest(browser),purpose,expires:now()+600000}});
+  storeMetadata(db,'github-app:v1:attempts',{...open,[digest(state)]:{member:member.id,browser:digest(browser),purpose,returnTo:safeReturn(returnTo),expires:now()+600000}});
   return {state,browser};
  }
  function claim(state,browser,purpose){
@@ -130,57 +133,71 @@ export function createGithubApp({db,origin,credentialsFile,api='https://api.gith
   delete all[key];storeMetadata(db,'github-app:v1:attempts',all);
   if(found.expires<now()||found.browser!==digest(browser)||found.purpose!==purpose)throw fail(400,'state');
   const member=db.prepare('SELECT * FROM members WHERE id=?').get(found.member);if(!member)throw fail(400,'member');
-  return member;
+  return {member,returnTo:safeReturn(found.returnTo)};
  }
- function startCreation(member){
+ function startCreation(member,returnTo){
   if(member.role!=='owner')throw fail(403,'Nur der Inhaber kann die GitHub-App für Studio anlegen.');
   if(credentials())throw fail(409,'Für dieses Studio gibt es bereits eine GitHub-App.');
-  const {state,browser}=attempt(member,'create');
+  const {state,browser}=attempt(member,'create',returnTo);
   return {browser,action:`${web}/settings/apps/new?state=${encodeURIComponent(state)}`,manifest:JSON.stringify(githubAppManifest(origin))};
  }
- function startInstallation(member){
+ function startInstallation(member,returnTo){
   const c=credentials();if(!c)throw fail(409,'Die GitHub-App ist noch nicht eingerichtet.');
-  const {state,browser}=attempt(member,'install');
+  const {state,browser}=attempt(member,'install',returnTo);
   return {browser,url:`${web}/apps/${c.slug}/installations/new?state=${encodeURIComponent(state)}`};
  }
  async function finishCreation(state,browser,code){
-  const member=claim(state,browser,'create');
-  if(member.role!=='owner')throw fail(403,'owner');
+  const {member,returnTo}=claim(state,browser,'create');
+  if(member.role!=='owner')throw Object.assign(fail(403,'owner'),{returnTo});
+  try{
   if(typeof code!=='string'||!/^[\w-]{1,200}$/.test(code))throw fail(400,'code');
   const app=await call('POST',`/app-manifests/${code}/conversions`);
   if(!Number.isSafeInteger(app?.id)||typeof app.slug!=='string'||!/^[a-z0-9-]{1,100}$/.test(app.slug)||typeof app.pem!=='string'||!app.pem.includes('PRIVATE KEY'))throw fail(502,'GitHub hat keine vollständige App zurückgegeben.');
   saveCredentials({id:app.id,slug:app.slug,pem:app.pem,clientId:app.client_id??null,clientSecret:app.client_secret??null,webhookSecret:app.webhook_secret??null,owner:app.owner?.login??null,created:now()});
-  return {slug:app.slug};
+  return {slug:app.slug,returnTo};
+  }catch(e){throw Object.assign(e,{returnTo});}
  }
  async function finishInstallation(state,browser,installation){
-  const member=claim(state,browser,'install');
-  return addInstallation(installation,member.id);
+  const {member,returnTo}=claim(state,browser,'install');
+  try{return {...await addInstallation(installation,member.id),returnTo};}catch(e){throw Object.assign(e,{returnTo});}
  }
- return {status,startCreation,startInstallation,finishCreation,finishInstallation,repositories,repositoryToken,branchProtected,configured:()=>!!credentials()};
+
+ /** What a project's setup screen needs: does Studio reach the repository, and is its target branch protected? */
+ async function projectAccess(project){
+  if(!/^[\w-]{1,100}$/.test(project??''))throw fail(400,'Projekt ungültig.');
+  const meta=metadata(db,'room:v1:project:'+project),repository=/^https:\/\/github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)$/.exec(meta?.repository??'')?.[1]??null,base=meta?.base??'main';
+  if(!repository||!credentials())return {repository,base,configured:!!credentials(),access:false,protected:null};
+  try{await repositoryToken(repository);}catch(e){if(e.status===409)return {repository,base,configured:true,access:false,protected:null};throw e;}
+  let isProtected=null;try{isProtected=await branchProtected(repository,base);}catch{/* unknown stays null */}
+  return {repository,base,configured:true,access:true,protected:isProtected};
+ }
+ return {status,projectAccess,startCreation,startInstallation,finishCreation,finishInstallation,repositories,repositoryToken,branchProtected,configured:()=>!!credentials()};
 }
 
-export function createGithubAppRoutes({app,user,sessionCookie,secure}){
+export function createGithubAppRoutes({app,user,sessionCookie,secure,readJSON}){
  const name=sessionCookie+'_github_app';
  const binding=(value,age)=>`${name}=${value}; Path=/api/github-app; HttpOnly; SameSite=Lax; Max-Age=${age}${secure?'; Secure':''}`;
  const cookie=req=>req.headers.cookie?.split(';').map(v=>v.trim()).find(v=>v.startsWith(name+'='))?.slice(name.length+1);
  const back=(res,destination)=>{res.setHeader('Set-Cookie',binding('',0));res.writeHead(303,{Location:destination});res.end();};
+ const returnOf=async req=>{const body=await readJSON(req,4000);return typeof body?.returnTo==='string'?body.returnTo:'/';};
  return async({route,method,req,res,url,send})=>{
   if(!route.startsWith('/api/github-app'))return false;
   if(route==='/api/github-app'&&method==='GET'){send(app?app.status(user(req)):{configured:false,canCreate:false,installations:[]});return true;}
   if(!app)throw fail(409,'GitHub-App ist in dieser Umgebung nicht verfügbar.');
-  if(route==='/api/github-app/create'&&method==='POST'){const {browser,...form}=app.startCreation(user(req));res.setHeader('Set-Cookie',binding(browser,600));send(form);return true;}
-  if(route==='/api/github-app/install'&&method==='POST'){const {browser,url:target}=app.startInstallation(user(req));res.setHeader('Set-Cookie',binding(browser,600));send({url:target});return true;}
+  if(route==='/api/github-app/create'&&method==='POST'){const member=user(req);const {browser,...form}=app.startCreation(member,await returnOf(req));res.setHeader('Set-Cookie',binding(browser,600));send(form);return true;}
+  if(route==='/api/github-app/install'&&method==='POST'){const member=user(req);const {browser,url:target}=app.startInstallation(member,await returnOf(req));res.setHeader('Set-Cookie',binding(browser,600));send({url:target});return true;}
   if(route==='/api/github-app/repositories'&&method==='GET'){user(req);send({repositories:await app.repositories()});return true;}
+  if(route==='/api/github-app/access'&&method==='GET'){user(req);send(await app.projectAccess(url.searchParams.get('project')));return true;}
   if(route==='/api/github-app/created'&&method==='GET'){
-   let destination='/?github_app_error=create';
-   try{await app.finishCreation(url.searchParams.get('state'),cookie(req),url.searchParams.get('code'));destination='/?github_app=created';}
-   catch{/* Codes and provider details never enter URLs or logs. */}
+   let destination;
+   try{const done=await app.finishCreation(url.searchParams.get('state'),cookie(req),url.searchParams.get('code'));destination=withNotice(done.returnTo,'github_app','created');}
+   catch(e){/* Codes and provider details never enter URLs or logs. */destination=withNotice(e.returnTo??'/','github_app_error','create');}
    back(res,destination);return true;
   }
   if(route==='/api/github-app/installed'&&method==='GET'){
-   let destination='/?github_app_error=install';
-   try{await app.finishInstallation(url.searchParams.get('state'),cookie(req),Number(url.searchParams.get('installation_id')));destination='/?github_app=installed';}
-   catch{/* see above */}
+   let destination;
+   try{const done=await app.finishInstallation(url.searchParams.get('state'),cookie(req),Number(url.searchParams.get('installation_id')));destination=withNotice(done.returnTo,'github_app','installed');}
+   catch(e){destination=withNotice(e.returnTo??'/','github_app_error','install');}
    back(res,destination);return true;
   }
   return false;

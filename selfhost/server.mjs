@@ -60,7 +60,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  const connectionRoute=createConnectionRoutes({db,origin,sessionCookie,user,provider:demoMode?null:githubProvider});
  // GitHub App (one per Studio): created and installed by the owner; tests pass their own instance.
  const studioGithubApp=githubApp!==undefined?githubApp:(demoMode?null:createGithubApp({db,origin,credentialsFile:path.join(path.dirname(filename),'github-app.private.json')}));
- const githubAppRoute=createGithubAppRoutes({app:studioGithubApp,user,sessionCookie,secure});
+ const githubAppRoute=createGithubAppRoutes({app:studioGithubApp,user,sessionCookie,secure,readJSON});
  // Route modules share the host's request parsing and origin/CSRF boundary.
  const authHttpRoute=createAuthHttpRoute({
   db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now,loginLimiter,passwordRecovery

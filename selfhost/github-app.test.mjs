@@ -7,7 +7,8 @@ import path from 'node:path';
 import {generateKeyPairSync} from 'node:crypto';
 import {jwtVerify} from 'jose';
 import {createStudioServer} from './server.mjs';
-import {createGithubApp,githubAppManifest} from './github-app.mjs';
+import {createGithubApp,githubAppManifest,safeReturn,withNotice} from './github-app.mjs';
+import {storeMetadata} from './team-model.mjs';
 import {createInvite} from './store.mjs';
 
 const {publicKey,privateKey}=generateKeyPairSync('rsa',{modulusLength:2048});
@@ -51,6 +52,13 @@ function fakeGithub(){
  });
  return {server,calls,issued:()=>issued};
 }
+
+test('return paths after GitHub stay inside Studio',()=>{
+ assert.equal(safeReturn('/?room=website&tab=settings'),'/?room=website&tab=settings');
+ for(const bad of ['//evil.example/x','https://evil.example','javascript:alert(1)','/\\evil','',null,'/'+'a'.repeat(600)])assert.equal(safeReturn(bad),'/',String(bad));
+ assert.equal(withNotice('/?room=website&tab=settings','github_app','installed'),'/?room=website&tab=settings&github_app=installed');
+ assert.equal(withNotice('//evil.example','github_app','created'),'/?github_app=created');
+});
 
 test('GitHub App manifest asks only for repository contents and pull requests',()=>{
  const m=githubAppManifest('https://studio.schmaqq.com');
@@ -122,9 +130,9 @@ test('GitHub App: owner creates and installs it; redirects are single-use and br
   assert.equal(target.origin+target.pathname,'https://github.example/apps/schmaqq-studio-test/installations/new');
   back=await request(`/api/github-app/installed?state=${target.searchParams.get('state')}&installation_id=999`,null,ib);
   assert.equal(back.headers.get('location'),'/?github_app_error=install');
-  install=await request('/api/github-app/install',{},member);target=new URL((await install.json()).url);ib=bindingOf(install);
+  install=await request('/api/github-app/install',{returnTo:'/?room=website&tab=settings'},member);target=new URL((await install.json()).url);ib=bindingOf(install);
   back=await request(`/api/github-app/installed?state=${target.searchParams.get('state')}&installation_id=4242`,null,ib);
-  assert.equal(back.headers.get('location'),'/?github_app=installed');
+  assert.equal(back.headers.get('location'),'/?room=website&tab=settings&github_app=installed','back to the project settings');
   status=await (await request('/api/github-app',null,owner)).json();
   assert.deepEqual(status.installations,[{id:4242,account:'Spezzo-sudo'}]);
 
@@ -144,6 +152,13 @@ test('GitHub App: owner creates and installs it; redirects are single-use and br
   assert.equal(await holder.app.branchProtected('Spezzo-sudo/Klimafinder-CH','main'),true);
   assert.equal(await holder.app.branchProtected('Spezzo-sudo/Klimafinder-CH','develop'),false);
   await assert.rejects(holder.app.branchProtected('Spezzo-sudo/Klimafinder-CH','../x'),/Zielbranch ungültig/);
+
+  // Project setup: does Studio reach the repository, and is the target branch protected?
+  storeMetadata(app.db,'room:v1:project:website',{repository:'https://github.com/Spezzo-sudo/Klimafinder-CH',base:'main',teamShared:true,revision:1});
+  storeMetadata(app.db,'room:v1:project:other',{repository:'https://github.com/Spezzo-sudo/other',base:'main',teamShared:true,revision:1});
+  assert.deepEqual(await (await request('/api/github-app/access?project=website',null,member)).json(),{repository:'Spezzo-sudo/Klimafinder-CH',base:'main',configured:true,access:true,protected:true});
+  assert.deepEqual(await (await request('/api/github-app/access?project=other',null,member)).json(),{repository:'Spezzo-sudo/other',base:'main',configured:true,access:false,protected:null});
+  assert.equal((await request('/api/github-app/access?project=../x',null,member)).status,400);
  }finally{
   app?.server.close();app?.previewServer?.close();app?.db?.close();github.server.close();rmSync(dir,{recursive:true,force:true});
  }

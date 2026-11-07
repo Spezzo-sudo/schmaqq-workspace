@@ -5,6 +5,10 @@ import {roomRequest,type Resource} from './room-model';
 type Configuration={version:1;prepare:string[][];check:string[];requires:string[];generated:string[];preview?:{build:string[];directory:string}|{serve:{argv:string[];port:number}}};
 type SetupPlan={revision:string;source:string;label:string;state:'proposed'|'needs_configuration'|'missing_tools';configuration:Configuration|null;notes:string[];tools:{program:string;available:boolean}[]};
 type JobResult={error?:string;publicKey?:string;setupPlan?:SetupPlan;configured?:boolean};
+type GithubApp={configured:boolean;canCreate:boolean};
+type GithubAccess={repository:string|null;base:string;configured:boolean;access:boolean;protected:boolean|null};
+// Studio's own address to return to after GitHub, without earlier GitHub notices.
+function returnHere(){const url=new URL(location.href);url.searchParams.delete('github_app');url.searchParams.delete('github_app_error');return url.pathname+url.search;}
 
 export default function ProjectConnect({project,projectTitle='Projekt',initialDevice='',resources,userId,onDone}:{project:string;projectTitle?:string;initialDevice?:string;resources:Resource[];userId:string;onDone:()=>Promise<void>}){
  const own=resources.filter(r=>r.owner===userId);
@@ -14,15 +18,36 @@ export default function ProjectConnect({project,projectTitle='Projekt',initialDe
  const [busy,setBusy]=useState(false),[operation,setOperation]=useState<'plan'|'apply'>('plan'),[error,setError]=useState(''),[notice,setNotice]=useState(''),[plan,setPlan]=useState<SetupPlan|null>(null),[advanced,setAdvanced]=useState(false);
  const [kinds,setKinds]=useState<Record<string,string>>({}),[planVersions,setPlanVersions]=useState<Record<string,number>>({}),[executorsLoaded,setExecutorsLoaded]=useState(false),[repository,setRepository]=useState(''),[publicKey,setPublicKey]=useState(''),[keyBusy,setKeyBusy]=useState(false),[copied,setCopied]=useState(false);
  const [serveCommand,setServeCommand]=useState(''),[servePort,setServePort]=useState('3000');
+ const [githubApp,setGithubApp]=useState<GithubApp|null>(null),[access,setAccess]=useState<GithubAccess|null>(null),[linkBusy,setLinkBusy]=useState(false);
  const feedback=useRef<HTMLDivElement|null>(null),advancedPanel=useRef<HTMLDetailsElement|null>(null),alive=useRef(true);
  const cap=own.find(r=>r.device===device)?.development?.find(p=>p.id===project),server=kinds[device]==='server';
  const outdated=executorsLoaded&&(planVersions[device]??0)<1;
  const servePortValid=/^\d{4,5}$/.test(servePort)&&Number(servePort)>=1024&&Number(servePort)<=65535;
  const github=/^(?:https:\/\/github\.com\/|git@github\.com:)([\w-]+\/[\w.-]+?)(?:\.git)?\/?$/.exec(repository)?.[1];
  const online=own.some(r=>r.device===device&&r.online);
- const invalid=!executorsLoaded||outdated||!online||server&&!publicKey&&!cap||server&&!!serveCommand.trim()&&!servePortValid;
+ const appAccess=access?.access===true;
+ const invalid=!executorsLoaded||outdated||!online||server&&!publicKey&&!cap&&!appAccess||server&&!!serveCommand.trim()&&!servePortValid;
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
- useEffect(()=>{setPublish(cap?.publish===true);setCodex(cap?.allowCodex===true);},[device,cap?.publish,cap?.allowCodex]);
+ // With the Studio GitHub App, sharing finished changes as a pull request is part of connecting the repository.
+ useEffect(()=>{setPublish(appAccess&&server||cap?.publish===true);setCodex(cap?.allowCodex===true);},[device,cap?.publish,cap?.allowCodex,appAccess,server]);
+ useEffect(()=>{let active=true;
+  Promise.all([roomRequest<GithubApp>('/api/github-app'),roomRequest<GithubAccess>('/api/github-app/access?project='+encodeURIComponent(project))]).then(([a,b])=>{if(active){setGithubApp(a);setAccess(b);}}).catch(()=>{if(active){setGithubApp({configured:false,canCreate:false});setAccess({repository:null,base:'main',configured:false,access:false,protected:null});}});
+  const params=new URLSearchParams(location.search),done=params.get('github_app'),failed=params.get('github_app_error');
+  if(done||failed){setNotice(done==='created'?'Studio ist jetzt bei GitHub angemeldet. Gib Studio als Nächstes Zugriff auf das Repository.':done==='installed'?'Studio hat jetzt Zugriff auf GitHub.':'');if(failed)setError('GitHub hat den Vorgang nicht abgeschlossen. Bitte erneut versuchen.');history.replaceState(null,'',returnHere());}
+  return()=>{active=false;};
+ },[project]);
+ async function linkGithub(kind:'create'|'install'){
+  setLinkBusy(true);setError('');
+  try{
+   if(kind==='create'){
+    // GitHub's manifest flow expects a form POST; GitHub shows the requested permissions before anything is created.
+    const {action,manifest}=await roomRequest<{action:string;manifest:string}>('/api/github-app/create',{returnTo:returnHere()});
+    const form=document.createElement('form');form.method='post';form.action=action;const field=document.createElement('input');field.type='hidden';field.name='manifest';field.value=manifest;form.appendChild(field);document.body.appendChild(form);form.submit();
+   }else{
+    const {url}=await roomRequest<{url:string}>('/api/github-app/install',{returnTo:returnHere()});location.assign(url);
+   }
+  }catch(e){if(alive.current){setError((e as Error).message);setLinkBusy(false);}}
+ }
  useEffect(()=>{setPublicKey('');setCopied(false);},[device]);
  useEffect(()=>{setPlan(null);setNotice('');setError('');},[project,device,repository,automatic,check,prepare,requires,generated,configurationJSON,build,directory,serveCommand,servePort,publish,codex]);
  useEffect(()=>{let active=true;setExecutorsLoaded(false);
@@ -82,15 +107,27 @@ export default function ProjectConnect({project,projectTitle='Projekt',initialDe
   <h3>{projectTitle} einrichten</h3>
   <p>Wähle den PC oder Server, auf dem {projectTitle} bearbeitet werden soll. Studio liest die Projektkonfiguration oder schlägt einen Ablauf aus den vorhandenen Projektdateien vor. Du prüfst den Vorschlag vor dem Speichern.</p>
   <label>Rechner auswählen<select value={device} onChange={e=>setDevice(e.target.value)} disabled={busy||keyBusy}><option value="">Rechner auswählen …</option>{own.map(r=><option key={r.device} value={r.device}>{r.name}{kinds[r.device]==='server'?' (Server)':''} · {r.online?'Erreichbar':'Nicht erreichbar'}</option>)}</select></label>
-  {server&&<section className="server-github" aria-label="GitHub-Zugang des Server-Workers">
-   <h4>1. GitHub-Zugang</h4>
-   {cap&&<p>Eine Repository-Kopie ist auf dem Server-Worker vorhanden. Prüfe jetzt die Projektkonfiguration.</p>}
-   <p>Der Server-Worker verwendet einen eigenen Schlüssel für genau dieses Repository. Trage dessen öffentlichen Teil einmalig bei GitHub unter <em>Settings → Deploy keys</em> ein.</p>
-   {!publicKey?<button type="button" className="rw-button" disabled={keyBusy||busy||!online} onClick={()=>void showKey()}>{keyBusy?'Schlüssel wird geladen …':'Schlüssel anzeigen'}</button>:<>
-    <label>Öffentlicher Schlüssel<textarea readOnly rows={3} value={publicKey} onFocus={e=>e.currentTarget.select()}/></label>
-    <div className="rw-row-actions"><button type="button" className="rw-button" onClick={()=>{void navigator.clipboard?.writeText(publicKey).then(()=>setCopied(true)).catch(()=>setError('Kopieren nicht möglich. Markiere den öffentlichen Schlüssel und kopiere ihn selbst.'));}}>{copied?'Kopiert':'Schlüssel kopieren'}</button>{github&&<a className="rw-button" href={`https://github.com/${github}/settings/keys/new`} target="_blank" rel="noreferrer">Bei GitHub eintragen ↗</a>}</div>
-    <p className="muted">Titel zum Beispiel „SCHMAQQ Server-Worker“. „Allow write access“ nur aktivieren, wenn der Worker später Aufgabenbranches hochladen soll. Erlaube die Übertragung dann zusätzlich unten in Studio.</p>
-   </>}
+  {server&&<section className="server-github" aria-label="Verbindung mit GitHub">
+   <h4>1. Mit GitHub verbinden</h4>
+   {!githubApp||!access?<p role="status">Verbindung mit GitHub wird geprüft …</p>:appAccess?<>
+    <p><strong>Verbunden.</strong> Studio arbeitet mit {access.repository}. Fertige Änderungen kommen als Vorschlag (Pull Request) auf GitHub und werden erst nach eurer Freigabe übernommen.</p>
+    {access.protected===false&&<div className="rw-error" role="alert"><span>Der Hauptzweig „{access.base}“ ist auf GitHub nicht geschützt. Damit nichts ohne Vorschlag auf „{access.base}“ gelangt, lege eine Schutzregel mit „Require a pull request before merging“ an: <a href={`https://github.com/${access.repository}/settings/branches`} target="_blank" rel="noreferrer">Schutzregel bei GitHub anlegen ↗</a></span></div>}
+   </>:githubApp.configured?<>
+    <p>Studio braucht einmalig Zugriff auf {access.repository??'das Repository'}. GitHub fragt dich, für welche Repositories Studio arbeiten darf.</p>
+    <button type="button" className="rw-button lime" disabled={linkBusy||busy} onClick={()=>void linkGithub('install')}>{linkBusy?'GitHub wird geöffnet …':'Zugriff bei GitHub erlauben'}</button>
+   </>:githubApp.canCreate?<>
+    <p>Einmalig: Studio meldet sich bei GitHub an. GitHub zeigt dir, was Studio darf (Code lesen und schreiben, Vorschläge anlegen), und du bestätigst.</p>
+    <button type="button" className="rw-button lime" disabled={linkBusy||busy} onClick={()=>void linkGithub('create')}>{linkBusy?'GitHub wird geöffnet …':'Mit GitHub verbinden'}</button>
+   </>:<p>Der Inhaber muss Studio einmalig mit GitHub verbinden. Danach kannst du hier den Zugriff auf das Repository erlauben.</p>}
+   {access&&!appAccess&&<details><summary>Für Entwickler: Zugang per Deploy-Key</summary>
+    {cap&&<p>Eine Repository-Kopie ist auf dem Server-Worker vorhanden. Prüfe jetzt die Projektkonfiguration.</p>}
+    <p>Der Server-Worker verwendet einen eigenen Schlüssel für genau dieses Repository. Trage dessen öffentlichen Teil einmalig bei GitHub unter <em>Settings → Deploy keys</em> ein.</p>
+    {!publicKey?<button type="button" className="rw-button" disabled={keyBusy||busy||!online} onClick={()=>void showKey()}>{keyBusy?'Schlüssel wird geladen …':'Schlüssel anzeigen'}</button>:<>
+     <label>Öffentlicher Schlüssel<textarea readOnly rows={3} value={publicKey} onFocus={e=>e.currentTarget.select()}/></label>
+     <div className="rw-row-actions"><button type="button" className="rw-button" onClick={()=>{void navigator.clipboard?.writeText(publicKey).then(()=>setCopied(true)).catch(()=>setError('Kopieren nicht möglich. Markiere den öffentlichen Schlüssel und kopiere ihn selbst.'));}}>{copied?'Kopiert':'Schlüssel kopieren'}</button>{github&&<a className="rw-button" href={`https://github.com/${github}/settings/keys/new`} target="_blank" rel="noreferrer">Bei GitHub eintragen ↗</a>}</div>
+     <p className="muted">Titel zum Beispiel „SCHMAQQ Server-Worker“. „Allow write access“ nur aktivieren, wenn fertige Änderungen hochgeladen werden sollen. Erlaube das dann zusätzlich unten in Studio.</p>
+    </>}
+   </details>}
   </section>}
   <h4>{server?'2. Projekt prüfen':'Projekt prüfen'}</h4>
   <p>Eine vorhandene <code>studio.project.json</code> beschreibt Vorbereitung, Tests und Vorschau unabhängig von der Programmiersprache. Bekannte Projektdateien können ebenfalls einen Vorschlag liefern.</p>
@@ -113,10 +150,10 @@ export default function ProjectConnect({project,projectTitle='Projekt',initialDe
     {serveCommand.trim()&&!servePortValid&&<p className="rw-error" role="alert">Port zwischen 1024 und 65535 angeben.</p>}
    </details>}
   </details>
-  <details><summary>Optionale Freigaben</summary><label className="team-check"><input type="checkbox" checked={publish} disabled={busy||keyBusy} onChange={e=>setPublish(e.target.checked)}/>Dieser Rechner darf Aufgabenbranches zum Repository hochladen.</label>
+  {!(server&&appAccess)&&<details><summary>Optionale Freigaben</summary><label className="team-check"><input type="checkbox" checked={publish} disabled={busy||keyBusy} onChange={e=>setPublish(e.target.checked)}/>Fertige Änderungen als Vorschlag (Pull Request) auf GitHub hochladen.</label>
    {!server&&<label className="team-check"><input type="checkbox" checked={codex} disabled={busy||keyBusy} onChange={e=>setCodex(e.target.checked)}/>Meine persönliche Codex-Anmeldung auf diesem PC für dieses Projekt verwenden.</label>}
    <p>Die Prüfung erteilt keine neuen Freigaben. Deine Auswahl wird erst mit „Einrichtung bestätigen“ gespeichert.</p>
-  </details>
+  </details>}
   <button className="rw-button" disabled={invalid||busy||keyBusy}>{busy&&operation==='plan'?'Projekt wird geprüft …':'Projekt prüfen'}</button>
   {!executorsLoaded&&!error&&<p role="status">Die Fähigkeiten deiner Rechner werden geladen …</p>}
   {outdated&&device&&<p role="status">Dieser Runner unterstützt die Projektprüfung noch nicht. Aktualisiere ihn und öffne die Einrichtung anschließend erneut. Es wird kein Einrichtungsauftrag an den alten Runner gesendet.</p>}
@@ -133,7 +170,7 @@ export default function ProjectConnect({project,projectTitle='Projekt',initialDe
       <p><strong>Testbefehl:</strong> <code>{proposed.check.map(arg=>/^[\w./:@=-]+$/.test(arg)?arg:JSON.stringify(arg)).join(' ')}</code></p>
       {proposed.preview&&!('serve' in proposed.preview)&&<p><strong>Ausgabeordner:</strong> <code>{proposed.preview.directory}</code></p>}
       <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify(proposed,null,2)}</pre></details>
-     <p>Mit der Bestätigung speicherst du diese Konfiguration{publish?' und erlaubst das Hochladen von Aufgabenbranches':''}. Projektbefehle und mögliche Paketdownloads starten erst, wenn du Tests oder Vorschau ausführst.</p>
+     <p>Mit der Bestätigung speicherst du diese Konfiguration{publish?' und erlaubst, fertige Änderungen als Vorschlag auf GitHub zu stellen':''}. Projektbefehle und mögliche Paketdownloads starten erst, wenn du Tests oder Vorschau ausführst.</p>
     </>}
     {plan.state==='needs_configuration'&&<button type="button" className="rw-button" disabled={busy} onClick={()=>{setAutomatic(false);setAdvanced(true);requestAnimationFrame(()=>{advancedPanel.current?.scrollIntoView({block:'start'});advancedPanel.current?.focus({preventScroll:true});});}}>Konfiguration ergänzen</button>}
     {plan.state==='proposed'&&proposed&&<button type="button" className="rw-button lime" disabled={invalid||busy||keyBusy} onClick={()=>void connect('apply')}>{busy&&operation==='apply'?'Konfiguration wird gespeichert …':'Einrichtung bestätigen'}</button>}
