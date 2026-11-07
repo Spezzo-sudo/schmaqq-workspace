@@ -19,7 +19,10 @@ export default function ProjectReady({room,resources,members,userId,onRepository
   return()=>{active=false;};},[project,meta.repository]);
  const ready=resources.filter(r=>r.online&&r.development?.some(p=>p.id===project));
  const own=resources.find(r=>r.owner===userId);
- const code=!!meta.repository&&(access?.access===true||ready.length>0);
+ // Done only with Studio's GitHub App access. An older deploy-key setup counts only where the app
+ // cannot be set up at all; otherwise the card offers the connection instead of a false check mark.
+ const appPossible=!!app&&(app.configured||app.canCreate);
+ const code=!!meta.repository&&(access?.access===true||!appPossible&&ready.length>0);
  const workshop=ready.length>0;
  const live=!!meta.live;
  const done=[code,workshop,live].filter(Boolean).length;
