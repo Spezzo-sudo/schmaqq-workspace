@@ -3,7 +3,8 @@
 Ziel: Marco und Markus entwickeln gemeinsam digitale Services, mit eigenen Konten,
 eigenen Arbeitskopien und gegenseitigem Review. Designreferenz ist SCHMAQQ.
 
-Vor Arbeit lesen: `docs/STATUS.json`, `docs/HANDOFF.md`, dann nur relevante Source.
+Vor Arbeit lesen: `docs/PLAN.md`, `docs/WORKLIST.md`, `docs/STATUS.json`, dann nur relevante Source.
+Offizieller Stand ist `main`. Historische Dokumente liegen in `docs/archive/` und sind kein Auftrag.
 Dieses Repository ist die eigenständige Anwendung `Spezzo-sudo/schmaqq-workspace`.
 Alle Befehle laufen im Repository-Root. Der frühere NetzKontor-Übergabe-Snapshot
 ist historische Evidence; neue Studio-Arbeit erfolgt hier. NetzKontor und dessen
@@ -26,7 +27,7 @@ Kundenanwendung/Marketing-Website sind ein getrenntes Repository.
 
 ## Produktbild und sichere Entwicklung
 
-SCHMAQQ Workspace ist die übergeordnete, langfristig universelle Kollaborationsplattform; Studio ist der erste Fachbereich für Softwareentwicklung. **Nicht** als reine ChatGPT-App oder schon existierendes öffentliches Compute-Netzwerk darstellen. Verbindliche R1-Vision/Zielarchitektur stehen in `docs/PRODUCT_VISION.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md` und `docs/INTEGRATION_BOUNDARIES.md`. Deren Zukunftsziele nicht als derzeit implementiert ausgeben; für den Ist-Zustand ist `docs/STATUS.json` maßgeblich. Entwürfe/ADRs gelten erst nach Owner-Review/Merge.
+SCHMAQQ Workspace ist die übergeordnete, langfristig universelle Kollaborationsplattform; Studio ist der erste Fachbereich für Softwareentwicklung. **Nicht** als reine ChatGPT-App oder schon existierendes öffentliches Compute-Netzwerk darstellen. Verbindliche R1-Vision/Zielarchitektur stehen in `docs/PRODUCT_VISION.md`, `docs/ARCHITECTURE.md`, `docs/PLAN.md` (Etappen) sowie historisch `docs/archive/ROADMAP.md` und `docs/archive/INTEGRATION_BOUNDARIES.md`. Deren Zukunftsziele nicht als derzeit implementiert ausgeben; für den Ist-Zustand ist `docs/STATUS.json` maßgeblich. Entwürfe/ADRs gelten erst nach Owner-Review/Merge.
 
 Keine fremden Aufträge auf private Runner erweitern, keine externe Selbstregistrierung oder providerübergreifende Kontonutzung ohne separate Security-, Consent- und Berechtigungsprüfung. Workspace-, Agenten-, Runner- und Provideridentitäten trennen. NetzKontor-Integration nur über eigenen, gesondert geprüften Plattform-PR.
 
@@ -41,6 +42,6 @@ Keine fremden Aufträge auf private Runner erweitern, keine externe Selbstregist
   Modell-Auth gehören niemals nach GitHub oder in Chat-Übergaben.
 - Kein automatisches Deployment, kein Merge und keine Production-/Provider-Mutation.
   Hermes führt einen gesondert freigegebenen Betriebsschritt aus; der vorbereitete
-  Auftrag steht in `docs/HERMES_HANDOFF.md`.
+  Auftrag steht in `docs/archive/HERMES_HANDOFF.md` (historisch; Rolle von Hermes wird laut PLAN.md neu geklärt).
 - GitHub-/Cloud-Sicherung ist kein laufender Studio-Server. Offline-PCs führen keine
   Runnerjobs aus. Keine Live-Integration behaupten, solange sie nicht nachgewiesen ist.

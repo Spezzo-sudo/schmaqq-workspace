@@ -5,13 +5,13 @@
     "result": "Analysis task done (owner recorded result). Code task 'Leise-Priorität' implemented in worker copy ff3f7e80 (finder_experience.js src+site, new test p64a, Makefile line); all finder tests PASS incl. P64A; preview works. Review blocked by pre-existing tests/test_backend.mjs failing in the job sandbox (loopback server denied; baseline fails identically).",
     "live": "Studio and worker on fed02f9 (rollback 94a51ca, then d72d823): launcher restores group access after jobs; static previews answer root-absolute paths via HttpOnly cookie.",
     "system_changes": "Owner-approved: python3.12-venv installed on VPS; Klimafinder worker project uses system Python/Jinja2 without downloads (backup of connected-projects.private.json kept). Proxy allowlist unchanged.",
-    "evidence": "docs/evidence/KLIMAFINDER_PRACTICE_20261030.md",
+    "evidence": "docs/archive/evidence/KLIMAFINDER_PRACTICE_20261030.md",
     "next": "Owner decision on job networking for local test servers (own loopback per job) before the review/branch step; then usability work: AI tools to configure projects and record results.",
     "production_changed": true
   },
   "project_overview_20261030": {
     "state": "live_verified",
-    "deployed": "2026-10-30 after current owner 'Ja, live': Studio and worker on d72d823, rollback 5c3208a, backup predeploy-d72d823-20261030T093111Z.sqlite; release verify, copied-data boot, schema preflight, job isolation 10/10, sandbox probe 29/29, public checks PASS. Evidence docs/evidence/PROJECT_OVERVIEW_DEPLOY_20261030.md. Not viewed in the owner account.",
+    "deployed": "2026-10-30 after current owner 'Ja, live': Studio and worker on d72d823, rollback 5c3208a, backup predeploy-d72d823-20261030T093111Z.sqlite; release verify, copied-data boot, schema preflight, job isolation 10/10, sandbox probe 29/29, public checks PASS. Evidence docs/archive/evidence/PROJECT_OVERVIEW_DEPLOY_20261030.md. Not viewed in the owner account.",
     "result": "Project overview restructured: state line (repository, executor, open tasks), work by responsibility with one derived next step per task, running jobs (GET /api/team active: id/owner/action/status/task only), waiting on others, grouped history (max 5, task title, relative time). Background job kinds (inspect, prepare, status, files, read-file, deploy-key, worktree) no longer create project events and older ones are filtered from the feed but kept in storage. 'Ergebnis festhalten' opens the task at the result field (pane=result).",
     "verification": "277 tests: 256 PASS, 0 FAIL, 21 platform skips; source guard, TypeScript, build PASS. Synthetic fixture browser check at 1280 and 390 px: legacy read noise hidden, three saves grouped, no page overflow, focus lands in the result field, closing returns to the overview, offline executor warning shown.",
     "next": "Owner reloads Studio, opens Klimafinder overview and records the analysis result.",
@@ -19,15 +19,15 @@
   },
   "night_handoff_20261029": {
     "state": "live_verified",
-    "deployed": "2026-10-30 after current owner 'Ja, live': Studio and worker on 5c3208a, rollback f139419, backup predeploy-5c3208a-20261030T055101Z.sqlite; release verify, copied-data boot, schema preflight, job isolation 10/10, sandbox probe 29/29, public health/API/MCP PASS. Evidence docs/evidence/NIGHT_RELEASE_DEPLOY_20261030.md. Not exercised in the owner account or with real ChatGPT/Claude.",
+    "deployed": "2026-10-30 after current owner 'Ja, live': Studio and worker on 5c3208a, rollback f139419, backup predeploy-5c3208a-20261030T055101Z.sqlite; release verify, copied-data boot, schema preflight, job isolation 10/10, sandbox probe 29/29, public health/API/MCP PASS. Evidence docs/archive/evidence/NIGHT_RELEASE_DEPLOY_20261030.md. Not exercised in the owner account or with real ChatGPT/Claude.",
     "result": "P0-P4 implemented locally by Claude Code (Opus 5.5, normal session without /goal; no stop/goal hooks configured). P0 task kind from changing jobs only; P1 criteria/kind/revision in project_context plus list_tasks; P2 read-only sections up to 4 MiB, edit limit 64 KiB unchanged; P3 setup labels, honest setup state, external assistant handoff, early next step, focus; P4 square shapes, website buttons/hover/focus, logo to Meine Arbeit (dark sidebar unchanged).",
     "verification": "273 tests: 252 PASS, 0 FAIL, 21 platform skips; source guard, TypeScript, Vite PASS. Synthetic browser fixture scripts/task-handoff-browser-fixture.mjs at desktop 1024x768 and 390x844: no page overflow, visible focus, polling keeps focus/draft/scroll. Reduced motion checked in code only.",
-    "evidence": "docs/evidence/NIGHT_CLARITY_DESIGN_20261029.md",
+    "evidence": "docs/archive/evidence/NIGHT_CLARITY_DESIGN_20261029.md",
     "next": "Owner continues the Klimafinder practical test on the live Studio (record the read-copy analysis as a general result; try the ChatGPT/Claude handoff).",
     "requested_executor": "Claude with owner-selected Opus 5.5 via existing subscription",
     "scope": "Local Studio fixes P0-P5: read-only-copy task kind, task context and discovery, bounded large-file reads, clarity/focus/external assistant handoff, existing SCHMAQQ design convergence and final verification.",
-    "handoff": "docs/NIGHT_HANDOFF_20261029.md",
-    "progress": "docs/NIGHT_STATUS_20261029.md",
+    "handoff": "docs/archive/NIGHT_HANDOFF_20261029.md",
+    "progress": "docs/archive/NIGHT_STATUS_20261029.md",
     "stop_rules": "Inspect active goal/stop hooks before unattended use. No repeated auth/limit block. Terminal partial/blocked/limit states allowed; independent work first, then save and stop. Four-hour/24-goal-turn clauses are not an externally enforced watchdog.",
     "authorized": "Local implementation/tests/commits and normal backup push to existing own branch only; optional PC shutdown only after proven local+remote save and no unsaved work/active jobs or restart hook.",
     "limits": "No deployment, server, system, marketing or Klimafinder-code change. Not tested with the owner account, ChatGPT/Claude or the real worker. No shutdown performed or scheduled.",
@@ -37,8 +37,8 @@
     "state": "live_verified_environment_gap_remaining",
     "implemented": "Language-independent studio.project.json contract; inspect proposal and explicit revision-bound confirmation; bounded Node, Make and pytest suggestions; non-executing program presence checks; per-copy preparation through existing job isolation; separate missing-runtime and unknown-project results; focused setup UI and legacy-runner protocol guard.",
     "verification": "271 tests: 250 PASS, 0 FAIL, 21 explicit platform skips; source guard, TypeScript and Vite PASS. Actual local Node/Python preparation, tests and static preview in separate worktrees. Synthetic local browser: confirmed proposal, unknown project, manual configuration, invalidation, missing Make; no browser errors.",
-    "evidence": "docs/evidence/PROJECT_CONFIGURATION_20261029.md",
-    "live_evidence": "docs/evidence/PROJECT_CONFIGURATION_DEPLOY_20261029.md",
+    "evidence": "docs/archive/evidence/PROJECT_CONFIGURATION_20261029.md",
+    "live_evidence": "docs/archive/evidence/PROJECT_CONFIGURATION_DEPLOY_20261029.md",
     "live_verification": "Release identity, backup, copied-data boot, schema and public/local health PASS; actual job isolation 10/10 and worker sandbox 29/29 PASS. Fresh setupPlanVersion 1; application record counts unchanged. Isolated Python probe: make/python3/venv/jinja2 present, ensurepip absent.",
     "limits": "No actual Klimafinder build or dependency download. ensurepip absent in isolated environment; make build-bootstrap is not proven runnable. Module versions are not verified by presence checks. No PyPI/network widening or system installation. Existing source/preview limits remain. No autonomous new model call. Linux operator recovery suite not rerun; actual deployment probes are separate evidence.",
     "production_changed": true,
@@ -58,7 +58,7 @@
     "state": "live_github_unconnected_preview_verified",
     "implemented": "Per-project GitHub deploy keys over SSH 443 through the egress proxy with pinned host key (connect-github.sh); full-stack live preview started by the job launcher as an isolated unit on 127.0.0.70, proxied by Studio via a secret preview link with cookie, 30 min limit, one per worker.",
     "verification": "GitHub SSH via proxy: publickey denial (path and host key OK), wrong pinned key refused. Pilot live preview: secret link serves the app incl. absolute paths and query; without link 404; one unit after replacement. 254 tests, 233 PASS, 0 FAIL.",
-    "evidence": "docs/evidence/GITHUB_AND_LIVE_PREVIEW_20261029.md",
+    "evidence": "docs/archive/evidence/GITHUB_AND_LIVE_PREVIEW_20261029.md",
     "limits": "No real repository connected yet; no WebSockets; embedded databases only; preview is a capability link; one live preview per worker.",
     "production_changed": true,
     "github_published": false
@@ -67,7 +67,7 @@
     "state": "live_on_worker",
     "implemented": "Project code (tests, preview builds) runs through a root job launcher as user schmaqq-job in one transient systemd unit per job that sees only its own copy; worker config/token, other copies, runner state and repositories hidden; no direct network; own limits. Launcher on loopback with a worker-only key.",
     "verification": "Job sandbox check 10/10 PASS through the launcher, worker sandbox probe 29/29, real check job completed via job units; 249 tests, 228 PASS, 0 FAIL.",
-    "evidence": "docs/evidence/STAGE1_JOB_ISOLATION_20261029.md",
+    "evidence": "docs/archive/evidence/STAGE1_JOB_ISOLATION_20261029.md",
     "limits": "Tests needing git do not work inside jobs; runner process still sees own copies and token but runs no project code; team sharing still needs per-person grants, quotas and separate Git access.",
     "production_changed": true,
     "github_published": false
@@ -76,7 +76,7 @@
     "state": "live",
     "implemented": "Worker without direct network (IPAddressDeny=any, no AF_UNIX, /run replaced) and allowlist HTTPS egress proxy; self-registered AI clients only from claude.ai/claude.com/chatgpt.com or loopback; job results labelled as executor-reported.",
     "verification": "Sandbox probe 29/29 PASS on the VPS; real check job completed after hardening; probe on DB copy and schema preflight PASS; 245 tests, 224 PASS, 0 FAIL.",
-    "evidence": "docs/evidence/WORKER_HARDENING_20261029.md",
+    "evidence": "docs/archive/evidence/WORKER_HARDENING_20261029.md",
     "limits": "No per-job isolation yet (jobs can read the worker token and other own copies); exfiltration via allowed GitHub with foreign credentials remains possible; kernel exploits remain a residual risk.",
     "production_changed": true,
     "github_published": false
@@ -87,16 +87,16 @@
     "live": "Production schmaqq-studio and schmaqq-studio-worker on source 33a8dd24fbc4e6df1f99bfaf2da30f3adcb24138 (archive 3b1db220a07abb3b66f6cce99947cf25763e9345edee4483842567a08c2b637b); STUDIO_PLUGIN_DYNAMIC_CLIENTS=1.",
     "implemented": "Executor host facts (pc/server, OS, CPUs, memory) and project placement rule (auto/pc/server) in workspace_meta; jobs accept device auto (servers first, copy-bound jobs stay on their device, no fallback outside the rule, own devices only) with the reason stored on the job; /api/executors and MCP list_executors; executor panel in the project room. OAuth dynamic client registration and client metadata documents (opt-in) for Claude, Gemini and other MCP clients, consent warning for self-registered clients, revocation UI. Isolated systemd server worker (own user, 3 GB volume, hidden foreign data, no loopback/private networks, 2 GB/1.5 CPU/256 tasks) with probe unit, install/configure scripts and owner device registration. Schema preflight pins the plugin extension.",
     "verification": "244 tests: 223 PASS, 0 FAIL, 21 platform skips; Source Guard, TypeScript, Vite PASS. Official MCP SDK client via DCR and via metadata document. Local browser acceptance of executor panel (desktop and 375 px) and assistant revocation. Production: probe on DB copy and schema preflight PASS; worker sandbox probe 22/22; systemd-analyze 1.5 OK; real auto-placed inspect/prepare/check(1/1)/preview completed on the VPS worker.",
-    "evidence": "docs/evidence/M1_VPS_WORKER_PLACEMENT_20261029.md",
+    "evidence": "docs/archive/evidence/M1_VPS_WORKER_PLACEMENT_20261029.md",
     "limits": "No real ChatGPT/Claude/Gemini account connection yet (owner step). No production login or live view of the new UI. Worker jobs share one Unix user and can read the worker token, so only the owner's own jobs (team sharing needs per-job isolation, roadmap stage 1). Worker has no private GitHub access; pilot uses a local repository. Personal PC runners not updated.",
-    "next": "docs/NETWORK_ROADMAP.md (stage 1: per-job isolation and team sharing); setup per assistant: docs/AI_CLIENT_SETUP.md",
+    "next": "docs/archive/NETWORK_ROADMAP.md (stage 1: per-job isolation and team sharing); setup per assistant: docs/AI_CLIENT_SETUP.md",
     "production_changed": true,
     "github_published": false
   },
   "plugin_oauth_20261029": {
     "state": "deployed_to_production_plugin_client_enabled_chatgpt_connection_untested",
     "plugin_client": "schmaqq-chatgpt with redirect https://chatgpt.com/connector_platform_oauth_redirect enabled 29.10.2026; live discovery, 401 challenge and redirect allowlist checked.",
-    "deployment": "29.10.2026 production schmaqq-studio switched to source e7ee710596465cf49c4dbdc4c2472b087a59500b after verify-release PASS, backup and isolated probe; STUDIO_PLUGIN_CLIENTS not set. Evidence: docs/evidence/PLUGIN_OAUTH_DEPLOY_20261029.md",
+    "deployment": "29.10.2026 production schmaqq-studio switched to source e7ee710596465cf49c4dbdc4c2472b087a59500b after verify-release PASS, backup and isolated probe; STUDIO_PLUGIN_CLIENTS not set. Evidence: docs/archive/evidence/PLUGIN_OAUTH_DEPLOY_20261029.md",
     "implemented": "OAuth authorization server for registered public clients: S256 PKCE, exact redirect URIs, resource and scope binding (studio:read, studio:code), hashed tokens, grant listing and revocation, protected-resource and authorization-server metadata, POST-only consent page, /mcp Streamable HTTP endpoint with per-tool scope checks and member/grant-bound mutation ledger. Enabled only via STUDIO_PLUGIN_CLIENTS.",
     "verification": "231 tests: 210 PASS, 0 FAIL, 21 platform skips; Source Guard, TypeScript and Vite PASS. Local browser consent -> code -> token exchange PASS with synthetic account.",
     "limits": "No real ChatGPT/Codex client tested; plugin client enabled in production but no real token exchange or tool call from ChatGPT yet. No isolated server worker. Preview remains a capability link.",
@@ -116,20 +116,20 @@
     "state": "local_code_test_preview_contract_verified_not_connected_to_chatgpt",
     "implemented": "Identity-bound MCP tool adapter, loopback-only authenticated transport harness, coding workflow skill, runner package import closure correction.",
     "verification": "217 tests: 196 PASS, 0 FAIL, 21 explicit platform skips; Source Guard, TypeScript and Vite PASS. Full local verification used existing complete Portable Git; reduced session Git lacked daemon and caused an initial fixture failure.",
-    "evidence": "docs/STUDIO_PLUGIN_WORKER_PROTOTYPE.md",
+    "evidence": "docs/archive/STUDIO_PLUGIN_WORKER_PROTOTYPE.md",
     "limits": "Synthetic two-account local HTTP/Git/runner fixture, no model calls. No real normal ChatGPT connection, OAuth resource server, durable reconnect idempotency, VPS isolation, general scheduler or three-OS installer. Existing preview remains a capability link.",
     "production_changed": false,
     "github_published": false
   },
   "github_handoff_20261028": {
-    "entry": "docs/RELEASE_NEXT.md",
+    "entry": "docs/archive/RELEASE_NEXT.md",
     "verification": "211 tests:190 PASS,0 FAIL,21 platform skips; Source Guard,TypeScript,Vite PASS",
     "linux_recovery": "NOT_VERIFIED",
     "production_changed": false
   },
   "guided_runner_setup_20261028": {
     "state": "local_implemented_focused_verified",
-    "evidence": "docs/evidence/GUIDED_RUNNER_SETUP_20261028.md",
+    "evidence": "docs/archive/evidence/GUIDED_RUNNER_SETUP_20261028.md",
     "verification": "6 focused tests PASS; TypeScript, Source Guard, build PASS; actual existing pilot configured via browser without registration profile edits or project-setup restart.",
     "limits": "First runner installation/login still local; automatic detection limited to documented Node/pilot/Vite conventions. No broad unchanged suite repeated.",
     "production_changed": false,
@@ -140,7 +140,7 @@
     "verified": "Real personal GitHub identity confirmed; one new runner limited to selected private pilot clone. Initial Git inspection failed on missing author identity; after user-supplied email and repository-local configuration, one targeted retry passed. Task-bound branch/worktree created; one node --test execution: 2 PASS, 0 FAIL, 0 SKIP. Pilot clone and task worktree clean.",
     "findings": "Simple runner download defaults to publish allowed without an explicit choice; private pilot profile now explicitly publish:false and workflow:pull-request. Initial Git failure details hidden before worktree exists. Project readiness wording and enabled preview/share actions overstate actual configuration. OAuth return and technical setup need clearer guidance.",
     "not_verified": "Independent no-coder onboarding, preview, personal AI, second real human/device, GitHub writes/PR/review/merge and production. No broad unchanged suite repeated.",
-    "evidence": "docs/evidence/PERSONAL_PILOT_20261028.md",
+    "evidence": "docs/archive/evidence/PERSONAL_PILOT_20261028.md",
     "next": "Correct the documented onboarding gaps and verify only affected cases. No overall onboarding or release PASS.",
     "product_code_changed_in_this_pilot": false,
     "github_published": false,
@@ -152,8 +152,8 @@
     "new_checks": "TypeScript, Vite, Source Guard PASS; 3 focused deterministic UI cases PASS without devices/jobs; one fresh 390px readiness view PASS. No complete suite repeated.",
     "inherited_evidence": "Prior source/backend and general workflow evidence retained for unchanged areas, not rerun or counted as new.",
     "terra_followup": "NOT_TESTED: IAB unavailable; native Computer Use could not reliably determine owned Edge address. Deterministic UI checks are not a Terra PASS.",
-    "next": "Personal GitHub and runner setup with explicitly selected test repository; docs/START_MORGEN.md",
-    "evidence": "docs/evidence/ONBOARDING_PREPARATION_20261028.md",
+    "next": "Personal GitHub and runner setup with explicitly selected test repository; docs/archive/START_MORGEN.md",
+    "evidence": "docs/archive/evidence/ONBOARDING_PREPARATION_20261028.md",
     "github_published": false,
     "production_changed": false
   },
@@ -162,7 +162,7 @@
     "scope": "Stale code reviews disable integration and guide the responsible person to resubmit; changed completion contracts also invalidate the UI action. Unsaved drafts and active/unavailable work block resubmission. Successful submission selects its new review.",
     "source_verification": "node selfhost/verify.mjs --local: 208 tests, 187 PASS, 0 FAIL, 21 explicit platform skips; Source Guard, TypeScript and Vite PASS. Linux/operator recovery NOT_VERIFIED.",
     "browser": "21 existing browser groups plus 7 targeted UI regressions PASS; 67 screenshots; real local-file Git branches, two synthetic sessions and runners; changed criteria without file writes, later saved file change, dirty draft, 390px/1440px action, new selected review, independent approval and confirmed local integration verified. No unexpected HTTP or JavaScript errors.",
-    "documentation": "docs/evidence/STALE_REVIEW_GUIDANCE.md",
+    "documentation": "docs/archive/evidence/STALE_REVIEW_GUIDANCE.md",
     "originals": ".studio/stale-review/20261027T224057Z/",
     "production_changed": false,
     "github_published": false,
@@ -172,7 +172,7 @@
     "state": "local_team_workflow_candidate_not_deployed",
     "scope": "Shared project workspace, My Work, task completion contracts, general result versions, code sharing/review/integration, explicit takeover, knowledge archive/history, guided personal repository setup, guarded GitHub adapter.",
     "persistence": "Versioned domain records behind team-model.mjs preserve the existing schema and recovery baseline. No production migration.",
-    "verification": "Final node selfhost/verify.mjs --local: 208 tests, 187 PASS, 0 FAIL, 21 explicit Linux/operator platform skips. Source Guard, TypeScript and Vite PASS. Linux recovery NOT_VERIFIED; full/release verification INCOMPLETE. Evidence: docs/evidence/TEAM_WORKFLOW_ACCEPTANCE.md.",
+    "verification": "Final node selfhost/verify.mjs --local: 208 tests, 187 PASS, 0 FAIL, 21 explicit Linux/operator platform skips. Source Guard, TypeScript and Vite PASS. Linux recovery NOT_VERIFIED; full/release verification INCOMPLETE. Evidence: docs/archive/evidence/TEAM_WORKFLOW_ACCEPTANCE.md.",
     "browser": "Synthetic Marco and Markus sessions, two runner processes and separate Git clones on this Windows PC. Real file save/new file, tests, exact-version static preview, independent review and merge exercised, including author runner stopped. General results, knowledge history/archive/restore, explicit takeover and conversation origin exercised. At 390px: no page overflow or column overlap. Final-source reload had no captured browser errors.",
     "github": "Provider-contract tests use an isolated double. Real account repository credentials, real GitHub writes and physical two-device acceptance remain unverified.",
     "production_changed": false,
@@ -189,7 +189,7 @@
     "browser_test": "Not required for this backend-only fix; combined R28 UI and runner candidate requires separate isolated browser acceptance.",
     "deployment": false,
     "merge": false,
-    "documentation": "docs/R27_FILE_EVENTS_REVIEW_FIX.md",
+    "documentation": "docs/archive/R27_FILE_EVENTS_REVIEW_FIX.md",
     "next": "Review separate draft PR and test combined with R28 GitHub import in an isolated candidate; Lenovo owner acceptance and Production promotion require explicit separate approval."
   },
   "r27_design_diff_20261025": {
@@ -203,7 +203,7 @@
     "prod_changed": false,
     "owner_approval": false,
     "h3_historical_owner_mismatch": "unresolved",
-    "documentation": "docs/R27_DESIGN_AND_TEAM_DIFF.md",
+    "documentation": "docs/archive/R27_DESIGN_AND_TEAM_DIFF.md",
     "next": "Immutable artifact browser repeat, design review, real two-person workflow validation then separate owner/operator production GO."
   },
   "r26_one_task_one_flow": {
@@ -217,7 +217,7 @@
     "still_open": "Real Markus account/device, first-time GitHub+Runner connection, genuine personal Codex/ChatGPT integration, full marketing design system alignment, user usability acceptance, live H3 historic owner mismatch",
     "production_changed": false,
     "release_approved": false,
-    "evidence": "docs/evidence/R26_TASK_FLOW_ACCEPTANCE_20261025.md",
+    "evidence": "docs/archive/evidence/R26_TASK_FLOW_ACCEPTANCE_20261025.md",
     "next": "Review and actual two-person pilot, only then exact release + operator backup/H3 scope + separate deployment GO",
     "real_team_onboarding": "Owner can invite member directly inside task; 48h single-use link via existing owner-only endpoint; second account registers with own password; direct task handoff and response confirmed by isolated real Chrome test (7/7); no personal live account modified.",
     "browser_onboarding": "7/7 Chrome owner-only fixture PASS; invitation generated, second account joined, replay denied, task handed off and replied, no JS errors; synthetic only.",
@@ -237,9 +237,9 @@
     "release_approved": false,
     "next": "Review immutable candidate in isolated authenticated preview; then operator backup/restore/H3 against current R24 data and explicit owner promotion approval; personal two-user real-device pilot.",
     "documentation": [
-      "docs/WORKSPACE_ROOMS.md",
-      "docs/HERMES_R25_ROOMS_HANDOFF.md",
-      "docs/evidence/WORKSPACE_R25_ACCEPTANCE_20261025.md"
+      "docs/archive/WORKSPACE_ROOMS.md",
+      "docs/archive/HERMES_R25_ROOMS_HANDOFF.md",
+      "docs/archive/evidence/WORKSPACE_R25_ACCEPTANCE_20261025.md"
     ]
   },
   "password_recovery_20261025": {
@@ -250,7 +250,7 @@
     "tests": "5/5 focused PASS; full Linux verification 174 PASS, 0 FAIL, 3 expected SKIP; 3/3 runner integration PASS; Chromium desktop/mobile recovery-request UI previously passed; full Chrome E2E with live SMTP pending",
     "requires": "Dedicated SMTP credentials in operator-only channel, isolated real-mail test, full Chromium link/reset E2E, new Release/Recovery gate and owner GO",
     "production_changed": false,
-    "evidence": "docs/PASSWORD_RECOVERY_SECURITY.md",
+    "evidence": "docs/archive/PASSWORD_RECOVERY_SECURITY.md",
     "security": "GHSA-mrhx-c7xc-m3w5 cleared from npm audit for zod 4.6.7; remaining 5 advisories are full-monorepo dependencies outside isolated Studio runtime"
   },
   "ux_navigation_20261024": {
@@ -261,7 +261,7 @@
     "focused_tests": "19 focused tests PASS initially. After final preview wording: 8 navigation/recovery/preview tests PASS, TypeScript and build PASS. Recovery integration proves staged content does not write and an external change still rejects the save.",
     "local_check": "node selfhost/verify.mjs --local: exit0; 172 tests, 151 PASS, 0 FAIL, 21 explicit Linux skips; Source Guard, TypeScript and build PASS. Last subsequent product edit only clarified the earlier-preview message; focused tests/TypeScript/build repeated for it.",
     "visible_browser": "Personally operated in-app browser on existing isolated test accounts/profile at4394/4395; desktop1280x900 and mobile390x844. Started a new task-bound copy, opened file, staged draft, visited guide and returned with draft retained, saved, recovered preceding content and verified via file comparison that staging did not write, saved recovery, saved desired heading. Real diff, test, built preview opened in new tab with correct heading; local review with tests PASS and pending independent review. Menu, settings/PC setup/provider display, Team/invite form/conversation/knowledge, help contents and resume from Start exercised. No new invite, AI job, publication or peer vote.",
-    "evidence": "docs/evidence/UX_NAVIGATION_20261024.md",
+    "evidence": "docs/archive/evidence/UX_NAVIGATION_20261024.md",
     "private_evidence": ".studio/navigation-*.png and navigation-verify*-20261024.log; existing private fixture under .studio/ux-p1-20261023 remains private.",
     "limits": "Independent owner usability acceptance remains open; first project and PC setup still needs existing local commands. No full project restore UI. Previous-content recovery is memory-only in the mounted editor; not available after reload/remount. Codex does not automatically receive task conversations. Preview source association can become older after a review commit without a visible file edit. Linux/release proof separate.",
     "production_changed": false,
@@ -276,7 +276,7 @@
     "local_check": "Final node selfhost/verify.mjs --local: exit0, 168 tests, 147 PASS, 0 FAIL, 21 explicit Linux skips; source guard, TypeScript and build PASS.",
     "visible_browser": "Personally operated interactive browser with existing Marco session on isolated loopback4394/4395. Desktop1280x900/mobile390x844. Wrong-task copy unavailable; historical review warning before and after newer review; draft retained after review dialog; tab close/reload/back/forward correct; overview/kanban/team title routes aligned; requirement toggle and setup-to-tasks observed; saved synthetic heading, actual test, built preview in new tab, new local review with its own successful test. No peer approval or publication. Editor measured about689px from page start vs earlier1239px in the specified editing state; no horizontal overflow there.",
     "verification_environment": "Initial sandboxed verification stalled at existing owned-process cancellation fixture and was stopped by exact owned process tree. Native verification first hit Git ownership check; rerun used process-scoped safe.directory only. No global config changes.",
-    "evidence": "docs/evidence/UX_ORIENTATION_20261023.md",
+    "evidence": "docs/archive/evidence/UX_ORIENTATION_20261023.md",
     "private_logs": ".studio/orientation-verify-final-20261023.log and .studio/orientation-*.png; never commit private fixture, profiles or screenshots.",
     "limits": "Independent owner usability acceptance still open. First project/copy setup still technical. E9/E10 and Linux/operator/release approval remain separate. No production change, paid API or credentials change.",
     "production_changed": false,
@@ -289,7 +289,7 @@
     "method": "Interactive browser actions selected from current AX and screenshots, no predetermined browser script; owner logged in manually, then one existing synthetic Marco session explored. Default window, desktop1280 and mobile390.",
     "findings": "P1: task workspace allows selecting another task's own copy while keeping original task header; historical review dialog omits current-copy changed warning. P2: unsaved draft contradicts header next step; title clicks differ between board and overview; review close/reload loses evidence tab; mobile editor below first screen (about1239px); parallel full/task workflows; task description hidden in discussion. Team invite placement and login recovery remain separate issues.",
     "positive": "Continue action opens correct task; auto-open scoped file; unsaved draft retained across tabs and unsafe checks disabled; current evidence detects changed files; actual preview build/tab/return works; mobile menu opens/closes.",
-    "evidence": "docs/evidence/UX_EXPLORATORY_REVIEW_20261023.md",
+    "evidence": "docs/archive/evidence/UX_EXPLORATORY_REVIEW_20261023.md",
     "tests": "No repeated full suite. One real preview build plus automatically triggered file-read jobs; no file save or new review. This exploratory audit does not replace the earlier technical P1 tests or owner's unaided acceptance.",
     "product_code_changed": false,
     "production_changed": false,
@@ -303,7 +303,7 @@
     "full_local_check": "Executed studio:verify:local equivalent node selfhost/verify.mjs --local: PASS exit0; source guard; 164 backend tests, 143 PASS, 0 FAIL, 21 explicit Linux skips; TypeScript; frontend build.",
     "visible_browser": "Executed headful Edge with two separate contexts using existing synthetic accounts and one existing device registration in a copied private fixture. Real task-linked Git worktree, save, node:test, built preview and committed review. All four P1 cases PASS; review counted as latest test with same source revision; self-approval 403 and anonymous feedback read 401; superseded feedback/approved review removed; later file save invalidated evidence. Desktop1280 and mobile390 screenshots inspected; no page errors or horizontal overflow; own test processes stopped; original fixture hashes unchanged.",
     "attempts": "First browser attempt stopped on a copied historical scope reservation. Only the new fixture's historical copies were archived; second attempt passed. No uninterrupted first-attempt PASS claimed. TypeScript nullability error corrected before browser and final verification.",
-    "evidence": "docs/evidence/UX_P1_COMPLETION_20261023.md",
+    "evidence": "docs/archive/evidence/UX_P1_COMPLETION_20261023.md",
     "private_raw_evidence": ".studio/ux-p1-20261023/",
     "remaining": "Owner's unaided usability acceptance of the new interface; broader onboarding, mobile density and existing full development view remain separate. No independent human peer acceptance or exact candidate Linux release/recovery proof.",
     "production_changed": false,
@@ -461,7 +461,7 @@
   },
   "local_workflow_entry_20261022": {
     "state": "local_ui_change_browser_verified_uncommitted",
-    "documentation": "docs/evidence/LOCAL_WORKFLOW_ENTRY_20261022.md",
+    "documentation": "docs/archive/evidence/LOCAL_WORKFLOW_ENTRY_20261022.md",
     "change": "View changes reset page scroll; direct editor entry in development controls and own-copy resume; no automatic file jobs",
     "browser": "Own isolated synthetic demo: task to own copy, file list/read, draft retained across navigation, save, actual check and built preview; desktop 1280 and mobile 390 with no horizontal overflow",
     "qwen_use": "One actual image analysis; empty file list observed, unsupported required-path interpretation rejected against source; no measured quota/time savings claim",
@@ -515,7 +515,7 @@
   },
   "windows_local_portability_20261021": {
     "state": "local_uncommitted_review_only",
-    "documentation": "docs/WINDOWS_LOCAL_DEVELOPMENT.md",
+    "documentation": "docs/archive/WINDOWS_LOCAL_DEVELOPMENT.md",
     "native_access_controls": "POSIX modes on Unix; verified owner/DACL on Windows for local backups and synthetic migration fixtures",
     "focused_backup_migration_release_tests": "31/31 PASS before final full verification",
     "previous_windows_backend_before_platform_contract": {
@@ -561,8 +561,8 @@
     ],
     "r24_a_status": "Review-only; not merged and not deployed",
     "runbooks": [
-      "docs/RELEASE_PROVENANCE_POLICY.md",
-      "docs/VPS_MIGRATION_RUNBOOK.md"
+      "docs/archive/RELEASE_PROVENANCE_POLICY.md",
+      "docs/archive/VPS_MIGRATION_RUNBOOK.md"
     ]
   },
   "purpose": "Gemeinsame Entwicklung digitaler Services durch zwei Personen mit eigenen KI-Konten",
@@ -620,7 +620,7 @@
   },
   "two_host_pilot_20261022": {
     "state": "technical_two_host_acceptance_pass_diagnostic_snapshot_not_deployed",
-    "plan": "docs/TWO_HOST_PILOT_PLAN.md",
+    "plan": "docs/archive/TWO_HOST_PILOT_PLAN.md",
     "technical_scope": "Laptop plus isolated Linux VPS role; two synthetic accounts/devices/copies, concurrent checks, previews and mutual review; Markus/macOS not required for this technical test",
     "snapshot_sha256": "f282b77f3518c2f1230133aa26e22713c67c7c2d9ca2d1f3964387f0edf1227c",
     "snapshot_bytes": 1193169,
@@ -659,7 +659,7 @@
     "source_guard": "pass_known_patterns_not_complete_secret_audit",
     "browser_acceptance": "S1 two-context evidence retained; S2 visible synthetic project start/download/helper/restart/Git/worktree/editor/check/static preview PASS; 390/1024/1440px no page overflow",
     "release_smoke": "PASS: current S2 extracted 702-file runtime, manifest/auth/new project route/readiness/schema/frontend; no deployment",
-    "linux_current_candidate": "PASS at source 57c274c52fb4fd67ca9f9dc857a4456962806a18: fresh npm ci --ignore-scripts, 17 tests, TypeScript, build, extracted archive smoke and synthetic legacy upgrade; see docs/evidence/P1_CANDIDATE_LINUX_20261017.md",
+    "linux_current_candidate": "PASS at source 57c274c52fb4fd67ca9f9dc857a4456962806a18: fresh npm ci --ignore-scripts, 17 tests, TypeScript, build, extracted archive smoke and synthetic legacy upgrade; see docs/archive/evidence/P1_CANDIDATE_LINUX_20261017.md",
     "github_ci": "not_configured; no Actions run requested",
     "production_deployment": "Authorized Hermes switch to source 4a0092be2d04a4b66aa1d200cf7c9f9c53c4c47d reported PASS; subsequent engineering read-only manifest/auth/UI/runner/retained-preview checks PASS",
     "notes": "POSIX skipped on Windows, all three new pilot policy tests passed on Linux. Actual Mac and two-human remote acceptance pending.",
@@ -668,7 +668,7 @@
   },
   "windows_pc_setup_r5a": {
     "runner_ready": true,
-    "report": "R5_A_TECH_HANDOFF.md",
+    "report": "docs/archive/R5_A_TECH_HANDOFF.md",
     "device": "Windows-PC R5-A",
     "project": "automation",
     "studio_origin": "https://studio.schmaqq.com",
@@ -714,7 +714,7 @@
   "collaboration_pilot": {
     "state": "deployed_after_local_two_role_end_to_end; real_two_person_acceptance_pending",
     "entry": "Personal Studio starts in the shared project overview",
-    "evidence": "docs/PARALLEL_COLLABORATION_HANDOFF.md",
+    "evidence": "docs/archive/PARALLEL_COLLABORATION_HANDOFF.md",
     "actors": "Two isolated test accounts and browser contexts; not Marco and Markus as real remote participants",
     "execution": "Two actual runner processes and distinct Git clones/worktrees of one local bare repository",
     "passed": [
@@ -766,7 +766,7 @@
   "pilot_candidate": {
     "branch": "fix/studio-first-workspace-layout",
     "base": "origin/main",
-    "plan": "docs/PILOT_PLAN.md",
+    "plan": "docs/archive/PILOT_PLAN.md",
     "publication": "private_candidate_branch_pushed_draft_pr_open",
     "deployment": "deployed_by_authorized_operator; actual two-person acceptance pending",
     "release_scope": "Coherent frontend/backend with additive task-comments and optional GitHub account-link tables",
@@ -780,7 +780,7 @@
   },
   "live_preflight": {
     "observed_on": "2026-10-17",
-    "evidence": "docs/LIVE_PREFLIGHT_20261017.md",
+    "evidence": "docs/archive/LIVE_PREFLIGHT_20261017.md",
     "access": "existing authorized Remote Desktop Commander as dc-remote; own authenticated browser GET",
     "live_release": "b22175035f6f3d5c9a5c6894028ad7a0149f8761",
     "service": "schmaqq-studio.service active/running enabled",
@@ -796,7 +796,7 @@
     "deployment": "not performed; preparation only"
   },
   "execution_plan": {
-    "document": "docs/ROADMAP.md",
+    "document": "docs/archive/ROADMAP.md",
     "active_package": "S2_locally_verified_not_deployed",
     "next_action": "Review guided project start candidate; S3 repository-scoped GitHub/PR transition follows. Personal runner update and deployment remain separately authorized.",
     "milestone": "Marco and Markus complete parallel tasks on the same approved test project with discussion, real checks, previews and independent review",
@@ -821,7 +821,7 @@
   },
   "candidate_review": {
     "source_sha": "57c274c52fb4fd67ca9f9dc857a4456962806a18",
-    "evidence": "docs/evidence/P1_CANDIDATE_LINUX_20261017.md",
+    "evidence": "docs/archive/evidence/P1_CANDIDATE_LINUX_20261017.md",
     "blocking_code_findings": 0,
     "linux_tests": 17,
     "extracted_archive_smoke": "PASS",
@@ -831,7 +831,7 @@
     "production_mutations": false
   },
   "operator_backup_report": {
-    "evidence": "docs/evidence/P2_HERMES_BACKUP_REPORT_20261017.md",
+    "evidence": "docs/archive/evidence/P2_HERMES_BACKUP_REPORT_20261017.md",
     "provenance": "owner-forwarded Hermes report, not independently verified by engineering account",
     "snapshot": "/var/lib/schmaqq-studio/backups/p2-20261017T185530Z/studio.sqlite",
     "restored_copy": "/var/lib/schmaqq-studio/restore-tests/p2-20261017T185530Z/studio.sqlite",
@@ -859,7 +859,7 @@
     "authorization_scope": "Completed Studio-only switch of this artifact; no merge, other services or future deployment authorized"
   },
   "live_rollout": {
-    "evidence": "docs/evidence/P2_SWITCH_ACCEPTANCE_20261017.md",
+    "evidence": "docs/archive/evidence/P2_SWITCH_ACCEPTANCE_20261017.md",
     "source_sha": "4a0092be2d04a4b66aa1d200cf7c9f9c53c4c47d",
     "operator_report": "owner-forwarded Hermes SWITCH=PASS; protected final backup/restore not independently inspected",
     "final_snapshot": "/var/lib/schmaqq-studio/backups/p2-final-20261017T190218Z/studio.sqlite",
@@ -881,7 +881,7 @@
   },
   "markus_onboarding": {
     "os": "macOS confirmed by owner",
-    "plan": "docs/MARKUS_MAC_ONBOARDING.md",
+    "plan": "docs/archive/MARKUS_MAC_ONBOARDING.md",
     "mac_runner_ready": false,
     "remote_mac_access": "not available",
     "own_studio_account": "not created",
@@ -890,7 +890,7 @@
     "github_username": "Owner confirms Markus has no GitHub account yet; personal signup required before targeted collaborator invitation"
   },
   "pilot_setup": {
-    "evidence": "docs/evidence/P3_PILOT_SETUP_20261017.md",
+    "evidence": "docs/archive/evidence/P3_PILOT_SETUP_20261017.md",
     "repository": "https://github.com/Spezzo-sudo/schmaqq-studio-pilot",
     "private_verified": true,
     "seed_commit": "942b14b83df6b47f0870312c548d71023e38e277",
@@ -908,7 +908,7 @@
     "browser_agent_acceptance": "own-account end-to-end UI workflow PASS; independent second person still required"
   },
   "pilot_runner_safety": {
-    "evidence": "docs/evidence/P3_RUNNER_SAFETY_20261017.md",
+    "evidence": "docs/archive/evidence/P3_RUNNER_SAFETY_20261017.md",
     "package_source": "8e6ee0c3b3b085699ed9e3600ebcfa5e448e699c",
     "package_sha256": "96f877b5155a708762135b94773d59f3f976561bf678693daa9741d879683b85",
     "archive_bytes": 12431,
@@ -926,8 +926,8 @@
     "autostart": false
   },
   "live_browser_workflow": {
-    "evidence": "docs/evidence/P3_LIVE_BROWSER_WORKFLOW_20261017.md",
-    "workflow": "docs/PILOT_PLAN.md",
+    "evidence": "docs/archive/evidence/P3_LIVE_BROWSER_WORKFLOW_20261017.md",
+    "workflow": "docs/archive/PILOT_PLAN.md",
     "scope": "agent-operated real UI; own existing authorized Windows browser session and runner; not a separate cloud browser",
     "file": "site/index.html",
     "review_commit": "237dc034c204548bd18ea1f58743d0022a8f8338",
@@ -950,10 +950,10 @@
     "ai_executed": true,
     "product_code_changes": false,
     "markus_mac_tested": false,
-    "latest_followup": "docs/evidence/P3_FULL_FLOW_20261017.md; original 2-test evidence remains historical"
+    "latest_followup": "docs/archive/evidence/P3_FULL_FLOW_20261017.md; original 2-test evidence remains historical"
   },
   "identity_environment_audit": {
-    "evidence": "docs/evidence/P3_IDENTITY_AND_ENVIRONMENT_20261017.md",
+    "evidence": "docs/archive/evidence/P3_IDENTITY_AND_ENVIRONMENT_20261017.md",
     "screenshot_environment": "local demo 127.0.0.1:4320, not live",
     "live_team": "one actual account, correct own marker",
     "fresh_live_context": "HTTP 401",
@@ -995,7 +995,7 @@
     }
   ],
   "full_flow_pilot": {
-    "evidence": "docs/evidence/P3_FULL_FLOW_20261017.md",
+    "evidence": "docs/archive/evidence/P3_FULL_FLOW_20261017.md",
     "scope": "actual own-account Playwright + Windows runner, private pilot only",
     "codex": "PASS; one bounded real CLI task using existing own ChatGPT login",
     "tests": {
@@ -1017,8 +1017,8 @@
   },
   "overnight_acceptance": {
     "state": "matrix_classified_local_fixes_verified",
-    "order": "docs/OVERNIGHT_TEST_ORDER.md",
-    "report": "docs/evidence/OVERNIGHT_ACCEPTANCE.md",
+    "order": "docs/archive/OVERNIGHT_TEST_ORDER.md",
+    "report": "docs/archive/evidence/OVERNIGHT_ACCEPTANCE.md",
     "automation_id": "schmaqq-vollst-ndige-technische-abnahme",
     "schedule": "hourly local heartbeat in same chat; requires available PC/Codex",
     "baseline": {
@@ -1057,7 +1057,7 @@
       "Real Markus account and Mac not tested",
       "Development project selector loses its selection on reload"
     ],
-    "report": "docs/evidence/OVERNIGHT_ACCEPTANCE.md",
+    "report": "docs/archive/evidence/OVERNIGHT_ACCEPTANCE.md",
     "application_changes": false
   },
   "s1_change_overview": {
@@ -1081,7 +1081,7 @@
     ],
     "verification": "21 PASS, 1 POSIX SKIP; TypeScript/build/guard PASS; two-context browser acceptance and current release smoke PASS",
     "log": ".studio/overnight-audit/verify-s1-revisions-final.log",
-    "report": "docs/evidence/OVERNIGHT_ACCEPTANCE.md",
+    "report": "docs/archive/evidence/OVERNIGHT_ACCEPTANCE.md",
     "remaining": [
       "S2-S5 according to ROADMAP",
       "Actual Mac and independent two-person remote acceptance",
@@ -1118,7 +1118,7 @@
     "verification": "24 tests: 23 PASS, 1 Windows POSIX SKIP, 0 FAIL; TypeScript/build/source guard PASS; visible synthetic browser workflow PASS; extracted runtime smoke PASS",
     "log": ".studio/overnight-audit/verify-s2-final.log",
     "browser_result": ".studio/overnight-audit/s2-browser-result.json",
-    "report": "docs/evidence/OVERNIGHT_ACCEPTANCE.md",
+    "report": "docs/archive/evidence/OVERNIGHT_ACCEPTANCE.md",
     "remaining": [
       "One local helper command and explicit existing-runner restart remain necessary; no signed one-click installer",
       "New starter uses a local bare remote and is not yet shared across two physical PCs",
@@ -1144,7 +1144,7 @@
         "local_verify_log": ".studio/git-identity-help-20261022/verify.log",
         "remaining": "Personal real-project and macOS use; Linux operator verification; no deployment"
       },
-      "acceptance_report": "docs/evidence/LOCAL_PROJECT_START_20261022.md",
+      "acceptance_report": "docs/archive/evidence/LOCAL_PROJECT_START_20261022.md",
       "local_evidence": ".studio/project-start-full-20261022/run-03/result.json",
       "acceptance_caveats": "Resumed after locator, sandbox process cleanup and Windows test-file decoding issues; missing Git author identity correctly blocked readiness, then configured only in synthetic repository with git config --local; not one uninterrupted successful run; not a personal/live runner or macOS acceptance",
       "production_changed": false
@@ -1223,16 +1223,16 @@
     "production_changed": false,
     "next": "Personal real project and runner onboarding, actual task and resume acceptance; exact candidate release/recovery and any service switch separately",
     "evidence": ".studio/use-candidate-20261022/",
-    "daily_use_plan": "docs/GETTING_TO_DAILY_USE.md",
+    "daily_use_plan": "docs/archive/GETTING_TO_DAILY_USE.md",
     "publication": {
       "repository": "Spezzo-sudo/schmaqq-workspace",
       "branch": "local/studio-use-candidate-20261022",
-      "entry": "START_HERE.md",
+      "entry": "docs/archive/START_HERE.md",
       "commit_identity": "authenticated GitHub account",
       "main_merged": false,
       "production_deployed": false,
       "note": "Read actual branch head from GitHub; no current commit SHA maintained in permanent prose."
     },
-    "portable_evidence": "docs/evidence/USE_CANDIDATE_20261022.json"
+    "portable_evidence": "docs/archive/evidence/USE_CANDIDATE_20261022.json"
   }
 }

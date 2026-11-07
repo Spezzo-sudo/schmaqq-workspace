@@ -1,30 +1,19 @@
 # SCHMAQQ Studio
 
-Aktueller Einstieg und Übergabe für einen neuen Chat: [START_HERE.md](START_HERE.md).
-Der Produktkandidat liegt auf `local/studio-use-candidate-20261022`.
+Gemeinsamer Arbeitsraum, in dem Marco, Markus und KI zusammen digitale Produkte bauen.
+Zentrale private Codebasis: [Spezzo-sudo/schmaqq-workspace](https://github.com/Spezzo-sudo/schmaqq-workspace),
+offizieller Stand ist **`main`**. NetzKontor ist ein separates Projekt.
 
-Eigenständige Entwicklungsumgebung für die Zusammenarbeit an SCHMAQQ.
-Zentrale private Codebasis: [Spezzo-sudo/schmaqq-workspace](https://github.com/Spezzo-sudo/schmaqq-workspace).
-Der Code liegt direkt im Repository-Root. NetzKontor ist ein separates Projekt.
+**Hier starten:**
 
-**Stand 19.10.2026:** Production läuft auf dem freigegebenen R23-Commit aef64f85efeeb40f6c0f3a7dc43986a52a20f09f. GitHub main ist ein anderer Entwicklungsstand. R24-A enthält nur reviewpflichtige Verbesserungen und ist **nicht deployed**.
+- [Plan mit Etappen und Entscheiden](docs/PLAN.md)
+- [Arbeitsliste](docs/WORKLIST.md)
+- [Belegter Iststand](docs/STATUS.json)
+- [Betrieb und Live schalten](docs/OPERATIONS.md) · [Codebasis-Karte](docs/CODEBASE_MAP.md)
+- [Produktvision](docs/PRODUCT_VISION.md) · [Architektur](docs/ARCHITECTURE.md) · [Architekturentscheidungen](docs/DECISIONS/)
 
-- [Release-Herkunft und Sicherheitsgates](docs/RELEASE_PROVENANCE_POLICY.md)
-- [VPS-Umzug und Disaster-Recovery](docs/VPS_MIGRATION_RUNBOOK.md)
-- [Produktionsstatus und historische Nachweise](docs/STATUS.json)
-
-**Projektüberblick und verbindliche nächste Schritte:** [Gesamtplan](docs/ROADMAP.md).
-Nächster Meilenstein: Marco und Markus arbeiten parallel am selben Testprojekt,
-mit eigenen Kopien, Kommentaren, echten Tests, Vorschauen und gegenseitiger Prüfung.
-
-
-## Produktvision und Architektur
-
-**SCHMAQQ Workspace** ist langfristig eine universelle Plattform für die Zusammenarbeit von Menschen und KI-Agenten. **SCHMAQQ Studio** ist der erste spezialisierte Bereich für Softwareentwicklung. Ein freiwilliges, später eventuell vergütetes Compute-Netzwerk ist ein **Zukunftsziel**, heute weder implementiert noch öffentlich betreibbar.
-
-- [Produktvision](docs/PRODUCT_VISION.md) · [Zielarchitektur und Bestand](docs/ARCHITECTURE.md) · [Meilensteine](docs/ROADMAP.md)
-- [Integrationsgrenzen zur SCHMAQQ-Plattform](docs/INTEGRATION_BOUNDARIES.md) · [Architekturentscheidungen](docs/DECISIONS/0001-modular-core.md)
-- **Tatsächliche Funktionen/Nachweise:** [STATUS.json](docs/STATUS.json). Die neue Zielarchitektur ist kein Beleg für produktive Umsetzung.
+Historische Übergaben, Runbooks und Nachweise liegen in [docs/archive/](docs/archive/). Sie beschreiben
+frühere Stände und sind kein aktueller Auftrag.
 
 ## Tatsächliche Architektur
 
@@ -33,7 +22,7 @@ mit eigenen Kopien, Kommentaren, echten Tests, Vorschauen und gegenseitiger Prü
 - `selfhost/`: Node-HTTP-Server, SQLite-WAL-Datenbank und persönliche Runner.
 - Runner führen Git-, Test- und Codex-Aufträge auf dem verbundenen Rechner aus.
 - `selfhost/deploy/`: Betriebsanleitung; geprüfter Kollaborationskandidat läuft auf dem VPS.
-  [Betriebswechsel und Nachprüfung](docs/evidence/P2_SWITCH_ACCEPTANCE_20261017.md).
+  [Betriebswechsel und Nachprüfung](docs/archive/evidence/P2_SWITCH_ACCEPTANCE_20261017.md).
 - `app/api/`, `db/`, `build/`: erhaltener Sites-/Cloudflare-Starter, separater Laufzeitpfad.
 
 Lokal nachgewiesen sind Backend-Verträge, Git-Arbeitskopien, Dateibearbeitung,
@@ -53,12 +42,12 @@ ist für den selbst betriebenen Server erforderlich; die ältere Engine-Angabe i
 Starter-Paket ersetzt diese Voraussetzung nicht.
 
 **Hier starten:** [AGENTS.md](AGENTS.md), [Status](docs/STATUS.json),
-[Übergabe für neue Chats](docs/HANDOFF.md), [Hermes-Betriebsauftrag](docs/HERMES_HANDOFF.md).
+[Übergabe für neue Chats](docs/archive/HANDOFF.md), [Hermes-Betriebsauftrag](docs/archive/HERMES_HANDOFF.md).
 
 Node.js >=24.15.0, Git und Python 3. Im Studio-Verzeichnis:
 
 Unter Windows ist `npm run studio:verify:local` der lokale Prüfweg.
-Linux-Recovery bleibt separat nachzuweisen. Details: [Windows-Prüfung](docs/WINDOWS_LOCAL_DEVELOPMENT.md).
+Linux-Recovery bleibt separat nachzuweisen. Details: [Windows-Prüfung](docs/archive/WINDOWS_LOCAL_DEVELOPMENT.md).
 
 ```sh
 npm ci --no-audit --no-fund

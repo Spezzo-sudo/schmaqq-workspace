@@ -36,7 +36,7 @@ Kein Deployment ohne aktuelles, ausdrückliches Owner-GO für genau diesen Stand
 6. Umschalten unter `flock /run/schmaqq-studio-switch.lock`: erwarteten Altstand prüfen,
    Symlink atomar (`ln -sfn … current.next && mv -T`), `systemctl restart schmaqq-studio`;
    lokal/öffentlich/`/mcp` prüfen; bei Fehler sofort zurück auf den alten Release.
-7. Nachweis unter `docs/evidence/`, `STATUS.json`, `HANDOFF.md` aktualisieren.
+7. Nachweis unter `docs/archive/evidence/`, `STATUS.json`, `HANDOFF.md` aktualisieren.
 
 ## Ablauf Worker-Update
 

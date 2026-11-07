@@ -15,7 +15,7 @@ ohne Weiterleitung, mit Zeit- und Größenlimit. `state`, `scope` und `resource`
 nach OAuth 2.1 optional; Standard ist diese Ressource, und die Zustimmungsseite zeigt
 die Scopes. Widerruf ist unter „Verbundene KI-Assistenten“ bedienbar. Details:
 [AI_CLIENT_SETUP.md](AI_CLIENT_SETUP.md), Nachweis
-[M1](evidence/M1_VPS_WORKER_PLACEMENT_20261029.md).
+[M1](archive/evidence/M1_VPS_WORKER_PLACEMENT_20261029.md).
 
 ## Rollen
 
