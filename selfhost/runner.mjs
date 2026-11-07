@@ -117,7 +117,9 @@ export class LocalRunner{
    return {ready:!!remote&&!!remoteBranches&&!!author&&configured&&checks.filter(c=>!c.optional).every(c=>c.ok),base:p.base,checks,note:'Nur Lesezugriff geprüft. Schreibrechte und Testausführung folgen beim Einreichen.'};
   }
   if(job.action==='integrate'&&p.workflow==='pull-request')throw new Error('Dieses Repository verlangt Pull Request, CI und Review. Direkte Zusammenführung im Runner ist gesperrt.');
-  if(job.action==='submit'&&p.publish===false)throw new Error('Veröffentlichen ist in diesem lokalen Projektprofil noch gesperrt.');
+  // On the server worker, a GitHub App token for this job means the repository was released to Studio on GitHub;
+  // an older local profile without upload permission (deploy-key era) no longer blocks sharing a task branch.
+  if(job.action==='submit'&&p.publish===false&&!this.gitEnv)throw new Error('Veröffentlichen ist in diesem lokalen Projektprofil noch gesperrt.');
   const w=this.worktree(job,p);mkdirSync(path.dirname(w.dir),{recursive:true});
   if(job.action==='prepare'){
    await this.git(p.repo,'fetch','origin');await this.git(p.repo,'worktree','add','-b',w.branch,w.dir,`origin/${p.base}`);
