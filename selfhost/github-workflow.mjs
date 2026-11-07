@@ -8,14 +8,21 @@ export function githubMemberTokens(raw=''){
  if(!raw)return {};let value;try{value=JSON.parse(raw);}catch{throw Error('STUDIO_GITHUB_MEMBER_TOKENS benötigt ein JSON-Objekt.');}
  if(!value||Array.isArray(value)||typeof value!=='object'||Object.entries(value).some(([id,t])=>!/^[\w-]{1,100}$/.test(id)||typeof t!=='string'||!t||t.length>10000))throw Error('Ungültige persönliche GitHub-Zuordnung.');return value;
 }
-export function createGithubWorkflow({db,tokens={},request=fetch}){
- async function client(member){
-  const token=tokens[member.id];if(!token)throw teamError(409,'Dein persönlicher Repository-Zugang ist noch nicht eingerichtet. Unter Team & Verbindungen das eigene GitHub-Konto verbinden und den Repository-Zugang vom Betreiber einrichten lassen.');
-  const call=async(method,path,body)=>{
+export function createGithubWorkflow({db,tokens={},request=fetch,app=null}){
+ // With the Studio GitHub App, Studio itself opens and merges pull requests after a Studio review.
+ // Without it, each member acts on GitHub with a personal token, as before.
+ const appMode=()=>!!app?.configured();
+ function caller(token){
+  return async(method,path,body)=>{
    let response;try{response=await request('https://api.github.com'+path,{method,headers:{Accept:'application/vnd.github+json','User-Agent':'SCHMAQQ-Studio','X-GitHub-Api-Version':'2026-03-10',Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),redirect:'error',signal:AbortSignal.timeout(15000)});}catch{throw teamError(503,'GitHub hat den Vorgang nicht bestätigt. Vor einer Wiederholung den Status abgleichen.');}
    if(!response.ok)throw teamError(response.status===403?403:409,response.status===403?'GitHub hat die Aktion für deinen persönlichen Zugang abgelehnt. Repository-Berechtigungen prüfen.':'GitHub hat die Aktion nicht bestätigt. Commit, Prüfungen und Branchschutz prüfen.');
    return response.status===204?null:response.json();
   };
+ }
+ async function client(member,repo){
+  if(appMode()&&repo)return caller(await app.repositoryToken(repo));
+  const token=tokens[member.id];if(!token)throw teamError(409,'Dein persönlicher Repository-Zugang ist noch nicht eingerichtet. Unter Team & Verbindungen das eigene GitHub-Konto verbinden und den Repository-Zugang vom Betreiber einrichten lassen.');
+  const call=caller(token);
   const profile=await call('GET','/user'),linked=db.prepare('SELECT subject FROM github_connections WHERE member=?').get(member.id);
   if(!linked||String(profile?.id)!==linked.subject)throw teamError(403,'Repository-Zugang und dein bestätigtes GitHub-Konto gehören nicht zur selben Person.');
   return call;
@@ -61,7 +68,7 @@ export function createGithubWorkflow({db,tokens={},request=fetch}){
   return {configured:true,number:pr.number,url:`https://github.com/${s.repo}/pull/${pr.number}`,commit:s.result.commit,state:pr.merged_at?'merged':pr.state,review:reviewState(db,s.job),mergeable:pr.mergeable===true,checks:'Beim Zusammenführen werden GitHub-Prüfungen und Branchschutz erneut geprüft.'};
  }
  async function perform(action,jobId,member,decision,body=''){
-  const s=source(jobId),call=await client(member);
+  const s=source(jobId),call=await client(member,s.repo);
   if(s.task&&action!=='refresh'){
    const contract=taskContract(db,s.task),payload=JSON.parse(s.job.payload);
    if(contract.revision!==(payload.contractRevision??0)||contract.blocked||contract.cancelled)throw teamError(409,'Auftrag oder Abschlussbedingungen haben sich geändert. Einen neuen Stand einreichen.');
@@ -69,11 +76,12 @@ export function createGithubWorkflow({db,tokens={},request=fetch}){
   }
   let pr=await locate(call,s);
   if(action==='open'&&!pr){
-   if(member.id!==s.job.owner)throw teamError(403,'Der Autor reicht seinen Stand als Pull Request ein.');
+   if(!appMode()&&member.id!==s.job.owner)throw teamError(403,'Der Autor reicht seinen Stand als Pull Request ein.');
    pr=validate(await call('POST',`/repos/${s.repo}/pulls`,{title:s.task?.title??'SCHMAQQ: geprüfte Änderung',head:s.result.branch,base:s.target,body:`Aufgabe: ${s.task?.title??s.job.id}\n\nGeprüfter Commit: ${s.result.commit}\n\n${s.task?.description??''}`}),s);
   }
   if(!pr)return {configured:true,state:'missing',review:'pending'};
   if(action==='review'){
+   if(appMode())throw teamError(409,'Mit der Studio-GitHub-App wird in Studio geprüft, nicht auf GitHub.');
    if(member.id===s.job.owner)throw teamError(403,'Eigene Änderungen können nicht unabhängig freigegeben werden.');
    if(pr.state!=='open'||pr.merged_at)throw teamError(409,'Dieser Pull Request ist nicht mehr offen.');
    await call('POST',`/repos/${s.repo}/pulls/${pr.number}/reviews`,{commit_id:s.result.commit,event:decision==='approved'?'APPROVE':'REQUEST_CHANGES',body});
@@ -111,5 +119,5 @@ export function createGithubWorkflow({db,tokens={},request=fetch}){
   storeMetadata(db,'team:v1:create-repository:'+id,{member:member.id,project,name,completed:true,result});
   teamEvent(db,{actor:member.id,project,kind:'repository',body:'Privates gemeinsames Repository angelegt'});return result;
  }
- return {configured:member=>!!tokens[member.id],perform,createRepository};
+ return {configured:member=>appMode()||!!tokens[member.id],appMode,perform,createRepository};
 }

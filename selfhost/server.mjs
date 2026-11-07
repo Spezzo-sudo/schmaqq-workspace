@@ -67,7 +67,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  });
  const roomRoute=createRoomRoute({db,user,readJSON,parse});
  const teamRoute=createTeamRoute({db,user,readJSON,parse});
- const githubWorkflow=createGithubWorkflow({db,tokens:demoMode?{}:githubMemberTokens(process.env.STUDIO_GITHUB_MEMBER_TOKENS)});
+ const githubWorkflow=createGithubWorkflow({db,tokens:demoMode?{}:githubMemberTokens(process.env.STUDIO_GITHUB_MEMBER_TOKENS),app:studioGithubApp});
  const workspaceHttpRoute=createWorkspaceHttpRoute({
   db,user,readJSON,parse,record,fail
  });
@@ -127,6 +127,13 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     const member=user(req);
     if(method==='GET'){
      const job=parse(id,url.searchParams.get('job'));
+     if(githubWorkflow.appMode()){
+      // Status checks also finish what an earlier attempt could not: open the pull request,
+      // and merge it once approved in Studio and accepted by GitHub.
+      try{await githubWorkflow.perform('open',job,member);}catch{}
+      const shared=db.prepare("SELECT * FROM jobs WHERE id=? AND action='submit' AND status='completed'").get(job);
+      if(shared&&reviewState(db,shared)==='approved'){try{send(await githubWorkflow.perform('merge',job,member));return;}catch{}}
+     }
      send(githubWorkflow.configured(member)?await githubWorkflow.perform('refresh',job,member):{configured:false,state:'not_configured',reason:'Persönlicher Repository-Zugang noch nicht eingerichtet. Die Kontoanmeldung allein erlaubt keine Repository-Aktionen.'});return;
     }
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
@@ -210,6 +217,11 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      const maxResultLength=job.action==='read-file'?500000:150000;
      if(resultText.length>maxResultLength)throw fail(413,'Ergebnis zu groß.');
      db.prepare('UPDATE jobs SET status=?,result=?,lease=NULL WHERE id=?').run(job.status==='cancelling'?'cancelled':v.ok?'completed':'failed',resultText,job.id);
+     if(v.ok&&job.status!=='cancelling'&&job.action==='submit'&&result.published===true&&result.workflow==='pull-request'&&githubWorkflow.appMode()){
+      const author=db.prepare('SELECT * FROM members WHERE id=?').get(job.owner);
+      // Best effort: the change is "Zum Anschauen" with a pull request; a failure is retried on the next status check.
+      if(author)githubWorkflow.perform('open',job.id,author).catch(()=>{});
+     }
      if(v.ok&&job.status!=='cancelling'){
       const payload=JSON.parse(job.payload),copy=payload.worktree?db.prepare('SELECT task FROM workspaces WHERE job=?').get(payload.worktree):null;
       if(copy?.task){
@@ -240,7 +252,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     if(v.decision!=='comment'&&job.owner===m.id)throw fail(403,'Die Prüfung muss die zweite Person übernehmen.');
     if(v.decision==='approved'&&!completeReview(result))throw fail(409,'Dieser Diff ist unvollständig. Für eine Freigabe einen vollständig prüfbaren Stand erstellen.');
     if(v.decision!=='approved'&&!v.body)throw fail(400,'Bitte eine Rückmeldung eingeben.');
-    if(result.workflow==='pull-request'&&v.decision!=='comment'){
+    if(result.workflow==='pull-request'&&v.decision!=='comment'&&!githubWorkflow.appMode()){
      send(await githubWorkflow.perform('review',job.id,m,v.decision,v.body));return;
     }
     const linkedTask=db.prepare("SELECT t.* FROM tasks t JOIN workspaces w ON w.task=t.id WHERE w.job=json_extract(?,'$.worktree')").get(job.payload);
@@ -250,7 +262,14 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     else db.prepare('INSERT INTO code_reviews(id,job,commit_sha,reviewer,decision,body,created) VALUES(?,?,?,?,?,?,?)').run(v.id,job.id,v.commit,m.id,v.decision,v.body,now());
     const linked=db.prepare("SELECT task FROM workspaces WHERE job=json_extract(?,'$.worktree')").get(job.payload);
     if(linked?.task){if(v.decision==='changes')db.prepare("UPDATE tasks SET status='doing' WHERE id=?").run(linked.task);teamEvent(db,{actor:m.id,project:job.project,task:linked.task,kind:'review',body:v.decision==='approved'?'Prüfstand freigegeben':v.decision==='changes'?'Änderungen angefordert':'Rückmeldung zum Prüfstand'});}
-    send({ok:true,state:reviewState(db,job)});return;
+    // "Passt" on a shared change: Studio opens the pull request if needed and merges it once GitHub
+    // reports it conflict-free and checked. Otherwise the approval stays and the next status check retries.
+    let github;
+    if(v.decision==='approved'&&job.action==='submit'&&result.workflow==='pull-request'&&githubWorkflow.appMode()&&reviewState(db,job)==='approved'){
+     try{await githubWorkflow.perform('open',job.id,m);github=await githubWorkflow.perform('merge',job.id,m);}
+     catch(e){github={state:'waiting',reason:e.status&&e.status<500?e.message:'GitHub ist gerade nicht erreichbar. Studio versucht es beim nächsten Abgleich erneut.'};}
+    }
+    send({ok:true,state:reviewState(db,job),...(github?{github}:{})});return;
    }
    if(route==='/api/development/github-pr'){
     if(method!=='GET')throw fail(405,'Methode nicht erlaubt.');

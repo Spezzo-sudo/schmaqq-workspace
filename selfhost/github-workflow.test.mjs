@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {openStore} from './store.mjs';
 import {createGithubWorkflow} from './github-workflow.mjs';
 import {storeMetadata,completion} from './team-model.mjs';
-function fixture(t){
+function fixture(t,{app}={}){
  const db=openStore(':memory:');t.after(()=>db.close());
  db.exec('CREATE TABLE github_connections(member TEXT PRIMARY KEY,subject TEXT,login TEXT,verified INTEGER)');
  for(const [id,subject] of [['author','11'],['peer','22']]){db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(id,id,id+'@fixture.invalid','unused','member',0);db.prepare('INSERT INTO github_connections VALUES(?,?,?,?)').run(id,subject,id,0);}
@@ -30,7 +30,7 @@ function fixture(t){
   else throw Error('Unexpected provider path '+path);
   return {ok:true,status:200,json:async()=>structuredClone(value)};
  };
- const workflow=createGithubWorkflow({db,tokens:{author:'fixture-author',peer:'fixture-peer'},request});
+ const workflow=createGithubWorkflow({db,tokens:app?{}:{author:'fixture-author',peer:'fixture-peer'},request,app});
  return {db,state,workflow,sha,author:{id:'author'},peer:{id:'peer'}};
 }
 test('GitHub workflow creates exact PR, uses personal independent review, pins merge SHA and confirms completion',async t=>{
@@ -72,4 +72,23 @@ test('new private GitHub project creation is explicit, identity-bound and idempo
  assert.equal(f.state.calls.filter(c=>c.path==='/user/repos').length,1);
  await assert.rejects(()=>f.workflow.createRepository(f.peer,request),{status:409});
  assert.equal(f.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:project:new-project').value.includes('new-shared-project'),true);
+});
+
+test('With the Studio GitHub App, Studio opens and merges after an independent Studio review, without personal tokens',async t=>{
+ const asked=[];
+ const f=fixture(t,{app:{configured:()=>true,repositoryToken:async repository=>{asked.push(repository);return 'ghs_app_fixture';}}});
+ assert.equal(f.workflow.appMode(),true);assert.equal(f.workflow.configured({id:'someone'}),true);
+ // Any member may let Studio open the pull request; Studio is the actor on GitHub.
+ assert.equal((await f.workflow.perform('open','submission',f.peer)).number,7);
+ await assert.rejects(()=>f.workflow.perform('review','submission',f.peer,'approved',''),{status:409});
+ await assert.rejects(()=>f.workflow.perform('merge','submission',f.author),{status:409},'no merge before a Studio review');
+ // An approval by the author himself does not count.
+ f.db.prepare('INSERT INTO code_reviews(id,job,commit_sha,reviewer,decision,body,created) VALUES(?,?,?,?,?,?,?)').run('own','submission',f.sha,'author','approved','',1);
+ await assert.rejects(()=>f.workflow.perform('merge','submission',f.author),{status:409});
+ f.db.prepare('INSERT INTO code_reviews(id,job,commit_sha,reviewer,decision,body,created) VALUES(?,?,?,?,?,?,?)').run('peer','submission',f.sha,'peer','approved','Passt',2);
+ assert.equal((await f.workflow.perform('merge','submission',f.peer)).state,'merged');
+ assert.equal(f.db.prepare('SELECT status FROM tasks WHERE id=?').get('task').status,'done');
+ assert.equal(f.state.calls.some(c=>c.path==='/user'),false,'no personal GitHub identity is used');
+ assert.ok(asked.every(r=>r==='fixture/project')&&asked.length>0);
+ assert.equal(f.state.calls.find(c=>c.method==='PUT').body.sha,f.sha,'the reviewed commit is merged exactly');
 });
