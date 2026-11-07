@@ -60,6 +60,9 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  const connectionRoute=createConnectionRoutes({db,origin,sessionCookie,user,provider:demoMode?null:githubProvider});
  // GitHub App (one per Studio): created and installed by the owner; tests pass their own instance.
  const studioGithubApp=githubApp!==undefined?githubApp:(demoMode?null:createGithubApp({db,origin,credentialsFile:path.join(path.dirname(filename),'github-app.private.json')}));
+ // owner/name of a project's GitHub repository, as the server worker reaches it through the app.
+ const appRepository=project=>/^https:\/\/github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)$/.exec(metadata(db,'room:v1:project:'+project)?.repository??'')?.[1];
+ const appShares=(device,project)=>!!studioGithubApp?.configured()&&deviceHost(db,device)?.kind==='server'&&!!appRepository(project);
  const githubAppRoute=createGithubAppRoutes({app:studioGithubApp,user,sessionCookie,secure,readJSON});
  // Route modules share the host's request parsing and origin/CSRF boundary.
  const authHttpRoute=createAuthHttpRoute({
@@ -173,7 +176,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     // Server worker only: a short-lived GitHub App token for exactly this project's repository,
     // for Git commands that reach GitHub. Delivered with the job, never stored or shown to project code.
     if(job&&githubJobActions.includes(job.action)&&deviceHost(db,d.id)?.kind==='server'&&studioGithubApp?.configured()){
-     const repository=/^https:\/\/github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)$/.exec(metadata(db,'room:v1:project:'+job.project)?.repository??'')?.[1];
+     const repository=appRepository(job.project);
      if(repository){try{job.github={repository,token:await studioGithubApp.repositoryToken(repository)};}catch{/* Not installed for this repository: the worker uses its previous access. */}}
     }
     send({job});return;
@@ -296,7 +299,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    }
    if(route==='/api/development'){
     const m=user(req);
-    if(method==='GET'){const devices=db.prepare("SELECT d.id,d.owner,d.name,d.seen,d.revoked,CASE WHEN json_extract(h.value,'$.kind')='server' THEN 'server' ELSE 'pc' END AS kind FROM devices d LEFT JOIN workspace_meta h ON h.key='executor:v1:host:'||d.id WHERE d.revoked=0").all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));send({devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all(),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)})),readiness:projectReadiness(db,m.id)});return;}
+    if(method==='GET'){const devices=db.prepare("SELECT d.id,d.owner,d.name,d.seen,d.revoked,CASE WHEN json_extract(h.value,'$.kind')='server' THEN 'server' ELSE 'pc' END AS kind FROM devices d LEFT JOIN workspace_meta h ON h.key='executor:v1:host:'||d.id WHERE d.revoked=0").all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));send({devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all(),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)})),readiness:projectReadiness(db,m.id,{appShares})});return;}
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     // Bound editor payloads by the runner's 64 KiB byte limit and by
     // Zod's 65536-character cap; JSON escaping needs a separate wire limit.

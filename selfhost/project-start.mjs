@@ -2,8 +2,13 @@ import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {transaction} from './store.mjs';
 const fail=(status,message)=>Object.assign(new Error(message),{status});
-export function projectReadiness(db,member){
- const reports=db.prepare('SELECT d.id AS device,s.projects,s.updated,r.codex,r.updated AS codexUpdated FROM devices d LEFT JOIN runner_project_state s ON s.device=d.id LEFT JOIN ai_resources r ON r.device=d.id WHERE d.owner=? AND d.revoked=0').all(member).map(r=>({...r,projects:r.projects?JSON.parse(r.projects):null}));
+/**
+ * What each of the member's devices reports per project. `appShares(device,project)` marks projects the
+ * server worker shares through Studio's GitHub App; there an older profile without upload no longer blocks
+ * (the worker accepts the share with the app token), so the button must not be greyed out either.
+ */
+export function projectReadiness(db,member,{appShares=()=>false}={}){
+ const reports=db.prepare('SELECT d.id AS device,s.projects,s.updated,r.codex,r.updated AS codexUpdated FROM devices d LEFT JOIN runner_project_state s ON s.device=d.id LEFT JOIN ai_resources r ON r.device=d.id WHERE d.owner=? AND d.revoked=0').all(member).map(r=>{const projects=r.projects?JSON.parse(r.projects):null;return {...r,projects:Array.isArray(projects)?projects.map(p=>p&&p.publish!==true&&appShares(r.device,p.id)?{...p,publish:true}:p):projects};});
  const inspections=db.prepare(`SELECT device,project,status,created,ready FROM (SELECT device,project,status,created,json_extract(result,'$.ready') AS ready,ROW_NUMBER() OVER (PARTITION BY device,project ORDER BY created DESC,rowid DESC) AS n FROM jobs WHERE owner=? AND action='inspect') WHERE n=1`).all(member);
  return {reports,inspections};
 }
