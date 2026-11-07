@@ -13,12 +13,25 @@ import {sourceRevision,stableSource} from './source-revision.mjs';
 import {managedProjects,connectManagedProject,applyProjectSettings} from './managed-projects.mjs';
 import {githubRepository} from './github-import.mjs';
 export {command} from './process.mjs';
+/** Git access with a GitHub App token on the server worker. The token reaches only the runner's own
+ * Git commands through the environment (not argv, not repository config, never project code), and
+ * SSH remotes from earlier deploy-key setups are rewritten to HTTPS for that command. */
+export function githubGitEnv(github,kind){
+ if(!github||kind!=='server')return undefined;
+ if(typeof github.token!=='string'||!/^[\w.-]{20,4096}$/.test(github.token))throw new Error('GitHub-Zugang für diesen Auftrag ungültig.');
+ const header='AUTHORIZATION: basic '+Buffer.from('x-access-token:'+github.token).toString('base64');
+ // Entries are appended, so Git settings already given through the environment stay in effect.
+ const start=/^\d{1,3}$/.test(process.env.GIT_CONFIG_COUNT??'')?Number(process.env.GIT_CONFIG_COUNT):0;
+ return {...process.env,GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_COUNT:String(start+2),
+  [`GIT_CONFIG_KEY_${start}`]:'http.https://github.com/.extraheader',[`GIT_CONFIG_VALUE_${start}`]:header,
+  [`GIT_CONFIG_KEY_${start+1}`]:'url.https://github.com/.insteadOf',[`GIT_CONFIG_VALUE_${start+1}`]:'git@github.com:'};
+}
 export class LocalRunner{
  constructor(config){
   this.config=config;this.state=path.resolve(config.stateDir??'.studio-runner');mkdirSync(this.state,{recursive:true});mkdirSync(path.join(this.state,'no-hooks'),{recursive:true});this.previews=new Map();
   this.config.projects=applyProjectSettings(this.state,{...managedProjects(this.state),...this.config.projects});
  }
- async git(repo,...args){return this.execute(['git','-c',`core.hooksPath=${path.join(this.state,'no-hooks')}`,...args],repo);}
+ async git(repo,...args){return this.execute(['git','-c',`core.hooksPath=${path.join(this.state,'no-hooks')}`,...args],repo,this.gitEnv?{env:this.gitEnv}:{});}
  project(id){const project=this.config.projects?.[id];if(!project?.repo)throw new Error('Dieses Projekt ist auf diesem PC nicht freigegeben.');if(!/^[\w./-]+$/.test(project.base??'main')||(project.base??'main').startsWith('-'))throw new Error('Ungültiger Basiszweig.');return {...project,repo:realpathSync(project.repo),base:project.base??'main'};}
  worktree(job,p){const key=job.action==='prepare'||job.action==='integrate'?job.id:job.payload.worktree;if(!/^[\w-]{1,100}$/.test(key??''))throw new Error('Ungültige Arbeitskopie.');const dir=path.join(this.state,'worktrees',`${job.project}-${key}`);const branch=p.requireIssue?`codex/${job.payload.issue}-studio-${key}`:`studio/${key}`;if(p.requireIssue&&(!Number.isSafeInteger(job.payload.issue)||job.payload.issue<1))throw new Error('Für dieses Repository zuerst die Nummer des begrenzten GitHub-Issues angeben.');return {key,dir,branch};}
  async execute(argv,cwd,options={}){return command(argv,cwd,{signal:this.control?.signal,onOutput:text=>this.control?.onEvent?.({type:'output',text:text.slice(-4000)}),...options});}
@@ -75,7 +88,7 @@ export class LocalRunner{
   if(!after.revision||before.revision!==after.revision)throw new Error('Die Vorbereitung hat Quelldateien verändert oder nicht deklarierte Dateien erzeugt. Generierte Ordner in der Projektkonfiguration prüfen; vor Tests und Veröffentlichung stoppen.');
  }
  async run(job,control={}){
-  this.control=control;control.signal?.throwIfAborted();control.onEvent?.({type:'status',text:'Runner hat den Auftrag übernommen.'});
+  this.control=control;this.gitEnv=githubGitEnv(job.github,this.config.kind);control.signal?.throwIfAborted();control.onEvent?.({type:'status',text:'Runner hat den Auftrag übernommen.'});
   if(job.action==='local-ai')return runLocalAi(this.config,job,control.signal);
   if(job.action==='connect-project')return connectManagedProject(this,job);
   if(job.action==='deploy-key'){
@@ -93,7 +106,7 @@ export class LocalRunner{
   }
   if(job.action==='inspect'){
    const checks=[];
-   const probe=async(label,args)=>{try{const value=await command(['git','-c',`core.hooksPath=${path.join(this.state,'no-hooks')}`,...args],p.repo,{signal:control.signal,timeout:20000});checks.push({label,ok:true});return value;}catch(e){if(control.signal?.aborted)throw e;checks.push({label,ok:false});return '';}};
+   const probe=async(label,args)=>{try{const value=await command(['git','-c',`core.hooksPath=${path.join(this.state,'no-hooks')}`,...args],p.repo,{signal:control.signal,timeout:20000,...(this.gitEnv?{env:this.gitEnv}:{})});checks.push({label,ok:true});return value;}catch(e){if(control.signal?.aborted)throw e;checks.push({label,ok:false});return '';}};
    await probe('Git-Repository',['rev-parse','--show-toplevel']);
    const remote=await probe('Gemeinsames origin-Repository',['remote','get-url','origin']);
    // No remote URL or command output in shared logs: a configured URL may contain credentials.

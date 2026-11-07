@@ -23,6 +23,7 @@ import {createWorkspaceHttpRoute} from './workspace-http.mjs';
 import {createRoomRoute} from './room-http.mjs';
 import {createTeamRoute} from './team-http.mjs';
 import {createGithubWorkflow,githubMemberTokens} from './github-workflow.mjs';
+import {createGithubApp,createGithubAppRoutes} from './github-app.mjs';
 import {taskContract,completion,teamEvent,storeMetadata,metadata,jobEventLabels} from './team-model.mjs';
 import { openStore,digest,token,transaction } from './store.mjs';
 import {resolveDevice,placementView,setPlacement,placementModes,executors,deviceHost} from './placement.mjs';
@@ -31,11 +32,13 @@ import {validateProjectPlan} from './project-plan.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dataDir=path.resolve(process.env.STUDIO_DATA_DIR??path.join(root,'.studio'));
 const uuid=()=>randomUUID(),now=()=>Date.now();
+// Worker jobs whose Git commands reach GitHub (clone, fetch, ls-remote, push).
+const githubJobActions=Object.freeze(['connect-project','inspect','prepare','submit','integrate']);
 const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$/);
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
 function parse(schema,data){const r=schema.safeParse(data);if(!r.success)throw fail(400,'Bitte Eingaben prüfen.');return r.data;}
-export function createStudioServer({oidcProvider,githubProvider,pullRequestReader, demoMode=false,seedProjects=demoMode,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now,pluginClients=JSON.parse(process.env.STUDIO_PLUGIN_CLIENTS??'[]'),pluginDynamicClients=process.env.STUDIO_PLUGIN_DYNAMIC_CLIENTS==='1',pluginFetchMetadata,pluginClientHosts=process.env.STUDIO_PLUGIN_CLIENT_HOSTS?process.env.STUDIO_PLUGIN_CLIENT_HOSTS.split(','):undefined,liveHost=process.env.STUDIO_LIVE_HOST??'127.0.0.70',liveSource=process.env.STUDIO_LIVE_SOURCE??'127.0.0.71'}={}){
+export function createStudioServer({oidcProvider,githubProvider,pullRequestReader,githubApp, demoMode=false,seedProjects=demoMode,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now,pluginClients=JSON.parse(process.env.STUDIO_PLUGIN_CLIENTS??'[]'),pluginDynamicClients=process.env.STUDIO_PLUGIN_DYNAMIC_CLIENTS==='1',pluginFetchMetadata,pluginClientHosts=process.env.STUDIO_PLUGIN_CLIENT_HOSTS?process.env.STUDIO_PLUGIN_CLIENT_HOSTS.split(','):undefined,liveHost=process.env.STUDIO_LIVE_HOST??'127.0.0.70',liveSource=process.env.STUDIO_LIVE_SOURCE??'127.0.0.71'}={}){
  if(!/^[a-z_]{1,60}$/.test(sessionCookie))throw new Error('Ungültiger Sitzungsname.');
  if(!Array.isArray(pluginClients)||pluginClients.length>20)throw new Error('Ungueltige Plugin-Clientliste.');
  if(new URL(origin).origin===new URL(previewOrigin).origin)throw new Error('Studio und Vorschau benötigen unterschiedliche Origins.');
@@ -55,6 +58,9 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  function record(author,message){db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(uuid(),author,message,now());}
  const oidcRoute=createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,provider:demoMode?null:oidcProvider});
  const connectionRoute=createConnectionRoutes({db,origin,sessionCookie,user,provider:demoMode?null:githubProvider});
+ // GitHub App (one per Studio): created and installed by the owner; tests pass their own instance.
+ const studioGithubApp=githubApp!==undefined?githubApp:(demoMode?null:createGithubApp({db,origin,credentialsFile:path.join(path.dirname(filename),'github-app.private.json')}));
+ const githubAppRoute=createGithubAppRoutes({app:studioGithubApp,user,sessionCookie,secure});
  // Route modules share the host's request parsing and origin/CSRF boundary.
  const authHttpRoute=createAuthHttpRoute({
   db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now,loginLimiter,passwordRecovery
@@ -94,6 +100,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(method==='POST'&&!route.startsWith('/api/runner/')){if(req.headers.origin!==origin)throw fail(403,'Ungültiger Ursprung.');if(!req.headers['content-type']?.includes('application/json'))throw fail(415,'JSON erforderlich.');}
    if(await oidcRoute({route,method,req,res,url,send}))return;
    if(await connectionRoute({route,method,req,res,url,send}))return;
+   if(await githubAppRoute({route,method,req,res,url,send}))return;
    if(await collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
    if(await teamRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
    if(route==='/api/team/project-connect'){
@@ -155,7 +162,14 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
        db.prepare("UPDATE jobs SET status='failed',result=? WHERE id=?").run(JSON.stringify({error:'Die Freigabe wurde vor dem Start zurückgenommen. Bitte erneut prüfen lassen.'}),j.id);return null;
       }
      }
-     const lease=token();db.prepare("UPDATE jobs SET status='running',lease=?,started=?,heartbeat=? WHERE id=? AND status='queued'").run(digest(lease),now(),now(),j.id);return {...j,runnerOwner:d.owner,payload:JSON.parse(j.payload),lease};});send({job});return;
+     const lease=token();db.prepare("UPDATE jobs SET status='running',lease=?,started=?,heartbeat=? WHERE id=? AND status='queued'").run(digest(lease),now(),now(),j.id);return {...j,runnerOwner:d.owner,payload:JSON.parse(j.payload),lease};});
+    // Server worker only: a short-lived GitHub App token for exactly this project's repository,
+    // for Git commands that reach GitHub. Delivered with the job, never stored or shown to project code.
+    if(job&&githubJobActions.includes(job.action)&&deviceHost(db,d.id)?.kind==='server'&&studioGithubApp?.configured()){
+     const repository=/^https:\/\/github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)$/.exec(metadata(db,'room:v1:project:'+job.project)?.repository??'')?.[1];
+     if(repository){try{job.github={repository,token:await studioGithubApp.repositoryToken(repository)};}catch{/* Not installed for this repository: the worker uses its previous access. */}}
+    }
+    send({job});return;
    }
    if(route==='/api/runner/report'&&method==='POST'){
     const d=device(req),v=parse(z.object({id,lease:z.string().max(100),heartbeat:z.boolean().optional(),events:z.array(z.object({seq:z.number().int().positive(),type:z.enum(['status','output','session','message','command','files','error']),text:z.string().max(4000)})).max(40).optional(),result:z.unknown().optional(),ok:z.boolean().optional()}),await readJSON(req,9000000));
