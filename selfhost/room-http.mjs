@@ -87,7 +87,7 @@ export function listRoomTasks(db,project,{query='',includeDone=false}={}){
 const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('create'),id,title,description:z.string().trim().max(12000).default('')}),
  z.object({action:z.literal('message'),id,project:id,body,replyTo:id.optional()}),
- z.object({action:z.literal('task'),id,project:id,title,description:z.string().trim().max(12000).default(''),kind:z.enum(['general','code']).default('general'),criteria:z.string().trim().max(4000).default(''),source:id.optional()}),
+ z.object({action:z.literal('task'),id,project:id,title,description:z.string().trim().max(12000).default(''),kind:z.enum(['general','code']).default('general'),criteria:z.string().trim().max(4000).default(''),source:id.optional(),mine:z.boolean().optional()}),
  z.object({action:z.literal('note'),id,project:id,title,body,kind:z.enum(['note','decision']),source:id.optional()}),
  z.object({action:z.literal('link'),id,project:id,title,url:z.string().max(2000),kind:z.enum(['reference','chatgpt','github','result'])}),
  z.object({action:z.literal('repository'),project:id,url:z.string().max(2000),revision:z.number().int().min(0)}),
@@ -153,7 +153,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     const source=requireSource(db,value.project,value.source);
     const converted=source?readMeta(db,key('source-task',source.id)):null;
     if(converted)return remember(db,member,value,{ok:true,task:converted.task,reused:true});
-    const task=randomUUID();db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(task,value.project,value.title,value.description||source?.body||'','todo','Normal',null,now());
+    const task=randomUUID();db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(task,value.project,value.title,value.description||source?.body||'',value.mine?'doing':'todo','Normal',value.mine?member.id:null,now());
     storeMetadata(db,'team:v1:task:'+task,{kind:value.kind,criteria:value.criteria,requiresReview:value.kind==='code',blocked:'',cancelled:false,revision:0});
     if(source){putMeta(db,key('source-task',source.id),{task});putMeta(db,key('task-source',task),{message:source.id,project:value.project});}
     db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(randomUUID(),member.id,'Aufgabe aus Raum: '+value.title,now());

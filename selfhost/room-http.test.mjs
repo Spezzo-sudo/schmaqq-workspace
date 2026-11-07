@@ -183,3 +183,19 @@ test('R26: task brief revisions protect concurrent edits and survive reload; old
  assert.equal((await f.post({...update,revision:2,title:' '},f.marco.cookie,{},'/api/collaboration/task')).status,400);
  assert.equal(f.app.db.prepare('SELECT count(*) AS n FROM tasks WHERE id=?').get(task).n,1);
 });
+
+test('a new task can be taken by its creator right away',async t=>{
+ const {mkdtempSync,rmSync}=await import('node:fs');const os=await import('node:os');const path=await import('node:path');
+ const {createStudioServer}=await import('./server.mjs');const {createInvite}=await import('./store.mjs');
+ const dir=mkdtempSync(path.join(os.tmpdir(),'room-mine-')),origin='http://127.0.0.1:44631';
+ const app=createStudioServer({filename:path.join(dir,'s.sqlite'),origin,previewOrigin:'http://127.0.0.1:44632',seedProjects:true});
+ await new Promise(r=>app.server.listen(44631,'127.0.0.1',r));t.after(async()=>{await new Promise(r=>app.server.close(r));app.db.close();rmSync(dir,{recursive:true,force:true});});
+ const request=async(route,value,cookie)=>{const r=await fetch(origin+route,{method:value?'POST':'GET',headers:{...(value?{Origin:origin,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:value?JSON.stringify(value):undefined});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};};
+ const owner=await request('/api/auth/register',{invite:createInvite(app.db,'o@fixture.invalid','owner'),name:'O',password:'fixture-password-1234'});
+ const member=app.db.prepare("SELECT id FROM members WHERE email='o@fixture.invalid'").get().id;
+ const mine=await request('/api/room',{action:'task',id:'op-mine-1',project:'website',title:'Meine',mine:true},owner.cookie);
+ const open=await request('/api/room',{action:'task',id:'op-open-1',project:'website',title:'Offen'},owner.cookie);
+ assert.equal(mine.status,200);assert.equal(open.status,200);
+ assert.deepEqual({...app.db.prepare('SELECT assignee,status FROM tasks WHERE id=?').get(mine.data.task)},{assignee:member,status:'doing'});
+ assert.deepEqual({...app.db.prepare('SELECT assignee,status FROM tasks WHERE id=?').get(open.data.task)},{assignee:null,status:'todo'});
+});
