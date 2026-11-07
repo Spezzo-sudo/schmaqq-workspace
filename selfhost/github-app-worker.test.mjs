@@ -66,6 +66,16 @@ test('Studio hands a repository token only to the server worker and never stores
  }
  assert.deepEqual(asked,['owner/site']);
 
+ // An old Werkstatt profile without upload: on the server worker the app shares, so the share button is enabled;
+ // on a personal PC the old rule still shows.
+ const development=[{id:'website',check:true,preview:true,allowCodex:false,publish:false}];
+ await request('/api/runner/capabilities',{...base,development,host:{kind:'server',os:'linux',arch:'x64',node:'v24',cpus:1,memoryMb:2048}},null,srv.token);
+ await request('/api/runner/capabilities',{...base,development,host:{kind:'pc',os:'win32',arch:'x64',node:'v24',cpus:4,memoryMb:8000}},null,pc.token);
+ const readiness=(await request('/api/development',null,owner.cookie)).data.readiness;
+ const cap=device=>readiness.reports.find(r=>r.device===device.id).projects.find(p=>p.id==='website');
+ assert.equal(cap(srv).publish,true,'the server worker shares through the GitHub App');
+ assert.equal(cap(pc).publish,false,'a personal PC keeps its own setting');
+
  // Background jobs that never reach GitHub get no token.
  const status=await request('/api/development',{action:'job',device:srv.id,project:'website',operation:'deploy-key'},owner.cookie);
  assert.equal(status.status,200);
