@@ -6,6 +6,7 @@ import {mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync
 import path from 'node:path';
 import os from 'node:os';
 import {verifyRelease} from './deploy/verify-release.mjs';
+import {packArchive} from './release-archive.mjs';
 
 const sha = content => createHash('sha256').update(content).digest('hex');
 const commit = 'a'.repeat(40);
@@ -112,4 +113,23 @@ test('rejects a valid extracted release paired with a different pinned archive',
   await assert.rejects(verifyRelease({
     directory: changed.directory, expectedSource: commit, archive, archiveSha256
   }), /tar member differs/);
+});
+
+test('archives from the release packer verify on every platform, including paths over 100 characters', async t => {
+  const f = fixture(t);
+  // GNU tar on Linux would store such a path as an "@LongLink" entry, which the verifier refuses.
+  const long = 'node_modules/@scope/' + 'very-long-package-name-'.repeat(3) + '/dist/esm/' + 'nested-module-file-name'.repeat(2) + '.js';
+  assert.ok(long.length > 100 && long.length < 250);
+  const content = 'export default 1;\n';
+  mkdirSync(path.join(f.directory, path.dirname(long)), {recursive: true});
+  writeFileSync(path.join(f.directory, long), content);
+  const manifestPath = path.join(f.directory, 'release-manifest.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  manifest.files.push({path: long, bytes: Buffer.byteLength(content), sha256: sha(content)});
+  writeFileSync(manifestPath, JSON.stringify(manifest));
+  const archive = path.join(f.folder, 'packed.tar.gz');
+  packArchive(archive, f.directory);
+  const result = await verifyRelease({directory: f.directory, expectedSource: commit, archive, archiveSha256: sha(readFileSync(archive))});
+  assert.equal(result.status, 'PASS');
+  assert.equal(result.files, 3);
 });
