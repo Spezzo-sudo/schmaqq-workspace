@@ -1,0 +1,38 @@
+# Every change to Studio is checked here once: on each pull request and on main.
+# The VPS does not repeat these tests; it only runs the safety nets in selfhost/deploy/studio-deploy.sh.
+name: Studio prüfen
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: studio-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Tests, Typen, Build und Release-Paket
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15'
+          cache: npm
+      - name: Abhängigkeiten
+        run: npm ci --no-audit --no-fund
+      - name: Geheimnisse, Tests, Typen, Build
+        run: node selfhost/verify.mjs
+      - name: Release-Paket bauen und Probestart
+        run: |
+          node selfhost/release.mjs > "$RUNNER_TEMP/release.out"
+          dir=$(node -e 'const s=require("fs").readFileSync(process.env.RUNNER_TEMP+"/release.out","utf8");console.log(JSON.parse(s.slice(s.lastIndexOf("\n{")+1)).directory)')
+          node selfhost/release-smoke.mjs "$dir"
+      - name: Update-Skript prüfen
+        run: bash -n selfhost/deploy/studio-deploy.sh
