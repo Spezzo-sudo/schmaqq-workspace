@@ -122,6 +122,20 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
     </div>
    </>}
   </main>
+  {!route.task&&!modal&&<nav className="studio-mobile-nav" aria-label="Hauptnavigation">
+   <button aria-current={route.page==='rooms'&&!route.room?'page':undefined} className={route.page==='rooms'&&!route.room?'active':''} onClick={()=>goPage('rooms')}><Home size={21}/><span>Arbeit</span></button>
+   <button aria-current={route.page==='projects'||route.page==='rooms'&&!!route.room?'page':undefined} className={route.page==='projects'||route.page==='rooms'&&!!route.room?'active':''} onClick={()=>goPage('projects')}><Folder size={21}/><span>Projekte</span></button>
+   <button aria-current={route.page==='conversations'?'page':undefined} className={route.page==='conversations'?'active':''} onClick={()=>goPage('conversations')}><MessageSquare size={21}/><span>Gespräche</span></button>
+   <button ref={moreTrigger} aria-expanded={more} aria-haspopup="dialog" className={route.page==='team'||route.page==='account'?'active':''} onClick={()=>setMore(true)}><Menu size={21}/><span>Mehr</span></button>
+  </nav>}
+  {more&&!route.task&&!modal&&<div className="studio-more-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setMore(false);}}>
+   <section className="studio-more-panel" role="dialog" aria-modal="true" aria-label="Weitere Bereiche" onKeyDown={e=>{if(e.key==='Tab'){if(e.shiftKey&&document.activeElement===moreFirst.current){e.preventDefault();moreLast.current?.focus();}else if(!e.shiftKey&&document.activeElement===moreLast.current){e.preventDefault();moreFirst.current?.focus();}}}}>
+    <h2>Weitere Bereiche</h2>
+    <button ref={moreFirst} onClick={()=>goPage('team')}><Users size={19}/>Team<ChevronRight size={18}/></button>
+    <button onClick={()=>goPage('account')}><UserRound size={19}/>Mein Konto<ChevronRight size={18}/></button>
+    <button ref={moreLast} className="studio-more-close" onClick={()=>setMore(false)}><X size={18}/>Schliessen</button>
+   </section>
+  </div>}
   {modal&&<RoomModal spec={modal} room={room} onClose={()=>setModal(null)} onSaved={async r=>{setModal(null);if(r.project)navigate({room:r.project,page:'rooms',tab:'overview',task:''});await refresh();if(r.task)navigate({task:r.task});}}/>}
   {route.task&&room&&<TeamTaskView key={route.task} taskId={route.task} room={room} resources={resources} userId={user.userId} onClose={closeTask} onRefresh={refresh} onConnect={()=>navigate({task:'',tab:'overview'})}/>}
  </div>;
