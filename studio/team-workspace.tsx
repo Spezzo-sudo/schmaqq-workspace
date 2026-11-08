@@ -39,6 +39,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
  useEffect(()=>{let running=false;const tick=async()=>{if(running||document.hidden)return;running=true;try{await refresh();}finally{running=false;}};void tick();const timer=setInterval(tick,5000);return()=>clearInterval(timer);},[refresh]);
  useEffect(()=>{setRoom(null);setSearch('');void refresh();},[route.room,refresh]);
  useEffect(()=>{const back=()=>setRoute(readRoomRoute());window.addEventListener('popstate',back);return()=>window.removeEventListener('popstate',back);},[]);
+ useEffect(()=>{if(!route.room||!room||!window.matchMedia('(max-width:650px)').matches)return;document.querySelector<HTMLButtonElement>('.team-areas button.active')?.scrollIntoView({block:'nearest',inline:'nearest'});},[route.room,route.tab,room?.project.id]);
  function navigate(change:Partial<RoomRoute>){const next={...readRoomRoute(),...change};const url=new URL(location.href);for(const key of ['view','project','pane'])url.searchParams.delete(key);for(const k of ['room','tab','task','page'] as const){if(next[k])url.searchParams.set(k,next[k]);else url.searchParams.delete(k);}history.pushState(null,'',url);setRoute(next);setMore(false);}
  const goPage=(page:RoomPage)=>navigate({page,room:'',task:'',tab:'overview'});
  const closeTask=useCallback(()=>{const url=new URL(location.href);url.searchParams.delete('task');url.searchParams.delete('pane');history.pushState(null,'',url);setRoute(readRoomRoute());},[]);
