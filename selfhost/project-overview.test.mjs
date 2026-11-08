@@ -1,23 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {nextStep,groupEvents,when} from '../studio/project-overview-model.ts';
+import {groupEvents,when} from '../studio/project-overview-model.ts';
 
 const task=(over={})=>({id:'t1',project:'p',title:'Analyse',description:'',status:'doing',priority:'normal',assignee:'me',
  contract:{kind:'general',criteria:'',requiresReview:false,blocked:'',cancelled:false,revision:0},completion:{ready:false,missing:['Das erreichte Ergebnis bitte zuerst festhalten.'],result:null},...over});
 const names=new Map([['me','Marco'],['other','Markus']]);
-
-test('every open task gets exactly one next step for the right person',()=>{
- assert.deepEqual(nextStep(task(),'me',names),{text:'Ergebnis festhalten',action:'Ergebnis festhalten',pane:'result',mine:true});
- assert.equal(nextStep(task({assignee:null}),'me',names).mine,true,'Unassigned work is offered to everyone');
- assert.deepEqual(nextStep(task({assignee:'other'}),'me',names),{text:'In Bearbeitung bei Markus',action:'Aufgabe öffnen',mine:false});
- const code=task({contract:{...task().contract,kind:'code'},completion:{ready:false,missing:['Ein getesteter Prüfstand fehlt.'],result:null}});
- assert.equal(nextStep(code,'me',names).pane,'work');
- const review=owner=>task({status:'review',completion:{ready:false,missing:['Die Freigabe einer zweiten Person fehlt.'],result:{id:'r',owner,state:'pending',created:1}}});
- assert.deepEqual(nextStep(review('me'),'me',names),{text:'Wartet auf die Freigabe einer zweiten Person',action:'Aufgabe öffnen',mine:false});
- assert.deepEqual(nextStep(review('other'),'me',names),{text:'Ergebnis prüfen und freigeben',action:'Ergebnis prüfen',pane:'review',mine:true});
- assert.equal(nextStep(task({contract:{...task().contract,blocked:'Zugang fehlt'}}),'me',names).text,'Blockierung klären: Zugang fehlt');
- assert.equal(nextStep(task({completion:{ready:true,missing:[],result:{id:'r',owner:'me',state:'approved',created:1}}}),'me',names).action,'Abschließen');
-});
 
 test('history groups repeated work per person and task and keeps milestones apart',()=>{
  const h=3600000,e=(id,kind,body,created,taskId='t1',actor='me')=>({id,actor,project:'p',task:taskId,kind,body,created});

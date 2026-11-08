@@ -10,7 +10,8 @@ export type Resource={device:string;owner:string;ownerName:string;name:string;on
 export type ContextPreview={text:string;hash:string;messageIds:string[];task:string|null};
 export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect';
 export type RoomRoute={room:string;tab:RoomTab;task:string;page:'rooms'|'team'};
-export const tabs:{id:RoomTab;label:string}[]=[{id:'overview',label:'Übersicht'},{id:'talk',label:'Gespräch'},{id:'tasks',label:'Aufgaben'},{id:'knowledge',label:'Wissen'},{id:'results',label:'Ergebnisse'},{id:'connect',label:'Einstellungen'}];
+// Five areas, all visible (a bar at the bottom on phones). Former "Ergebnisse" live under Aufgaben → Erledigt.
+export const tabs:{id:RoomTab;label:string}[]=[{id:'overview',label:'Übersicht'},{id:'tasks',label:'Aufgaben'},{id:'talk',label:'Gespräch'},{id:'knowledge',label:'Wissen'},{id:'connect',label:'Einstellungen'}];
 export function readRoomRoute(search=location.search):RoomRoute{
  const p=new URLSearchParams(search),old=p.get('view'),project=p.get('project'),explicit=p.get('tab');
  const room=p.get('room')??(project&&project!=='all'?project:'');

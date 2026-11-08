@@ -1,5 +1,5 @@
 import {useEffect,useState,useRef} from 'react';
-import {GitCommitHorizontal,RefreshCw,X} from 'lucide-react';
+import {GitCommitHorizontal,RefreshCw} from 'lucide-react';
 import {roomRequest} from './room-model';
 
 type DiffResult={review:string;owner:string;ownerName:string;state:string;checks:string;published:boolean;preview:string|null;contractSnapshot?:{title:string;description:string;criteria:string}|null;commit:string|null;created:number;complete:boolean;diff:string;limited:boolean};
@@ -32,26 +32,34 @@ export default function TaskReviewDiff({task,review,changedAfter=false,onClose,u
    .finally(()=>{if(alive)setLoading(false);});return()=>{alive=false;};
  },[task,review,revision]);
  const lines=result&&result.complete?parseReviewDiff(result.diff):[];
- return <section className="r27-diff-panel" aria-label="Änderungen dieses Prüfstands">
-  <header><div><span className="rw-eyebrow">GIT · NUR DIESER PRÜFSTAND</span><h3><GitCommitHorizontal size={17}/>Codeänderungen ansehen</h3></div>
-   <div className="r27-diff-actions"><button className="rw-button subtle" onClick={()=>setRevision(v=>v+1)} aria-label="Codeänderungen aktualisieren"><RefreshCw size={15}/></button><button className="rw-button subtle" onClick={onClose} aria-label="Codeänderungen schliessen"><X size={15}/></button></div></header>
-  {loading&&<p role="status">Prüfstand wird geladen …</p>}
-  {error&&<p role="alert" className="rw-error">Die Änderungen konnten nicht geladen werden: {error}</p>}
+ const stateText=result?.state==='approved'?'Freigegeben.':result?.state==='changes_requested'?'Es wurden Änderungen gewünscht.':'Wartet auf Freigabe.';
+ const mine=!!userId&&result?.owner===userId;
+ // Order follows what a reviewer does: look at the preview, decide, read feedback. Code and test details stay folded.
+ return <section className="r27-diff-panel review-simple" aria-label="Änderung anschauen">
+  {loading&&<p role="status">Wird geladen …</p>}
+  {error&&<p role="alert" className="rw-error">Die Änderung konnte nicht geladen werden: {error}</p>}
   {result&&<>
-   <p className="r27-diff-source"><strong>{result.ownerName}</strong> · Commit {result.commit?.slice(0,12)??'unbestätigt'} · {new Date(result.created).toLocaleString('de-CH')}</p>
-   <p><strong>{result.state==='approved'?'Freigegeben':result.state==='changes_requested'?'Änderungen angefordert':'Prüfung offen'}</strong> · {result.published?'Branch mit dem Team geteilt':'Lokaler Prüfstand; Code noch nicht gemeinsam gesichert'}</p>
-   <details><summary>Testergebnis dieses Prüfstands</summary><pre>{result.checks}</pre></details>
-   {result.contractSnapshot&&<details><summary>Auftrag und Abschlussbedingungen dieser Fassung</summary><h4>{result.contractSnapshot.title}</h4><p>{result.contractSnapshot.description}</p><p>{result.contractSnapshot.criteria}</p></details>}
-   {result.preview&&<a className="rw-button" href={result.preview} target="_blank" rel="noreferrer">Vorschau genau dieser Fassung öffnen</a>}
-   {!!entries.length&&<section aria-label="Rückmeldungen zu dieser Fassung"><h4>Rückmeldungen</h4>{entries.filter(e=>e.commitSha===result.commit).map(e=><blockquote key={e.id}><strong>{e.name}</strong> · {e.decision==='approved'?'Freigegeben':e.decision==='changes'?'Änderungen angefordert':'Kommentar'}{e.body&&<p>{e.body}</p>}<small>{new Date(e.created).toLocaleString('de-DE')}</small></blockquote>)}</section>}
-   <p className="r27-diff-disclaimer">Grün = hinzugefügt, Rot = entfernt. Dieser Diff gehört zu einem abgeschlossenen Git-Prüfstand, <strong>nicht</strong> zu live mitgetippten oder ungespeicherten Änderungen. Eine Freigabe gilt ausschliesslich für diesen Commit.</p>
-   {changedAfter&&<p role="alert" className="r27-diff-warning">Seit diesem Prüfstand wurde eine weitere Änderung oder ein unbestätigter Arbeitsvorgang erkannt. Dieser Diff kann veraltet sein. Eine erneute Codeprüfung ist nötig, bevor der aktuelle Stand freigegeben wird.</p>}
-   {!result.complete?<p role="alert" className="rw-error">Der Diff ist nicht vollständig. Keine Freigabe anhand dieser Darstellung – bitte vollständigen Prüfstand verwenden.</p>:
-    <div className="r27-diff-content" role="region" aria-label="Git-Diff mit Zeilennummern" tabIndex={0}>
-     {lines.length===1&&!lines[0].text?<p>Keine Änderungen gegenüber der gemeinsamen Git-Basis.</p>:lines.map((line,i)=><div key={i} className={'r27-diff-line '+line.kind}><span aria-hidden="true">{line.old??''}</span><span aria-hidden="true">{line.next??''}</span><code>{line.text||' '}</code></div>)}
-    </div>}
-   {userId&&result.owner!==userId&&!closed&&<form className="team-review-actions" onSubmit={e=>e.preventDefault()}><label>Rückmeldung zu dieser Fassung<textarea aria-label="Rückmeldung zum Prüfstand" value={body} maxLength={4000} onChange={e=>setBody(e.target.value)}/></label><div className="rw-row-actions"><button className="rw-button lime" disabled={busy||!result.complete||changedAfter} onClick={()=>void vote('approved')}>Diese Fassung freigeben</button><button className="rw-button" disabled={busy||!body.trim()} onClick={()=>void vote('changes')}>Änderungen anfordern</button></div></form>}
-   {userId&&result.owner===userId&&<p>Dein Kollege kann diese Fassung prüfen und freigeben. Eigene Freigaben sind gesperrt.</p>}
+   <p className="review-head"><strong>Änderung von {result.ownerName}</strong> · {new Date(result.created).toLocaleString('de-CH',{dateStyle:'short',timeStyle:'short'})}<br/>{stateText}</p>
+   {changedAfter&&<p role="alert" className="r27-diff-warning">Seitdem wurde noch etwas geändert. Freigeben geht erst, wenn die neue Fassung zur Prüfung gegeben ist.</p>}
+   {result.preview?<a className="rw-button lime review-preview" href={result.preview} target="_blank" rel="noreferrer">Vorschau öffnen – so sieht es aus ↗</a>:<p className="muted">Für diese Fassung gibt es keine Vorschau. Unten unter „Was wurde geändert“ siehst du die Änderung im Text.</p>}
+   {userId&&!mine&&!closed&&result.state!=='approved'&&<form className="team-review-actions" onSubmit={e=>e.preventDefault()}>
+    <label>Deine Rückmeldung (bei „Änderung wünschen“ nötig)<textarea aria-label="Rückmeldung zur Änderung" value={body} maxLength={4000} onChange={e=>setBody(e.target.value)} placeholder="Zum Beispiel: Der Satz ist zu lang."/></label>
+    <div className="rw-row-actions"><button className="rw-button lime" disabled={busy||!result.complete||changedAfter} onClick={()=>void vote('approved')}>Passt – freigeben</button><button className="rw-button" disabled={busy||!body.trim()} onClick={()=>void vote('changes')}>Änderung wünschen</button></div>
+   </form>}
+   {mine&&!closed&&result.state!=='approved'&&<p className="muted">Jemand anderes schaut sich das an und gibt es frei. Eigene Änderungen kann man nicht selbst freigeben.</p>}
+   {!!entries.length&&<section aria-label="Rückmeldungen zu dieser Fassung"><h4>Rückmeldungen</h4>{entries.filter(e=>e.commitSha===result.commit).map(e=><blockquote key={e.id}><strong>{e.name}</strong> · {e.decision==='approved'?'Passt':e.decision==='changes'?'Änderung gewünscht':'Kommentar'}{e.body&&<p>{e.body}</p>}<small>{new Date(e.created).toLocaleString('de-DE')}</small></blockquote>)}</section>}
+   <details className="review-changes"><summary>Was wurde geändert</summary>
+    <p className="r27-diff-disclaimer">Grün = neu, Rot = entfernt. Gezeigt wird genau die Fassung, die zur Prüfung gegeben wurde.</p>
+    {!result.complete?<p role="alert" className="rw-error">Die Änderung ist zu gross, um sie hier vollständig zu zeigen. Bitte nicht anhand dieser Ansicht freigeben.</p>:
+     <div className="r27-diff-content" role="region" aria-label="Geänderte Zeilen" tabIndex={0}>
+      {lines.length===1&&!lines[0].text?<p>Keine Änderungen.</p>:lines.map((line,i)=><div key={i} className={'r27-diff-line '+line.kind}><span aria-hidden="true">{line.old??''}</span><span aria-hidden="true">{line.next??''}</span><code>{line.text||' '}</code></div>)}
+     </div>}
+   </details>
+   <details className="review-developer"><summary>Für Entwickler</summary>
+    <p className="r27-diff-source"><GitCommitHorizontal size={15}/> Commit {result.commit?.slice(0,12)??'unbestätigt'} · {result.published?'als Branch geteilt':'nur lokal'} <button className="rw-button subtle" onClick={()=>setRevision(v=>v+1)} aria-label="Neu laden"><RefreshCw size={15}/></button></p>
+    <details><summary>Testprotokoll</summary><pre>{result.checks}</pre></details>
+    {result.contractSnapshot&&<details><summary>Aufgabe zum Zeitpunkt dieser Fassung</summary><h4>{result.contractSnapshot.title}</h4><p>{result.contractSnapshot.description}</p><p>{result.contractSnapshot.criteria}</p></details>}
+   </details>
   </>}
  </section>;
 }
