@@ -23,6 +23,7 @@ import './r26-workflow.css';
 import './schmaqq-design-system.css';
 import './team-workflow.css';
 import './schmaqq-convergence.css';
+import './studio-navigation.css';
 const emptyTeam:TeamState={tasks:[],events:[]};
 const areaIcons:Record<string,typeof Home>={overview:Home,tasks:ListChecks,talk:MessageSquare,knowledge:BookOpen,connect:Settings};
 export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;demoMode?:boolean}){
