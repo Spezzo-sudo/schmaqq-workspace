@@ -5,7 +5,7 @@ import {humanEvent} from './project-overview-model';
 import type {ChatGPTUser} from '../app/chatgpt-auth';
 import {hasDrafts,clearDrafts} from '../app/editor-drafts';
 import StudioBrand from '../app/studio-brand';
-import TeamInvite from '../app/team-invite';
+import TeamAccess from './team-access';
 import Connections from '../app/connections';
 import PluginGrants from '../app/plugin-grants';
 import ProviderLogin from '../app/provider-login';
@@ -74,8 +74,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
    {route.page==='team'?<div className="rw-page team-page">
     <h1>Team</h1>
     <p className="studio-page-intro">Wer mitarbeitet und wie du jemanden dazuholst.</p>
-    <section aria-labelledby="team-members"><h2 id="team-members">Wer dabei ist</h2><ul className="team-members">{members.map(m=><li key={m.id}><span className="rw-avatar">{initials(m.name)}</span><span><strong>{m.name}{m.id===user.userId?' (du)':''}</strong><small>{m.role==='owner'?'Inhaber':'Mitglied'}</small></span></li>)}</ul></section>
-    {owner&&<TeamInvite/>}
+    <TeamAccess members={members} userId={user.userId} owner={owner} onChanged={()=>void refresh()}/>
     <details className="team-secondary team-developer"><summary>Für Entwickler</summary><ResourceList resources={resources} members={members} userId={user.userId} onRefresh={refresh}/></details>
    </div>:
    route.page==='account'?<div className="rw-page team-page studio-account-page">

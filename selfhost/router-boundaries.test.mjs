@@ -102,9 +102,12 @@ test('extracted auth and workspace routes preserve the HTTP and role contract', 
     invite:memberInvite,name:'Fixture Member',password:'another-safe-fixture-secret'
   });
   assert.equal(member.status,200);
-  assert.equal((await request('POST','/api/invites',{
+  // Members never get a link; their request becomes a proposal for the owner.
+  const proposal = await request('POST','/api/invites',{
     email:'other@fixture.invalid'
-  },member.cookie)).status,403);
+  },member.cookie);
+  assert.equal(proposal.status,200);
+  assert.deepEqual(proposal.result,{requested:true});
 
   const logout = await request('POST','/api/auth/logout',{},owner.cookie);
   assert.equal(logout.status,200);

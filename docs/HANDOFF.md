@@ -1,6 +1,6 @@
 # Übergabe – Stand 08.11.2026 (nach Livegang 2e7c0f7) (für Marco, ChatGPT/Codex, Claude)
 
-Lies zuerst diese Datei, dann `docs/PLAN.md` (Etappen) und `docs/OPERATIONS.md` (Livegang).
+Lies zuerst diese Datei, dann `docs/PLAN.md` (Etappen), `docs/OPERATIONS.md` (Livegang) und `docs/SECURITY.md`.
 Arbeitsweise: Änderungen nur per Branch und Pull Request nach `main`; zusammenführen nur nach
 Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes.
 
@@ -29,6 +29,10 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
    Schutz: Studio arbeitet nur mit Installationen, die ein Mitglied über Studio registriert hat, oder mit dem
    Konto, dem die App gehört (`installationFor` in `selfhost/github-app.mjs`, Test „stranger/evil“).
    Danach: Markus verbindet ein eigenes privates Repo (= Etappe 1).
+   Sicherheit im selben PR (siehe `docs/SECURITY.md`): nur mit Einladung, Links 24 h, Mitglieder schlagen vor und
+   Marco gibt frei, „eingeladen von“, offene Einladungen zurücknehmen, Mitglied entfernen (`selfhost/team-access.mjs`,
+   Test `selfhost/team-access.test.mjs`).
+   Reihenfolge: „Ja“ → zusammenführen → „JA LIVE“ → erst danach GitHub-App auf „Make public“.
    Ablauf: Marco „Ja“ → zusammenführen → Hermes prepare/live mit main-Commit nach „JA LIVE <kurz>“.
 2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
    Vorschau ansehen, „Passt“. Das schliesst Etappe 1 ab.

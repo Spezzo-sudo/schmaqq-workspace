@@ -36,6 +36,6 @@ export function openStore(filename,{seedProjects=true}={}){
  return db;
 }
 export function createInvite(db,email,role='member'){
- const value=token();db.prepare('INSERT INTO invites VALUES(?,?,?,?)').run(digest(value),email.toLowerCase(),role,Date.now()+48*3600000);return value;
+ const value=token();db.prepare('INSERT INTO invites VALUES(?,?,?,?)').run(digest(value),email.toLowerCase(),role,Date.now()+24*3600000);return value;
 }
 export function transaction(db,fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}

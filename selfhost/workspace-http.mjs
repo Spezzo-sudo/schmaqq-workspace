@@ -66,7 +66,7 @@ export function createWorkspaceHttpRoute({
         send({
           projects: db.prepare('SELECT * FROM projects ORDER BY created,id').all(),
           tasks: db.prepare('SELECT * FROM tasks ORDER BY created DESC').all(),
-          members: db.prepare('SELECT id,name,email,role,seen FROM members ORDER BY name').all(),
+          members: db.prepare("SELECT id,name,email,role,seen,EXISTS(SELECT 1 FROM workspace_meta w WHERE w.key='member:v1:removed:'||members.id) AS removed,(SELECT json_extract(w.value,'$.by') FROM workspace_meta w WHERE w.key='member:v1:invited:'||members.id) AS invitedBy FROM members ORDER BY name").all(),
           messages: db.prepare('SELECT * FROM (SELECT * FROM messages ORDER BY created DESC LIMIT 500) ORDER BY created').all(),
           documents: db.prepare("SELECT d.*,(SELECT json_extract(m.value,'$.project') FROM workspace_meta m WHERE m.key='room:v1:note:'||d.id) AS project FROM documents d ORDER BY d.updated DESC").all(),
           activities: db.prepare('SELECT * FROM activities ORDER BY created DESC LIMIT 30').all()

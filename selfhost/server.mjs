@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {isRemoved} from './team-access.mjs';
 import {Readable} from 'node:stream';
 import {DatabaseSync} from 'node:sqlite';
 import {createPluginHttpRoutes} from './studio-plugin-http.mjs';
@@ -52,7 +53,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
   db,origin,mailer:configuredMailer,now:recoveryNow,trustedProxyIps
  });
  const internalMembers=new WeakMap();
- function user(req){const memberId=internalMembers.get(req);if(memberId){const member=db.prepare('SELECT * FROM members WHERE id=?').get(memberId);if(!member)throw fail(401,'Mitglied nicht mehr vorhanden.');return member;}const cookie=req.headers.cookie?.match(new RegExp('(?:^|;\\s*)'+sessionCookie+'=([\\w-]+)'))?.[1];if(!cookie)throw fail(401,'Bitte anmelden.');const m=db.prepare('SELECT members.* FROM sessions JOIN members ON member=members.id WHERE hash=? AND expires>?').get(digest(cookie),now());if(!m)throw fail(401,'Bitte erneut anmelden.');return m;}
+ function user(req){const memberId=internalMembers.get(req);if(memberId){const member=db.prepare('SELECT * FROM members WHERE id=?').get(memberId);if(!member||isRemoved(db,member.id))throw fail(401,'Mitglied nicht mehr vorhanden.');return member;}const cookie=req.headers.cookie?.match(new RegExp('(?:^|;\\s*)'+sessionCookie+'=([\\w-]+)'))?.[1];if(!cookie)throw fail(401,'Bitte anmelden.');const m=db.prepare('SELECT members.* FROM sessions JOIN members ON member=members.id WHERE hash=? AND expires>?').get(digest(cookie),now());if(!m)throw fail(401,'Bitte erneut anmelden.');if(isRemoved(db,m.id))throw fail(401,'Dieses Konto wurde aus dem Team entfernt.');return m;}
  function device(req){const t=req.headers.authorization?.match(/^Bearer ([\w-]+)$/)?.[1];if(!t)throw fail(401,'Geräteanmeldung fehlt.');const d=db.prepare('SELECT * FROM devices WHERE hash=? AND revoked=0').get(digest(t));if(!d)throw fail(401,'Gerätezugang ungültig.');return d;}
  function session(res,member){const t=token();db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(digest(t),member,now()+7*86400000);res.setHeader('Set-Cookie',`${sessionCookie}=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800${secure?'; Secure':''}`);}
  function record(author,message){db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(uuid(),author,message,now());}

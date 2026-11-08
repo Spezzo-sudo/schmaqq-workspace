@@ -77,3 +77,11 @@
  .team-shell .studio-briefing{padding:8px 16px 0}
  .team-shell .studio-account-profile{flex-wrap:wrap}
 }
+.team-shell .studio-access-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--schmaqq-rule);max-width:780px}
+.team-shell .studio-access-row>span:first-child{min-width:0}
+.team-shell .studio-access-row strong,.team-shell .studio-access-row small{display:block;overflow-wrap:anywhere}
+.team-shell .studio-access-row small{color:var(--schmaqq-muted);font-size:12px;margin-top:3px}
+.team-shell .team-members li .studio-remove{margin-left:auto;font-size:13px}
+.team-shell .studio-invite-link{margin-top:16px}
+.team-shell .studio-invite-link p{font-size:13px;line-height:1.6}
+@media (max-width:650px){.team-shell .studio-access-row{flex-wrap:wrap}}
