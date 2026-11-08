@@ -101,7 +101,7 @@ export default function ProjectConnect({project,projectTitle='Projekt',initialDe
     <p><strong>Verbunden.</strong> Studio arbeitet mit {access.repository}. Fertige Änderungen kommen als Vorschlag (Pull Request) auf GitHub und werden erst nach eurer Freigabe übernommen.</p>
     {access.protected===false&&<div className="rw-error" role="alert"><span>Der Hauptzweig „{access.base}“ ist auf GitHub nicht geschützt. Damit nichts ohne Vorschlag auf „{access.base}“ gelangt, lege eine Schutzregel mit „Require a pull request before merging“ an: <a href={`https://github.com/${access.repository}/settings/branches`} target="_blank" rel="noreferrer">Schutzregel bei GitHub anlegen ↗</a></span></div>}
    </>:githubApp.configured?<>
-    <p>Studio braucht einmalig Zugriff auf {access.repository??'das Repository'}. GitHub fragt dich, für welche Repositories Studio arbeiten darf.</p>
+    <p>Studio braucht einmalig Zugriff auf {access.repository??'das Repository'}. Die Person, der das Repository gehört, gibt es auf GitHub frei und wählt selbst, welche ihrer Repositories Studio sehen darf, private eingeschlossen.</p>
     <button type="button" className="rw-button lime" disabled={linkBusy||busy} onClick={()=>void linkGithub('install')}>{linkBusy?'GitHub wird geöffnet …':'Zugriff bei GitHub erlauben'}</button>
    </>:githubApp.canCreate?<>
     <p>Einmalig: Studio meldet sich bei GitHub an. GitHub zeigt dir, was Studio darf (Code lesen und schreiben, Vorschläge anlegen), und du bestätigst.</p>

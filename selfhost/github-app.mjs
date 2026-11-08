@@ -29,7 +29,9 @@ export function githubAppManifest(origin){
   redirect_url:origin+'/api/github-app/created',
   setup_url:origin+'/api/github-app/installed',
   setup_on_update:true,
-  public:false,
+  // Installable by every member's own GitHub account (like Vercel or Netlify). Repositories stay private;
+  // Studio only accepts installations registered through Studio (see installationFor).
+  public:true,
   default_permissions:{...githubAppPermissions},
   default_events:[]
  };
@@ -76,8 +78,15 @@ export function createGithubApp({db,origin,credentialsFile,api='https://api.gith
  }
  async function installationFor(repository){
   if(!validRepository(repository))throw fail(400,'Repository ungültig.');
-  try{return await call('GET',`/repos/${repository}/installation`,{bearer:await appJwt()});}
+  let installation;
+  try{installation=await call('GET',`/repos/${repository}/installation`,{bearer:await appJwt()});}
   catch(e){if(e.githubStatus===404)throw fail(409,'Studio hat noch keinen Zugriff auf dieses Repository. In GitHub bei der Studio-App das Repository hinzufügen.');throw e;}
+  // The app can be installed by any GitHub account. Studio only works with installations a Studio member
+  // registered through Studio, or with the account that owns the app (installations from before this rule).
+  const owner=credentials()?.owner,login=installation?.account?.login;
+  const known=Object.hasOwn(installations(),String(installation?.id))||(typeof owner==='string'&&typeof login==='string'&&owner.toLowerCase()===login.toLowerCase());
+  if(!Number.isSafeInteger(installation?.id)||!known)throw fail(409,'Dieses Repository wurde nicht über Studio freigegeben. Wähle im Projekt „Zugriff auf GitHub geben“ und gib es dort frei.');
+  return installation;
  }
  /** Short-lived token for exactly one repository. Cached until five minutes before expiry. */
  async function repositoryToken(repository){

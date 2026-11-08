@@ -24,6 +24,11 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
    (Mein Konto), Briefing kopieren (Projekt → Wissen, ohne KI-Verbindung). Mein Konto: Abmelden, ChatGPT
    verbinden, verbundene Assistenten, ChatGPT-Anmeldung, Daten; Rest unter „Für Entwickler“ inkl. Link
    zur früheren Ansicht. Noch nicht übernommen: Hilfe/Anleitung (beschreibt die alte Ansicht).
+   GitHub für alle Mitglieder: Die Studio-App ist installierbar für jedes GitHub-Konto (Manifest `public:true`;
+   die bestehende App stellt Marco auf GitHub unter App → Advanced → „Make public“ um). Repos bleiben privat.
+   Schutz: Studio arbeitet nur mit Installationen, die ein Mitglied über Studio registriert hat, oder mit dem
+   Konto, dem die App gehört (`installationFor` in `selfhost/github-app.mjs`, Test „stranger/evil“).
+   Danach: Markus verbindet ein eigenes privates Repo (= Etappe 1).
    Ablauf: Marco „Ja“ → zusammenführen → Hermes prepare/live mit main-Commit nach „JA LIVE <kurz>“.
 2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
    Vorschau ansehen, „Passt“. Das schliesst Etappe 1 ab.
