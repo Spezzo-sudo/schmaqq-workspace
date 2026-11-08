@@ -1,20 +1,20 @@
 import {useState} from 'react';
-import {Check} from 'lucide-react';
+import {ArrowRightToLine,Eye,Flag,Globe,Pencil,type LucideIcon} from 'lucide-react';
 import type {Stage} from './task-next-step';
 
-/** The whole way of a task at a glance: done, now, next. Details for every step one tap away. */
+const icons:Record<string,LucideIcon>={Ändern:Pencil,Erledigen:Pencil,Anschauen:Eye,Übernehmen:ArrowRightToLine,Live:Globe,Fertig:Flag};
+const stateText={done:'Erledigt',now:'Jetzt',next:'Kommt noch'};
+
+/** The way of a task as round symbols: lime = done, dark ring = now, light coral = still to come. Tap a step for a short explanation. */
 export default function TaskTimeline({stages}:{stages:Stage[]}){
- const [open,setOpen]=useState(false);
- const now=stages.find(s=>s.state==='now');
- return <section className="task-timeline" aria-label="So geht es mit dieser Aufgabe weiter">
-  <ol className="task-timeline-track" style={{gridTemplateColumns:`repeat(${stages.length},minmax(0,1fr))`}}>
-   {stages.map((s,i)=><li key={s.label} className={s.state} aria-current={s.state==='now'?'step':undefined}>
-    <span className="task-timeline-dot" aria-hidden="true">{s.state==='done'?<Check size={14} strokeWidth={3}/>:i+1}</span>
-    <span className="task-timeline-label">{s.label}<span className="sr-only">{s.state==='done'?' (erledigt)':s.state==='now'?' (jetzt)':''}</span></span>
-   </li>)}
+ const [open,setOpen]=useState<number|null>(null);
+ const shown=open===null?null:stages[open];
+ return <section className="task-timeline" aria-label="Weg dieser Aufgabe">
+  <ol className="task-timeline-track">
+   {stages.map((s,i)=>{const Icon=icons[s.label]??Pencil;return <li key={s.label} className={s.state}>
+    <button className="task-timeline-dot" aria-label={`${i+1}. ${s.label} – ${stateText[s.state]}`} aria-expanded={open===i} aria-current={s.state==='now'?'step':undefined} onClick={()=>setOpen(open===i?null:i)}><Icon size={20} strokeWidth={2.2} aria-hidden="true"/></button>
+   </li>;})}
   </ol>
-  {now&&<p className="task-timeline-now"><strong>Jetzt: {now.label}.</strong> {now.detail}</p>}
-  <button className="rw-link" aria-expanded={open} onClick={()=>setOpen(!open)}>{open?'Weniger anzeigen':'Alle Schritte erklären'}</button>
-  {open&&<ol className="task-timeline-list">{stages.map((s,i)=><li key={s.label} className={s.state}><strong>{i+1}. {s.label}</strong> {s.detail}</li>)}</ol>}
+  {shown&&<p className="task-timeline-tip" role="status"><strong>{shown.label}</strong><span className={'task-timeline-state '+shown.state}>{stateText[shown.state]}</span><br/>{shown.detail}</p>}
  </section>;
 }

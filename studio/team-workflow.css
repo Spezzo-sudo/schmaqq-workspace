@@ -179,3 +179,41 @@
 .team-task .team-brief h3{color:var(--schmaqq-muted,#5d5c68);text-transform:uppercase;letter-spacing:1px;font-size:12px}
 .team-shell .rw-workspace-label{display:none}
 .team-shell .rw-rooms button small{background:var(--lime);color:var(--ink);font-weight:700}
+.po-live-choice{display:grid;gap:8px;margin:8px 0}
+.po-live-choice button{display:grid;gap:3px;text-align:left;padding:12px 14px;border:1px solid var(--schmaqq-rule-strong,rgba(17,18,37,.34));background:var(--schmaqq-paper-light,#fbfaf6);color:var(--schmaqq-ink,#111225);cursor:pointer;font:inherit}
+.po-live-choice button[aria-checked="true"]{border:2px solid var(--schmaqq-ink,#111225);padding:11px 13px;background:var(--schmaqq-acid,#d9ff6b)}
+.po-live-choice strong{font-size:15px}
+.po-live-choice small{font-size:13px;line-height:1.45;color:var(--schmaqq-muted,#5d5c68)}
+.po-live-choice button[aria-checked="true"] small{color:var(--schmaqq-ink,#111225)}
+/* ===== Timeline v2: round symbols ===== */
+.task-timeline{margin:0 0 14px}
+.task-timeline-track{display:flex!important;align-items:center;list-style:none;margin:0;padding:4px 0}
+.task-timeline-track li{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+.task-timeline-track li::before{content:"";position:absolute;top:50%;left:-50%;right:50%;width:auto;height:3px;transform:translateY(-50%);background:var(--schmaqq-rule,rgba(17,18,37,.16));z-index:0}
+.task-timeline-track li:first-child::before{display:none}
+.task-timeline-track li.done::before,.task-timeline-track li.now::before{background:var(--schmaqq-acid,#d9ff6b)}
+.task-timeline-dot{position:relative;z-index:1;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;cursor:pointer;padding:0;border:2px solid transparent;background:#ffe3dc;color:#8a6a63;font:inherit;box-shadow:none}
+.task-timeline-track li.done .task-timeline-dot{background:var(--schmaqq-acid,#d9ff6b);color:var(--schmaqq-ink,#111225)}
+.task-timeline-track li.now .task-timeline-dot{background:var(--schmaqq-paper-light,#fbfaf6);border:3px solid var(--schmaqq-ink,#111225);color:var(--schmaqq-ink,#111225);box-shadow:0 0 0 4px rgba(217,255,107,.6)}
+.task-timeline-dot[aria-expanded="true"]{outline:3px solid var(--schmaqq-ink,#111225);outline-offset:3px}
+.task-timeline-tip{margin:12px 0 0;padding:10px 14px;background:var(--schmaqq-ink,#111225);color:var(--schmaqq-paper,#f1efe8);font-size:14px;line-height:1.5}
+.task-timeline-tip strong{color:#fff}
+.task-timeline-state{margin-left:8px;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:2px 6px;background:rgba(255,255,255,.12)}
+.task-timeline-state.done,.task-timeline-state.now{background:var(--schmaqq-acid,#d9ff6b);color:var(--schmaqq-ink,#111225)}
+/* Step card: the button is the message; help text small */
+.team-task .team-next{padding:14px;gap:8px}
+.team-task .team-next-hint{font-size:13px;line-height:1.45;color:var(--schmaqq-muted,#5d5c68)}
+/* Compact task head */
+.team-task>header{padding:8px 10px;gap:6px;min-height:0}
+.team-task>header .rw-drawer-heading small{display:none}
+.team-task>header h2{font-size:16px;line-height:1.3;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.team-task>header .rw-icon{width:40px;height:40px;min-height:40px}
+.team-task .team-task-summary{padding-top:14px}
+.team-dev-facts{display:grid;gap:0;margin:10px 0 14px;border-top:1px solid var(--schmaqq-rule,rgba(17,18,37,.16))}
+.team-dev-facts>div{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;padding:9px 0;border-bottom:1px solid var(--schmaqq-rule,rgba(17,18,37,.16));font-size:14px}
+.team-dev-facts dt{color:var(--schmaqq-muted,#5d5c68);font-weight:600}
+.team-dev-facts dd{margin:0;color:var(--schmaqq-ink,#111225);overflow-wrap:anywhere}
+.team-dev-facts code{font-size:13px;background:var(--schmaqq-paper,#f1efe8);padding:1px 5px}
+.team-dev-actions{display:grid;gap:4px}
+.team-dev-actions .rw-button{width:100%;justify-content:center;margin-top:8px}
+.team-dev-actions small{font-size:13px;line-height:1.45;color:var(--schmaqq-muted,#5d5c68)}

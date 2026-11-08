@@ -46,12 +46,15 @@ export default function ProjectReady({room,resources,members,userId,onRepository
     :!code?<p>Kommt nach dem Code.</p>
     :own?<><p>Die Werkstatt baut, testet und zeigt euch eine Vorschau. Einmal einrichten, dann läuft sie von selbst.</p><button className="rw-button lime" disabled={busy} aria-expanded={setup} onClick={()=>{setSetup(!setup);requestAnimationFrame(()=>setupPanel.current?.scrollIntoView({block:'nearest'}));}}>{setup?'Einrichtung schliessen':'Werkstatt einrichten'}</button></>
     :<p>Die Werkstatt wird noch vom Inhaber eingerichtet.</p>)}
-   {step(live,'Live gehen',live?<>{meta.live==='merge'?<p>Freigegebene Änderungen gehen beim Übernehmen automatisch live.</p>
-     :<><p>Ihr schaltet selbst live. {meta.liveHow?<>So geht's: <strong>{meta.liveHow}</strong></>:'Beschreibt in einem Satz, wie – das sieht dann jeder in der Aufgabe.'}</p>
-      {decides&&<form className="po-live-how" onSubmit={e=>{e.preventDefault();void chooseLive('manual',liveHow.trim());}}><label>Wie schaltet ihr live?<input value={liveHow} maxLength={300} onChange={e=>setLiveHow(e.target.value)} placeholder="Zum Beispiel: Marco startet den Hermes-Auftrag production-deploy-main."/></label><button className="rw-button" disabled={busy||liveHow.trim()===(meta.liveHow??'')}>Speichern</button></form>}</>}
-     {decides&&<button className="rw-link" disabled={busy} onClick={()=>void chooseLive(meta.live==='merge'?'manual':'merge')}>{meta.live==='merge'?'Doch selbst live schalten':'Lieber automatisch live'}</button>}</>
-    :decides?<><p>Was passiert, nachdem ihr eine Änderung freigegeben habt?</p><div className="rw-row-actions"><button className="rw-button" disabled={busy} onClick={()=>void chooseLive('manual')}>Wir schalten selbst live</button><button className="rw-button" disabled={busy} onClick={()=>void chooseLive('merge')}>Geht automatisch live</button></div><p className="muted">Nicht sicher? „Wir schalten selbst live“ ist die sichere Wahl. Nichts geht ohne euch online.</p></>
-    :<p>Legt der Inhaber fest.</p>)}
+   {step(live,'Live gehen',<>
+    {/* Two calm choices. Studio itself never puts anything online; the choice only tells Studio whether a separate live step exists. */}
+    {decides?<div className="po-live-choice" role="radiogroup" aria-label="Wie kommt eine Änderung online?">
+     <button role="radio" aria-checked={meta.live==='manual'} disabled={busy} onClick={()=>void chooseLive('manual')}><strong>Wir schalten selbst live</strong><small>Nach dem Übernehmen macht jemand den Livegang, z. B. über Hermes.</small></button>
+     <button role="radio" aria-checked={meta.live==='merge'} disabled={busy} onClick={()=>void chooseLive('merge')}><strong>Geht von selbst live</strong><small>Nur wählen, wenn euer Hoster jede übernommene Änderung selbst veröffentlicht.</small></button>
+    </div>:<p>{meta.live==='merge'?'Übernommene Änderungen gehen von selbst live.':meta.live==='manual'?'Ihr schaltet selbst live.':'Legt der Inhaber fest.'}</p>}
+    {meta.live==='manual'&&(decides?<form className="po-live-how" onSubmit={e=>{e.preventDefault();void chooseLive('manual',liveHow.trim());}}><label>Wie genau? (sieht jeder in der Aufgabe)<input value={liveHow} maxLength={300} onChange={e=>setLiveHow(e.target.value)} placeholder="Zum Beispiel: Marco startet den Hermes-Auftrag production-deploy-main."/></label>{liveHow.trim()!==(meta.liveHow??'')&&<button className="rw-button" disabled={busy}>Speichern</button>}</form>
+     :meta.liveHow&&<p>So geht's: <strong>{meta.liveHow}</strong></p>)}
+   </>)}
   </ol>
   {setup&&<div ref={setupPanel} tabIndex={-1}><ProjectConnect project={project} projectTitle={room.project.title} initialDevice={own?.device??''} resources={resources} userId={userId} onDone={async()=>{setSetup(false);await onRefresh();}}/></div>}
   {done===3&&<button className="rw-button subtle" onClick={()=>setOpen(false)}>Zuklappen</button>}

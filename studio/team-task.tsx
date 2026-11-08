@@ -102,8 +102,10 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
      {/* The one next step: a sentence and at most one button. Nothing else on the page repeats it. */}
      {!contract.cancelled&&<TaskTimeline stages={stages}/>}
      <div className={'team-next'+(step.waiting?' waiting':'')} role="status" aria-live="polite">
-      <p>{step.waiting&&<span className="team-spinner" aria-hidden="true"/>}{step.text}</p>
+      {/* With a button the sentence is small help underneath (or none when the button says it all); without one it is the message. */}
+      {!step.action&&<p>{step.waiting&&<span className="team-spinner" aria-hidden="true"/>}{step.text}</p>}
       {step.action&&<button className="rw-button lime" disabled={busy||stepBlocked} onClick={()=>go(step.action!)}>{step.label}</button>}
+      {step.action&&!step.quiet&&<small className="team-next-hint">{step.text}</small>}
       {stepBlocked&&copyState.dirty&&<small>Speichere zuerst deine Datei unter „Ändern“.</small>}
      </div>
      {!editing?<div className="team-brief"><h3>Worum es geht</h3><p className={'team-goal'+(fullText?'':' clamped')}>{task.description||'Noch keine Beschreibung.'}</p>{task.description.length>220&&<button className="rw-link" onClick={()=>setFullText(!fullText)}>{fullText?'Weniger anzeigen':'Ganze Beschreibung lesen'}</button>}</div>
@@ -132,8 +134,18 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
       ?<RoomAssistant room={room} resources={resources} userId={userId} taskId={taskId} onClose={closeAssistant} onRefresh={onRefresh} onConnect={onConnect}/>
       :<ExternalAssistant projectTitle={room.project.title} project={room.project.id} taskTitle={task.title} task={taskId} kind={contract.kind} onClose={closeAssistant} onResult={own&&task.status!=='done'?()=>{setAssistant('');openResultForm();}:undefined}/>}</div>}
      {own&&task.status!=='done'&&<details className="team-secondary team-developer"><summary>Für Entwickler</summary>
-      <button ref={localButton} className="rw-button subtle" aria-expanded={assistant==='local'} onClick={()=>toggleAssistant('local')}>Lokale KI auf dem eigenen PC fragen</button>
-      {myCopy&&<div><p>Deine Arbeitskopie liegt auf {myCopy.deviceName}.</p><button className="rw-button" disabled={busy||copyState.dirty||copyState.active} onClick={()=>void action('/api/development',{action:'workspace',id:myCopy.id,revision:myCopy.revision,title:myCopy.title,scope:myCopy.scope,archived:true})}>Persönliche Bearbeitung abschließen</button><small>Lokale Dateien und vorhandene Prüfstände bleiben erhalten. Nicht geteilte Änderungen sind auf anderen Rechnern nicht verfügbar.</small></div>}
+      <dl className="team-dev-facts">
+       <div><dt>Arbeitskopie</dt><dd>{myCopy?myCopy.title+' · '+myCopy.deviceName:'Noch keine – entsteht beim ersten „Selbst bearbeiten“'}</dd></div>
+       {currentResult?.branch&&<div><dt>Branch</dt><dd><code>{currentResult.branch}</code></dd></div>}
+       {currentResult?.commit&&<div><dt>Letzte Fassung</dt><dd><code>{currentResult.commit.slice(0,12)}</code></dd></div>}
+       <div><dt>Übernahme</dt><dd>{(room.meta as {workflow?:string}).workflow==='direct'?'Direkt durch die Werkstatt':'Über GitHub (Pull Request)'}</dd></div>
+      </dl>
+      <div className="team-dev-actions">
+       <button ref={localButton} className="rw-button" aria-expanded={assistant==='local'} onClick={()=>toggleAssistant('local')}>Lokale KI auf dem eigenen PC fragen</button>
+       <small>Nur wenn auf deinem PC ein eigenes Modell läuft.</small>
+       {myCopy&&<><button className="rw-button" disabled={busy||copyState.dirty||copyState.active} onClick={()=>void action('/api/development',{action:'workspace',id:myCopy.id,revision:myCopy.revision,title:myCopy.title,scope:myCopy.scope,archived:true})}>Arbeitskopie freigeben</button>
+       <small>Beendet deine Bearbeitung. Die Dateien bleiben erhalten; was nicht zur Prüfung gegeben wurde, sieht niemand sonst.</small></>}
+      </div>
      </details>}
     </section>
     {/* "Selbst bearbeiten" is its own full screen. It loads on first use (opening a task starts no Werkstatt work)

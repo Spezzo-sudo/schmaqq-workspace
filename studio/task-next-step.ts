@@ -3,7 +3,8 @@
  * The task page shows it at the top; nothing else on the page repeats it.
  */
 export type TaskStepAction='claim'|'start'|'edit'|'submit'|'resubmit'|'integrate'|'live'|'result'|'look'|'finish'|'reopen'|'setup';
-export type TaskStep={text:string;action?:TaskStepAction;label?:string;waiting?:boolean};
+/** `quiet`: the button says it all; the page shows no extra sentence. */
+export type TaskStep={text:string;action?:TaskStepAction;label?:string;waiting?:boolean;quiet?:boolean};
 export type TaskStepInput={
  kind:'general'|'code';status:string;own:boolean;assigned:boolean;person:string;
  cancelled:boolean;blocked:string;ready:boolean;requiresReview:boolean;
@@ -27,7 +28,7 @@ export function taskNextStep(t:TaskStepInput):TaskStep{
  if(!t.assigned)return {text:'Noch kümmert sich niemand darum.',action:'claim',label:'Ich übernehme das'};
  if(t.blocked)return {text:'Hängt fest: '+t.blocked};
  if(t.ready)return t.own?{text:'Alles erledigt. Du kannst die Aufgabe abschliessen.',action:'finish',label:'Aufgabe abschliessen'}:{text:t.person+' kann die Aufgabe jetzt abschliessen.'};
- if(t.own&&t.status==='todo')return {text:'Du bist dran.',action:'start',label:'Loslegen'};
+ if(t.own&&t.status==='todo')return {text:'Du bist dran.',action:'start',label:'Loslegen',quiet:true};
  const r=t.result;
  if(t.kind==='code'){
   if(r?.shared&&r.stale)return t.own?{text:'Du hast seit der Prüfung noch etwas geändert. Gib die neue Fassung zur Prüfung.',action:'resubmit',label:'Neue Fassung zur Prüfung geben'}
@@ -43,7 +44,7 @@ export function taskNextStep(t:TaskStepInput):TaskStep{
   if(!t.own)return {text:t.person+' arbeitet daran.'};
   if(!t.hasWorkshop)return {text:'Das Projekt ist noch nicht startklar.',action:'setup',label:'Zur Einrichtung'};
   if(t.hasCopy)return {text:'Wenn deine Änderung fertig ist, gib sie zur Prüfung. Dann schaut sie sich jemand anderes an.',action:'submit',label:'Zur Prüfung geben'};
-  return {text:'Du bist dran: Mach die Änderung.',action:'edit',label:'Änderung machen'};
+  return {text:'Du bist dran: Mach die Änderung.',action:'edit',label:'Änderung machen',quiet:true};
  }
  if(r){
   if(r.state==='changes_requested')return t.own?{text:'Es wurden Änderungen gewünscht. Überarbeite dein Ergebnis.',action:'result',label:'Ergebnis überarbeiten'}:{text:t.person+' überarbeitet das Ergebnis.'};
