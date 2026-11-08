@@ -1,4 +1,4 @@
-# Übergabe – Stand 08.11.2026 (nach Livegang 2e7c0f7) (für Marco, ChatGPT/Codex, Claude)
+# Übergabe – Stand 08.11.2026 (nach Livegang 9f21c9c) (für Marco, ChatGPT/Codex, Claude)
 
 Lies zuerst diese Datei, dann `docs/PLAN.md` (Etappen), `docs/OPERATIONS.md` (Livegang) und `docs/SECURITY.md`.
 Arbeitsweise: Änderungen nur per Branch und Pull Request nach `main`; zusammenführen nur nach
@@ -6,36 +6,27 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
 
 ## 1. Was live ist
 
-- Live auf studio.schmaqq.com: `2e7c0f7` (PR #62, 08.11.2026, Hermes RESULT=PASS, Backup
-  `predeploy-2e7c0f7-20261108T124725Z.sqlite`, Rückweg `releases/d2c2df0…`). Enthält PR #59, #60, #62.
-- PR #60: Livegang jetzt mit `selfhost/deploy/studio-deploy.sh prepare|live <voller main-Commit>`
-  (siehe OPERATIONS.md). GitHub-Prüfung läuft nur bei Pull Requests (~1,5 Min.), keine Screenshots.
-  **Actions-Minuten knapp:** Wenn das Limit droht, Workflow abschalten, Prüfung auf dem VPS.
-- PR #62: globale Navigation (Handy unten: Arbeit · Projekte · Gespräche · Mehr → Team, Mein Konto).
-- Klimafinder: startklar (GitHub-App nur auf Klimafinder-CH, Server-Worker, Live-Weg manuell).
-  Offen prüfen: Einstellungen → Live gehen „Wir schalten selbst live“ gesetzt?
+- Live auf studio.schmaqq.com: `9f21c9c` (PR #63, 08.11.2026, Hermes RESULT=PASS, keine Neustarts,
+  Backup `predeploy-9f21c9c-20261108T220948Z.sqlite`, Rückweg `releases/2e7c0f7…`).
+  Enthält: Navigation (Arbeit · Projekte · Gespräche · Team, Konto über Initialen), #Allgemein,
+  Allgemeines Wissen, Daten herunterladen, Briefing kopieren, GitHub-Freigabe für alle Mitglieder
+  (nur über Studio registrierte Installationen), Zugang nur mit Einladung (siehe `docs/SECURITY.md`).
+- Livegang: `selfhost/deploy/studio-deploy.sh prepare|live <voller main-Commit>` (siehe OPERATIONS.md).
+  GitHub-Prüfung läuft bei jedem Push auf einen PR-Branch: Commits sammeln, einmal pushen.
+- Klimafinder: startklar (GitHub-App auf Klimafinder-CH, Server-Worker, Live-Weg manuell).
 
 ## 2. Offen und als Nächstes (in dieser Reihenfolge)
 
-1. **Navigation nachschärfen – gebaut, PR offen (Branch `ccr-02ac3638-3ksxjc`).** Handy unten:
-   Arbeit · Projekte · Gespräche · Team; Mein Konto über die Initialen oben rechts („Mehr“ entfällt).
-   Aus der früheren Ansicht übernommen: #Allgemein (Gespräche oben, `studio/studio-general.tsx`),
-   Allgemeines Wissen (Projekte unten; Server liefert jetzt `project` je Dokument), Daten herunterladen
-   (Mein Konto), Briefing kopieren (Projekt → Wissen, ohne KI-Verbindung). Mein Konto: Abmelden, ChatGPT
-   verbinden, verbundene Assistenten, ChatGPT-Anmeldung, Daten; Rest unter „Für Entwickler“ inkl. Link
-   zur früheren Ansicht. Noch nicht übernommen: Hilfe/Anleitung (beschreibt die alte Ansicht).
-   GitHub für alle Mitglieder: Die Studio-App ist installierbar für jedes GitHub-Konto (Manifest `public:true`;
-   die bestehende App stellt Marco auf GitHub unter App → Advanced → „Make public“ um). Repos bleiben privat.
-   Schutz: Studio arbeitet nur mit Installationen, die ein Mitglied über Studio registriert hat, oder mit dem
-   Konto, dem die App gehört (`installationFor` in `selfhost/github-app.mjs`, Test „stranger/evil“).
-   Danach: Markus verbindet ein eigenes privates Repo (= Etappe 1).
-   Sicherheit im selben PR (siehe `docs/SECURITY.md`): nur mit Einladung, Links 24 h, Mitglieder schlagen vor und
-   Marco gibt frei, „eingeladen von“, offene Einladungen zurücknehmen, Mitglied entfernen (`selfhost/team-access.mjs`,
-   Test `selfhost/team-access.test.mjs`).
-   Reihenfolge: „Ja“ → zusammenführen → „JA LIVE“ → erst danach GitHub-App auf „Make public“.
-   Ablauf: Marco „Ja“ → zusammenführen → Hermes prepare/live mit main-Commit nach „JA LIVE <kurz>“.
+1. **Handy-Feinschliff – PR offen (Branch `ccr-02ac3638-3ksxjc`):** Logo oben am Handy (SCHMAQQ. + Lime-Label
+   „Studio“, `app/studio-brand.tsx`), Welle startet an der Tippstelle und färbt die Buchstaben rot (vorher wurde
+   die Farbe nie sichtbar, weil sie auf `<g>` statt `<path>` lag), Projekt-Tabs passen ohne Scrollen (5 Spalten),
+   Aufklapper mit 44-px-Tippfläche, Kontrast der Gesprächsvorschläge, Chat-Liste korrekt.
+   Prüfmassstab: Bedienbarkeit/Barrierefreiheit/Handy aus dem Skill „jury“ (juliobsz/skills, nur gelesen,
+   Skripte nicht installiert); eigene Messung mit Playwright + axe auf allen Seiten: kein Überlauf,
+   keine ernsten axe-Funde, Tastaturfokus sichtbar.
+   Danach Marco: GitHub-App → Advanced → „Make public“ (Schutz ist live seit 9f21c9c).
 2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
-   Vorschau ansehen, „Passt“. Das schliesst Etappe 1 ab.
+   Vorschau ansehen, „Passt“, ein eigenes privates Repo verbinden. Das schliesst Etappe 1 ab.
 3. **Etappe 3 „KI im Raum“** (siehe PLAN.md): erst klären, ob der ChatGPT-Business-Workspace die
    Codex-Anmeldung auf dem Server erlaubt. „Selbst bearbeiten“ bleibt immer als Weg ohne KI.
 4. Etappe 0 Rest: Zugänge zum VPS auflisten (Hermes hat Root über Telegram – Risiko), Fehler

@@ -19,16 +19,16 @@ function useWorkspace(){
 /** The team-wide conversation (#Allgemein), now in the new view. */
 export function GeneralChat({userId}:{userId:string}){
  const {data,error,post}=useWorkspace(),[text,setText]=useState(''),[sending,setSending]=useState(false),[failed,setFailed]=useState('');
- const end=useRef<HTMLDivElement|null>(null);
+ const list=useRef<HTMLOListElement|null>(null);
  const messages=(data?.messages??[]).filter(m=>m.channel==='general').slice(-60);
  const name=(id:string)=>data?.members.find(m=>m.id===id)?.name??'Jemand';
- useEffect(()=>{end.current?.scrollIntoView({block:'nearest'});},[messages.length]);
+ useEffect(()=>{if(list.current)list.current.scrollTop=list.current.scrollHeight;},[messages.length]);
  async function send(e:React.FormEvent){e.preventDefault();if(!text.trim()||sending)return;setSending(true);setFailed('');try{await post({action:'message',id:crypto.randomUUID(),channel:'general',body:text});setText('');}catch(err){setFailed((err as Error).message+' Dein Text bleibt stehen.');}finally{setSending(false);}}
  return <section className="studio-general-chat" aria-labelledby="general-chat">
   <h2 id="general-chat">Allgemein</h2>
   <p className="studio-page-intro">Für alles, was zu keinem Projekt gehört. Das ganze Team liest mit.</p>
   {error&&<p className="rw-error" role="alert">{error}</p>}
-  {!!messages.length&&<ol className="studio-general-messages">{messages.map(m=><li key={m.id} className={m.author===userId?'own':''}><span className="rw-avatar">{initials(name(m.author))}</span><div><p className="studio-general-meta"><strong>{m.author===userId?'Du':name(m.author)}</strong><time>{when(m.created)}</time></p><p>{m.body}</p></div></li>)}<div ref={end}/></ol>}
+  {!!messages.length&&<ol ref={list} className="studio-general-messages">{messages.map(m=><li key={m.id} className={m.author===userId?'own':''}><span className="rw-avatar">{initials(name(m.author))}</span><div><p className="studio-general-meta"><strong>{m.author===userId?'Du':name(m.author)}</strong><time>{when(m.created)}</time></p><p>{m.body}</p></div></li>)}</ol>}
   {data&&!messages.length&&<p className="rw-muted">Noch keine Nachricht. Schreib die erste.</p>}
   <form className="studio-general-composer" onSubmit={send}><label className="sr-only" htmlFor="general-text">Nachricht an alle</label><textarea id="general-text" value={text} maxLength={4000} placeholder="Nachricht an alle" onChange={e=>setText(e.target.value)}/><button className="rw-button lime" disabled={!text.trim()||sending}><Send size={16}/>{sending?'Wird gesendet …':'Senden'}</button></form>
   {failed&&<p className="rw-error" role="alert">{failed}</p>}
