@@ -1,86 +1,68 @@
-# SCHMAQQ Studio – nächste Produktetappe (Vorbereitung)
+# SCHMAQQ Studio – Navigationsentwurf und Marken-Konsistenz
 
-**Status:** Arbeitsvorschlag, 08.11.2026. Keine Implementierung, kein Merge, kein Livegang.
-**Gilt für:** `Spezzo-sudo/schmaqq-workspace`, NICHT für das Marketing-Repository `NetzKontor`.
-**Quelle:** `AGENTS.md`, `docs/PLAN.md`, `docs/PRODUCT_VISION.md`, `docs/ARCHITECTURE.md`, Übergabe in PR #60 (`docs/HANDOFF.md`).
-**Ziel:** Anfang Februar 2027 arbeiten zwei echte Personen täglich und mobil mit Studio; KI ist optional.
+**Status:** Designvorschlag; noch keine Umsetzung oder Freigabe. Stand 08.11.2026.
+**Repository:** `Spezzo-sudo/schmaqq-workspace` – eigenständige Studio-App.
+**Umfang dieses PRs:** ausschliesslich Informationsarchitektur, visuelle Regeln und isolierter klickbarer Demo-Prototyp. **Keine Codex-/Claude-/ChatGPT-Agentenimplementierung oder Provider-Integration.**
 
-## 1. Prioritäten und harte Freigaben
+## 1. Designsystem: Verbindliche Quellen im bestehenden Studio
 
-Die schon festgelegte Reihenfolge bleibt bestehen. Dieses Dokument ist eine additive Planung und kein Auftrag für sofortige Server-Mutationen.
+- `app/studio-brand.tsx` und `app/brand-paths.ts`: **exakter SCHMAQQ-Schriftzug** als Vektorpfade mit dem Lime-Punkt. Niemals durch eine erfundene S.-Kachel oder generisches Textlogo ersetzen. Zur Startseite führt der bereits vorhandene Brand-Button.
+- `studio/schmaqq-design-system.css`: Markenfarben und Schriften; bestehende Komponenten dürfen diese zentralen Regeln nicht durch eigene allgemeine Themes aushebeln.
+- `studio/schmaqq-convergence.css`: kantige Formen, 1-px-Konturen, 800er-Button-Gewicht, dezenter 2px Hover-Lift mit hartem Schatten, Lime-Fokusschatten und abgesicherte Reduktion von Animationen.
+- `studio/team-workflow.css`: bestehende Studio-Oberfläche und Task-Timeline; der Symbol-Zeitstrahl ist **schon im eigentlichen Studio vorhanden**, kein Neubau.
+- `studio/task-next-step.ts`: **ein** autoritativer nächster Schritt mit höchstens einer hervorgehobenen Aktion.
 
-1. **Bestehenden Livegang klären:** Hermes-/VPS-Nachweis für den auf `main` vorhandenen Stand `d2c2df0` einholen; GitHub-`main` beweist keinen laufenden Release. Keine automatische Wiederholung eines unklaren Livegangs.
-2. **PR #60:** Quick-Deploy/CI und `docs/HANDOFF.md` nach fachlicher Prüfung und ausdrücklichem Merge-Ja übernehmen. Der neue Deploypfad gilt erst nach bewusstem Bootstrap und separater Live-Freigabe.
-3. **Navigation zuerst:** Sichtbares, responsives Konzept und Owner-Abnahme; danach Frontend-PR mit Browsernachweis. Nicht die Aufgaben-/Review-Logik neu entwickeln.
-4. **Mit Markus testen:** Einladen, die drei Wege Aufgabe öffnen → Vorschau anschauen → «Passt» sowie allgemeine Gespräche und Kontoeinstellungen ohne Anleitung finden lassen.
-5. **Connector-Stabilität und Rechte:** Den dokumentierten Fehler «hunderte gleiche Aufgaben» anhand VPS-/DB-Evidence isoliert untersuchen. Kein zusätzlicher Schreib-Endpunkt vor der Abnahme.
-6. **Codex-Praxisspike:** Verfügbarkeit, Kontonutzung, Tokenisolation und Kosten bei zwei eigenen ChatGPT-Business-Nutzern im freigegebenen Umfeld separat nachweisen. Erst danach Codex Bridge implementieren.
-7. **Claude Code optional:** Dünner MCP-basierter Client, wenn die Studio-Codex-Ausführung funktioniert. Kein paralleler zweiter Agenten-Kern.
+| Bedeutung | Bestehende Token / Farbe | Einsatz |
+|---|---|---|
+| Ink | `--schmaqq-ink: #111225` | Text, dunkle Flächen, Linien |
+| Ink Soft | `--schmaqq-ink-soft: #1a1c36` | Aktive Sidebar-Navigation |
+| Paper | `--schmaqq-paper: #f1efe8` | Ruhiger Hintergrund |
+| Paper Light | `--schmaqq-paper-light: #fbfaf6` | Karten, Dialoge |
+| Paper Deep | `--schmaqq-paper-deep: #e7e2d7` | Dezente abgestufte Flächen |
+| Acid/Lime | `--schmaqq-acid: #d9ff6b` | Primäre Aktion, Erledigt, Fokus und Logo-Punkt |
+| Coral | `--schmaqq-coral: #ff6f59` | Bedeutungsstarker Akzent; helles Korall `#ffe3dc` **nur** für noch offene Task-Schritte |
+| Text | `--schmaqq-sans: Arial,Helvetica,sans-serif` | Produktive Texte und Buttons |
+| Technical Labels | `--schmaqq-mono: SFMono-Regular/Consolas/Liberation Mono` | Kurze Labels, Kicker, Kennungen |
 
-**Freigabegrenzen:** Branch + PR; Merge nur nach ausdrücklichem «Ja» des Owners; produktiv nur nach «JA LIVE <kurz>» zum exakten Commit und über den geregelten Betriebsweg. Weder dieser PR noch sein grüner Check sind eine Live-Freigabe.
+Die runden Timeline-Dots sind eine **bewusste funktionale Ausnahme** von der kantigen geometrischen Grundsprache. Nicht weitere runde Karten und Pillen ableiten.
 
-## 2. Informationsarchitektur
+## 2. Navigationskonzept – Änderung statt neuer Anwendung
 
-**Global, Desktop:** `Meine Arbeit · Projekte · Gespräche · Team · Mein Konto` in fester Seitennavigation.
-**Global, Handy:** Eine einzige untere Navigationsleiste `Arbeit · Projekte · Gespräche · Mehr`. «Mehr» öffnet klar beschriftete Ziele «Team» und «Mein Konto». Keine zweite gleichzeitig angezeigte Bottom-Navigation.
-**Im Projekt:** `Übersicht · Aufgaben · Gespräch · Wissen · Einstellungen` als lokale Reiter im Seiteninhalt (mobil horizontal scroll- und bedienbar), niemals als zweite globale Fussleiste.
-**In einer Aufgabe:** Fokusansicht mit Zurück, Symbol-Zeitstrahl, genau einem primären Schritt, Review und Gespräch. Globale Navigation darf nicht mit der Aufgabe konkurrieren.
+**Desktop:** Meine Arbeit · Projekte · Gespräche · Team · Mein Konto (linke feste Sidebar).
+**Handy:** Arbeit · Projekte · Gespräche · Mehr (eine einzige globale Bottom-Leiste); in «Mehr» liegen Team und Mein Konto.
+**Innerhalb eines Projekts:** Übersicht · Aufgaben · Gespräch · Wissen · Einstellungen bleiben lokale Reiter **im Inhalt**, nicht eine zweite globale Bottom-Leiste.
+**Aufgabe:** Zurück, Symbol-Timeline, eine nächste Aktion, bestehende Vorschau/Review und Diskussion. Noch keine neue Agenten-Bedienung.
 
-### Klare Bedeutungen
+- **Meine Arbeit:** nächste Aktion und relevante Projekte, möglichst ohne konkurrierende Hero-Kacheln.
+- **Projekte:** Projektliste und Projektansicht; bereits vorhandenen Arbeitsablauf weiterverwenden.
+- **Gespräche:** allgemeine Unterhaltung ausdrücklich von Projekt- und Aufgabenkommentaren trennen. Im eigentlichen Studio liegt das heutige Legacy-Ziel unter `/?legacy=1&view=chat`, vor Migration prüfen.
+- **Team:** Mitglieder, Rollen, Einladungen und Zugriff; keine persönlichen KI-Kontoeinstellungen.
+- **Mein Konto:** persönliches Profil, vorhandene verbundene KI-Assistenten, Anmeldung und Abmeldung. Kein «Codex in Studio ausführen»-Platzhalter: die eigenständige Claude→ChatGPT-Superagent-Idee gehört **nicht** in diesen Navigations-PR.
 
-- **Meine Arbeit:** persönliche nächste Handlung, relevante Mitteilungen und zuletzt geöffnete Projekte. Nicht mit einem überladenen Dashboard beginnen.
-- **Projekte:** alle Projekte, Erstellen, Projektübersicht. Projektbezogene Gespräche bleiben in ihrem Projekt.
-- **Gespräche:** projektübergreifender allgemeiner Chat und frühere Unterhaltungen. Das bestehende allgemeine Legacy-Chatziel zunächst offen und ehrlich beschriften; es ist noch keine neue gemeinsame Chat-API.
-- **Team:** Mitglieder, Einladungen, Rollen und teambezogene Rechte. Bei fehlender Berechtigung keine gefährlichen Aktionen anbieten; serverseitige Prüfung bleibt zwingend.
-- **Mein Konto:** Profil, eigene Assistenten-Verbindungen, «Mit ChatGPT anmelden», Abmelden; spätere Nutzungsanzeige. «ChatGPT greift auf Studio zu» (MCP-Inbound) und «Studio startet Codex mit meinem Konto» (Outbound-Ausführung) als **verschiedene** Verbindungen erklären.
-- **Für Entwickler:** Diagnose, Runner, Worktrees, technische Logs; bewusst eingeklappt, aber erreichbar.
+## 3. Vorhandenen Code respektieren
 
-### Tatsächlicher Code / minimaler Schnitt
+- `studio/team-workspace.tsx`: Shell/Menu und sichtbare Inhalte, Basis für den **späteren** Implementierungs-PR.
+- `studio/room-model.ts`: bestehende Routen/Projektbereiche; keine neue konkurrierende Router-Lösung erfinden.
+- `app/connections.tsx`: Verbindungsliste und persönliche Berechtigungen wiederverwenden.
+- `studio/task-timeline.tsx`: kein Neubau, nur bei nachgewiesenem UX-Problem gezielte Korrektur.
+- `docs/prototypes/studio-navigation-v1.html`: isolierter, klickbarer Demo-Entwurf. **Keine laufende Studio-App**, keine echten Daten, keine Verbindungen. Enthält für die Demo die originalen Wordmark-SVG-Pfade, um das Logo korrekt zu beurteilen. Der spätere Produktcode verwendet stattdessen `StudioBrand` direkt, nicht eine zweite Kopie.
 
-- `studio/team-workspace.tsx`: Shell, globales Menü, bisher Team und dort versteckte Verbindungen.
-- `studio/room-model.ts`: `RoomRoute` / `readRoomRoute` / Projekt-Reiter.
-- `studio/team-workflow.css`: Brand-Tokens, responsive Navigation und mobile Projektleiste.
-- `studio/task-timeline.tsx`: runde Symbole ohne Zahlen sind bereits vorhanden. **Nicht erneut bauen.**
-- `studio/task-next-step.ts`: autoritative nächste Aktion – keine zweite Logik oder doppelten Aufforderungen.
-- `app/connections.tsx` und `app/chatgpt-auth`: Konto-/Verbindungsfunktion nur wiederverwenden, nicht Auth-Verhalten neu erfinden.
-- Altansichten: `/?legacy=1&view=chat` und `/?legacy=1&view=docs` – vor endgültiger Migration ihre echten Funktionen prüfen.
+**Keine neue CSS-Quelle der Wahrheit.** Die statische Prototyp-Datei darf ihre CSS-Werte zur Browseransicht inline abbilden; für die echte Implementierung müssen die bestehenden `--schmaqq-*`-Tokens und Komponenten importiert werden. Kein Import eines kompletten Lovable/TanStack-Templates oder einer zweiten Shadcn-Theme-Schicht.
 
-### Navigations-/Migrationsregeln
+## 4. Mobil und Accessibility – Abnahmekriterien
 
-- Legacy-Links für `?page=team`, `?room=<id>&tab=talk` und Task-Deep-Links bleiben funktional.
-- Eine neue «Gespräche»-Route darf Projektgespräche nicht mit allgemeinem Chat verwechseln. Öffnen ohne verbundene Unterhaltungen zeigt einen verständlichen, ehrlichen Zustand.
-- Back/Forward, Aktualisieren, Einloggen/Zurückkehren und Abmelden verhalten sich konsistent.
-- Schütze offene Dateientwürfe beim Navigieren und Abmelden. Prüfe Focus/Keyboard und Touch-Flächen (mindestens ca. 44 px).
-- Keine leere Fantasie-Kachel, kein Fake-Betriebsstatus, keine «KI verbunden»-Behauptung ohne tatsächlichen Check.
-- Design: Ink `#111225`, Paper `#f1efe8`, Light `#fbfaf6`, Lime `#d9ff6b`, sehr helles Korall für offene Schritte; echte Lucide-Icons, keine Emojis.
+1. Bei 375, 390, 768, 1280 und 1440 px: keine abgeschnittenen Labels, kein horizontaler Überlauf und kein Konflikt zwischen Projekt-Tabs und globaler Navigation.
+2. Tastatur: Hauptnavigation, Dialog «Mehr», Back-Buttons und Task-Dots sind fokussierbar; sichtbare Fokusmarkierung entspricht SCHMAQQ.
+3. Touch-Ziele gut erreichbar, keine schwebende Leiste über Eingabefeldern. Safe-Area auf Android und iOS respektiert.
+4. Reload, Zurück/Vorwärts, alte Deep-Links, offene Dateientwürfe und Abmelden funktionieren nach einer **echten** späteren Migration.
+5. Die echten Aufgaben und Projekt-Rechte bleiben unverändert; nichts wird ohne Bestätigung integriert oder live geschaltet.
+6. Nutzer sehen in Studio nicht plötzlich einen technischen «Agent»- oder «Codex»-Bereich ohne bereits funktionierende Anbindung.
+7. Vor Merge in eine produktive Implementierung müssen echte Desktop- **und** Handy-Screenshots und ein echter Browser-Test vorliegen; Build/Quellcode allein genügen nicht.
 
-## 3. Entwurfsvarianten und klare Empfehlung
+## 5. Ergebnis und nächste Umsetzung
 
-- **A, empfohlen – ruhige Arbeitsoberfläche:** Desktop linke Navigation, mobil eine Bottom-Bar mit vier Zielen und «Mehr»-Sheet. Inhalte beginnen mit «Als Nächstes». Kein zweiter Footer.
-- **B – Kompakt:** Header-Hamburger mobil statt Bottom-Bar; etwas mehr Platz, aber schlechtere Erreichbarkeit. Als Alternativtest.
-- **C – Projekte zuerst:** Projektliste prominent, aber persönliche Arbeit schwerer sichtbar. Nicht als Standard für den Zwei-Personen-Alltag.
+**Dieser Draft-PR** dient als visuelle Richtung, nicht als neuer Softwarekern. Die Lovable-Vorschau darf für visuelle Reviews genutzt werden, **niemals** direkt als Anwendung in `main` kopiert werden. Der Entwickler-PR wird die bestehende Studio-Shell minimal umbauen und vorhandene Komponenten weiterverwenden.
 
-Das separate statische Konzept in `docs/prototypes/studio-navigation-v1.html` ist bewusst **keine** laufende Studio-Anwendung, kein Server- oder Kontentest. Es soll den Navigationsentscheid demonstrieren, bevor produktiver Code verändert wird.
+Ablauf: live laufenden Release mit VPS-Hinweis bestätigen → PR #60 separat prüfen und nur nach Owner-Ja mergen → über den Designvorschlag entscheiden → UX-Implementierungs-PR → echte mobile und Desktop-Tests mit Markus → gesonderte Live-Freigabe.
 
-## 4. Abnahmeszenarien
-
-1. Marco öffnet auf 375/390 px «Meine Arbeit», findet «Klimafinder», die nächste Aufgabe und die Vorschau; der aktuelle Task verliert keine Daten.
-2. Markus findet «Team» und kann eine Einladung erkennen; «Mein Konto» führt ohne Umweg zu seinen eigenen Verbindungen; allgemeiner Chat ist ohne «Team → Entwickler → Archiv» erreichbar.
-3. Ein direkter Projekt-/Task-Link funktioniert nach Reload und Browser-Zurück.
-4. Desktop 1280/1440 px, Tablet ca. 768 px und Handy 375/390 px: keine Überlagerung, keine Doppel-Navigation, keine abgeschnittenen Touch-Ziele.
-5. Tastaturbedienung, sichtbar fokussierte Buttons, verständliche Labels, Dialog-/Sheet-Schliessen und Screenreader-Ansagen sind geprüft.
-6. Ein echtes Zwei-Personen-Review im Klimafinder endet bei «Passt» ohne ungefragten Merge oder Livegang.
-
-## 5. Arbeitspakete (sequenziell; jeweils ein eigenständiger PR)
-
-- **UX-01: Navigation Shell.** Keine neue Datenbank; Frontend und ggf. vorhandene Routen adaptieren. Unit-Tests für Route/Deep-Link, Browser-Smoke mobil/Desktop, Screenshots zur Owner-Abnahme.
-- **UX-02: Gespräche und Konto aufräumen.** Vorhandene Funktionen migrieren; Berechtigungen und Auth-Sitzungen unangetastet; bestehende Legacy-Daten nicht löschen.
-- **UX-03: Praxisabnahme mit Markus.** Beobachtungen als priorisierte echte Fehler, nicht Wunschliste von Funktionen.
-- **SEC-01: Connector-Duplikate + Identitäten.** Ursache, idempotente Auftragserstellung, Widerruf, Wiederholung, UI-Fehlerpfad, Regressionstests.
-- **AI-01: Codex Berechtigungs- und Auth-Spike.** Separater Nachweis mit eigenem Konto; kein Produktiv-Token in Source/GitHub/Chat.
-- **AI-02: Codex Adapter.** Minimaler Task→Ausführung→Ergebnis-Vertrag hinter Feature-Flag, nur wenn AI-01 freigegeben.
-- **AI-03: Optionaler Claude-Code-MCP-Client/Plugin.** Kein direkter Proxy auf fremde Kontingente.
-
-## 6. Übergabe an weitere Agenten
-
-Vor jeder Aufgabe: `AGENTS.md`, `docs/PLAN.md`, `docs/WORKLIST.md`, `docs/STATUS.json` und nach PR #60 `docs/HANDOFF.md` lesen, dann nur die relevanten Dateien. **Dieses Dokument ist ein Vorschlag; `main` und echte Runtime-Evidence bleiben die Statusquellen.** Keine Dateien aus PR #60 auf einem anderen Branch ohne Konfliktprüfung überschreiben. Berechtigungs- und Provideränderungen vorab explizit freigeben.
+**Explizit nicht hier enthalten:** Claude-App-Plugin, ChatGPT-Kontingent, Superagenten, Provider-Zugangsdaten, Runtime-/VPS-Arbeit und die frühere Codex-Bridge-ADR. Das ist ein eigenständiges Vorhaben, über das vor der Umsetzung separat entschieden werden muss.
