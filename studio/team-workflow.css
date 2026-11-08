@@ -118,3 +118,64 @@
 .team-page .team-invite,.team-page .panel{margin:0 0 26px}
 .task-autostart{padding:20px}
 .task-autostart p{display:flex;gap:10px;align-items:flex-start;font-size:16px;line-height:1.5;margin:0 0 12px}
+/* ===== Brand: ink, paper, lime (as logo and menu) ===== */
+.team-shell{--ink:var(--schmaqq-ink,#111225);--ink-soft:var(--schmaqq-ink-soft,#1a1c36);--paper:var(--schmaqq-paper,#f1efe8);--paper-light:var(--schmaqq-paper-light,#fbfaf6);--lime:var(--schmaqq-acid,#d9ff6b);--rule:var(--schmaqq-rule,rgba(17,18,37,.16));--muted:var(--schmaqq-muted,#5d5c68)}
+.team-shell .rw-sidebar{background:var(--ink);border-right-color:var(--ink-soft)}
+.team-shell .rw-main{background:var(--paper)}
+.team-shell h1,.team-shell h2,.team-shell .team-work-card strong{color:var(--ink)}
+.team-shell .rw-link{color:var(--ink);text-decoration-color:var(--lime);text-decoration-thickness:3px;text-underline-offset:3px}
+.team-shell .team-work-card{background:var(--paper-light);border:1px solid var(--rule);border-radius:0;color:var(--ink)}
+.team-shell .team-work-card:hover{border-color:var(--ink)}
+.team-shell .team-work-card small{color:var(--muted)}
+.team-shell .team-areas button{color:var(--muted)}
+.team-shell .team-areas button.active{color:var(--ink);border-bottom-color:var(--ink)}
+/* Home hero */
+.home-hero{background:var(--ink);color:var(--paper);padding:24px 22px;margin:8px 0 26px;position:relative;overflow:hidden}
+.home-hero::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;background:var(--lime);border-radius:50%;opacity:.95}
+.home-hero>*{position:relative;z-index:1}
+.home-hero .home-hello{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--lime);margin:0 0 14px;font-weight:700}
+.team-shell .home-hero h2{color:var(--paper);font-size:15px;font-weight:600;margin:0 0 6px;opacity:.8}
+.home-hero .home-hero-task{font-size:24px;line-height:1.25;font-weight:800;margin:0 0 8px;color:#fff;max-width:85%}
+.home-hero .home-hero-meta{font-size:14px;color:#c9c8d6;margin:0 0 18px}
+.home-hero .rw-button.lime{background:var(--lime);color:var(--ink);border:0;min-height:48px;padding:0 22px;font-size:15px;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+/* Task page in brand colours */
+.team-task .team-next{border-color:var(--schmaqq-ink,#111225);background:var(--schmaqq-paper-light,#fbfaf6)}
+.team-task .team-next p{color:var(--schmaqq-ink,#111225)}
+.team-task .team-next.waiting{border-color:var(--schmaqq-ink,#111225);background:var(--schmaqq-paper,#f1efe8)}
+.team-task .team-task-tabs button.active{border-bottom-color:var(--schmaqq-ink,#111225);color:var(--schmaqq-ink,#111225);background:var(--schmaqq-acid,#d9ff6b)}
+.team-task .rw-link{color:var(--schmaqq-ink,#111225);text-decoration-color:var(--schmaqq-acid,#d9ff6b);text-decoration-thickness:3px;text-underline-offset:3px}
+/* Timeline */
+.task-timeline{margin:0 0 16px}
+.task-timeline-track{list-style:none;margin:0;padding:0;display:grid}
+.task-timeline-track li{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.task-timeline-track li::before{content:"";position:absolute;top:15px;left:-50%;width:100%;height:3px;background:var(--schmaqq-rule,rgba(17,18,37,.16));z-index:0}
+.task-timeline-track li:first-child::before{display:none}
+.task-timeline-track li.done::before,.task-timeline-track li.now::before{background:var(--schmaqq-ink,#111225)}
+.task-timeline-dot{position:relative;z-index:1;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font:700 13px/1 Inter,Arial,sans-serif;background:var(--schmaqq-paper-light,#fbfaf6);border:2px solid var(--schmaqq-rule-strong,rgba(17,18,37,.34));color:var(--schmaqq-muted,#5d5c68)}
+.task-timeline-track li.done .task-timeline-dot{background:var(--schmaqq-ink,#111225);border-color:var(--schmaqq-ink,#111225);color:var(--schmaqq-acid,#d9ff6b)}
+.task-timeline-track li.now .task-timeline-dot{background:var(--schmaqq-acid,#d9ff6b);border:3px solid var(--schmaqq-ink,#111225);color:var(--schmaqq-ink,#111225);box-shadow:0 0 0 4px rgba(217,255,107,.45)}
+.task-timeline-label{font-size:12px;font-weight:600;color:var(--schmaqq-muted,#5d5c68)}
+.task-timeline-track li.now .task-timeline-label,.task-timeline-track li.done .task-timeline-label{color:var(--schmaqq-ink,#111225)}
+.task-timeline-track li.now .task-timeline-label{font-weight:800}
+.task-timeline-now{margin:12px 0 2px;font-size:14px;line-height:1.5;color:var(--schmaqq-ink,#111225)}
+.task-timeline-list{margin:8px 0 0;padding:0 0 0 2px;list-style:none;display:grid;gap:8px;font-size:14px;line-height:1.5}
+.task-timeline-list li{padding-left:12px;border-left:3px solid var(--schmaqq-rule,rgba(17,18,37,.16))}
+.task-timeline-list li.done{border-left-color:var(--schmaqq-ink,#111225)}
+.task-timeline-list li.now{border-left-color:var(--schmaqq-acid,#d9ff6b);background:rgba(217,255,107,.18)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* Reviewer checklist and live sentence */
+.review-checklist{margin:0;padding:14px 14px 14px 34px;background:var(--schmaqq-paper,#f1efe8);border-left:4px solid var(--schmaqq-acid,#d9ff6b);display:grid;gap:8px;font-size:14px;line-height:1.5}
+.po-live-how{display:grid;gap:8px;margin:8px 0}
+.po-live-how input{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--schmaqq-rule-strong,rgba(17,18,37,.34));background:#fff}
+.po-live-how .rw-button{justify-self:start}
+@media(max-width:650px){
+ .team-shell .team-areas{background:var(--ink);border-top:0}
+ .team-shell .team-areas button{color:#b9b8c8;border-top-color:transparent}
+ .team-shell .team-areas button.active{color:var(--lime);background:var(--ink-soft);border-top-color:var(--lime)}
+ .home-hero .home-hero-task{font-size:21px}
+}
+.task-timeline-now{margin-top:16px}
+.team-task .team-brief h3,.team-task .team-task-pane h3,.team-task .task-discussion h2,.team-task .task-discussion h3,.team-task .discussion-heading{color:var(--schmaqq-ink,#111225)}
+.team-task .team-brief h3{color:var(--schmaqq-muted,#5d5c68);text-transform:uppercase;letter-spacing:1px;font-size:12px}
+.team-shell .rw-workspace-label{display:none}
+.team-shell .rw-rooms button small{background:var(--lime);color:var(--ink);font-weight:700}

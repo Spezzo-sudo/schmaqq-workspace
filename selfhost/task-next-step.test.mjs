@@ -75,3 +75,25 @@ test('history keeps what people care about, in everyday words',()=>{
  assert.equal(humanEvent('integrated','Freigegebener Code zusammengeführt · X'),'Änderung übernommen');
  assert.equal(humanEvent('status','Status: done · X'),'Aufgabe abgeschlossen');
 });
+
+import {taskStages} from '../studio/task-next-step.ts';
+test('the timeline shows the whole way and where the task stands',()=>{
+ const base={kind:'code',status:'doing',requiresReview:true,cancelled:false,own:true,person:'Marco',result:null,liveMode:'manual',liveHow:'Marco startet Hermes.',live:false};
+ const states=change=>taskStages({...base,...change}).map(s=>s.state).join(',');
+ assert.deepEqual(taskStages(base).map(s=>s.label),['Ändern','Anschauen','Übernehmen','Live']);
+ assert.equal(states({}),'now,next,next,next');
+ assert.equal(states({result:{shared:true,state:'pending'}}),'done,now,next,next');
+ assert.equal(states({result:{shared:true,state:'changes_requested'}}),'now,next,next,next','a wished change goes back to Ändern');
+ assert.equal(states({result:{shared:true,state:'approved'}}),'done,done,now,next');
+ assert.equal(states({status:'done',result:{shared:true,state:'approved',integrated:true}}),'done,done,done,now');
+ assert.equal(states({status:'done',live:true,result:{shared:true,state:'approved',integrated:true}}),'done,done,done,done');
+ assert.equal(states({liveMode:'merge',status:'done',result:{shared:true,state:'approved',integrated:true}}),'done,done,done,done');
+ assert.match(taskStages(base)[3].detail,/Marco startet Hermes/);
+ assert.equal(taskStages({...base,kind:'general'}).map(s=>s.label).join(','),'Erledigen,Anschauen,Fertig');
+ assert.equal(taskStages({...base,kind:'general',requiresReview:false}).length,2);
+});
+test('a taken-over change that is not live yet asks for the live step',()=>{
+ const s=taskNextStep({kind:'code',status:'done',own:false,assigned:true,person:'Markus',cancelled:false,blocked:'',ready:true,requiresReview:true,hasCopy:true,hasWorkshop:true,awaitingLive:true,liveHow:'Marco startet Hermes.'});
+ assert.equal(s.action,'live');assert.match(s.text,/Marco startet Hermes/);
+ assert.equal(taskSummary({status:'done',assignee:'me',awaitingLive:true,contract:{kind:'code',blocked:'',cancelled:false,requiresReview:true},completion:{ready:true,result:null}},'me',()=>'').text,'Übernommen – noch nicht live');
+});

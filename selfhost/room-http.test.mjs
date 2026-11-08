@@ -217,4 +217,11 @@ test('only the owner decides how a project goes live, and the room shows it',asy
  assert.equal((await request('/api/team',{action:'live',project:'website',revision,live:'manual'},owner.cookie)).status,200);
  const meta=(await request('/api/room?project=website',null,member.cookie)).data.meta;
  assert.equal(meta.live,'manual');assert.equal(meta.revision,revision+1);
+ // One sentence on how the project goes live, shown in every task's timeline.
+ assert.equal((await request('/api/team',{action:'live',project:'website',revision:revision+1,live:'manual',liveHow:'Marco startet den Hermes-Auftrag production-deploy-main.'},owner.cookie)).status,200);
+ assert.equal((await request('/api/room?project=website',null,member.cookie)).data.meta.liveHow,'Marco startet den Hermes-Auftrag production-deploy-main.');
+ // "Ist jetzt live" only for a change that has been taken over.
+ const task=(await request('/api/room',{action:'task',id:randomUUID(),project:'website',title:'Text kürzen',description:'',kind:'code',criteria:'',mine:true},owner.cookie)).data.task;
+ const early=await request('/api/team',{action:'went-live',task},member.cookie);
+ assert.equal(early.status,409);assert.match(early.data.error,/übernommen/);
 });

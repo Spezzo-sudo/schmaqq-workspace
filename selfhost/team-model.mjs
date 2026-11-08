@@ -71,7 +71,11 @@ export function assertTaskStatus(db,task,status,actor){
 }
 export function taskView(db,task){
  const contract=taskContract(db,task),gate=completion(db,task);
- return {...task,contract,completion:gate};
+ // Live is confirmed per taken-over change; a newer change needs its own confirmation.
+ const live=metadata(db,'team:v1:live:'+task.id,null);
+ const confirmed=live&&gate.result&&live.result===gate.result.id?{by:live.by,at:live.at}:null;
+ const awaitingLive=contract.kind==='code'&&!!gate.result?.integrated&&metadata(db,'room:v1:project:'+task.project,{}).live==='manual'&&!confirmed;
+ return {...task,contract,completion:gate,live:confirmed,awaitingLive};
 }
 export function invalidateTaskResult(db,task){
  if(task.status==='review'||task.status==='done')db.prepare("UPDATE tasks SET status='doing' WHERE id=?").run(task.id);

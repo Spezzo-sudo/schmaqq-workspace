@@ -13,7 +13,8 @@ const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('cancel'),task:id,revision,reason:z.string().trim().min(1).max(2000)}),
  z.object({action:z.literal('reopen'),task:id,revision}),
  z.object({action:z.literal('note'),project:id,note:id,revision,title:z.string().trim().min(1).max(160),body:z.string().trim().min(1).max(12000),archived:z.boolean()}),
- z.object({action:z.literal('live'),project:id,revision,live:z.enum(['merge','manual'])}),
+ z.object({action:z.literal('live'),project:id,revision,live:z.enum(['merge','manual']),liveHow:z.string().trim().max(300).optional()}),
+ z.object({action:z.literal('went-live'),task:id}),
  z.object({action:z.literal('project'),project:id,revision,title:z.string().trim().min(1).max(160),description:z.string().trim().max(12000),archived:z.boolean(),base:z.string().regex(/^[\w./-]{1,100}$/).refine(s=>!s.includes('..')&&!s.startsWith('-')).optional(),workflow:z.enum(['direct','pull-request']).optional()})
 ]);
 export function createTeamRoute({db,user,readJSON,parse}){
@@ -65,7 +66,7 @@ export function createTeamRoute({db,user,readJSON,parse}){
     const meta=metadata(db,'room:v1:project:'+v.project,{revision:0,repository:null});
     if(meta.revision!==v.revision)throw teamError(409,'Projekteinstellungen inzwischen geändert. Bitte neu laden.');
     if(member.role!=='owner'&&meta.createdBy!==member.id)throw teamError(403,'Wie das Projekt live geht, legt der Inhaber fest.');
-    storeMetadata(db,'room:v1:project:'+v.project,{...meta,live:v.live,revision:meta.revision+1});
+    storeMetadata(db,'room:v1:project:'+v.project,{...meta,live:v.live,...(v.liveHow!==undefined?{liveHow:v.liveHow}:{}),revision:meta.revision+1});
     teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:v.live==='merge'?'Live-Weg: automatisch beim Übernehmen':'Live-Weg: eigener Schritt nach dem Übernehmen'});return;
    }
    if(v.action==='project'){
@@ -85,6 +86,14 @@ export function createTeamRoute({db,user,readJSON,parse}){
    const contract=taskContract(db,task),key='team:v1:task:'+task.id;
    if(task.status==='done'&&['contract','result','vote','block'].includes(v.action))throw teamError(409,'Abgeschlossene Aufgabe zuerst ausdrücklich wieder öffnen.');
    if('revision' in v&&v.revision!==contract.revision)throw teamError(409,'Die Aufgabe wurde inzwischen geändert. Bitte aktuelle Fassung laden; dein Entwurf bleibt erhalten.');
+   if(v.action==='went-live'){
+    // Projects that go live by their own step (e.g. Hermes): someone confirms that this taken-over change is live now.
+    const result=completion(db,task).result,project=metadata(db,'room:v1:project:'+task.project,{});
+    if(contract.kind!=='code'||!result?.integrated)throw teamError(409,'Live gehen kann eine Änderung erst, wenn sie übernommen ist.');
+    if(project.live!=='manual')throw teamError(409,'Dieses Projekt geht automatisch live.');
+    storeMetadata(db,'team:v1:live:'+task.id,{result:result.id,by:member.id,at:Date.now()});
+    teamEvent(db,{actor:member.id,project:task.project,task:task.id,kind:'live',body:'Live geschaltet: '+task.title});return;
+   }
    if(v.action==='takeover'){
     if(task.assignee!==v.expectedAssignee)throw teamError(409,'Zuständigkeit inzwischen geändert. Bitte neu laden.');
     if(task.status==='done'||contract.cancelled)throw teamError(409,'Aufgabe zuerst wieder öffnen.');

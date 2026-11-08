@@ -7,7 +7,8 @@ import RoomAssistant from './room-assistant';
 import ExternalAssistant from './external-assistant';
 import TaskReviewDiff from './task-review-diff';
 import GithubWorkflow from './github-workflow';
-import {taskNextStep,type TaskStepAction} from './task-next-step';
+import {taskNextStep,taskStages,type TaskStepAction} from './task-next-step';
+import TaskTimeline from './task-timeline';
 import {roomRequest,saveDraft,storedDraft,operationId,type RoomState,type Resource,type TeamTask,type TaskContract,type TaskResult} from './room-model';
 type Copy={id:string;owner:string;device:string;title:string;scope:string;revision:number;status:string;deviceName:string};
 type Detail={source?:{id:string;body:string;authorName:string;created:number}|null;activeJobs?:{id:string;action:string;status:string;ownerName:string}[];task:TeamTask;brief:{revision:number};comments:TaskComment[];reviews:{id:string;owner:string;ownerName:string;commit:string;state:string;created?:number}[];workspaces:Copy[];changes:{workspace:string;review?:{id:string;changedAfter?:boolean}}[]};
@@ -70,10 +71,14 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
  }
  async function submitResult(){if(!contract)return;if(resultAttempt.current.body!==resultDraft)resultAttempt.current={body:resultDraft,id:operationId()};if(await teamAction({action:'result',id:resultAttempt.current.id,body:resultDraft,revision:contract.revision})){setResultDraft('');saveDraft(resultKey,'');setSelectedGeneral('');changePane('review');}}
  const chooseReview=selectedReview||detail?.reviews[0]?.id||'';
+ const meta=room.meta as RoomState['meta']&{live?:'merge'|'manual';liveHow?:string};
  const step=task&&contract?taskNextStep({kind:contract.kind,status:task.status,own,assigned:!!task.assignee,person:person?.name??'Jemand',cancelled:contract.cancelled,blocked:contract.blocked,
   ready:task.completion.ready,requiresReview:contract.kind==='code'||contract.requiresReview,activeJob:running||detail?.activeJobs?.[0]?.action,
   result:currentResult?{shared:currentResult.shared,state:currentResult.state,integrated:currentResult.integrated,stale:staleResult,mine:currentResult.owner===userId,automatic:currentResult.workflow==='pull-request'}:null,
-  hasCopy:!!myCopy,hasWorkshop:!!device}):null;
+  hasCopy:!!myCopy,hasWorkshop:!!device,awaitingLive:!!task.awaitingLive,liveHow:meta.liveHow}):null;
+ const stages=task&&contract?taskStages({kind:contract.kind,status:task.status,requiresReview:contract.kind==='code'||contract.requiresReview,cancelled:contract.cancelled,own,person:task.assignee?person?.name??'Jemand':null,
+  result:currentResult?{shared:currentResult.shared,state:currentResult.state,integrated:currentResult.integrated,stale:staleResult,automatic:currentResult.workflow==='pull-request'}:null,
+  liveMode:meta.live,liveHow:meta.liveHow,live:!!task.live}):[];
  function go(next:TaskStepAction){
   if(next==='claim')void taskAction({action:'claim'});
   else if(next==='start')void taskAction({action:'status',status:'doing'});
@@ -85,6 +90,7 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
   else if(next==='result')openResultForm();
   else if(next==='look'){changePane('review');reveal(tabs.current);}
   else if(next==='setup')onConnect();
+  else if(next==='live')void teamAction({action:'went-live'});
  }
  const stepBlocked=(step?.action==='submit'||step?.action==='resubmit')&&(copyState.dirty||!!contract?.blocked);
  return <div className="rw-drawer-backdrop"><section ref={panel} className={'rw-drawer team-task'+(wide?' expanded':'')} role="dialog" aria-modal="true" aria-label="Gemeinsame Aufgabe">
@@ -94,6 +100,7 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
    {task&&contract&&step&&<>
     <section className="team-task-summary">
      {/* The one next step: a sentence and at most one button. Nothing else on the page repeats it. */}
+     {!contract.cancelled&&<TaskTimeline stages={stages}/>}
      <div className={'team-next'+(step.waiting?' waiting':'')} role="status" aria-live="polite">
       <p>{step.waiting&&<span className="team-spinner" aria-hidden="true"/>}{step.text}</p>
       {step.action&&<button className="rw-button lime" disabled={busy||stepBlocked} onClick={()=>go(step.action!)}>{step.label}</button>}
