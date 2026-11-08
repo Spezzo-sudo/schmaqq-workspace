@@ -25,6 +25,8 @@ export function createAuthHttpRoute({
   passwordRecovery
 }) {
   const text = z.string().trim().min(1).max(160);
+  // Sign-in name: an e-mail address or a simple user name such as "markus". Stored lower-case in members.email.
+  const loginName = z.string().trim().toLowerCase().max(200).refine(v => z.string().email().safeParse(v).success || /^[a-z0-9][a-z0-9._-]{2,39}$/.test(v), 'Benutzername (3–40 Zeichen: a–z, 0–9, Punkt, Strich) oder E-Mail-Adresse angeben.');
   const publicMember = member => ({
     id: member.id,
     name: member.name,
@@ -73,7 +75,7 @@ export function createAuthHttpRoute({
       // checked afterwards to avoid blocking different users behind Traefik.
       if (!loginLimiter.consumeSource(req)) throw fail(429, 'Bitte eine Minute warten.');
       const v = parse(z.object({
-        email: z.string().email().max(200),
+        email: z.string().trim().min(1).max(200),
         password: z.string().min(1).max(200)
       }), await readJSON(req));
       if (!loginLimiter.consumeAccount(v.email)) throw fail(429, 'Bitte eine Minute warten.');
@@ -142,9 +144,9 @@ export function createAuthHttpRoute({
       // Only the owner creates links. A member's request becomes a proposal the owner approves.
       const m = user(req);
       const v = parse(z.object({
-        email: z.string().trim().email().max(200)
+        email: loginName
       }), await readJSON(req));
-      const email = v.email.toLowerCase();
+      const email = v.email;
       if (db.prepare('SELECT 1 FROM members WHERE email=?').get(email)) throw fail(409, 'Diese Person hat schon ein Konto.');
       if (m.role !== 'owner') {
         const r = proposeInvite(db, email, m.id);
@@ -188,6 +190,29 @@ export function createAuthHttpRoute({
         return { link: `${origin}/?invite=${value}`, email: request.email };
       });
       send(result);
+      return true;
+    }
+    if (route === '/api/auth/password' && method === 'POST') {
+      // Change your own password; other sign-ins end, this one stays.
+      const m = user(req);
+      const v = parse(z.object({ current: z.string().min(1).max(200), password: z.string().min(12).max(200) }), await readJSON(req, 2048));
+      if (!loginLimiter.consumeAccount(m.email)) throw fail(429, 'Bitte eine Minute warten.');
+      if (!passwordValid(v.current, m.password)) throw fail(403, 'Das bisherige Passwort stimmt nicht.');
+      const t = req.headers.cookie?.match(new RegExp('(?:^|;\\s*)' + sessionCookie + '=([\\w-]+)'))?.[1];
+      transaction(db, () => {
+        db.prepare('UPDATE members SET password=? WHERE id=?').run(passwordHash(v.password), m.id);
+        db.prepare('DELETE FROM sessions WHERE member=? AND hash<>?').run(m.id, t ? digest(t) : '');
+      });
+      send({ ok: true });
+      return true;
+    }
+    if (route === '/api/members/reset' && method === 'POST') {
+      const m = user(req);
+      if (m.role !== 'owner') throw fail(403, 'Nur der Inhaber kann einen Link für ein neues Passwort erstellen.');
+      const v = parse(z.object({ member: z.string().max(100) }), await readJSON(req, 2048));
+      const target = db.prepare('SELECT id FROM members WHERE id=?').get(v.member);
+      if (!target || isRemoved(db, target.id)) throw fail(404, 'Dieses Mitglied gibt es nicht.');
+      send({ link: passwordRecovery.issue(target.id) });
       return true;
     }
     if (route === '/api/members/remove' && method === 'POST') {

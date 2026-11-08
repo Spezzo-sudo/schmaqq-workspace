@@ -99,8 +99,9 @@ test('real HTTP login: configured exact trusted proxy isolates client IPs',async
 
 test('malformed JSON and CSRF are still bounded or denied at the server boundary',async t=>{
   const {post}=await createFixture(t);
+  // User names are valid sign-in names now; an empty name is still rejected before any lookup.
   const invalid=await post('/api/auth/login',{
-    email:'invalid-email',password:'wrong'
+    email:'',password:'wrong'
   });
   assert.equal(invalid.status,400);
   const badOrigin=await post('/api/auth/login',{

@@ -62,8 +62,12 @@ unter Projekt → Einstellungen → „Wer darf was“.
 
 ## Für Einrichter und Admins
 
-1. **Leute holen:** Team → „Jemanden einladen“ → Link per WhatsApp schicken (gilt 24 Stunden, einmal).
+1. **Leute holen:** Team → „Jemanden einladen“ → Benutzername (z. B. `markus`) oder E-Mail eintragen →
+   Link per WhatsApp schicken (gilt 24 Stunden, einmal). Die Person wählt Namen und Passwort (mind. 12 Zeichen)
+   und meldet sich danach mit dem Benutzernamen und dem Passwort an. Eine E-Mail wird nicht verschickt.
    Vorschläge aus dem Team erscheinen dort mit „Einladen“ / „Ablehnen“. Offene Einladungen kann man zurücknehmen.
+   **Passwort vergessen:** Team → beim Mitglied „Neues Passwort“ → Link schicken (24 Stunden, einmal).
+   Eigenes Passwort ändern: Mein Konto → „Passwort ändern“.
 2. **Projekt anlegen:** Projekte → „Neues Projekt“. Du bist Admin.
 3. **Repo freigeben:** Projekt → Einstellungen → „Code auf GitHub auswählen“ → „Zugriff bei GitHub erlauben“.
    Wem das Repo gehört, gibt es auf GitHub selbst frei (private eingeschlossen) und kann es dort zurücknehmen.
