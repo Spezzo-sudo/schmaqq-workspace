@@ -22,13 +22,22 @@ wieder anmelden (auch nicht über „Passwort vergessen“). Code: `selfhost/tea
   (`installationFor` in `selfhost/github-app.mjs`). Schlüssel gelten je ein Repo und kurz.
 - Änderungen kommen als Pull Request. Hauptzweig auf GitHub schützen; Studio warnt sonst.
 
+## Rollen pro Projekt (`selfhost/project-roles.mjs`)
+- Admin (Inhaber von Studio immer, sonst wer das Projekt angelegt hat): Rollen, Prüfregel, Repo, Live-Weg, Übernehmen.
+- Entwickler: Aufgaben, Dateien, Aufträge, zur Prüfung geben. Prüfer: „Passt“/„Ändern“. Zuschauer: lesen, mitreden.
+- Prüfregel pro Projekt: „Zweite Person prüft“ (Standard) oder „Admin darf allein freigeben“.
+- Übernehmen/Zusammenführen (auch automatisch nach Freigabe): nur Autor oder Admin. GitHub-Schutzregeln gelten weiter.
+- Server prüft an allen Wegen: `/api/room`, `/api/team`, `/api/collaboration/task`, `/api/development`, `/api/github-workflow`,
+  Freigaben (`code_reviews`, `reviewState`) und frühere Ansicht `/api/workspace`. Projekte ohne Rollen-Eintrag: alle entwickeln und prüfen.
+- Noch offen: Projekte vor Nicht-Mitgliedern verbergen (heute sehen alle Mitglieder alle Projekte).
+
 ## Fremder Code auf dem Server (Tests, Vorschau)
 Läuft im Server-Worker: eigener Benutzer `schmaqq-worker`, keine Rechte/Capabilities, Dateisystem schreibgeschützt
 ausser dem Worker-Laufwerk, jeder Job als eigene systemd-Einheit (2 GB Speicher, 1,5 CPU, 256 Prozesse, Zeitlimit),
 Internet nur über Allowlist-Proxy. Siehe `selfhost/deploy/worker/README.md`.
 
 ## Offen
-1. Rechte pro Projekt (heute sieht jedes Mitglied alle Projekte).
+1. Projekte vor Mitgliedern ohne Rolle verbergen (Rollen für Aktionen gibt es seit PR #65).
 2. Zwei-Faktor-Anmeldung.
 3. Hermes hat Root über Telegram – einschränken oder begründen (PLAN.md, Etappe 0).
 4. Fehler „hunderte gleiche Aufgaben“ über den ChatGPT-Connector untersuchen.

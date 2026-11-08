@@ -14,7 +14,10 @@ export default function ProjectReady({room,resources,members,userId,onRepository
  const setupPanel=useRef<HTMLDivElement|null>(null);
  const project=room.project.id,meta=room.meta as RoomState['meta']&{live?:'merge'|'manual';liveHow?:string;createdBy?:string};
  const [liveHow,setLiveHow]=useState(meta.liveHow??'');
- const decides=members.find(m=>m.id===userId)?.role==='owner'||meta.createdBy===userId;
+ // The project admin decides repository and live path (same rule as the server).
+ const [admin,setAdmin]=useState<boolean|null>(null);
+ useEffect(()=>{let active=true;roomRequest<{mine:string[]}>('/api/project-roles?project='+encodeURIComponent(project)).then(r=>{if(active)setAdmin(r.mine.includes('admin'));}).catch(()=>{});return()=>{active=false;};},[project]);
+ const decides=admin??(members.find(m=>m.id===userId)?.role==='owner'||meta.createdBy===userId);
  useEffect(()=>{let active=true;githubState(project).then(s=>{if(active){setApp(s.app);setAccess(s.access);}});
   const back=githubNotice();if(back){setNotice(back.notice);if(back.error)setError(back.error);}
   return()=>{active=false;};},[project,meta.repository]);
@@ -38,7 +41,7 @@ export default function ProjectReady({room,resources,members,userId,onRepository
   {notice&&<p role="status">{notice}</p>}{error&&<p className="rw-error" role="alert">{error}</p>}
   <ol>
    {step(code,'Code auf GitHub',code?<p>{access.access?'Studio arbeitet mit '+access.repository+'.':'Verbunden mit '+meta.repository?.replace('https://github.com/','')+'.'}{access.access&&access.protected===false&&<> Tipp: <a href={`https://github.com/${access.repository}/settings/branches`} target="_blank" rel="noreferrer">„{access.base}“ bei GitHub schützen ↗</a></>}</p>
-    :!meta.repository?<><p>Mit welchem Code arbeitet ihr?</p><button className="rw-button lime" disabled={busy} onClick={onRepository}>Code auf GitHub auswählen</button></>
+    :!meta.repository?(decides?<><p>Mit welchem Code arbeitet ihr?</p><button className="rw-button lime" disabled={busy} onClick={onRepository}>Code auf GitHub auswählen</button></>:<p>Legt der Projekt-Admin fest.</p>)
     :app.configured?<><p>Studio braucht einmal Zugriff auf {meta.repository.replace('https://github.com/','')}. Gehört das Repository dir, gibst du es auf GitHub selbst frei. Du wählst dort, welche deiner Repositories Studio sehen darf, private eingeschlossen, und kannst das jederzeit zurücknehmen. Gehört es jemand anderem im Team, macht diese Person den Schritt.</p><button className="rw-button lime" disabled={busy} onClick={()=>void act(()=>linkGithub('install'))}>Zugriff bei GitHub erlauben</button></>
     :app.canCreate?<><p>Einmalig: Studio meldet sich bei GitHub an. GitHub zeigt dir, was Studio darf, und du bestätigst.</p><button className="rw-button lime" disabled={busy} onClick={()=>void act(()=>linkGithub('create'))}>Mit GitHub verbinden</button></>
     :<p>Der Inhaber verbindet Studio einmal mit GitHub. Danach geht es hier weiter.</p>)}
@@ -51,7 +54,7 @@ export default function ProjectReady({room,resources,members,userId,onRepository
     {decides?<div className="po-live-choice" role="radiogroup" aria-label="Wie kommt eine Änderung online?">
      <button role="radio" aria-checked={meta.live==='manual'} disabled={busy} onClick={()=>void chooseLive('manual')}><strong>Wir schalten selbst live</strong><small>Nach dem Übernehmen macht jemand den Livegang, z. B. über Hermes.</small></button>
      <button role="radio" aria-checked={meta.live==='merge'} disabled={busy} onClick={()=>void chooseLive('merge')}><strong>Geht von selbst live</strong><small>Nur wählen, wenn euer Hoster jede übernommene Änderung selbst veröffentlicht.</small></button>
-    </div>:<p>{meta.live==='merge'?'Übernommene Änderungen gehen von selbst live.':meta.live==='manual'?'Ihr schaltet selbst live.':'Legt der Inhaber fest.'}</p>}
+    </div>:<p>{meta.live==='merge'?'Übernommene Änderungen gehen von selbst live.':meta.live==='manual'?'Ihr schaltet selbst live.':'Legt der Projekt-Admin fest.'}</p>}
     {meta.live==='manual'&&(decides?<form className="po-live-how" onSubmit={e=>{e.preventDefault();void chooseLive('manual',liveHow.trim());}}><label>Wie genau? (sieht jeder in der Aufgabe)<input value={liveHow} maxLength={300} onChange={e=>setLiveHow(e.target.value)} placeholder="Zum Beispiel: Marco startet den Hermes-Auftrag production-deploy-main."/></label>{liveHow.trim()!==(meta.liveHow??'')&&<button className="rw-button" disabled={busy}>Speichern</button>}</form>
      :meta.liveHow&&<p>So geht's: <strong>{meta.liveHow}</strong></p>)}
    </>)}

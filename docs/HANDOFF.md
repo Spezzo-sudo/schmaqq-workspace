@@ -17,6 +17,10 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
 
 ## 2. Offen und als Nächstes (in dieser Reihenfolge)
 
+0. **Rollen pro Projekt – PR offen:** Admin/Entwickler/Prüfer/Zuschauer und Prüfregel unter Projekt → Einstellungen →
+   „Wer darf was“ (`studio/project-roles.tsx`, Server `selfhost/project-roles.mjs`, Test `project-roles.test.mjs`).
+   Fund dabei: Mit GitHub-App hat jedes Mitglied beim Anschauen eine freigegebene Änderung automatisch zusammengeführt;
+   jetzt nur Autor oder Admin. Repo festlegen nur Admin.
 1. **Live bringen: `1b707eb` (PR #64, Handy-Feinschliff: Logo + Studio-Label, rote Welle, Tabs ohne Scrollen).**
    Danach Marco: GitHub-App → Advanced → „Make public“ (Schutz ist live seit 9f21c9c).
    Bewertung 08.11. (Studio-Zugang, lesend): Klimafinder 2 Aufgaben, keine Duplikate, Server-Worker online.

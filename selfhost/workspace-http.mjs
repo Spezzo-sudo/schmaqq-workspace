@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { assertAssignment } from './collaboration.mjs';
 import {assertTaskStatus} from './team-model.mjs';
+import {requirePermission} from './project-roles.mjs';
 
 // The browser and Studio backend share an unchanged workspace JSON contract.
 // Keep authorization, optimistic document revisions and message idempotency
@@ -74,6 +75,9 @@ export function createWorkspaceHttpRoute({
         return true;
       }
       const v = parse(actions, await readJSON(req));
+      // The former view follows the same project roles as the new one.
+      const roleProject = v.action === 'task' ? v.project : v.action === 'status' || v.action === 'assign' ? db.prepare('SELECT project FROM tasks WHERE id=?').get(v.id)?.project : v.action === 'message' && v.channel !== 'general' ? v.channel : null;
+      if (roleProject && db.prepare('SELECT id FROM projects WHERE id=?').get(roleProject)) requirePermission(db, m, roleProject, v.action === 'message' ? 'view' : 'develop');
       if (v.action === 'project') db.prepare('INSERT INTO projects VALUES(?,?,?,?,?,?)').run(uuid(), v.title, v.description, v.color, v.stage, now());else if (v.action === 'task') {
         if (!db.prepare('SELECT id FROM projects WHERE id=?').get(v.project)) throw fail(404, 'Projekt fehlt.');
         if (v.assignee && !db.prepare('SELECT id FROM members WHERE id=?').get(v.assignee)) throw fail(400, 'Mitglied fehlt.');

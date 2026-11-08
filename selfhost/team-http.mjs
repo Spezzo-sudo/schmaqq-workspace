@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {randomUUID} from 'node:crypto';
 import {transaction} from './store.mjs';
+import {requirePermission,selfApproval} from './project-roles.mjs';
 import {metadata,storeMetadata,teamEvent,taskContract,taskView,completion,latestGeneralResult,invalidateTaskResult,teamError,hasCodeChanges,quietJobActions} from './team-model.mjs';
 const id=z.string().regex(/^[\w-]{1,100}$/),revision=z.number().int().min(0);
 const actions=z.discriminatedUnion('action',[
@@ -46,6 +47,10 @@ export function createTeamRoute({db,user,readJSON,parse}){
   }
   if(method!=='POST')throw teamError(405,'Methode nicht erlaubt.');
   const v=parse(actions,await readJSON(req));
+  if(v.action!=='read'){
+   const project=v.project??db.prepare('SELECT project FROM tasks WHERE id=?').get(v.task)?.project;
+   if(project)requirePermission(db,member,project,v.action==='vote'?'review':['live','project'].includes(v.action)?'admin':'develop');
+  }
   transaction(db,()=>{
    if(v.action==='read'){
     if(!metadata(db,'team:v1:event:'+v.event))throw teamError(404,'Hinweis fehlt.');
@@ -136,7 +141,7 @@ export function createTeamRoute({db,user,readJSON,parse}){
     db.prepare('UPDATE tasks SET assignee=COALESCE(assignee,?),status=? WHERE id=?').run(member.id,contract.requiresReview?'review':'doing',task.id);
    }else if(v.action==='vote'){
     const result=latestGeneralResult(db,task);if(!result||result.id!==v.result||result.contractRevision!==contract.revision)throw teamError(409,'Ergebnisfassung inzwischen geändert. Bitte neu laden.');
-    if(result.owner===member.id)throw teamError(403,'Eigene Ergebnisse können nicht unabhängig freigegeben werden.');
+    if(result.owner===member.id&&!selfApproval(db,member.id,task.project))throw teamError(403,'Eigene Ergebnisse können nicht unabhängig freigegeben werden.');
     if(v.decision==='changes'&&!v.body)throw teamError(400,'Bitte die gewünschten Änderungen beschreiben.');
     const votes=[...(result.votes??[]),{reviewer:member.id,decision:v.decision,body:v.body,created:Date.now()}];
     storeMetadata(db,'team:v1:result:'+task.id,{...result,votes,state:v.decision==='approved'?'approved':'changes_requested'});
