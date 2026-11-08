@@ -50,3 +50,23 @@ export function taskNextStep(t:TaskStepInput):TaskStep{
  if(!t.own)return {text:t.person+' arbeitet daran.'};
  return {text:'Du bist dran: Schreib auf, was herausgekommen ist.',action:'result',label:'Ergebnis aufschreiben'};
 }
+
+/** Short status of a task for lists (overview, task list, "Meine Arbeit"): same wording everywhere. */
+export type TaskSummaryInput={status:string;assignee:string|null;contract:{kind:'general'|'code';blocked:string;cancelled:boolean;requiresReview:boolean};
+ completion:{ready:boolean;result:{owner:string;state:string;shared?:boolean;integrated?:boolean;workflow?:string}|null}};
+export type TaskSummary={text:string;mine:boolean;group:'mine'|'open'|'others'|'done'};
+export function taskSummary(t:TaskSummaryInput,me:string,name:(id:string)=>string):TaskSummary{
+ if(t.contract.cancelled)return {text:'Abgebrochen',mine:false,group:'done'};
+ if(t.status==='done')return {text:'Erledigt',mine:false,group:'done'};
+ const own=t.assignee===me,who=t.assignee?name(t.assignee):'',r=t.completion.result;
+ if(!t.assignee)return {text:'Noch niemand kümmert sich darum',mine:false,group:'open'};
+ if(t.contract.blocked)return {text:'Hängt fest: '+t.contract.blocked,mine:own,group:own?'mine':'others'};
+ const waiting=r&&(t.contract.kind==='code'?r.shared&&!r.integrated:t.contract.requiresReview)&&r.state!=='approved';
+ if(r&&waiting&&r.state==='changes_requested')return r.owner===me?{text:'Änderung gewünscht – bitte überarbeiten',mine:true,group:'mine'}:{text:who+' überarbeitet es',mine:false,group:'others'};
+ if(r&&waiting)return r.owner===me?{text:'Wartet darauf, dass jemand es anschaut',mine:false,group:'others'}:{text:'Bitte anschauen und freigeben',mine:true,group:'mine'};
+ if(t.completion.ready)return own?{text:'Fertig – bitte abschliessen',mine:true,group:'mine'}:{text:who+' kann abschliessen',mine:false,group:'others'};
+ if(r&&t.contract.kind==='code'&&r.state==='approved'&&!r.integrated)return r.workflow==='pull-request'?{text:'Freigegeben – wird übernommen',mine:false,group:'others'}
+  :r.owner===me?{text:'Freigegeben – bitte übernehmen',mine:true,group:'mine'}:{text:'Freigegeben – '+who+' übernimmt',mine:false,group:'others'};
+ if(own)return {text:t.status==='todo'?'Du bist dran – noch nicht begonnen':'Du bist dran',mine:true,group:'mine'};
+ return {text:who+' ist dran',mine:false,group:'others'};
+}

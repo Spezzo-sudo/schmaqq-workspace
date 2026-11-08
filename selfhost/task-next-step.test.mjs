@@ -43,3 +43,35 @@ test('next steps speak everyday language',()=>{
  for(const input of inputs){const s=step(input);
   assert.doesNotMatch(s.text+' '+(s.label??''),/\b(Commit|Branch|Repository|Prüfstand|Runner|Worker|Merge|Pull Request|PR|Git)\b/,s.text);}
 });
+
+import {taskSummary} from '../studio/task-next-step.ts';
+test('lists use one short status per task and sort it to the right person',()=>{
+ const t=(change={})=>({status:'doing',assignee:'me',contract:{kind:'code',blocked:'',cancelled:false,requiresReview:true},completion:{ready:false,result:null},...change});
+ const s=(task,me='me')=>taskSummary(task,me,id=>id==='me'?'Marco':'Markus');
+ assert.deepEqual(s(t()),{text:'Du bist dran',mine:true,group:'mine'});
+ assert.equal(s(t({status:'todo'})).text,'Du bist dran – noch nicht begonnen');
+ assert.equal(s(t({assignee:null})).group,'open');
+ assert.equal(s(t(),'other').text,'Marco ist dran');
+ const shared={owner:'me',state:'pending',shared:true};
+ assert.equal(s(t({status:'review',completion:{ready:false,result:shared}})).group,'others','own change waits for the other person');
+ assert.deepEqual(s(t({status:'review',completion:{ready:false,result:shared}}),'other'),{text:'Bitte anschauen und freigeben',mine:true,group:'mine'});
+ assert.equal(s(t({status:'review',completion:{ready:false,result:{...shared,state:'changes_requested'}}})).text,'Änderung gewünscht – bitte überarbeiten');
+ assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved'}}})).text,'Freigegeben – bitte übernehmen');
+ assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved',workflow:'pull-request'}}})).text,'Freigegeben – wird übernommen');
+ assert.equal(s(t({completion:{ready:true,result:{...shared,state:'approved',integrated:true}}})).text,'Fertig – bitte abschliessen');
+ assert.equal(s(t({contract:{kind:'code',blocked:'Warte',cancelled:false,requiresReview:true}})).text,'Hängt fest: Warte');
+ assert.equal(s(t({status:'done'})).group,'done');
+ const general=t({contract:{kind:'general',blocked:'',cancelled:false,requiresReview:true},completion:{ready:false,result:{owner:'me',state:'pending'}}});
+ assert.equal(s(general,'other').text,'Bitte anschauen und freigeben');
+});
+
+import {humanEvent} from '../studio/project-overview-model.ts';
+test('history keeps what people care about, in everyday words',()=>{
+ for(const [kind,body] of [['save-file','Datei gespeichert'],['create-file','Datei erstellt'],['check','Tests abgeschlossen'],['preview','Vorschau erstellt'],['review','Prüfstand erstellt'],['contract','Abschlussbedingungen aktualisiert: X'],['brief','Aufgabe präzisiert · X'],['project','Live-Weg: eigener Schritt nach dem Übernehmen'],['read-file','Bearbeitung aktualisiert'],['github-open','Pull Request erstellt oder zugeordnet']])
+  assert.equal(humanEvent(kind,body),null,kind);
+ assert.equal(humanEvent('submit','Code zur Prüfung geteilt'),'Änderung zur Prüfung gegeben');
+ assert.equal(humanEvent('review','Prüfstand freigegeben'),'Änderung freigegeben');
+ assert.equal(humanEvent('review','Änderungen angefordert'),'Änderung gewünscht');
+ assert.equal(humanEvent('integrated','Freigegebener Code zusammengeführt · X'),'Änderung übernommen');
+ assert.equal(humanEvent('status','Status: done · X'),'Aufgabe abgeschlossen');
+});

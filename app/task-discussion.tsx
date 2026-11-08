@@ -21,9 +21,9 @@ export default function TaskDiscussion({taskId,comments,draft,onDraft,disabled=f
  }
  const busy=pending||disabled;
  return <>
-  <h3 className="discussion-heading">Ideen, Fragen & Entscheidungen</h3>
-  <div className="task-comments" aria-live="polite">{!comments.length&&<p className="muted">Noch keine Kommentare. Was soll dein Kollege zu dieser Funktion wissen?</p>}{comments.map(c=><article key={c.id}><div><strong>{c.authorName}</strong><time dateTime={new Date(c.created).toISOString()}>{new Date(c.created).toLocaleString('de-DE')}</time></div><p>{c.body}</p></article>)}</div>
+  <h3 className="discussion-heading">Gespräch zur Aufgabe</h3>
+  <div className="task-comments" aria-live="polite">{!comments.length&&<p className="muted">Noch nichts geschrieben. Fragen, Ideen und Rückmeldungen zu dieser Aufgabe gehören hierher.</p>}{comments.map(c=><article key={c.id}><div><strong>{c.authorName}</strong><time dateTime={new Date(c.created).toISOString()}>{new Date(c.created).toLocaleString('de-DE')}</time></div><p>{c.body}</p></article>)}</div>
   {error&&<p className="form-error" role="alert">{error}</p>}
-  <form onSubmit={e=>{e.preventDefault();void send();}}><label htmlFor={'task-comment-'+taskId}>Kommentar zur Aufgabe</label><textarea id={'task-comment-'+taskId} disabled={busy} value={draft} maxLength={4000} onChange={e=>onDraft(e.target.value)} placeholder="Eine Idee, offene Frage oder Entscheidung …"/><p className="muted">Dein Entwurf bleibt beim Navigieren in diesem Tab erhalten. Mit Senden speicherst und teilst du ihn.</p><button className="button primary" disabled={busy||!draft.trim()}><MessageSquare size={15}/> Kommentar senden</button></form>
+  <form onSubmit={e=>{e.preventDefault();void send();}}><label htmlFor={'task-comment-'+taskId}>Deine Nachricht</label><textarea id={'task-comment-'+taskId} disabled={busy} value={draft} maxLength={4000} onChange={e=>onDraft(e.target.value)} placeholder="Schreib etwas …"/><p className="muted"></p><button className="button primary" disabled={busy||!draft.trim()}><MessageSquare size={15}/> Senden</button></form>
  </>;
 }

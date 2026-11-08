@@ -133,7 +133,7 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
         and then stays mounted while closed, so the open file and draft are kept. */}
     {contract.kind==='code'&&own&&task.status!=='done'&&editorUsed&&<section className={'team-self-edit'+(selfEdit?' open':'')} hidden={!selfEdit} role="dialog" aria-modal="true" aria-label="Selbst bearbeiten">
      <header><button className="rw-icon" aria-label="Zurück zur Aufgabe" onClick={()=>setSelfEdit(false)}><ArrowLeft size={20}/></button><div className="rw-drawer-heading"><small>Selbst bearbeiten</small><h2>{task.title}</h2></div></header>
-     <div className="team-self-edit-body"><Development projects={[room.project]} userId={userId} initialProject={room.project.id} initialTask={taskId} mode="focused" panel="edit" onCopyState={setCopyState} onSubmitForReview={()=>void codeJob('submit')} onOpenSetup={onConnect}/></div>
+     <div className="team-self-edit-body"><Development autoStart projects={[room.project]} userId={userId} initialProject={room.project.id} initialTask={taskId} mode="focused" panel="edit" onCopyState={setCopyState} onSubmitForReview={()=>void codeJob('submit')} onOpenSetup={onConnect}/></div>
      <footer><button className="rw-button lime" onClick={()=>setSelfEdit(false)}>{copyState.dirty?'Zurück (Entwurf bleibt erhalten)':'Fertig – zurück zur Aufgabe'}</button></footer>
     </section>}
     <section className="team-task-pane" hidden={pane!=='review'}>
