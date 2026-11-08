@@ -52,11 +52,18 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
  const tab=route.tab==='results'?'tasks':route.tab,name=(id:string)=>members.find(m=>m.id===id)?.name??'Jemand';
  const openTask=(task:TeamTask,pane?:TaskPane)=>{const target=pane??(task.status==='review'?'review':undefined);navigate({room:task.project,task:task.id,tab:route.room===task.project&&route.tab==='overview'?'overview':'tasks',page:'rooms'});if(target){const url=new URL(location.href);url.searchParams.set('pane',target);history.replaceState(null,'',url);}};
  return <div className="rw-shell team-shell">
-  {mobile&&<button className="rw-nav-scrim" aria-label="Navigation schließen" onClick={()=>setMobile(false)}/>}
-  <aside className={'rw-sidebar'+(mobile?' open':'')} aria-label="Workspace-Navigation"><div className="rw-brand"><StudioBrand compact onHome={()=>{navigate({room:'',task:'',page:'rooms'});setMobile(false);}}/><button className="rw-icon rw-mobile-only" aria-label="Menü schließen" onClick={()=>setMobile(false)}><X size={20}/></button></div><div className="rw-workspace-label"><span className="rw-square">S</span><span><strong>SCHMAQQ Studio</strong><small>Euer gemeinsamer Arbeitsplatz</small></span></div>
-   <button className={'rw-nav-home'+(!route.room&&route.page==='rooms'?' selected':'')} onClick={()=>navigate({room:'',task:'',page:'rooms'})}><Folder size={18}/>Meine Arbeit</button>
-   <div className="rw-section-label">PROJEKTE<button className="rw-icon" aria-label="Neues Projekt anlegen" onClick={()=>setModal({kind:'room'})}><Plus size={17}/></button></div><nav className="rw-rooms">{rooms.map(r=><button key={r.id} className={route.room===r.id&&route.page==='rooms'?'active':''} onClick={()=>navigate({room:r.id,tab:'overview',task:'',page:'rooms'})}><Hash size={17}/><span>{r.title}</span>{!!r.openTasks&&<small title={r.openTasks===1?'1 offene Aufgabe':r.openTasks+' offene Aufgaben'} aria-label={r.openTasks===1?'1 offene Aufgabe':r.openTasks+' offene Aufgaben'}>{r.openTasks}</small>}</button>)}</nav>
-   <div className="rw-sidebar-bottom"><button className={route.page==='team'?'active':''} onClick={()=>navigate({page:'team',task:''})}><Users size={18}/>Team</button><div className="rw-profile"><span className="rw-avatar">{initials(user.displayName)}</span><span><strong>{user.displayName}</strong><small>Persönliches Konto</small></span><button className="rw-icon" aria-label="Abmelden" onClick={()=>void logout()}><LogOut size={17}/></button></div></div>
+  <aside className="rw-sidebar" aria-label="Workspace-Navigation">
+   <div className="rw-brand"><StudioBrand compact onHome={()=>goPage('rooms')}/></div>
+   <nav className="studio-global-links" aria-label="Hauptnavigation">
+    <button className={'rw-nav-home'+(route.page==='rooms'&&!route.room?' selected':'')} aria-current={route.page==='rooms'&&!route.room?'page':undefined} onClick={()=>goPage('rooms')}><Home size={18}/>Meine Arbeit</button>
+    <button className={'rw-nav-home'+(route.page==='projects'||route.page==='rooms'&&!!route.room?' selected':'')} aria-current={route.page==='projects'||route.page==='rooms'&&!!route.room?'page':undefined} onClick={()=>goPage('projects')}><Folder size={18}/>Projekte</button>
+    <button className={'rw-nav-home'+(route.page==='conversations'?' selected':'')} aria-current={route.page==='conversations'?'page':undefined} onClick={()=>goPage('conversations')}><MessageSquare size={18}/>Gespräche</button>
+    <button className={'rw-nav-home'+(route.page==='team'?' selected':'')} aria-current={route.page==='team'?'page':undefined} onClick={()=>goPage('team')}><Users size={18}/>Team</button>
+   </nav>
+   <div className="rw-sidebar-bottom">
+    <button className={route.page==='account'?'active':''} aria-current={route.page==='account'?'page':undefined} onClick={()=>goPage('account')}><UserRound size={18}/>Mein Konto</button>
+    <div className="studio-profile-name">{user.displayName}</div>
+   </div>
   </aside>
   <main className="rw-main" inert={modal||route.task?true:undefined}><header className="rw-topbar"><div className="rw-breadcrumb"><span>Studio</span><ChevronRight size={14}/><strong>{route.page==='team'?'Team':route.page==='account'?'Mein Konto':route.page==='conversations'?'Gespräche':route.page==='projects'?'Projekte':route.room?(room?.project.title??'Projekt'):'Meine Arbeit'}</strong></div><span className={'rw-sync '+(connected?'ok':'')}>{connected?'Aktueller Stand geladen':'Verbindung wird geprüft'}</span></header>
    {demoMode&&<div className="rw-demo-strip">ISOLIERTER PROBELAUF · Keine Verbindung zur Produktion</div>}
