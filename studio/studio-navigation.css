@@ -36,7 +36,7 @@
  .team-shell .studio-mobile-nav>button.active,.team-shell .studio-mobile-nav>button[aria-current="page"]{background:var(--schmaqq-ink-soft);color:var(--schmaqq-acid)}
  .team-shell .studio-mobile-nav>button:focus-visible{outline:2px solid var(--schmaqq-acid);outline-offset:-3px;box-shadow:none}
  .team-shell .team-areas{position:static;display:flex;grid-template-columns:none;gap:3px;left:auto;right:auto;bottom:auto;z-index:auto;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;padding:0 12px;background:var(--schmaqq-paper-light);border-top:0;border-bottom:1px solid var(--schmaqq-rule);scroll-snap-type:x proximity}
- .team-shell .team-areas button{flex:0 0 auto;display:flex;flex-direction:row;gap:6px;min-height:49px;padding:10px 9px;border:0;border-bottom:3px solid transparent;border-top:0;background:transparent;color:var(--schmaqq-muted);font:700 12px/1.35 var(--schmaqq-sans);scroll-snap-align:start}
+ .team-shell .team-areas button{flex:0 0 auto!important;width:auto!important;min-width:max-content!important;max-width:none;display:flex;flex-direction:row;gap:6px;min-height:49px;padding:10px 9px;border:0;border-bottom:3px solid transparent;border-top:0;background:transparent;color:var(--schmaqq-muted);font:700 12px/1.35 var(--schmaqq-sans);scroll-snap-align:start}
  .team-shell .team-areas button.active{background:transparent;border-top:0;border-bottom:3px solid var(--schmaqq-ink);color:var(--schmaqq-ink)}
  .team-shell .team-project-content{padding-bottom:14px}
  .team-shell .studio-more-backdrop{position:fixed;inset:0;display:flex;align-items:flex-end;z-index:150;background:rgba(17,18,37,.6)}
