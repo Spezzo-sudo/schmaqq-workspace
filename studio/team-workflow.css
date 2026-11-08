@@ -16,3 +16,49 @@
  .team-shell .rw-room-heading .rw-title-row p{display:none}
  .team-shell .rw-room-heading .rw-title-row .rw-button{min-height:40px;padding:8px 14px}
 }
+/* Task page: one next step on top, short brief, calm tabs; "Selbst bearbeiten" as its own full screen. */
+.team-task .team-next{display:grid;gap:12px;padding:18px;border:2px solid #263c22;background:#fffefa;margin:0 0 22px}
+.team-task .team-next p{margin:0;font-size:17px;line-height:1.5;font-weight:650;color:#1d2b1b;display:flex;gap:10px;align-items:flex-start}
+.team-task .team-next .rw-button{justify-self:start;min-height:48px;padding:0 22px;font-size:15px}
+.team-task .team-next small{font-size:13px;color:#5b6b50}
+.team-task .team-next.waiting{border-color:#8ea36f;background:#f4f7ed}
+.team-spinner{flex:0 0 16px;width:16px;height:16px;margin-top:4px;border:2px solid #b7c5aa;border-top-color:#263c22;border-radius:50%;animation:team-spin 1s linear infinite}
+@keyframes team-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.team-spinner{animation:none}}
+.team-task .team-brief h3,.team-task .team-task-pane h3{font-size:13px;letter-spacing:.2px;color:#4a5d42;margin:0 0 6px}
+.team-task .team-brief .team-goal{margin:0 0 6px}
+.team-task .team-goal.clamped{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.team-task .rw-link{background:none;border:0;padding:6px 0;font:600 14px/1.5 Inter,Arial,sans-serif;color:#36562b;text-decoration:underline;cursor:pointer}
+.team-task .team-change{display:grid;gap:14px}
+.team-task .team-change-way{display:grid;gap:6px;padding:16px;border:1px solid #d1dcca;background:#fffefa}
+.team-task .team-change-way .rw-button{justify-self:start;min-height:48px;font-size:15px}
+.team-task .team-change-way p{margin:0;font-size:14px;line-height:1.55;color:#4f613d}
+.team-task .team-developer{margin-top:22px}
+.team-task .team-developer>div{margin-top:12px;font-size:13px;line-height:1.6}
+.team-self-edit[hidden]{display:none!important}
+.team-self-edit{position:fixed;inset:0;z-index:170;display:flex;flex-direction:column;background:#f7f9f1}
+.team-self-edit>header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #d5deca;background:#fcfdf7}
+.team-self-edit>header h2{font-size:16px;margin:2px 0 0;overflow-wrap:anywhere}
+.team-self-edit-body{flex:1;min-height:0;overflow:auto;padding:12px 16px}
+.team-self-edit-body .development,.team-self-edit-body .dev-layout{max-width:100%}
+.team-self-edit>footer{padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid #d5deca;background:#fcfdf7}
+.team-self-edit>footer .rw-button{width:100%;min-height:48px;font-size:15px}
+.work-actions.simple .work-actions-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.work-actions.simple .work-actions-buttons .button{min-height:46px;font-size:14px;justify-content:center}
+.work-actions.simple .work-actions-buttons .button svg{display:inline}
+.work-actions-more{margin-top:8px;font-size:13px}
+.work-actions-more summary{cursor:pointer;padding:6px 0;color:#4f613d}
+@media(max-width:650px){
+ .team-task>header .team-wide{display:none}
+ .team-task>header h2{font-size:16px;line-height:1.35}
+ .team-task .team-task-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0}
+ .team-task .team-task-tabs button{justify-content:center;font-size:13px;padding:14px 4px}
+ .team-task .team-next .rw-button,.team-task .team-change-way .rw-button{width:100%;justify-self:stretch}
+ .team-self-edit-body{padding:10px 12px}
+}
+.review-simple{display:grid;gap:14px}
+.review-simple .review-head{margin:0;font-size:15px;line-height:1.6}
+.review-simple .review-preview{justify-self:start;min-height:48px;font-size:15px;text-decoration:none;display:inline-flex;align-items:center}
+.review-simple details>summary{cursor:pointer;padding:8px 0;font-weight:600;font-size:14px}
+.review-simple .review-developer{font-size:13px;color:#4f613d}
+@media(max-width:650px){.review-simple .review-preview,.review-simple .team-review-actions .rw-button{width:100%;justify-content:center}}
