@@ -68,11 +68,35 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
   <main className="rw-main" inert={modal||route.task?true:undefined}><header className="rw-topbar"><div className="rw-breadcrumb"><span>Studio</span><ChevronRight size={14}/><strong>{route.page==='team'?'Team':route.page==='account'?'Mein Konto':route.page==='conversations'?'Gespräche':route.page==='projects'?'Projekte':route.room?(room?.project.title??'Projekt'):'Meine Arbeit'}</strong></div><span className={'rw-sync '+(connected?'ok':'')}>{connected?'Aktueller Stand geladen':'Verbindung wird geprüft'}</span></header>
    {demoMode&&<div className="rw-demo-strip">ISOLIERTER PROBELAUF · Keine Verbindung zur Produktion</div>}
    {error&&<p className="rw-error global" role="alert">{error}<button className="rw-button" onClick={()=>void refresh()}>Erneut versuchen</button></p>}
-   {route.page==='team'?<div className="rw-page team-page"><h1>Team</h1>
+   {route.page==='team'?<div className="rw-page team-page">
+    <h1>Team</h1>
+    <p className="studio-page-intro">Hier arbeitet ihr zusammen. Deine persönlichen Verbindungen findest du unter Mein Konto.</p>
     <section aria-labelledby="team-members"><h2 id="team-members">Wer dabei ist</h2><ul className="team-members">{members.map(m=><li key={m.id}><span className="rw-avatar">{initials(m.name)}</span><span><strong>{m.name}{m.id===user.userId?' (du)':''}</strong><small>{m.role==='owner'?'Inhaber':'Mitglied'}</small></span></li>)}</ul></section>
     {owner&&<TeamInvite/>}
+    <details className="team-secondary team-developer"><summary>Für Entwickler</summary><ResourceList resources={resources} members={members} userId={user.userId} onRefresh={refresh}/></details>
+   </div>:
+   route.page==='account'?<div className="rw-page team-page studio-account-page">
+    <h1>Mein Konto</h1>
+    <p className="studio-page-intro">Dein Profil, persönliche Verbindungen und Anmeldung – unabhängig von den Team-Einstellungen.</p>
+    <section className="studio-account-profile" aria-label="Dein Profil"><span className="rw-avatar">{initials(user.displayName)}</span><div><strong>{user.displayName}</strong><small>Persönliches Studio-Konto</small></div></section>
+    <Connections resources={resources} userId={user.userId} onDevelopment={()=>navigate({page:'rooms',room:rooms[0]?.id??'',tab:'connect',task:''})}/>
     <ChatgptConnect/>
-    <details className="team-secondary team-developer"><summary>Für Entwickler</summary><ResourceList resources={resources} members={members} userId={user.userId} onRefresh={refresh}/><Connections resources={resources} userId={user.userId} onDevelopment={()=>navigate({page:'rooms',room:route.room||rooms[0]?.id||'',tab:'connect'})}/><details className="rw-legacy-archive"><summary>Inhalte aus der früheren Ansicht</summary><a className="rw-button" href="/?legacy=1&view=chat">Frühere Gespräche</a> <a className="rw-button" href="/?legacy=1&view=docs">Frühere Dokumente</a></details></details>
+    <details className="rw-legacy-archive"><summary>Inhalte aus der früheren Ansicht</summary><a className="rw-button" href="/?legacy=1&view=chat">Frühere Gespräche</a> <a className="rw-button" href="/?legacy=1&view=docs">Frühere Dokumente</a></details>
+    <button className="rw-button studio-signout" onClick={()=>void logout()}><LogOut size={17}/>Abmelden</button>
+   </div>:
+   route.page==='projects'?<div className="rw-page team-page studio-projects-page">
+    <div className="team-section-head"><h1>Projekte</h1><button className="rw-button lime" onClick={()=>setModal({kind:'room'})}><Plus size={17}/>Neues Projekt</button></div>
+    <p className="studio-page-intro">Alle gemeinsamen Projekte an einem Ort.</p>
+    <section aria-label="Deine Projekte">{rooms.map(r=><button className="team-work-card" key={r.id} onClick={()=>navigate({room:r.id,tab:'overview',task:'',page:'rooms'})}><span><strong>{r.title}</strong><small>{r.openTasks?r.openTasks===1?'1 offene Aufgabe':r.openTasks+' offene Aufgaben':'Keine offenen Aufgaben'}</small></span><ChevronRight size={17}/></button>)}{!rooms.length&&<p className="rw-muted">Noch kein Projekt. Lege euer erstes Projekt an.</p>}</section>
+   </div>:
+   route.page==='conversations'?<div className="rw-page team-page studio-conversations-page">
+    <h1>Gespräche</h1>
+    <p className="studio-page-intro">Hier findest du die Gespräche eurer Projekte. Jede Nachricht bleibt in ihrem Projekt erhalten.</p>
+    <section aria-labelledby="studio-project-talks"><h2 id="studio-project-talks">Projektgespräche</h2>
+     {rooms.map(r=><button className="team-work-card" key={r.id} onClick={()=>navigate({room:r.id,tab:'talk',task:'',page:'rooms'})}><MessageSquare size={18}/><span><strong>{r.title}</strong><small>Projektgespräch öffnen</small></span><ChevronRight size={17}/></button>)}
+     {!rooms.length&&<p className="rw-muted">Sobald du ein Projekt erstellst, findest du hier sein Gespräch.</p>}
+    </section>
+    <section className="studio-legacy-chat" aria-labelledby="studio-old-talks"><h2 id="studio-old-talks">Frühere allgemeine Gespräche</h2><p>Die bisherigen Unterhaltungen sind noch in der früheren Ansicht verfügbar.</p><a className="rw-button" href="/?legacy=1&view=chat">Frühere Gespräche öffnen<ArrowRight size={16}/></a></section>
    </div>:
    !route.room?<div className="rw-page team-home"><h1>Meine Arbeit</h1>
     {/* What is waiting for me across all projects, in the same words as everywhere else. */}
@@ -86,9 +110,8 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
     <section aria-labelledby="home-projects"><div className="team-section-head"><h2 id="home-projects">Projekte</h2><button className="rw-button" onClick={()=>setModal({kind:'room'})}><Plus size={16}/>Neues Projekt</button></div>{rooms.map(r=><button className="team-work-card" key={r.id} onClick={()=>navigate({room:r.id,tab:'overview',task:'',page:'rooms'})}><span><strong>{r.title}</strong><small>{r.openTasks?r.openTasks===1?'1 offene Aufgabe':r.openTasks+' offene Aufgaben':'Keine offenen Aufgaben'}</small></span><ChevronRight size={17}/></button>)}{!rooms.length&&<p className="rw-muted">Noch kein Projekt. Ein Name und ein Ziel reichen für den Anfang.</p>}</section>
    </div>:
    !room?<div className="rw-loading">Projekt wird geladen …</div>:<>
-    {/* Compact head: the project name and the one action every area needs. The areas are always visible:
-        a row of tabs on wide screens, a fixed bar at the bottom on phones. */}
-    <section className="team-head"><h1>{room.project.title}</h1><button className="rw-button lime" onClick={()=>setModal({kind:'task'})}><Plus size={17}/>Aufgabe</button></section>
+    {/* Project areas stay within the page content at every viewport. */}
+    <section className="team-head"><div><button className="studio-project-back" onClick={()=>goPage('projects')}><ChevronRight size={16}/>Alle Projekte</button><h1>{room.project.title}</h1></div><button className="rw-button lime" onClick={()=>setModal({kind:'task'})}><Plus size={17}/>Aufgabe</button></section>
     <nav className="team-areas" aria-label="Bereiche des Projekts">{tabs.map(t=>{const Icon=areaIcons[t.id]??Home;return <button key={t.id} className={tab===t.id?'active':''} aria-current={tab===t.id?'page':undefined} onClick={()=>navigate({tab:t.id,task:''})}><Icon size={19} aria-hidden="true"/><span>{t.label}</span></button>;})}</nav>
     <div className="team-project-content">
      {tab==='overview'&&<ProjectOverview room={room} tasks={projectTasks} events={projectEvents} active={(team.active??[]).filter(j=>j.project===route.room)} members={members} resources={resources} userId={user.userId} onOpenTask={openTask} onTab={tab=>navigate({tab,task:''})} onRepository={()=>setModal({kind:'repository'})} onRefresh={refresh}/>}
