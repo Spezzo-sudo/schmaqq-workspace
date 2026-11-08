@@ -33,6 +33,7 @@ export function humanEvent(kind:string,body:string):string|null{
  if(kind==='review')return body.startsWith('Prüfstand freigegeben')?'Änderung freigegeben':body.startsWith('Änderungen angefordert')?'Änderung gewünscht':body.startsWith('Prüfstand erstellt')?null:'Rückmeldung gegeben';
  if(kind==='integrated'||kind==='github-merge')return 'Änderung übernommen';
  if(kind==='result')return 'Ergebnis aufgeschrieben';
+ if(kind==='live')return 'Ist jetzt live';
  if(kind==='vote')return /Änderung/.test(body)?'Änderung gewünscht':'Ergebnis freigegeben';
  if(kind==='codex')return 'KI hat an der Aufgabe gearbeitet';
  if(kind==='knowledge')return body.startsWith('Wissen archiviert')?null:'Etwas im Wissen festgehalten';

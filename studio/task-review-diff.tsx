@@ -42,6 +42,11 @@ export default function TaskReviewDiff({task,review,changedAfter=false,onClose,u
    <p className="review-head"><strong>Änderung von {result.ownerName}</strong> · {new Date(result.created).toLocaleString('de-CH',{dateStyle:'short',timeStyle:'short'})}<br/>{stateText}</p>
    {changedAfter&&<p role="alert" className="r27-diff-warning">Seitdem wurde noch etwas geändert. Freigeben geht erst, wenn die neue Fassung zur Prüfung gegeben ist.</p>}
    {result.preview?<a className="rw-button lime review-preview" href={result.preview} target="_blank" rel="noreferrer">Vorschau öffnen – so sieht es aus ↗</a>:<p className="muted">Für diese Fassung gibt es keine Vorschau. Unten unter „Was wurde geändert“ siehst du die Änderung im Text.</p>}
+   {userId&&!mine&&!closed&&result.state!=='approved'&&<ol className="review-checklist" aria-label="So prüfst du">
+    <li><strong>Vorschau öffnen</strong> und durchklicken, am besten auch am Handy.</li>
+    <li><strong>Prüfen:</strong> {result.contractSnapshot?.criteria?.trim()||'Macht die Änderung, was in der Aufgabe steht? Ist nichts anderes kaputtgegangen?'}</li>
+    <li><strong>Entscheiden:</strong> „Passt – freigeben“ oder „Änderung wünschen“ mit einem Satz, was fehlt.</li>
+   </ol>}
    {userId&&!mine&&!closed&&result.state!=='approved'&&<form className="team-review-actions" onSubmit={e=>e.preventDefault()}>
     <label>Deine Rückmeldung (bei „Änderung wünschen“ nötig)<textarea aria-label="Rückmeldung zur Änderung" value={body} maxLength={4000} onChange={e=>setBody(e.target.value)} placeholder="Zum Beispiel: Der Satz ist zu lang."/></label>
     <div className="rw-row-actions"><button className="rw-button lime" disabled={busy||!result.complete||changedAfter} onClick={()=>void vote('approved')}>Passt – freigeben</button><button className="rw-button" disabled={busy||!body.trim()} onClick={()=>void vote('changes')}>Änderung wünschen</button></div>

@@ -12,7 +12,8 @@ export default function ProjectReady({room,resources,members,userId,onRepository
  const [app,setApp]=useState<GithubApp|null>(null),[access,setAccess]=useState<GithubAccess|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[setup,setSetup]=useState(false),[open,setOpen]=useState(false);
  const setupPanel=useRef<HTMLDivElement|null>(null);
- const project=room.project.id,meta=room.meta as RoomState['meta']&{live?:'merge'|'manual';createdBy?:string};
+ const project=room.project.id,meta=room.meta as RoomState['meta']&{live?:'merge'|'manual';liveHow?:string;createdBy?:string};
+ const [liveHow,setLiveHow]=useState(meta.liveHow??'');
  const decides=members.find(m=>m.id===userId)?.role==='owner'||meta.createdBy===userId;
  useEffect(()=>{let active=true;githubState(project).then(s=>{if(active){setApp(s.app);setAccess(s.access);}});
   const back=githubNotice();if(back){setNotice(back.notice);if(back.error)setError(back.error);}
@@ -27,7 +28,7 @@ export default function ProjectReady({room,resources,members,userId,onRepository
  const live=!!meta.live;
  const done=[code,workshop,live].filter(Boolean).length;
  async function act(run:()=>Promise<unknown>){setBusy(true);setError('');try{await run();}catch(e){setError((e as Error).message);setBusy(false);}}
- async function chooseLive(value:'merge'|'manual'){setBusy(true);setError('');try{await roomRequest('/api/team',{action:'live',project,revision:meta.revision,live:value});await onRefresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+ async function chooseLive(value:'merge'|'manual',how?:string){setBusy(true);setError('');try{await roomRequest('/api/team',{action:'live',project,revision:meta.revision,live:value,...(how!==undefined?{liveHow:how}:{})});await onRefresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  if(!app||!access)return <section className="po-ready" aria-label="Startklar"><p role="status">Einrichtung wird geprüft …</p></section>;
  // Complete: one quiet line; details stay reachable.
  if(done===3&&!open)return <section className="po-ready done" aria-label="Startklar"><p><Check size={16} aria-hidden="true"/> <strong>Startklar.</strong> Code, Werkstatt und Live-Weg sind eingerichtet.</p><button className="rw-button subtle" onClick={()=>setOpen(true)}>Ansehen</button></section>;
@@ -45,9 +46,15 @@ export default function ProjectReady({room,resources,members,userId,onRepository
     :!code?<p>Kommt nach dem Code.</p>
     :own?<><p>Die Werkstatt baut, testet und zeigt euch eine Vorschau. Einmal einrichten, dann läuft sie von selbst.</p><button className="rw-button lime" disabled={busy} aria-expanded={setup} onClick={()=>{setSetup(!setup);requestAnimationFrame(()=>setupPanel.current?.scrollIntoView({block:'nearest'}));}}>{setup?'Einrichtung schliessen':'Werkstatt einrichten'}</button></>
     :<p>Die Werkstatt wird noch vom Inhaber eingerichtet.</p>)}
-   {step(live,'Live gehen',live?<p>{meta.live==='merge'?'Freigegebene Änderungen gehen beim Übernehmen automatisch live.':'Freigegebene Änderungen werden übernommen. Live schaltet ihr danach selbst (zum Beispiel über Hermes).'}{decides&&<> <button className="rw-link" disabled={busy} onClick={()=>void chooseLive(meta.live==='merge'?'manual':'merge')}>Ändern</button></>}</p>
-    :decides?<><p>Was passiert, nachdem ihr eine Änderung freigegeben habt?</p><div className="rw-row-actions"><button className="rw-button" disabled={busy} onClick={()=>void chooseLive('manual')}>Wir schalten selbst live</button><button className="rw-button" disabled={busy} onClick={()=>void chooseLive('merge')}>Geht automatisch live</button></div><p className="muted">Nicht sicher? „Wir schalten selbst live“ ist die sichere Wahl. Nichts geht ohne euch online.</p></>
-    :<p>Legt der Inhaber fest.</p>)}
+   {step(live,'Live gehen',<>
+    {/* Two calm choices. Studio itself never puts anything online; the choice only tells Studio whether a separate live step exists. */}
+    {decides?<div className="po-live-choice" role="radiogroup" aria-label="Wie kommt eine Änderung online?">
+     <button role="radio" aria-checked={meta.live==='manual'} disabled={busy} onClick={()=>void chooseLive('manual')}><strong>Wir schalten selbst live</strong><small>Nach dem Übernehmen macht jemand den Livegang, z. B. über Hermes.</small></button>
+     <button role="radio" aria-checked={meta.live==='merge'} disabled={busy} onClick={()=>void chooseLive('merge')}><strong>Geht von selbst live</strong><small>Nur wählen, wenn euer Hoster jede übernommene Änderung selbst veröffentlicht.</small></button>
+    </div>:<p>{meta.live==='merge'?'Übernommene Änderungen gehen von selbst live.':meta.live==='manual'?'Ihr schaltet selbst live.':'Legt der Inhaber fest.'}</p>}
+    {meta.live==='manual'&&(decides?<form className="po-live-how" onSubmit={e=>{e.preventDefault();void chooseLive('manual',liveHow.trim());}}><label>Wie genau? (sieht jeder in der Aufgabe)<input value={liveHow} maxLength={300} onChange={e=>setLiveHow(e.target.value)} placeholder="Zum Beispiel: Marco startet den Hermes-Auftrag production-deploy-main."/></label>{liveHow.trim()!==(meta.liveHow??'')&&<button className="rw-button" disabled={busy}>Speichern</button>}</form>
+     :meta.liveHow&&<p>So geht's: <strong>{meta.liveHow}</strong></p>)}
+   </>)}
   </ol>
   {setup&&<div ref={setupPanel} tabIndex={-1}><ProjectConnect project={project} projectTitle={room.project.title} initialDevice={own?.device??''} resources={resources} userId={userId} onDone={async()=>{setSetup(false);await onRefresh();}}/></div>}
   {done===3&&<button className="rw-button subtle" onClick={()=>setOpen(false)}>Zuklappen</button>}
