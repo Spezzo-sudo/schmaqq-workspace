@@ -1,11 +1,12 @@
-# Every change to Studio is checked here once: on each pull request and on main.
+# Every change to Studio is checked here exactly once: when a pull request is opened or updated.
+# Not again on main (same content) and no browser screenshots, to save Actions minutes (~1.5 min per run).
 # The VPS does not repeat these tests; it only runs the safety nets in selfhost/deploy/studio-deploy.sh.
 name: Studio prüfen
 
 on:
   pull_request:
-  push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read

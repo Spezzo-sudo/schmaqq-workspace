@@ -7,7 +7,7 @@ Kein Livegang ohne aktuelles „JA LIVE <kurz>“ des Inhabers für genau diesen
 
 | Wo | Wann | Was |
 |---|---|---|
-| GitHub (`.github/workflows/studio-ci.yml`) | jeder Pull Request und jeder Stand auf `main` | Geheimnis-Prüfung, alle Tests, Typen, Build, Release-Paket mit Probestart |
+| GitHub (`.github/workflows/studio-ci.yml`) | jeder Pull Request nach `main` (einmal, ~1,5 Min., keine Browser-Screenshots) | Geheimnis-Prüfung, alle Tests, Typen, Build, Release-Paket mit Probestart |
 | VPS (`selfhost/deploy/studio-deploy.sh`) | jedes Update | nur Sicherheitsnetze: genau dieser Commit von `main`, Paket-Integrität, Dateirechte, Backup, Schema und Probestart auf einer Kopie, Umschalten mit automatischem Rückfall, Worker nur wenn nötig |
 | Inhaber am Handy | sichtbare Änderungen | kurz durchklicken |
 
