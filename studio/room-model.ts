@@ -9,21 +9,24 @@ export type RoomState={project:Room;meta:{revision:number;repository:string|null
 export type Resource={device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;publish:boolean}[]};
 export type ContextPreview={text:string;hash:string;messageIds:string[];task:string|null};
 export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect';
-export type RoomRoute={room:string;tab:RoomTab;task:string;page:'rooms'|'team'};
-// Five areas, all visible (a bar at the bottom on phones). Former "Ergebnisse" live under Aufgaben → Erledigt.
+export type RoomPage='rooms'|'projects'|'conversations'|'team'|'account';
+export type RoomRoute={room:string;tab:RoomTab;task:string;page:RoomPage};
+// The five project areas stay inside each project, independently of the global navigation. Former "Ergebnisse" live under Aufgaben → Erledigt.
 export const tabs:{id:RoomTab;label:string}[]=[{id:'overview',label:'Übersicht'},{id:'tasks',label:'Aufgaben'},{id:'talk',label:'Gespräch'},{id:'knowledge',label:'Wissen'},{id:'connect',label:'Einstellungen'}];
 export function readRoomRoute(search=location.search):RoomRoute{
  const p=new URLSearchParams(search),old=p.get('view'),project=p.get('project'),explicit=p.get('tab');
  const room=p.get('room')??(project&&project!=='all'?project:'');
  const legacyTab:Record<string,RoomTab>={tasks:'tasks',docs:'knowledge',chat:'talk',development:'connect',settings:'connect',setup:'connect',models:'connect'};
  const tab=tabs.some(t=>t.id===explicit)?explicit as RoomTab:legacyTab[old??'']??'talk';
- return {room,tab,task:room?p.get('task')??'':'',page:p.get('page')==='team'||old==='team'?'team':'rooms'};
+ const requested=p.get('page');
+ const page:RoomPage=requested==='team'||requested==='projects'||requested==='conversations'||requested==='account'?requested:old==='team'?'team':'rooms';
+ return {room,tab,task:room?p.get('task')??'':'',page};
 }
 /** Re-authentication restores only known internal room state, never an external redirect. */
 export function roomResumeURL(search:string){
  const route=readRoomRoute(search),p=new URLSearchParams();
  if(/^[\w-]{1,100}$/.test(route.room)){p.set('room',route.room);if(route.tab!=='talk')p.set('tab',route.tab);if(/^[\w-]{1,100}$/.test(route.task)){p.set('task',route.task);const pane=new URLSearchParams(search).get('pane');if(['conversation','work','preview','review'].includes(pane??''))p.set('pane',pane!);}}
- if(route.page==='team')p.set('page','team');
+ if(route.page!=='rooms')p.set('page',route.page);
  return '/'+(p.size?'?'+p.toString():'');
 }
 export async function roomRequest<T>(path:string,body?:unknown,signal?:AbortSignal):Promise<T>{
