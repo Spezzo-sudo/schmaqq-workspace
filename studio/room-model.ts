@@ -1,5 +1,5 @@
 import type {Task} from '../app/workspace-model';
-export type Room={id:string;title:string;description:string;color:string;stage:string;openTasks?:number;lastMessage?:number};
+export type Room={id:string;title:string;description:string;color:string;stage:string;openTasks?:number;lastMessage?:number;practice?:boolean};
 export type RoomMember={id:string;name:string;role:string;seen:number;removed?:number|boolean;invitedBy?:string|null};
 export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;replyTo?:string|null;kind?:'human'|'ai-shared';model?:string;taskId?:string|null};
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
@@ -9,7 +9,7 @@ export type RoomState={project:Room;meta:{revision:number;repository:string|null
 export type Resource={device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;publish:boolean}[]};
 export type ContextPreview={text:string;hash:string;messageIds:string[];task:string|null};
 export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect';
-export type RoomPage='rooms'|'projects'|'conversations'|'team'|'account';
+export type RoomPage='rooms'|'projects'|'conversations'|'team'|'account'|'guide';
 export type RoomRoute={room:string;tab:RoomTab;task:string;page:RoomPage};
 // The five project areas stay inside each project, independently of the global navigation. Former "Ergebnisse" live under Aufgaben → Erledigt.
 export const tabs:{id:RoomTab;label:string}[]=[{id:'overview',label:'Übersicht'},{id:'tasks',label:'Aufgaben'},{id:'talk',label:'Gespräch'},{id:'knowledge',label:'Wissen'},{id:'connect',label:'Einstellungen'}];
@@ -19,7 +19,7 @@ export function readRoomRoute(search=location.search):RoomRoute{
  const legacyTab:Record<string,RoomTab>={tasks:'tasks',docs:'knowledge',chat:'talk',development:'connect',settings:'connect',setup:'connect',models:'connect'};
  const tab=tabs.some(t=>t.id===explicit)?explicit as RoomTab:legacyTab[old??'']??'talk';
  const requested=p.get('page');
- const page:RoomPage=requested==='team'||requested==='projects'||requested==='conversations'||requested==='account'?requested:old==='team'?'team':'rooms';
+ const page:RoomPage=requested==='team'||requested==='projects'||requested==='conversations'||requested==='account'||requested==='guide'?requested:old==='team'?'team':'rooms';
  return {room,tab,task:room?p.get('task')??'':'',page};
 }
 /** Re-authentication restores only known internal room state, never an external redirect. */

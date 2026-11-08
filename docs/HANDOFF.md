@@ -17,10 +17,13 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
 
 ## 2. Offen und als Nächstes (in dieser Reihenfolge)
 
-0. **Rollen pro Projekt – PR offen:** Admin/Entwickler/Prüfer/Zuschauer und Prüfregel unter Projekt → Einstellungen →
-   „Wer darf was“ (`studio/project-roles.tsx`, Server `selfhost/project-roles.mjs`, Test `project-roles.test.mjs`).
-   Fund dabei: Mit GitHub-App hat jedes Mitglied beim Anschauen eine freigegebene Änderung automatisch zusammengeführt;
-   jetzt nur Autor oder Admin. Repo festlegen nur Admin.
+0. **Anleitung + Übungsrunde + Hermes in einem Auftrag – PR offen.** In Studio „So funktioniert Studio“
+   (`?page=guide`, `studio/guide.tsx`): Weg zum Antippen mit „Zeig mir wo“ (springt an die echte Stelle, Lime-Rahmen),
+   „Warum sehe ich das noch nicht?“, Rollen, Wo finde ich was, Übungsrunde (`selfhost/practice.mjs`: persönliches
+   Projekt, für andere unsichtbar, Selbstfreigabe erlaubt, spurlos löschbar). Zeitstrahl sagt bei „Kommt noch“, was
+   zuerst passieren muss. Repo: `docs/ANLEITUNG.md` (gleiche Abschnitte). Livegang: `studio-deploy.sh release <commit>`
+   = prepare + live + Nachkontrolle; Marco gibt „JA LIVE“ einmal vorab (OPERATIONS.md).
+   Rollen pro Projekt (#65) sind auf main (`90ffcf7`), noch nicht live.
 1. **Live bringen: `1b707eb` (PR #64, Handy-Feinschliff: Logo + Studio-Label, rote Welle, Tabs ohne Scrollen).**
    Danach Marco: GitHub-App → Advanced → „Make public“ (Schutz ist live seit 9f21c9c).
    Bewertung 08.11. (Studio-Zugang, lesend): Klimafinder 2 Aufgaben, keine Duplikate, Server-Worker online.

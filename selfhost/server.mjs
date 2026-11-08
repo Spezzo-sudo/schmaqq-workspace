@@ -24,6 +24,7 @@ import {createResetMailer, createPasswordRecovery} from './password-recovery.mjs
 import {createWorkspaceHttpRoute} from './workspace-http.mjs';
 import {createRoomRoute} from './room-http.mjs';
 import {createTeamRoute} from './team-http.mjs';
+import {createPracticeRoute} from './practice.mjs';
 import {createGithubWorkflow,githubMemberTokens} from './github-workflow.mjs';
 import {createGithubApp,createGithubAppRoutes} from './github-app.mjs';
 import {taskContract,completion,teamEvent,storeMetadata,metadata,jobEventLabels} from './team-model.mjs';
@@ -72,6 +73,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  });
  const roomRoute=createRoomRoute({db,user,readJSON,parse});
  const teamRoute=createTeamRoute({db,user,readJSON,parse});
+ const practiceRoute=createPracticeRoute({db,user,readJSON,parse});
  const githubWorkflow=createGithubWorkflow({db,tokens:demoMode?{}:githubMemberTokens(process.env.STUDIO_GITHUB_MEMBER_TOKENS),app:studioGithubApp});
  const workspaceHttpRoute=createWorkspaceHttpRoute({
   db,user,readJSON,parse,record,fail
@@ -108,6 +110,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(await githubAppRoute({route,method,req,res,url,send}))return;
    if(await collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
    if(await teamRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
+   if(await practiceRoute({route,method,req,send}))return;
    if(route==='/api/team/project-connect'){
     const member=user(req);if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     const command=z.array(z.string().min(1).max(4096)).min(1).max(30);

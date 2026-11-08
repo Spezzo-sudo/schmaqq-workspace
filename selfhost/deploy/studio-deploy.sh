@@ -3,6 +3,8 @@
 #
 #   studio-deploy.sh prepare <commit-sha>   build, check, back up, probe-start a copy. Changes nothing live.
 #   studio-deploy.sh live    <commit-sha>   switch to the prepared release (only after the owner's "JA LIVE").
+#   studio-deploy.sh release <commit-sha>   both in one run after the owner's single "JA LIVE": prepare, and only
+#                                            if everything passed switch live, then the after-check. One block at the end.
 #
 # Tests run on GitHub for every change (.github/workflows/studio-ci.yml). Here only the safety nets run:
 # exact commit from main, package integrity, file permissions, backup, schema check and probe start on a
@@ -32,7 +34,7 @@ finish(){ echo; echo "===== ZUSAMMENFASSUNG ====="; printf '%s\n' "${SUMMARY[@]}
 stop(){ note "STOP_REASON=$1"; FINISHED=1; finish STOP; exit 1; }
 trap 'code=$?; if [ $code -ne 0 ] && [ "${FINISHED:-}" != 1 ]; then echo; echo "===== ZUSAMMENFASSUNG ====="; printf "%s\n" "${SUMMARY[@]}"; echo "STOP_REASON=Befehl fehlgeschlagen (Zeile $LINENO)"; echo "RESULT=STOP"; fi' EXIT
 
-[[ $MODE == prepare || $MODE == live ]] || { echo "Usage: $0 prepare|live <40-stelliger Commit>"; exit 2; }
+[[ $MODE == prepare || $MODE == live || $MODE == release ]] || { echo "Usage: $0 prepare|live|release <40-stelliger Commit>"; exit 2; }
 [[ $SHA =~ ^[0-9a-f]{40}$ ]] || { echo "Commit muss 40 Zeichen lang sein (git rev-parse)."; exit 2; }
 KURZ=${SHA:0:7}; NEW=$BASE/releases/$SHA; mkdir -p "$STATE"; STATEFILE=$STATE/prepared-$SHA.env
 as_user(){ runuser -u "$SERVICE_USER" -- "$@"; }
@@ -115,6 +117,7 @@ prepare(){
  note "WORKER_UPDATE=$WORKER"
 
  printf 'ALT=%q\nBACKUP=%q\nWORKER=%q\nARCHIVE_SHA=%q\n' "$ALT" "$BACKUP" "$WORKER" "$ARCHIVE_SHA" > "$STATEFILE"
+ [ "${RELEASE:-}" = 1 ] && return 0
  note "NEXT=Auf „JA LIVE $KURZ“ warten, dann: $0 live $SHA"
  FINISHED=1; finish PASS
 }
@@ -155,7 +158,18 @@ live(){
  else note "WORKER=unverändert"; fi
  rm -f "$STATEFILE"
  note "BACKUP=$BACKUP"; note "ROLLBACK_RELEASE=$ALT"
+ aftercheck
  FINISHED=1; finish PASS
 }
+
+# After-check as KEY=VALUE lines (what Hermes used to run by hand).
+aftercheck(){
+ note "CURRENT=$(readlink -f "$CUR")"
+ note "STUDIO_SERVICE=$($SYSTEMCTL is-active schmaqq-studio 2>/dev/null || true) WORKER_SERVICE=$($SYSTEMCTL is-active schmaqq-studio-worker 2>/dev/null || true)"
+ note "LOCAL_HEALTH=$(curl -fsS --max-time 10 "$LOCAL/healthz" 2>/dev/null || echo FAIL) PUBLIC_HEALTH=$(curl -fsS --max-time 20 "$PUBLIC/healthz" 2>/dev/null || echo FAIL)"
+ note "NRESTARTS_STUDIO=$($SYSTEMCTL show -p NRestarts --value schmaqq-studio 2>/dev/null || echo ?) NRESTARTS_WORKER=$($SYSTEMCTL show -p NRestarts --value schmaqq-studio-worker 2>/dev/null || echo ?)"
+}
+
+release(){ RELEASE=1; prepare; live; }
 
 "$MODE"

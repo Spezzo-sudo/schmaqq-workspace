@@ -1,7 +1,7 @@
 # Betrieb: Studio live schalten
 
 Stand 08.11.2026. Für Menschen, Hermes und jeden Agenten gleich.
-Kein Livegang ohne aktuelles „JA LIVE <kurz>“ des Inhabers für genau diesen Stand.
+Kein Livegang ohne aktuelles „JA LIVE <kurz>“ des Inhabers für genau diesen Stand – einmal, vor dem Auftrag.
 
 ## Wer prüft was
 
@@ -13,18 +13,27 @@ Kein Livegang ohne aktuelles „JA LIVE <kurz>“ des Inhabers für genau diesen
 
 Zusammengeführt wird nur, wenn die GitHub-Prüfung grün ist. Der VPS wiederholt die Tests deshalb nicht.
 
-## Ein Update (zwei Befehle)
+## Ein Update (ein Auftrag)
 
 Der Commit ist immer der volle 40-stellige Stand von `main` **nach** dem Zusammenführen (nicht der Branch-Commit).
+Marco gibt **einmal** „JA LIVE <kurz>“ und schickt Hermes den Auftrag. Hermes fragt nicht nochmal nach.
 
-```bash
-# 1. Vorbereiten – ändert nichts am Live-Betrieb
-bash /opt/schmaqq-studio/current/selfhost/deploy/studio-deploy.sh prepare <commit>
-#    → Zusammenfassung melden, auf „JA LIVE <kurz>“ warten
-
-# 2. Live schalten – nur nach „JA LIVE <kurz>“, genau einmal
-bash /opt/schmaqq-studio/current/selfhost/deploy/studio-deploy.sh live <commit>
+**Auftrag an Hermes (Vorlage, ab Live-Stand mit `release`):**
 ```
+Studio-Update <kurz>. Ohne Rückfrage genau einmal ausführen:
+bash /opt/schmaqq-studio/current/selfhost/deploy/studio-deploy.sh release <commit>
+Melde den vollständigen Block ab „ZUSAMMENFASSUNG“. Bei RESULT=STOP: keinen zweiten Versuch,
+nichts von Hand nachbessern, keine anderen Dienste anfassen, nur melden.
+```
+`release` = `prepare`, und nur wenn alles bestanden hat `live`, danach die Nachkontrolle
+(`CURRENT`, Dienste, lokale und öffentliche Gesundheit, Neustarts). Antwortet der neue Stand nach dem Umschalten
+nicht richtig, schaltet `live` selbst zurück (`ROLLBACK=PASS`).
+
+Solange der Live-Stand `release` noch nicht kennt (bis einschliesslich `90ffcf7`), dieselbe Wirkung mit:
+```bash
+bash /opt/schmaqq-studio/current/selfhost/deploy/studio-deploy.sh prepare <commit> && bash /opt/schmaqq-studio/current/selfhost/deploy/studio-deploy.sh live <commit>
+```
+`prepare` und `live` einzeln gibt es weiter (z. B. nur vorbereiten und erst später umschalten).
 
 Das Skript läuft immer aus dem **aktuell live** laufenden Stand (geprüft und bewährt), nie aus dem neuen.
 Jeder Lauf endet mit einem Block `KEY=VALUE` und `RESULT=PASS` oder `RESULT=STOP` mit Grund.
