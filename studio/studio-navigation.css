@@ -92,7 +92,11 @@
  .team-shell .team-areas button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
 /* Every fold-out is a full-size tap target. */
-.team-shell details>summary{min-height:44px;display:flex;align-items:center;gap:8px;cursor:pointer}
+.team-shell details>summary{min-height:44px;display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
+.team-shell details>summary::-webkit-details-marker{display:none}
+/* Fold-outs show a small square like the logo's period: "+" closed, "–" on lime when open. */
+.team-shell details>summary::after{content:'+';flex:0 0 22px;height:22px;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--schmaqq-ink);font:800 15px/1 var(--schmaqq-sans);color:var(--schmaqq-ink);background:var(--schmaqq-paper-light)}
+.team-shell details[open]>summary::after{content:'–';background:var(--schmaqq-acid)}
 .team-shell .rw-room-welcome button{color:var(--schmaqq-ink);border-color:var(--schmaqq-rule-strong)}
 .team-shell .studio-project-roles{margin:28px 0;max-width:780px}
 .team-shell .studio-project-roles .team-members li{flex-wrap:wrap}
@@ -130,3 +134,10 @@
 @media(prefers-reduced-motion:reduce){.studio-spotlight{transition:none}}
 /* Practice projects need no repository or Werkstatt: no setup box in their overview. */
 .team-shell .studio-practice .project-overview>.po-ready{display:none}
+/* Scroll hint: a soft fade at the bottom edge and a small ink square with a lime chevron. */
+.studio-scroll-hint{position:fixed;left:0;right:0;bottom:0;z-index:120;height:46px;pointer-events:none;background:linear-gradient(to bottom,rgba(241,239,232,0),rgba(241,239,232,.92));display:flex;justify-content:center;align-items:flex-end;padding-bottom:6px}
+.studio-scroll-hint button{pointer-events:auto;width:26px;height:26px;border:0;background:var(--schmaqq-ink);color:var(--schmaqq-acid);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;animation:studio-hint 2.4s ease-in-out infinite}
+.studio-scroll-hint button:focus-visible{outline:3px solid var(--schmaqq-acid);outline-offset:2px}
+@keyframes studio-hint{0%,70%,100%{transform:translateY(0)}80%{transform:translateY(3px)}}
+@media (max-width:650px){.studio-scroll-hint{bottom:calc(67px + env(safe-area-inset-bottom,0px))}}
+@media(prefers-reduced-motion:reduce){.studio-scroll-hint button{animation:none}}

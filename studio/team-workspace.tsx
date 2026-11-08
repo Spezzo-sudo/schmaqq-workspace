@@ -8,6 +8,7 @@ import StudioBrand from '../app/studio-brand';
 import TeamAccess from './team-access';
 import ProjectRoles from './project-roles';
 import GuidePage,{type GuideTarget} from './guide';
+import ScrollHint from './scroll-hint';
 import Connections from '../app/connections';
 import PluginGrants from '../app/plugin-grants';
 import ProviderLogin from '../app/provider-login';
@@ -141,6 +142,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
     </div>
    </>}
   </main>
+  {!route.task&&!modal&&<ScrollHint/>}
   {!route.task&&!modal&&<nav className="studio-mobile-nav" aria-label="Hauptnavigation">
    <button aria-current={route.page==='rooms'&&!route.room?'page':undefined} className={route.page==='rooms'&&!route.room?'active':''} onClick={()=>goPage('rooms')}><Home size={21}/><span>Arbeit</span></button>
    <button aria-current={route.page==='projects'||route.page==='rooms'&&!!route.room?'page':undefined} className={route.page==='projects'||route.page==='rooms'&&!!route.room?'active':''} onClick={()=>goPage('projects')}><Folder size={21}/><span>Projekte</span></button>
