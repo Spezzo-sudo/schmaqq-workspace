@@ -6,32 +6,18 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
 
 ## 1. Was live ist
 
-- Live auf studio.schmaqq.com: `9f21c9c` (PR #63, 08.11.2026, Hermes RESULT=PASS, keine Neustarts,
-  Backup `predeploy-9f21c9c-20261108T220948Z.sqlite`, Rückweg `releases/2e7c0f7…`).
-  Enthält: Navigation (Arbeit · Projekte · Gespräche · Team, Konto über Initialen), #Allgemein,
-  Allgemeines Wissen, Daten herunterladen, Briefing kopieren, GitHub-Freigabe für alle Mitglieder
-  (nur über Studio registrierte Installationen), Zugang nur mit Einladung (siehe `docs/SECURITY.md`).
-- Livegang: `selfhost/deploy/studio-deploy.sh prepare|live <voller main-Commit>` (siehe OPERATIONS.md).
-  GitHub-Prüfung läuft bei jedem Push auf einen PR-Branch: Commits sammeln, einmal pushen.
-- Klimafinder: startklar (GitHub-App auf Klimafinder-CH, Server-Worker, Live-Weg manuell).
+- Live auf studio.schmaqq.com: `1eb4456` (08.11.2026, PR #64–#66, Hermes RESULT=PASS, NRestarts 0, Worker unverändert,
+  Backup `predeploy-1eb4456-20261108T233413Z.sqlite`, Rückweg `releases/90ffcf7…`).
+  Enthält: Navigation, #Allgemein, Allgemeines Wissen, Zugang nur mit Einladung (`docs/SECURITY.md`), GitHub-Freigabe
+  für alle Mitglieder, Logo mit Studio-Label, Rollen pro Projekt, Anleitung „So funktioniert Studio“ mit Übungsrunde,
+  Aufklapper-Quadrat, Scroll-Hinweis, `studio-deploy.sh release`.
+- Livegang ab jetzt ein Auftrag: Marco „JA LIVE <kurz>“ einmal, Hermes `studio-deploy.sh release <commit>` (OPERATIONS.md).
 
 ## 2. Offen und als Nächstes (in dieser Reihenfolge)
 
-0. **Anleitung + Übungsrunde + Hermes in einem Auftrag – PR offen.** In Studio „So funktioniert Studio“
-   (`?page=guide`, `studio/guide.tsx`): Weg zum Antippen mit „Zeig mir wo“ (springt an die echte Stelle, Lime-Rahmen),
-   „Warum sehe ich das noch nicht?“, Rollen, Wo finde ich was, Übungsrunde (`selfhost/practice.mjs`: persönliches
-   Projekt, für andere unsichtbar, Selbstfreigabe erlaubt, spurlos löschbar). Zeitstrahl sagt bei „Kommt noch“, was
-   zuerst passieren muss. Repo: `docs/ANLEITUNG.md` (gleiche Abschnitte). Livegang: `studio-deploy.sh release <commit>`
-   = prepare + live + Nachkontrolle; Marco gibt „JA LIVE“ einmal vorab (OPERATIONS.md).
-   Rollen pro Projekt (#65) sind auf main (`90ffcf7`), noch nicht live.
-1. **Live bringen: `1b707eb` (PR #64, Handy-Feinschliff: Logo + Studio-Label, rote Welle, Tabs ohne Scrollen).**
-   Danach Marco: GitHub-App → Advanced → „Make public“ (Schutz ist live seit 9f21c9c).
-   Bewertung 08.11. (Studio-Zugang, lesend): Klimafinder 2 Aufgaben, keine Duplikate, Server-Worker online.
-   „Leise-Priorität“ wartet seit Tagen auf Marco („Zur Prüfung geben“), danach Markus' „Passt“.
-   Schutz bestätigt: Übernehmen nur nach „Passt“ einer zweiten Person für genau diesen Stand (veraltete
-   Prüfungen ungültig, keine Selbstfreigabe); bei GitHub-Projekten nur Pull Requests auf `studio/*`-Branches.
-   Offen: `/api/workspace` action `task` (frühere Ansicht) hat keinen Doppelklick-/Wiederholschutz
-   (neue Ansicht `/api/room` schon) – mit dem Abschalten der früheren Ansicht erledigen oder `id` ergänzen.
+1. **PR #67 Anmeldung** (Benutzername statt Pflicht-E-Mail, Passwort ändern, Link „Neues Passwort“ vom Inhaber): nach „Ja“
+   zusammenführen und mit `release` live bringen.
+   Marco: GitHub-App → Advanced → „Make public“ (Schutz live); bei Klimafinder „Leise-Priorität“ → „Zur Prüfung geben“.
 2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
    Vorschau ansehen, „Passt“, ein eigenes privates Repo verbinden. Das schliesst Etappe 1 ab.
 3. **Etappe 3 „KI im Raum“** (siehe PLAN.md): erst klären, ob der ChatGPT-Business-Workspace die

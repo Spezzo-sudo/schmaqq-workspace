@@ -26,7 +26,7 @@ export const laterItems:[string,string][]=[
  ['„Ist jetzt live“','erst nach dem Übernehmen, wenn ihr selbst live schaltet.'],
  ['Vorschau und „Änderung machen“','erst wenn das Projekt startklar ist (Werkstatt eingerichtet).'],
  ['„Code auf GitHub auswählen“, Live-Weg, „Wer darf was“ ändern','nur für den Projekt-Admin. Alle anderen sehen „Legt der Projekt-Admin fest“.'],
- ['„Einladungslink erstellen“, Mitglied „Entfernen“','nur für den Inhaber von Studio. Alle anderen können Leute vorschlagen.'],
+ ['„Einladungslink erstellen“, „Neues Passwort“, Mitglied „Entfernen“','nur für den Inhaber von Studio. Alle anderen können Leute vorschlagen. Das eigene Passwort ändert jeder unter Mein Konto.'],
  ['„Aufgabe abschliessen“','erst wenn alles erledigt ist: Ergebnis da, freigegeben, bei Code übernommen.']
 ];
 

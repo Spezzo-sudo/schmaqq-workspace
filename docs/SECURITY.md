@@ -11,6 +11,13 @@
 - Bekannte Grenze: Bei Passwort-Anmeldung wird die E-Mail nicht bestätigt; wer den Link hat, legt das Konto an.
   Darum: Link direkt an die Person, kurze Gültigkeit, im Zweifel zurücknehmen.
 
+## Anmeldename und Passwort
+- Anmeldename: Benutzername (3–40 Zeichen a–z, 0–9, Punkt, Strich) oder E-Mail, gespeichert in `members.email`.
+- Passwort ändern (Mein Konto): altes Passwort nötig, andere Anmeldungen enden, Versuche gebremst.
+- Neues Passwort bei Vergessen: nur der Inhaber erstellt einen Link (`/#reset=…`, 24 h, einmal, als Hash gespeichert).
+  Verbundene Rechner bleiben verbunden (Vergessen ist keine Kompromittierung); beim Mail-Weg „Passwort vergessen“
+  werden sie weiterhin getrennt.
+
 ## Mitglied entfernen (Team → Entfernen, nur Inhaber)
 Sofort: alle Anmeldungen beendet, KI-Assistenten getrennt, Rechner/Server gesperrt, ChatGPT-Anmeldung gelöst,
 offene Vorschläge zurückgezogen. Das Konto bleibt als Autor von Nachrichten/Aufgaben stehen, kann sich aber nie

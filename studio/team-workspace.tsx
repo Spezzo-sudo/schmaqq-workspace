@@ -12,7 +12,7 @@ import ScrollHint from './scroll-hint';
 import Connections from '../app/connections';
 import PluginGrants from '../app/plugin-grants';
 import ProviderLogin from '../app/provider-login';
-import {GeneralChat,GeneralKnowledge,DownloadAll,ProjectBriefing} from './studio-general';
+import {GeneralChat,GeneralKnowledge,DownloadAll,ProjectBriefing,ChangePassword} from './studio-general';
 import RunnerConnect from '../app/runner-connect';
 import Executors from '../app/executors';
 import ProjectStart from '../app/project-start';
@@ -92,11 +92,12 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
    </div>:
    route.page==='account'?<div className="rw-page team-page studio-account-page">
     <h1>Mein Konto</h1>
-    <section className="studio-account-profile" aria-label="Dein Profil"><span className="rw-avatar">{initials(user.displayName)}</span><div><strong>{user.displayName}</strong><small>{owner?'Inhaber':'Mitglied'} im Team</small></div><button className="rw-button studio-signout" onClick={()=>void logout()}><LogOut size={17}/>Abmelden</button></section>
+    <section className="studio-account-profile" aria-label="Dein Profil"><span className="rw-avatar">{initials(user.displayName)}</span><div><strong>{user.displayName}</strong><small>{owner?'Inhaber':'Mitglied'} im Team · Anmeldung mit „{user.email}“</small></div><button className="rw-button studio-signout" onClick={()=>void logout()}><LogOut size={17}/>Abmelden</button></section>
     <button className="team-work-card studio-guide-link" onClick={()=>goPage('guide')}><CircleHelp size={18}/><span><strong>So funktioniert Studio</strong><small>Der ganze Weg, was wann erscheint, Übungsrunde</small></span><ChevronRight size={17}/></button>
     <ChatgptConnect/>
     <PluginGrants/>
     <section className="studio-account-login"><ProviderLogin link/></section>
+    <ChangePassword/>
     <DownloadAll/>
     <details className="team-secondary team-developer"><summary>Für Entwickler</summary>
      <Connections resources={resources} userId={user.userId} onDevelopment={()=>navigate({page:'rooms',room:rooms[0]?.id??'',tab:'connect',task:''})} developer/>

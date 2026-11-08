@@ -57,6 +57,31 @@ test('Studio is invitation-only: owner invites, members propose, removed members
   assert.equal((await call('POST','/api/invites/withdraw',{id:open.id},owner.cookie)).status,200);
   assert.equal((await call('POST','/api/auth/register',{invite:token(approved.body.link),name:'Friend',password})).status,403);
 
+  // A user name instead of an e-mail address works for invitation and sign-in.
+  assert.equal((await call('POST','/api/invites',{email:'x'},owner.cookie)).status,400);
+  const named = await call('POST','/api/invites',{email:'Lena.K'},owner.cookie);
+  assert.equal(named.status,200);
+  assert.equal((await call('POST','/api/auth/register',{invite:token(named.body.link),name:'Lena',password})).status,200);
+  const lena = await call('POST','/api/auth/login',{email:'lena.k',password});
+  assert.equal(lena.status,200);
+
+  // Changing your own password needs the old one; other sign-ins end, this one stays.
+  const second = await call('POST','/api/auth/login',{email:'lena.k',password});
+  assert.equal((await call('POST','/api/auth/password',{current:'wrong-password-123',password:'new-fixture-password-1'},lena.cookie)).status,403);
+  assert.equal((await call('POST','/api/auth/password',{current:password,password:'new-fixture-password-1'},lena.cookie)).status,200);
+  assert.equal((await call('GET','/api/workspace',undefined,lena.cookie)).status,200);
+  assert.equal((await call('GET','/api/workspace',undefined,second.cookie)).status,401);
+  assert.equal((await call('POST','/api/auth/login',{email:'lena.k',password:'new-fixture-password-1'})).status,200);
+
+  // Forgotten password: only the owner creates a one-time link; it sets a new password once.
+  const lenaId = app.db.prepare("SELECT id FROM members WHERE email='lena.k'").get().id;
+  assert.equal((await call('POST','/api/members/reset',{member:lenaId},member.cookie)).status,403);
+  const reset = await call('POST','/api/members/reset',{member:lenaId},owner.cookie);
+  const raw = new URL(reset.body.link).hash.replace('#reset=','');
+  assert.equal((await call('POST','/api/auth/recovery/confirm',{token:raw,password:'reset-fixture-password-2'})).status,200);
+  assert.equal((await call('POST','/api/auth/recovery/confirm',{token:raw,password:'reset-fixture-password-3'})).status,400);
+  assert.equal((await call('POST','/api/auth/login',{email:'lena.k',password:'reset-fixture-password-2'})).status,200);
+
   // Removing a member ends the session at once and blocks a new login; the owner cannot be removed.
   assert.equal((await call('POST','/api/members/remove',{member:ownerRow.id},owner.cookie)).status,400);
   assert.equal((await call('POST','/api/members/remove',{member:ownerRow.id},member.cookie)).status,403);

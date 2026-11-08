@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {Copy,Download,FileText,Plus,Send} from 'lucide-react';
+import {Copy,Download,FileText,KeyRound,Plus,Send} from 'lucide-react';
 import {initials,type RoomState,type TeamTask} from './room-model';
 
 /** Studio-wide content that used to live only in the former view: #Allgemein, general documents, data export. */
@@ -77,4 +77,24 @@ export function ProjectBriefing({room,tasks}:{room:RoomState;tasks:TeamTask[]}){
   <label className="team-form"><span>Was soll ChatGPT tun? (optional)</span><textarea value={prompt} maxLength={2000} onChange={e=>{setPrompt(e.target.value);setCopied(false);}} placeholder="Zum Beispiel: Schreib einen Vorschlag für die Startseite."/></label>
   <button className="rw-button" onClick={()=>void navigator.clipboard?.writeText(text()).then(()=>setCopied(true))}><Copy size={16}/>{copied?'Kopiert':'Briefing kopieren'}</button>
  </details>;
+}
+
+/** Change your own password. Other sign-ins end; this one stays. */
+export function ChangePassword(){
+ const [open,setOpen]=useState(false),[state,setState]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ async function save(e:React.FormEvent<HTMLFormElement>){e.preventDefault();const form=e.currentTarget,f=new FormData(form);setError('');setState('');
+  if(f.get('password')!==f.get('repeat')){setError('Die beiden neuen Passwörter sind nicht gleich.');return;}
+  setBusy(true);try{const r=await fetch('/api/auth/password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current:f.get('current'),password:f.get('password')})});const d=await r.json().catch(()=>({})) as {error?:string};if(!r.ok)throw new Error(d.error??'Das hat nicht geklappt.');form.reset();setOpen(false);setState('Neues Passwort gespeichert. Andere Anmeldungen wurden beendet.');}catch(err){setError((err as Error).message);}finally{setBusy(false);}}
+ return <section aria-labelledby="account-password"><h2 id="account-password">Passwort</h2>
+  {!open&&<button className="rw-button" onClick={()=>{setOpen(true);setState('');}}><KeyRound size={16}/>Passwort ändern</button>}
+  {open&&<form className="team-form" onSubmit={e=>void save(e)}>
+   <label>Bisheriges Passwort<input name="current" type="password" autoComplete="current-password" required/></label>
+   <label>Neues Passwort<input name="password" type="password" autoComplete="new-password" minLength={12} required/></label>
+   <label>Neues Passwort wiederholen<input name="repeat" type="password" autoComplete="new-password" minLength={12} required/></label>
+   <small className="rw-muted">Mindestens 12 Zeichen.</small>
+   <div className="rw-row-actions"><button className="rw-button lime" disabled={busy}>{busy?'Wird gespeichert …':'Speichern'}</button><button type="button" className="rw-button" onClick={()=>{setOpen(false);setError('');}}>Abbrechen</button></div>
+  </form>}
+  {state&&<p role="status" className="rw-muted">{state}</p>}
+  {error&&<p className="rw-error" role="alert">{error}</p>}
+ </section>;
 }
