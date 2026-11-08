@@ -17,14 +17,18 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
 
 ## 2. Offen und als Nächstes (in dieser Reihenfolge)
 
-1. **Handy-Feinschliff – PR offen (Branch `ccr-02ac3638-3ksxjc`):** Logo oben am Handy (SCHMAQQ. + Lime-Label
-   „Studio“, `app/studio-brand.tsx`), Welle startet an der Tippstelle und färbt die Buchstaben rot (vorher wurde
-   die Farbe nie sichtbar, weil sie auf `<g>` statt `<path>` lag), Projekt-Tabs passen ohne Scrollen (5 Spalten),
-   Aufklapper mit 44-px-Tippfläche, Kontrast der Gesprächsvorschläge, Chat-Liste korrekt.
-   Prüfmassstab: Bedienbarkeit/Barrierefreiheit/Handy aus dem Skill „jury“ (juliobsz/skills, nur gelesen,
-   Skripte nicht installiert); eigene Messung mit Playwright + axe auf allen Seiten: kein Überlauf,
-   keine ernsten axe-Funde, Tastaturfokus sichtbar.
+0. **Rollen pro Projekt – PR offen:** Admin/Entwickler/Prüfer/Zuschauer und Prüfregel unter Projekt → Einstellungen →
+   „Wer darf was“ (`studio/project-roles.tsx`, Server `selfhost/project-roles.mjs`, Test `project-roles.test.mjs`).
+   Fund dabei: Mit GitHub-App hat jedes Mitglied beim Anschauen eine freigegebene Änderung automatisch zusammengeführt;
+   jetzt nur Autor oder Admin. Repo festlegen nur Admin.
+1. **Live bringen: `1b707eb` (PR #64, Handy-Feinschliff: Logo + Studio-Label, rote Welle, Tabs ohne Scrollen).**
    Danach Marco: GitHub-App → Advanced → „Make public“ (Schutz ist live seit 9f21c9c).
+   Bewertung 08.11. (Studio-Zugang, lesend): Klimafinder 2 Aufgaben, keine Duplikate, Server-Worker online.
+   „Leise-Priorität“ wartet seit Tagen auf Marco („Zur Prüfung geben“), danach Markus' „Passt“.
+   Schutz bestätigt: Übernehmen nur nach „Passt“ einer zweiten Person für genau diesen Stand (veraltete
+   Prüfungen ungültig, keine Selbstfreigabe); bei GitHub-Projekten nur Pull Requests auf `studio/*`-Branches.
+   Offen: `/api/workspace` action `task` (frühere Ansicht) hat keinen Doppelklick-/Wiederholschutz
+   (neue Ansicht `/api/room` schon) – mit dem Abschalten der früheren Ansicht erledigen oder `id` ergänzen.
 2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
    Vorschau ansehen, „Passt“, ein eigenes privates Repo verbinden. Das schliesst Etappe 1 ab.
 3. **Etappe 3 „KI im Raum“** (siehe PLAN.md): erst klären, ob der ChatGPT-Business-Workspace die

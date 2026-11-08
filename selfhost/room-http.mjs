@@ -95,6 +95,7 @@ const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('share-result'),id,project:id,job:id})
 ]);
 
+import {requirePermission,startRoles} from './project-roles.mjs';
 export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
  return async function roomRoute({route,method,req,url,send}){
   if(!['/api/rooms','/api/room','/api/room/context','/api/room/tasks'].includes(route))return false;
@@ -120,11 +121,13 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
   }
   if(method!=='POST'||route!=='/api/room')throw fail(405,'Methode nicht erlaubt.');
   const value=parse(actions,await readJSON(req,24000));
+  if(value.project)requirePermission(db,member,value.project,value.action==='message'?'view':value.action==='repository'?'admin':'develop');
   const result=transaction(db,()=>{
    if(value.action==='create'){
     const previous=replay(db,member,value);if(previous)return previous;
     const project=randomUUID();db.prepare('INSERT INTO projects VALUES(?,?,?,?,?,?)').run(project,value.title,value.description,'sage','Im Aufbau',now());
     putMeta(db,key('project',project),{revision:0,repository:null,teamShared:true,createdBy:member.id,base:'main',workflow:'pull-request'});
+    startRoles(db,project,member.id);
     db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(randomUUID(),member.id,'Raum eröffnet: '+value.title,now());
     return remember(db,member,value,{ok:true,project});
    }

@@ -90,8 +90,10 @@ test('room: unsafe links/credentials refused; repository is explicitly reference
  }
  const ref=await f.post({action:'repository',project:p,url:'https://github.com/example/project.git',revision:0},f.marco.cookie);
  assert.equal(ref.status,200);assert.equal(ref.data.status,'reference-only');assert.equal(ref.data.repository,'https://github.com/example/project');
- assert.equal((await f.post({action:'repository',project:p,url:'https://github.com/example/other',revision:0},f.markus.cookie)).status,409);
- assert.equal((await f.post({action:'repository',project:p,url:'https://github.com/example/project/tree/main',revision:1},f.markus.cookie)).status,400);
+ // Only the project admin changes the repository; stale revisions and tree links are still refused.
+ assert.equal((await f.post({action:'repository',project:p,url:'https://github.com/example/other',revision:1},f.markus.cookie)).status,403);
+ assert.equal((await f.post({action:'repository',project:p,url:'https://github.com/example/other',revision:0},f.marco.cookie)).status,409);
+ assert.equal((await f.post({action:'repository',project:p,url:'https://github.com/example/project/tree/main',revision:1},f.marco.cookie)).status,400);
  const link=await f.post({action:'link',id:randomUUID(),project:p,title:'Freigegebener Chat',url:'https://chatgpt.com/share/example-reference',kind:'chatgpt'},f.marco.cookie);
  assert.equal(link.status,200);
  assert.equal((await f.get('/api/room?project='+p,f.marco.cookie)).data.links[0].status,'linked-not-synced');

@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {transaction} from './store.mjs';
 import {listWorkspaces} from './workspaces.mjs';
 import {reviewState} from './reviews.mjs';
+import {requirePermission} from './project-roles.mjs';
 import {changeOverview} from './change-overview.mjs';
 import {taskView,assertTaskStatus,teamEvent,taskContract,invalidateTaskResult,storeMetadata} from './team-model.mjs';
 
@@ -76,6 +77,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   z.object({action:z.literal('brief'),task:id,title:z.string().trim().min(1).max(160),description:z.string().trim().max(12000),revision:z.number().int().min(0)}),
   z.object({action:z.literal('status'),task:id,status:z.enum(['todo','doing','review','done'])})
  ]),await readJSON(req));
+ {const project=db.prepare('SELECT project FROM tasks WHERE id=?').get(value.task)?.project;if(project)requirePermission(db,user(req),project,value.action==='comment'?'view':'develop');}
  transaction(db,()=>{
   const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(value.task);if(!task)throw fail(404,'Aufgabe fehlt.');
   if(value.action==='brief'){

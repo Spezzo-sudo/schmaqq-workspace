@@ -1,5 +1,6 @@
 import http from 'node:http';
 import {isRemoved} from './team-access.mjs';
+import {requirePermission,selfApproval,can,projectRoles,setRoles,setReviewRule,reviewRule,rolesOf,roleNames} from './project-roles.mjs';
 import {Readable} from 'node:stream';
 import {DatabaseSync} from 'node:sqlite';
 import {createPluginHttpRoutes} from './studio-plugin-http.mjs';
@@ -136,13 +137,34 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
       // and merge it once approved in Studio and accepted by GitHub.
       try{await githubWorkflow.perform('open',job,member);}catch{}
       const shared=db.prepare("SELECT * FROM jobs WHERE id=? AND action='submit' AND status='completed'").get(job);
-      if(shared&&reviewState(db,shared)==='approved'){try{send(await githubWorkflow.perform('merge',job,member));return;}catch{}}
+      if(shared&&reviewState(db,shared)==='approved'&&(shared.owner===member.id||can(db,member,shared.project,'admin'))){try{send(await githubWorkflow.perform('merge',job,member));return;}catch{}}
      }
      send(githubWorkflow.configured(member)?await githubWorkflow.perform('refresh',job,member):{configured:false,state:'not_configured',reason:'Persönlicher Repository-Zugang noch nicht eingerichtet. Die Kontoanmeldung allein erlaubt keine Repository-Aktionen.'});return;
     }
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     const value=parse(z.object({action:z.enum(['open','merge','refresh']),job:id}),await readJSON(req));
+    const target=db.prepare('SELECT owner,project FROM jobs WHERE id=?').get(value.job);if(!target)throw fail(404,'Stand fehlt.');
+    if(value.action==='merge'&&target.owner!==member.id)requirePermission(db,member,target.project,'admin');
+    else requirePermission(db,member,target.project,value.action==='refresh'?'view':'develop');
     send(await githubWorkflow.perform(value.action,value.job,member));return;
+   }
+   if(route==='/api/project-roles'){
+    const member=user(req);
+    if(method==='GET'){
+     const project=parse(id,url.searchParams.get('project'));if(!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt fehlt.');
+     const people=db.prepare('SELECT id,name,role FROM members ORDER BY name').all().filter(p=>!isRemoved(db,p.id));
+     send({review:reviewRule(db,project),explicit:!!projectRoles(db,project),mine:rolesOf(db,member,project),members:people.map(p=>({id:p.id,name:p.name,owner:p.role==='owner',roles:rolesOf(db,p,project)}))});return;
+    }
+    if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
+    const v=parse(z.discriminatedUnion('action',[z.object({action:z.literal('roles'),project:id,member:id,roles:z.array(z.enum(roleNames)).max(4)}),z.object({action:z.literal('review'),project:id,review:z.enum(['second','admin-alone'])})]),await readJSON(req,4096));
+    requirePermission(db,member,v.project,'admin');
+    transaction(db,()=>{
+     if(v.action==='review'){setReviewRule(db,v.project,v.review);teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:v.review==='admin-alone'?'Prüfregel: Admin darf allein freigeben':'Prüfregel: zweite Person prüft'});return;}
+     const target=db.prepare('SELECT id,role FROM members WHERE id=?').get(v.member);if(!target||isRemoved(db,target.id))throw fail(404,'Mitglied fehlt.');
+     if(target.role==='owner')throw fail(400,'Der Inhaber ist immer Admin.');
+     setRoles(db,v.project,target.id,[...new Set(v.roles)]);teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:'Rollen angepasst'});
+    });
+    send({ok:true});return;
    }
    if(await projectStartRoute({route,method,req,db,user,send,readJSON,parse}))return;
    if(route==='/api/runner/project-setup-verify'&&method==='POST'){
@@ -253,7 +275,8 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     const v=parse(z.object({id,job:id,commit:z.string().regex(/^[a-f0-9]{40,64}$/),decision:z.enum(['approved','changes','comment']),body:z.string().trim().max(4000)}),await readJSON(req));
     const job=db.prepare("SELECT * FROM jobs WHERE id=? AND action IN ('review','submit') AND status='completed'").get(v.job);if(!job)throw fail(409,'Ein abgeschlossener Prüfauftrag wird benötigt.');
     const result=JSON.parse(job.result??'{}');if(result.commit!==v.commit)throw fail(409,'Der angezeigte Code-Stand stimmt nicht mehr. Bitte neu laden.');
-    if(v.decision!=='comment'&&job.owner===m.id)throw fail(403,'Die Prüfung muss die zweite Person übernehmen.');
+    requirePermission(db,m,job.project,v.decision==='comment'?'view':'review');
+    if(v.decision!=='comment'&&job.owner===m.id&&!selfApproval(db,m.id,job.project))throw fail(403,'Die Prüfung muss die zweite Person übernehmen.');
     if(v.decision==='approved'&&!completeReview(result))throw fail(409,'Dieser Diff ist unvollständig. Für eine Freigabe einen vollständig prüfbaren Stand erstellen.');
     if(v.decision!=='approved'&&!v.body)throw fail(400,'Bitte eine Rückmeldung eingeben.');
     if(result.workflow==='pull-request'&&v.decision!=='comment'&&!githubWorkflow.appMode()){
@@ -328,6 +351,8 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','prepare','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file','deploy-key']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),offset:z.number().int().min(0).max(4194304).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
     if(!db.prepare('SELECT id FROM projects WHERE id=?').get(value.project))throw fail(404,'Projekt nicht gefunden.');
     // "auto" is resolved here, once; the job row then names the executor that runs it.
+    // Reading needs a place in the project, changing needs the developer role, taking over a change the admin role or authorship.
+    requirePermission(db,m,value.project,['files','read-file','status','inspect'].includes(value.operation)?'view':'develop');
     const placed=resolveDevice(db,{member:m,project:value.project,device:value.device,worktree:value.operation==='integrate'?undefined:value.worktree});
     value.device=placed.device;
     if(value.operation==='deploy-key'&&placed.kind!=='server')throw fail(409,'Deploy-Keys gibt es nur für den Server-Worker. Dein PC nutzt deinen eigenen GitHub-Zugang.');
@@ -335,7 +360,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     if(['inspect','prepare'].includes(value.operation))payload=value.issue?{issue:value.issue}:{};
     else if(value.operation==='deploy-key')payload={};
     else if(value.operation==='integrate'){
-     const source=db.prepare("SELECT * FROM jobs WHERE id=? AND project=? AND action='submit' AND status='completed'").get(value.source??'',value.project);if(!source)throw fail(400,'Ein erfolgreich eingereichter Stand wird benötigt.');const result=JSON.parse(source.result);if(reviewState(db,source)!=='approved')throw fail(409,'Die zweite Person muss genau diesen eingereichten Stand zuerst freigeben.');if(result.workflow==='pull-request'||metadata(db,'room:v1:project:'+value.project)?.repository&&(metadata(db,'room:v1:project:'+value.project).workflow??'pull-request')==='pull-request')throw fail(409,'Dieses Repository wird ausschließlich über Pull Request, CI und Review zusammengeführt.');
+     const source=db.prepare("SELECT * FROM jobs WHERE id=? AND project=? AND action='submit' AND status='completed'").get(value.source??'',value.project);if(!source)throw fail(400,'Ein erfolgreich eingereichter Stand wird benötigt.');const result=JSON.parse(source.result);if(reviewState(db,source)!=='approved')throw fail(409,'Die zweite Person muss genau diesen eingereichten Stand zuerst freigeben.');if(source.owner!==m.id&&!can(db,m,value.project,'admin'))throw fail(403,'Übernehmen darf der Autor oder der Projekt-Admin.');if(result.workflow==='pull-request'||metadata(db,'room:v1:project:'+value.project)?.repository&&(metadata(db,'room:v1:project:'+value.project).workflow??'pull-request')==='pull-request')throw fail(409,'Dieses Repository wird ausschließlich über Pull Request, CI und Review zusammengeführt.');
      const linked=db.prepare("SELECT t.* FROM tasks t JOIN workspaces w ON w.task=t.id WHERE w.job=json_extract(?,'$.worktree')").get(source.payload);
      if(linked){const current=completion(db,linked).result;if(!current||current.id!==source.id||current.changedAfter||current.contractRevision!==taskContract(db,linked).revision)throw fail(409,'Der Prüfstand ist nicht mehr aktuell. Erneut einreichen und prüfen lassen.');}
      if(!/^[a-f0-9]{40,64}$/.test(result.commit)||!/^studio\/[\w-]+$/.test(result.branch))throw fail(400,'Ungültiger Git-Stand.');payload={commit:result.commit,branch:result.branch,reviewJob:source.id};

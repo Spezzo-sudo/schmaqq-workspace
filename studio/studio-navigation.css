@@ -94,3 +94,10 @@
 /* Every fold-out is a full-size tap target. */
 .team-shell details>summary{min-height:44px;display:flex;align-items:center;gap:8px;cursor:pointer}
 .team-shell .rw-room-welcome button{color:var(--schmaqq-ink);border-color:var(--schmaqq-rule-strong)}
+.team-shell .studio-project-roles{margin:28px 0;max-width:780px}
+.team-shell .studio-project-roles .team-members li{flex-wrap:wrap}
+.team-shell .studio-role-picks{display:flex;flex-wrap:wrap;gap:6px;width:100%;padding-left:52px}
+.team-shell .studio-role-picks label{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 10px;border:1px solid var(--schmaqq-rule-strong);background:var(--schmaqq-paper-light);font-size:13px;cursor:pointer}
+.team-shell .studio-role-picks label.on{background:var(--schmaqq-acid);border-color:var(--schmaqq-ink)}
+.team-shell .studio-role-picks input{width:18px;height:18px;margin:0}
+.team-shell .studio-project-roles h3{margin:22px 0 10px;font-size:16px}
