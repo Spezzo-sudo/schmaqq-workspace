@@ -2,6 +2,7 @@ import {z} from 'zod';
 import {randomUUID} from 'node:crypto';
 import {transaction} from './store.mjs';
 import {requirePermission,selfApproval} from './project-roles.mjs';
+import {hiddenPractice} from './practice.mjs';
 import {metadata,storeMetadata,teamEvent,taskContract,taskView,completion,latestGeneralResult,invalidateTaskResult,teamError,hasCodeChanges,quietJobActions} from './team-model.mjs';
 const id=z.string().regex(/^[\w-]{1,100}$/),revision=z.number().int().min(0);
 const actions=z.discriminatedUnion('action',[
@@ -43,7 +44,8 @@ export function createTeamRoute({db,user,readJSON,parse}){
    // Only kind and state of unfinished work, never payloads or results.
    const active=db.prepare(`SELECT j.id,j.owner,j.project,j.action,j.status,j.created,w.task FROM jobs j LEFT JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree')
     WHERE j.status IN ('queued','running','cancelling') AND (? IS NULL OR j.project=?) ORDER BY j.created DESC LIMIT 20`).all(project,project);
-   send({tasks,events,unread,active});return true;
+   const visible=p=>!hiddenPractice(db,p,member.id);
+   send({tasks:tasks.filter(t=>visible(t.project)),events:events.filter(e=>!e.project||visible(e.project)),unread:unread.filter(e=>!e.project||visible(e.project)),active:active.filter(j=>visible(j.project))});return true;
   }
   if(method!=='POST')throw teamError(405,'Methode nicht erlaubt.');
   const v=parse(actions,await readJSON(req));
