@@ -26,7 +26,6 @@
 .team-shell .studio-project-back{display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;padding:7px 0;margin-bottom:7px;color:var(--schmaqq-muted);font:700 12px/1.4 var(--schmaqq-sans)}
 .team-shell .studio-project-back svg{transform:rotate(180deg)}
 .team-shell .studio-project-back:hover{color:var(--schmaqq-ink);text-decoration:underline;text-decoration-color:var(--schmaqq-acid);text-underline-offset:4px}
-.studio-mobile-nav,.studio-more-backdrop{display:none}
 @media (max-width:650px){
  .team-shell .rw-sidebar{display:none}
  .team-shell .rw-main{height:100dvh;padding-bottom:calc(67px + env(safe-area-inset-bottom,0px))}
@@ -39,16 +38,42 @@
  .team-shell .team-areas button{flex:0 0 auto!important;width:auto!important;min-width:max-content!important;max-width:none;display:flex;flex-direction:row;gap:6px;min-height:49px;padding:10px 9px;border:0;border-bottom:3px solid transparent;border-top:0;background:transparent;color:var(--schmaqq-muted);font:700 12px/1.35 var(--schmaqq-sans);scroll-snap-align:start}
  .team-shell .team-areas button.active{background:transparent;border-top:0;border-bottom:3px solid var(--schmaqq-ink);color:var(--schmaqq-ink)}
  .team-shell .team-project-content{padding-bottom:14px}
- .team-shell .studio-more-backdrop{position:fixed;inset:0;display:flex;align-items:flex-end;z-index:150;background:rgba(17,18,37,.6)}
- .team-shell .studio-more-panel{width:100%;padding:20px 17px max(22px,env(safe-area-inset-bottom,0px));background:var(--schmaqq-paper);border-top:3px solid var(--schmaqq-ink);box-shadow:0 -8px 36px rgba(17,18,37,.2)}
- .team-shell .studio-more-panel h2{margin:0 0 14px;font-size:20px;line-height:1.3;color:var(--schmaqq-ink)}
- .team-shell .studio-more-panel>button{display:flex;align-items:center;gap:12px;width:100%;min-height:53px;text-align:left;padding:12px 13px;border:1px solid var(--schmaqq-rule);background:var(--schmaqq-paper-light);color:var(--schmaqq-ink);margin-bottom:8px;font:700 14px/1.35 var(--schmaqq-sans)}
- .team-shell .studio-more-panel>button svg:last-child{margin-left:auto}
- .team-shell .studio-more-panel>button.studio-more-close{background:transparent;border-color:transparent;margin:5px 0 0;justify-content:center}
- .team-shell .studio-more-panel>button.studio-more-close svg{margin-left:0}
  .team-shell .studio-projects-page .team-section-head{align-items:flex-start}
  .team-shell .studio-projects-page .team-section-head .rw-button{flex-shrink:0}
  .team-shell .studio-conversations-page .team-work-card{gap:10px}
  .team-shell .studio-page-intro{font-size:13px}
 }
-@media(prefers-reduced-motion:reduce){.studio-mobile-nav *, .studio-more-panel *{transition:none!important}}
+
+/* Paket Navigation: cards keep text left next to an icon; account via initials; general chat and knowledge. */
+.team-shell .team-work-card>span{flex:1}
+.team-shell .studio-account-button{display:none}
+.team-shell .studio-home-projects{display:inline-flex;align-items:center;gap:6px;margin:22px 0 8px;font:700 14px/1.4 var(--schmaqq-sans);color:var(--schmaqq-ink);background:none;border:0;padding:8px 0;cursor:pointer;text-decoration:underline;text-decoration-color:var(--schmaqq-acid);text-decoration-thickness:3px;text-underline-offset:5px}
+.team-shell .studio-account-profile .studio-signout{margin:0 0 0 auto}
+.team-shell .studio-account-page>section{max-width:780px;margin-bottom:30px}
+.team-shell .studio-account-page .plugin-grants{padding:0;border:0;background:transparent}
+.team-shell .studio-general-chat,.team-shell .studio-general-knowledge{max-width:780px;margin-bottom:34px}
+.team-shell .studio-general-chat .studio-page-intro,.team-shell .studio-general-knowledge .studio-page-intro{margin:4px 0 14px}
+.studio-general-messages{list-style:none;margin:0 0 14px;padding:0;max-height:52vh;overflow:auto;border:1px solid var(--schmaqq-rule);background:var(--schmaqq-paper-light)}
+.studio-general-messages li{display:flex;gap:11px;padding:12px 14px;border-bottom:1px solid var(--schmaqq-rule)}
+.studio-general-messages li:last-of-type{border-bottom:0}
+.studio-general-messages li>div{min-width:0}
+.studio-general-messages p{margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--schmaqq-ink)}
+.studio-general-messages .studio-general-meta{display:flex;gap:9px;align-items:baseline;font-size:12px;margin-bottom:2px}
+.studio-general-meta time{color:var(--schmaqq-muted)}
+.studio-general-composer{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.studio-general-composer textarea{width:100%;min-height:52px;max-height:200px;resize:vertical;font:inherit;font-size:16px;padding:12px;border:1px solid var(--schmaqq-rule-strong);background:var(--schmaqq-paper-light);color:var(--schmaqq-ink)}
+.team-shell .studio-general-knowledge .team-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.team-shell .studio-general-knowledge .team-work-card small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.team-shell .studio-doc-form{margin:10px 0 20px}
+.team-shell .studio-doc-form textarea{min-height:200px}
+.team-shell .studio-briefing{margin:0 0 24px;padding:8px 28px 0}
+.team-shell .studio-briefing p{font-size:13px;line-height:1.6;color:var(--schmaqq-muted);max-width:640px}
+.team-shell .studio-briefing .team-form{margin:10px 0 12px;max-width:640px}
+@media (max-width:650px){
+ .team-shell .rw-topbar .rw-breadcrumb{visibility:hidden}
+ .team-shell .studio-account-button{display:inline-flex;align-items:center;justify-content:center;margin-left:auto;width:40px;height:40px;border-radius:50%;border:2px solid var(--schmaqq-ink);background:var(--schmaqq-paper-light);color:var(--schmaqq-ink);font:800 13px/1 var(--schmaqq-sans);cursor:pointer}
+ .team-shell .studio-account-button.active{background:var(--schmaqq-acid)}
+ .team-shell .studio-account-button:focus-visible{outline:3px solid var(--schmaqq-ink);outline-offset:2px}
+ .team-shell .studio-briefing{padding:8px 16px 0}
+ .team-shell .studio-account-profile{flex-wrap:wrap}
+}

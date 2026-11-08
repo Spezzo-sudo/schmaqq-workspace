@@ -17,14 +17,14 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
 
 ## 2. Offen und als Nächstes (in dieser Reihenfolge)
 
-1. **Navigation nachschärfen (ein Paket, ein PR, ein Livegang).** Prüfung von PR #62 am Handy (08.11.):
-   - Allgemeiner Chat (#Allgemein) gibt es nur in der alten Ansicht („Frühere Gespräche öffnen“),
-     anderes Design, ohne Menü unten = Sackgasse.
-   - Gespräche-Seite wiederholt nur die Projektliste; Text in den Karten verrutscht (mittig).
-   - Projekte steht doppelt (Meine Arbeit und Projekte).
-   - Mein Konto: kein nächster Schritt oben, 5 Dienst-Karten mit Fachwörtern (MCP, OAuth, Copilot,
-     Codex „nicht integriert“), ChatGPT-Verbindung doppelt; Frühere Gespräche/Dokumente eingeklappt.
-   - Team und Mein Konto nur über „Mehr“; Kopfzeile wiederholt den Seitentitel.
+1. **Navigation nachschärfen – gebaut, PR offen (Branch `ccr-02ac3638-3ksxjc`).** Handy unten:
+   Arbeit · Projekte · Gespräche · Team; Mein Konto über die Initialen oben rechts („Mehr“ entfällt).
+   Aus der früheren Ansicht übernommen: #Allgemein (Gespräche oben, `studio/studio-general.tsx`),
+   Allgemeines Wissen (Projekte unten; Server liefert jetzt `project` je Dokument), Daten herunterladen
+   (Mein Konto), Briefing kopieren (Projekt → Wissen, ohne KI-Verbindung). Mein Konto: Abmelden, ChatGPT
+   verbinden, verbundene Assistenten, ChatGPT-Anmeldung, Daten; Rest unter „Für Entwickler“ inkl. Link
+   zur früheren Ansicht. Noch nicht übernommen: Hilfe/Anleitung (beschreibt die alte Ansicht).
+   Ablauf: Marco „Ja“ → zusammenführen → Hermes prepare/live mit main-Commit nach „JA LIVE <kurz>“.
 2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
    Vorschau ansehen, „Passt“. Das schliesst Etappe 1 ab.
 3. **Etappe 3 „KI im Raum“** (siehe PLAN.md): erst klären, ob der ChatGPT-Business-Workspace die

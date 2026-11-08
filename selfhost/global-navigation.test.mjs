@@ -42,3 +42,17 @@ test('mobile global bar does not replace the project conversation component',()=
  assert.match(css,/\.team-shell \.studio-mobile-nav\{position:fixed/);
  assert.doesNotMatch(page,/Codex in Studio ausführen/);
 });
+
+test('every former-view function has a place in the new navigation',()=>{
+ const page=readFileSync(new URL('../studio/team-workspace.tsx',import.meta.url),'utf8');
+ const general=readFileSync(new URL('../studio/studio-general.tsx',import.meta.url),'utf8');
+ assert.match(page,/<GeneralChat /);
+ assert.match(page,/<GeneralKnowledge\/>/);
+ assert.match(page,/<DownloadAll\/>/);
+ assert.match(page,/<ProjectBriefing /);
+ assert.match(page,/<PluginGrants\/>/);
+ assert.match(page,/studio-account-button/);
+ assert.doesNotMatch(page,/studio-more/);
+ assert.match(general,/channel:'general'/);
+ assert.match(general,/filter\(d=>!d\.project\)/);
+});
