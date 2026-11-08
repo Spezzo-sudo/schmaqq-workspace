@@ -1,51 +1,44 @@
-# Übergabe – Stand 08.11.2026 (für Marco, ChatGPT/Codex, Claude)
+# Übergabe – Stand 08.11.2026 (nach Livegang 2e7c0f7) (für Marco, ChatGPT/Codex, Claude)
 
-Lies zuerst diese Datei, dann `docs/PLAN.md` (Etappen) und `docs/OPERATIONS.md` (Livegang).
+Lies zuerst diese Datei, dann `docs/PLAN.md` (Etappen), `docs/OPERATIONS.md` (Livegang) und `docs/SECURITY.md`.
 Arbeitsweise: Änderungen nur per Branch und Pull Request nach `main`; zusammenführen nur nach
 Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes.
 
 ## 1. Was live ist
 
-- Live auf studio.schmaqq.com: `84b60bd` (PR #58). Darin: verständliche Seiten, feste Leiste unten,
-  eine Sprache für den Aufgabenstand (`studio/task-next-step.ts`), Verlauf in Alltagssprache.
-- Im Livegang (Hermes, alter 8-Schritte-Ablauf): `d2c2df0` (PR #59): Zeitstrahl mit Symbolen pro
-  Aufgabe, Live als echter Schritt („Ist jetzt live“, Satz „Wie genau?“ in Einstellungen → Live gehen),
-  Prüfliste beim Anschauen, Startseite und Menü in Markenfarben (Tinte #111225, Papier #f1efe8, Lime #d9ff6b).
-  Nach dem Livegang: in Klimafinder → Einstellungen → Live gehen „Wir schalten selbst live“ wählen und
-  „Marco startet den Hermes-Auftrag production-deploy-main“ eintragen.
-- Klimafinder ist startklar (GitHub-App „SCHMAQQ Studio studio.schmaqq.com“ nur auf Klimafinder-CH,
-  Server-Worker, Live-Weg manuell). Die Aufgabe „Leise-Priorität …“ ist fertig gebaut und kann mit
-  „Zur Prüfung geben“ als Pull Request zu GitHub; danach braucht es Markus' „Passt“.
+- Live auf studio.schmaqq.com: `2e7c0f7` (PR #62, 08.11.2026, Hermes RESULT=PASS, Backup
+  `predeploy-2e7c0f7-20261108T124725Z.sqlite`, Rückweg `releases/d2c2df0…`). Enthält PR #59, #60, #62.
+- PR #60: Livegang jetzt mit `selfhost/deploy/studio-deploy.sh prepare|live <voller main-Commit>`
+  (siehe OPERATIONS.md). GitHub-Prüfung läuft nur bei Pull Requests (~1,5 Min.), keine Screenshots.
+  **Actions-Minuten knapp:** Wenn das Limit droht, Workflow abschalten, Prüfung auf dem VPS.
+- PR #62: globale Navigation (Handy unten: Arbeit · Projekte · Gespräche · Mehr → Team, Mein Konto).
+- Klimafinder: startklar (GitHub-App nur auf Klimafinder-CH, Server-Worker, Live-Weg manuell).
+  Offen prüfen: Einstellungen → Live gehen „Wir schalten selbst live“ gesetzt?
 
 ## 2. Offen und als Nächstes (in dieser Reihenfolge)
 
-1. **Livegang `d2c2df0` abschliessen** (Hermes meldet nach Schritt 5, dann „JA LIVE d2c2df0“).
-2. **PR #60 „Schneller Livegang“** (geprüft, grün, noch nicht zusammengeführt):
-   `selfhost/deploy/studio-deploy.sh` (prepare/live, ~10 s statt ~5 min) und eine sparsame
-   GitHub-Prüfung nur bei Pull Requests (~1,5 Min., keine Browser-Screenshots).
-   **Achtung Actions-Minuten:** Früher liefen Browser-Prüfungen bei jeder Änderung und sprengten das
-   Monatslimit; deshalb wurde auf Hermes/VPS umgestellt. Wenn das Limit wieder knapp wird: Workflow
-   abschalten, die Prüfung macht dann der VPS (`node selfhost/verify.mjs` vor `prepare`).
-   Erster Einsatz nach dem Zusammenführen (Skript liegt noch nicht im Live-Stand), Hermes:
-   ```bash
-   cd /root && git clone --quiet <bisherige-Repo-Adresse> studio-bootstrap && \
-   git -C studio-bootstrap show <main-commit>:selfhost/deploy/studio-deploy.sh > /root/studio-deploy.sh
-   STUDIO_REPO_URL=<bisherige-Repo-Adresse> bash /root/studio-deploy.sh prepare <main-commit>
-   # nach „JA LIVE <kurz>“:
-   bash /root/studio-deploy.sh live <main-commit>
-   ```
-   Danach immer: `bash /opt/schmaqq-studio/current/selfhost/deploy/studio-deploy.sh prepare|live <commit>`.
-3. **Navigation / Gesamtstruktur neu (grösstes UX-Problem jetzt):** Das Menü zeigt nur Meine Arbeit,
-   Projekte, Team. Der allgemeine Chat, Konto-Einstellungen, verbundene Assistenten (ChatGPT/Claude
-   trennen), „Mit ChatGPT anmelden“ und „Frühere Gespräche/Dokumente“ sind nur über
-   Team → ganz unten → Aufklappen erreichbar. Ziel: ein Menü, das das ganze Studio zeigt, z. B.
-   Meine Arbeit · Projekte · Gespräche (allgemeiner Chat) · Team · Mein Konto (Profil, verbundene
-   Assistenten, Anmeldung, Abmelden). Gleiche Regeln wie bisher (siehe 4). Erst Konzept + Screenshots, dann bauen.
-4. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
+1. **Navigation nachschärfen – gebaut, PR offen (Branch `ccr-02ac3638-3ksxjc`).** Handy unten:
+   Arbeit · Projekte · Gespräche · Team; Mein Konto über die Initialen oben rechts („Mehr“ entfällt).
+   Aus der früheren Ansicht übernommen: #Allgemein (Gespräche oben, `studio/studio-general.tsx`),
+   Allgemeines Wissen (Projekte unten; Server liefert jetzt `project` je Dokument), Daten herunterladen
+   (Mein Konto), Briefing kopieren (Projekt → Wissen, ohne KI-Verbindung). Mein Konto: Abmelden, ChatGPT
+   verbinden, verbundene Assistenten, ChatGPT-Anmeldung, Daten; Rest unter „Für Entwickler“ inkl. Link
+   zur früheren Ansicht. Noch nicht übernommen: Hilfe/Anleitung (beschreibt die alte Ansicht).
+   GitHub für alle Mitglieder: Die Studio-App ist installierbar für jedes GitHub-Konto (Manifest `public:true`;
+   die bestehende App stellt Marco auf GitHub unter App → Advanced → „Make public“ um). Repos bleiben privat.
+   Schutz: Studio arbeitet nur mit Installationen, die ein Mitglied über Studio registriert hat, oder mit dem
+   Konto, dem die App gehört (`installationFor` in `selfhost/github-app.mjs`, Test „stranger/evil“).
+   Danach: Markus verbindet ein eigenes privates Repo (= Etappe 1).
+   Sicherheit im selben PR (siehe `docs/SECURITY.md`): nur mit Einladung, Links 24 h, Mitglieder schlagen vor und
+   Marco gibt frei, „eingeladen von“, offene Einladungen zurücknehmen, Mitglied entfernen (`selfhost/team-access.mjs`,
+   Test `selfhost/team-access.test.mjs`).
+   Reihenfolge: „Ja“ → zusammenführen → „JA LIVE“ → erst danach GitHub-App auf „Make public“.
+   Ablauf: Marco „Ja“ → zusammenführen → Hermes prepare/live mit main-Commit nach „JA LIVE <kurz>“.
+2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
    Vorschau ansehen, „Passt“. Das schliesst Etappe 1 ab.
-5. **Etappe 3 „KI im Raum“** (siehe PLAN.md): erst klären, ob der ChatGPT-Business-Workspace die
+3. **Etappe 3 „KI im Raum“** (siehe PLAN.md): erst klären, ob der ChatGPT-Business-Workspace die
    Codex-Anmeldung auf dem Server erlaubt. „Selbst bearbeiten“ bleibt immer als Weg ohne KI.
-6. Etappe 0 Rest: Zugänge zum VPS auflisten (Hermes hat Root über Telegram – Risiko), Fehler
+4. Etappe 0 Rest: Zugänge zum VPS auflisten (Hermes hat Root über Telegram – Risiko), Fehler
    „hunderte gleiche Aufgaben“ über den ChatGPT-Connector untersuchen.
 
 ## 3. Wichtige Dateien

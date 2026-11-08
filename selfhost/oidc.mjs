@@ -1,6 +1,7 @@
 import {randomUUID,createHash} from 'node:crypto';
 import {createRemoteJWKSet,jwtVerify} from 'jose';
 import {token,digest,transaction} from './store.mjs';
+import {consumeInvite} from './team-access.mjs';
 
 const fail=message=>Object.assign(new Error(message),{status:400});
 export function createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,provider}){
@@ -65,14 +66,14 @@ export function createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,
     if(payload.email_verified!==true||!/^\S+@\S+\.\S+$/.test(email)||email.length>200)throw fail('email');
     // Email matching alone must never link an existing Studio account.
     if(db.prepare('SELECT 1 FROM members WHERE email=?').get(email))throw fail('existing');
-    let role;
+    let role;const id=randomUUID();
     if(a.setup&&db.prepare("SELECT value FROM workspace_meta WHERE key='bootstrap'").get()?.value===a.setup&&!db.prepare('SELECT 1 FROM members LIMIT 1').get()){
      role='owner';db.prepare("DELETE FROM workspace_meta WHERE key='bootstrap'").run();
     }else{
      const invite=a.invite&&db.prepare('SELECT * FROM invites WHERE hash=? AND expires>?').get(a.invite,Date.now());
-     if(!invite||invite.email!==email)throw fail('invite');role=invite.role;db.prepare('DELETE FROM invites WHERE hash=?').run(a.invite);
+     if(!invite||invite.email!==email)throw fail('invite');role=invite.role;consumeInvite(db,a.invite,id);db.prepare('DELETE FROM invites WHERE hash=?').run(a.invite);
     }
-    const id=randomUUID(),name=typeof payload.name==='string'?payload.name.slice(0,160):email;
+    const name=typeof payload.name==='string'?payload.name.slice(0,160):email;
     db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(id,name,email,'external-only',role,Date.now());
     db.prepare('INSERT INTO oidc_identities VALUES(?,?,?,?)').run(p.issuer,p.clientId,payload.sub,id);return id;
    });

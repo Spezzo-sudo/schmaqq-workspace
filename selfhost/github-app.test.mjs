@@ -15,7 +15,7 @@ const {publicKey,privateKey}=generateKeyPairSync('rsa',{modulusLength:2048});
 const pem=privateKey.export({type:'pkcs1',format:'pem'});
 
 function fakeGithub(){
- const calls=[],installations={4242:'Spezzo-sudo'},repoInstallation={'spezzo-sudo/klimafinder-ch':4242};
+ const calls=[],installations={4242:'Spezzo-sudo',5555:'stranger'},repoInstallation={'spezzo-sudo/klimafinder-ch':4242,'stranger/evil':5555};
  let issued=0;
  const server=http.createServer(async(req,res)=>{
   let body='';for await(const part of req)body+=part;
@@ -34,7 +34,7 @@ function fakeGithub(){
   }
   if(req.method==='GET'&&(m=url.pathname.match(/^\/repos\/([^/]+\/[^/]+)\/installation$/))){
    if(!await appJwt())return json(401,{});
-   const id=repoInstallation[m[1].toLowerCase()];return id?json(200,{id}):json(404,{});
+   const id=repoInstallation[m[1].toLowerCase()];return id?json(200,{id,account:{login:installations[id]}}):json(404,{});
   }
   if(req.method==='POST'&&(m=url.pathname.match(/^\/app\/installations\/(\d+)\/access_tokens$/))){
    if(!await appJwt())return json(401,{});
@@ -63,7 +63,7 @@ test('return paths after GitHub stay inside Studio',()=>{
 test('GitHub App manifest asks only for repository contents and pull requests',()=>{
  const m=githubAppManifest('https://studio.schmaqq.com');
  assert.deepEqual(m.default_permissions,{contents:'write',pull_requests:'write',metadata:'read'});
- assert.equal(m.public,false);
+ assert.equal(m.public,true);
  assert.equal(m.redirect_url,'https://studio.schmaqq.com/api/github-app/created');
  assert.equal(m.setup_url,'https://studio.schmaqq.com/api/github-app/installed');
  assert.equal(m.hook_attributes.active,false);
@@ -149,6 +149,8 @@ test('GitHub App: owner creates and installs it; redirects are single-use and br
   assert.deepEqual(tokenCall.body,{repositories:['Klimafinder-CH'],permissions:{contents:'write',pull_requests:'write',metadata:'read'}});
   await assert.rejects(holder.app.repositoryToken('Spezzo-sudo/other'),/noch keinen Zugriff/);
   await assert.rejects(holder.app.repositoryToken('../etc'),/Repository ungültig/);
+  // Someone outside Studio installed the app on their own account: Studio refuses to work with it.
+  await assert.rejects(holder.app.repositoryToken('stranger/evil'),/nicht über Studio freigegeben/);
   assert.equal(await holder.app.branchProtected('Spezzo-sudo/Klimafinder-CH','main'),true);
   assert.equal(await holder.app.branchProtected('Spezzo-sudo/Klimafinder-CH','develop'),false);
   await assert.rejects(holder.app.branchProtected('Spezzo-sudo/Klimafinder-CH','../x'),/Zielbranch ungültig/);

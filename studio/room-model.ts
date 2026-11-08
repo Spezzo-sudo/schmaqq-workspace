@@ -1,6 +1,6 @@
 import type {Task} from '../app/workspace-model';
 export type Room={id:string;title:string;description:string;color:string;stage:string;openTasks?:number;lastMessage?:number};
-export type RoomMember={id:string;name:string;role:string;seen:number};
+export type RoomMember={id:string;name:string;role:string;seen:number;removed?:number|boolean;invitedBy?:string|null};
 export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;replyTo?:string|null;kind?:'human'|'ai-shared';model?:string;taskId?:string|null};
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};

@@ -19,7 +19,7 @@ test('two members: private sessions, isolated devices, jobs, documents and share
   const invite=createInvite(studio.db,'owner@test.invalid','owner');const owner=await request('/api/auth/register',{invite,name:'Marco',password:'fixture-password-12345'});assert.equal(owner.status,200);
   assert.equal((await request('/api/auth/register',{invite,name:'Duplicate',password:'fixture-password-12345'})).status,403);
   const secondInvite=await request('/api/invites',{email:'markus@test.invalid'},owner.cookie);const second=await request('/api/auth/register',{invite:new URL(secondInvite.data.link).searchParams.get('invite'),name:'Markus',password:'fixture-password-54321'});assert.equal(second.status,200);
-  assert.equal((await request('/api/invites',{email:'other@test.invalid'},second.cookie)).status,403);
+  {const proposal=await request('/api/invites',{email:'other@test.invalid'},second.cookie);assert.equal(proposal.status,200);assert.equal(proposal.data.link,undefined);}
   const mine=await request('/api/development',{action:'device',name:'Marco-PC'},owner.cookie);const his=await request('/api/development',{action:'device',name:'Markus-PC'},second.cookie);
   assert.equal((await request('/api/development',{action:'job',device:his.data.id,project:'website',operation:'prepare'},owner.cookie)).status,403);
   const queued=await request('/api/development',{action:'job',device:mine.data.id,project:'website',operation:'prepare'},owner.cookie);assert.equal(queued.status,200);
