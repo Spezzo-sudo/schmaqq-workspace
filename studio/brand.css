@@ -136,9 +136,12 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
 .studio-brand svg{width:100%;max-width:220px;height:auto;display:block;overflow:visible}
 .studio-brand path,.brand-period{fill:var(--ink)}
 .brand-context{font:8px/1.5 var(--mono);letter-spacing:.14em;color:var(--muted)}
-.studio-brand.is-playing svg>g{animation:studio-logo-wave 350ms ease-out both}
+.studio-brand.is-playing svg>g{animation:studio-logo-wave 480ms ease-out both}
 .studio-brand.is-playing .brand-period{animation:studio-logo-dot 800ms ease-out both;transform-box:fill-box;transform-origin:center}
-@keyframes studio-logo-wave{0%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}50%{fill:var(--coral)}}
+@keyframes studio-logo-wave{0%,100%{transform:translateY(0)}35%{transform:translateY(-7px)}}
+/* The letters turn coral as the wave passes (the colour sits on the path, so it is animated there). */
+.studio-brand.is-playing svg>g>path{animation:studio-logo-red 480ms ease-out both;animation-delay:inherit}
+@keyframes studio-logo-red{25%,65%{fill:var(--coral,#ff6f59)}}
 @keyframes studio-logo-dot{0%,50%{transform:scale(.2)}80%{transform:scale(1.25)}100%{transform:scale(1)}}
 .studio-sidebar-brand{margin:0 10px 28px;padding-bottom:20px;border-bottom:1px solid var(--line)}
 .sidebar{background:var(--paper);padding-top:27px}
@@ -601,3 +604,8 @@ input[type=checkbox], input[type=radio] { min-height: auto; accent-color: var(--
  .task-preview .button {white-space:normal;}
  .team-invite .invite-form {display:grid;width:100%;}
 }
+
+/* Studio extension of the website wordmark: the word, its square period, then a small lime "Studio" label. */
+.studio-brand.with-tag{flex-direction:row;align-items:flex-end;gap:0;width:auto}
+.studio-brand.with-tag svg{width:112px;max-width:none}
+.studio-brand .brand-tag{font:700 10px/1 var(--mono,monospace);letter-spacing:.14em;text-transform:uppercase;background:var(--acid,#d9ff6b);color:var(--ink,#111225);padding:4px 6px 3px;margin-bottom:1px}
