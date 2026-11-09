@@ -1,12 +1,12 @@
 import { spawn } from 'node:child_process';
-import { mkdirSync,readFileSync,readdirSync,lstatSync,existsSync,realpathSync,appendFileSync } from 'node:fs';
+import { mkdirSync,readFileSync,readdirSync,lstatSync,existsSync,realpathSync,appendFileSync,rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {aiCapabilities,runLocalAi} from './local-ai.mjs';
 import {command} from './process.mjs';
 import {launcherCommand,launcherServe,launcherPrograms} from './job-client.mjs';
-import {projectDirectory,findPrograms,requiredPrograms} from './project-plan.mjs';
+import {projectDirectory,findPrograms,requiredPrograms,outputDirectories,outputDirectoryOf,outputFolderMessage,gitAddMessage} from './project-plan.mjs';
 import {allowedFile,readSource,readSourceSection,saveSource,createSource} from './files.mjs';
 import {runCodex} from './codex-run.mjs';
 import {sourceRevision,stableSource} from './source-revision.mjs';
@@ -112,6 +112,12 @@ export class LocalRunner{
    // No remote URL or command output in shared logs: a configured URL may contain credentials.
    const remoteBranches=await probe('Hauptzweig erreichbar (Lesezugriff)',['ls-remote','--exit-code','origin',`refs/heads/${p.base}`]);
    const author=await probe('Lokale Git-Identität',['var','GIT_AUTHOR_IDENT']);
+   // A preview output folder that already holds project files would be excluded from Git
+   // and overwritten by the build: creating or saving sources there can never work.
+   const outputs=outputDirectories(p);
+   if(outputs.length&&remoteBranches){let clash=[];try{clash=(await this.git(p.repo,'ls-tree','-r','--name-only',`origin/${p.base}`,'--',...outputs)).split('\n').filter(Boolean);}catch{}
+    const folder=clash.length?outputs.find(d=>clash.some(f=>f.startsWith(d+'/'))):null;
+    checks.push({label:'Vorschau-Ausgabeordner getrennt von Projektdateien',ok:!clash.length,...(folder?{hint:`Im Ausgabeordner „${folder}/“ liegen bereits Projektdateien (zum Beispiel ${clash[0]}). Studio würde sie beim Bauen überschreiben und neue Dateien dort nicht speichern. In den Projekteinstellungen unter „Vorschau“ einen eigenen Ausgabeordner eintragen.`}:{})});}
    const configured=Array.isArray(p.check)&&p.check.length>0&&p.check.every(x=>typeof x==='string');
    checks.push({label:'Lokaler Testbefehl konfiguriert',ok:configured},{label:'Codex lokal freigegeben',ok:!!p.allowCodex,optional:true});
    return {ready:!!remote&&!!remoteBranches&&!!author&&configured&&checks.filter(c=>!c.optional).every(c=>c.ok),base:p.base,checks,note:'Nur Lesezugriff geprüft. Schreibrechte und Testausführung folgen beim Einreichen.'};
@@ -141,8 +147,9 @@ export class LocalRunner{
   }
   if(await this.git(w.dir,'branch','--show-current')!==w.branch)throw new Error('Arbeitszweig wurde außerhalb des Workspace geändert.');
   if(job.action==='create-file'){
+   const folder=outputDirectoryOf(String(job.payload.file??''),p);if(folder)throw new Error(outputFolderMessage(job.payload.file,folder));
    const created=createSource(w.dir,job.payload.file,job.payload.content??'');
-   await this.git(w.dir,'add','--',job.payload.file);
+   try{await this.git(w.dir,'add','--',job.payload.file);}catch(e){rmSync(path.join(w.dir,...job.payload.file.split('/')),{force:true});throw new Error(gitAddMessage(job.payload.file,e.message));}
    control.onEvent?.({type:'files',text:'Datei erstellt: '+job.payload.file});
    return {...created,source:await sourceRevision(w.dir,control)};
   }
@@ -199,7 +206,7 @@ export class LocalRunner{
     if(!real.startsWith(workspace+path.sep)||real===workspace)throw new Error('Vorschau-Ausgabe muss innerhalb der Arbeitskopie liegen.');
     const files={};let bytes=0,count=0;
     function collect(dir){for(const item of readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,item.name);if(lstatSync(full).isSymbolicLink())throw new Error('Symlinks sind in Vorschauen nicht erlaubt.');if(item.isDirectory())collect(full);else{const data=readFileSync(full);bytes+=data.length;if(bytes>5000000||++count>500)throw new Error('Vorschau überschreitet 5 MB oder 500 Dateien.');files[path.relative(real,full).split(path.sep).join('/')]=data.toString('base64');}}}
-    collect(real);if(!files['index.html'])throw new Error('Gebauter Vorschau fehlt index.html.');return {previewBundle:files,source:stableSource(before,await sourceRevision(w.dir,control))};
+    collect(real);if(!files['index.html'])throw new Error(`Die Vorschau wurde gebaut, aber im Ausgabeordner „${p.preview.directory}/“ liegt keine index.html. Prüfe, ob der Build-Befehl dorthin schreibt und ob in den Projekteinstellungen der richtige Ausgabeordner eingetragen ist.`);return {previewBundle:files,source:stableSource(before,await sourceRevision(w.dir,control))};
    }
    if(!p.preview?.argv||!p.preview?.url)throw new Error('Vorschau auf diesem PC noch nicht konfiguriert.');
    // A long-running preview server would execute project code outside the job launcher.
