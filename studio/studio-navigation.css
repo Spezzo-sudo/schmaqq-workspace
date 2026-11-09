@@ -26,6 +26,8 @@
 .team-shell .studio-project-back{display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;padding:7px 0;margin-bottom:7px;color:var(--schmaqq-muted);font:700 12px/1.4 var(--schmaqq-sans)}
 .team-shell .studio-project-back svg{transform:rotate(180deg)}
 .team-shell .studio-project-back:hover{color:var(--schmaqq-ink);text-decoration:underline;text-decoration-color:var(--schmaqq-acid);text-underline-offset:4px}
+/* The phone bar exists only on narrow screens (above 650 px the sidebar is the one navigation). */
+.team-shell .studio-mobile-nav{display:none}
 @media (max-width:650px){
  .team-shell .rw-sidebar{display:none}
  .team-shell .rw-main{height:100dvh;padding-bottom:calc(67px + env(safe-area-inset-bottom,0px))}
@@ -143,3 +145,11 @@
 @keyframes studio-hint{0%,70%,100%{transform:translateY(0)}80%{transform:translateY(3px)}}
 @media (max-width:650px){.studio-scroll-hint{bottom:calc(67px + env(safe-area-inset-bottom,0px))}}
 @media(prefers-reduced-motion:reduce){.studio-scroll-hint button{animation:none}}
+/* Timeline: a short visible word under each symbol. */
+.task-timeline-track>li{position:relative}
+.task-timeline-label{display:block;text-align:center;font:700 10px/1.2 var(--schmaqq-sans);color:var(--schmaqq-muted);margin-top:4px;white-space:nowrap}
+.task-timeline-track>li.now .task-timeline-label{color:var(--schmaqq-ink)}
+/* Small helper texts a little darker and larger, so useful hints do not disappear. */
+.team-shell .team-work-card small{font-size:13px;color:var(--schmaqq-muted)}
+.team-shell .rw-muted{color:var(--schmaqq-muted)}
+.team-shell .team-next-hint{font-size:13px;color:var(--schmaqq-ink)}

@@ -98,8 +98,7 @@ export default function ProjectConnect({project,projectTitle='Projekt',initialDe
   {server&&<section className="server-github" aria-label="Verbindung mit GitHub">
    <h4>1. Mit GitHub verbinden</h4>
    {!githubApp||!access?<p role="status">Verbindung mit GitHub wird geprüft …</p>:appAccess?<>
-    <p><strong>Verbunden.</strong> Studio arbeitet mit {access.repository}. Fertige Änderungen kommen als Vorschlag (Pull Request) auf GitHub und werden erst nach eurer Freigabe übernommen.</p>
-    {access.protected===false&&<div className="rw-error" role="alert"><span>Der Hauptzweig „{access.base}“ ist auf GitHub nicht geschützt. Damit nichts ohne Vorschlag auf „{access.base}“ gelangt, lege eine Schutzregel mit „Require a pull request before merging“ an: <a href={`https://github.com/${access.repository}/settings/branches`} target="_blank" rel="noreferrer">Schutzregel bei GitHub anlegen ↗</a></span></div>}
+    <p><strong>Verbunden</strong> mit {access.repository}. Änderungen kommen als Vorschlag (Pull Request) und werden erst nach eurer Freigabe übernommen.</p>
    </>:githubApp.configured?<>
     <p>Studio braucht einmalig Zugriff auf {access.repository??'das Repository'}. Die Person, der das Repository gehört, gibt es auf GitHub frei und wählt selbst, welche ihrer Repositories Studio sehen darf, private eingeschlossen.</p>
     <button type="button" className="rw-button lime" disabled={linkBusy||busy} onClick={()=>void linkGithub('install')}>{linkBusy?'GitHub wird geöffnet …':'Zugriff bei GitHub erlauben'}</button>
@@ -118,8 +117,8 @@ export default function ProjectConnect({project,projectTitle='Projekt',initialDe
    </details>}
   </section>}
   <h4>{server?'2. Projekt prüfen':'Projekt prüfen'}</h4>
-  <p>Eine vorhandene <code>studio.project.json</code> beschreibt Vorbereitung, Tests und Vorschau unabhängig von der Programmiersprache. Bekannte Projektdateien können ebenfalls einen Vorschlag liefern.</p>
-  <details ref={advancedPanel} tabIndex={-1} open={advanced} onToggle={e=>setAdvanced(e.currentTarget.open)}><summary>Erweiterte Projektkonfiguration</summary>
+  <p>Studio schaut im Code nach, wie das Projekt getestet und als Vorschau gestartet wird, und zeigt dir einen Vorschlag.</p>
+  <details ref={advancedPanel} tabIndex={-1} open={advanced} onToggle={e=>setAdvanced(e.currentTarget.open)}><summary>Für Entwickler: eigene Konfiguration (<code>studio.project.json</code>)</summary>
    <label className="team-check"><input type="checkbox" checked={automatic} disabled={busy||keyBusy} onChange={e=>setAutomatic(e.target.checked)}/>Konfiguration aus dem Repository erkennen</label>
    {!automatic&&<>
     <p>Du kannst eine mit deiner verbundenen KI erarbeitete Konfiguration einfügen oder die Befehle selbst angeben. Hier wird kein zusätzlicher KI-Dienst aufgerufen.</p>
@@ -160,7 +159,7 @@ export default function ProjectConnect({project,projectTitle='Projekt',initialDe
       <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify(proposed,null,2)}</pre></details>
      <p>Mit der Bestätigung speicherst du diese Konfiguration{publish?' und erlaubst, fertige Änderungen als Vorschlag auf GitHub zu stellen':''}. Projektbefehle und mögliche Paketdownloads starten erst, wenn du Tests oder Vorschau ausführst.</p>
     </>}
-    {plan.state==='needs_configuration'&&<button type="button" className="rw-button" disabled={busy} onClick={()=>{setAutomatic(false);setAdvanced(true);requestAnimationFrame(()=>{advancedPanel.current?.scrollIntoView({block:'start'});advancedPanel.current?.focus({preventScroll:true});});}}>Konfiguration ergänzen</button>}
+    {plan.state==='needs_configuration'&&<button type="button" className="rw-button" disabled={busy} onClick={()=>{setAutomatic(false);setAdvanced(true);requestAnimationFrame(()=>{advancedPanel.current?.scrollIntoView({block:'start'});advancedPanel.current?.focus({preventScroll:true});});}}>Konfiguration einfügen (für Entwickler)</button>}
     {plan.state==='proposed'&&proposed&&<button type="button" className="rw-button lime" disabled={invalid||busy||keyBusy} onClick={()=>void connect('apply')}>{busy&&operation==='apply'?'Konfiguration wird gespeichert …':'Einrichtung bestätigen'}</button>}
    </section>}
   </div>

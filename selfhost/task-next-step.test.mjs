@@ -56,8 +56,8 @@ test('lists use one short status per task and sort it to the right person',()=>{
  assert.equal(s(t({status:'review',completion:{ready:false,result:shared}})).group,'others','own change waits for the other person');
  assert.deepEqual(s(t({status:'review',completion:{ready:false,result:shared}}),'other'),{text:'Bitte anschauen und freigeben',mine:true,group:'mine'});
  assert.equal(s(t({status:'review',completion:{ready:false,result:{...shared,state:'changes_requested'}}})).text,'Änderung gewünscht – bitte überarbeiten');
- assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved'}}})).text,'Freigegeben – bitte übernehmen');
- assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved',workflow:'pull-request'}}})).text,'Freigegeben – wird übernommen');
+ assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved'}}})).text,'Freigegeben – bitte zusammenführen');
+ assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved',workflow:'pull-request'}}})).text,'Freigegeben – wird zusammengeführt');
  assert.equal(s(t({completion:{ready:true,result:{...shared,state:'approved',integrated:true}}})).text,'Fertig – bitte abschliessen');
  assert.equal(s(t({contract:{kind:'code',blocked:'Warte',cancelled:false,requiresReview:true}})).text,'Hängt fest: Warte');
  assert.equal(s(t({status:'done'})).group,'done');
@@ -72,7 +72,7 @@ test('history keeps what people care about, in everyday words',()=>{
  assert.equal(humanEvent('submit','Code zur Prüfung geteilt'),'Änderung zur Prüfung gegeben');
  assert.equal(humanEvent('review','Prüfstand freigegeben'),'Änderung freigegeben');
  assert.equal(humanEvent('review','Änderungen angefordert'),'Änderung gewünscht');
- assert.equal(humanEvent('integrated','Freigegebener Code zusammengeführt · X'),'Änderung übernommen');
+ assert.equal(humanEvent('integrated','Freigegebener Code zusammengeführt · X'),'Änderung zusammengeführt');
  assert.equal(humanEvent('status','Status: done · X'),'Aufgabe abgeschlossen');
 });
 
@@ -80,7 +80,7 @@ import {taskStages} from '../studio/task-next-step.ts';
 test('the timeline shows the whole way and where the task stands',()=>{
  const base={kind:'code',status:'doing',requiresReview:true,cancelled:false,own:true,person:'Marco',result:null,liveMode:'manual',liveHow:'Marco startet Hermes.',live:false};
  const states=change=>taskStages({...base,...change}).map(s=>s.state).join(',');
- assert.deepEqual(taskStages(base).map(s=>s.label),['Ändern','Anschauen','Übernehmen','Live']);
+ assert.deepEqual(taskStages(base).map(s=>s.label),['Ändern','Anschauen','Zusammenführen','Live']);
  assert.equal(states({}),'now,next,next,next');
  assert.equal(states({result:{shared:true,state:'pending'}}),'done,now,next,next');
  assert.equal(states({result:{shared:true,state:'changes_requested'}}),'now,next,next,next','a wished change goes back to Ändern');
@@ -95,5 +95,20 @@ test('the timeline shows the whole way and where the task stands',()=>{
 test('a taken-over change that is not live yet asks for the live step',()=>{
  const s=taskNextStep({kind:'code',status:'done',own:false,assigned:true,person:'Markus',cancelled:false,blocked:'',ready:true,requiresReview:true,hasCopy:true,hasWorkshop:true,awaitingLive:true,liveHow:'Marco startet Hermes.'});
  assert.equal(s.action,'live');assert.match(s.text,/Marco startet Hermes/);
- assert.equal(taskSummary({status:'done',assignee:'me',awaitingLive:true,contract:{kind:'code',blocked:'',cancelled:false,requiresReview:true},completion:{ready:true,result:null}},'me',()=>'').text,'Übernommen – noch nicht live');
+ assert.equal(taskSummary({status:'done',assignee:'me',awaitingLive:true,contract:{kind:'code',blocked:'',cancelled:false,requiresReview:true},completion:{ready:true,result:null}},'me',()=>'').text,'Zusammengeführt – noch nicht live');
+});
+
+test('next step follows the project role: self approval in practice, no review button for viewers, setup waits for the admin',()=>{
+ const general={kind:'general',status:'doing',own:true,assigned:true,person:'Analyse',cancelled:false,blocked:'',ready:false,requiresReview:true,hasCopy:false,hasWorkshop:true,result:{state:'pending',mine:true}};
+ assert.equal(taskNextStep(general).action,undefined,'by default nobody approves their own result');
+ assert.match(taskNextStep({...general,reviewers:'Marco'}).text,/Prüfen kann: Marco/);
+ assert.equal(taskNextStep({...general,selfApprove:true}).action,'look','practice / "Admin darf allein freigeben"');
+ const other={...general,own:false,result:{state:'pending',mine:false}};
+ assert.equal(taskNextStep(other).action,'look');
+ assert.equal(taskNextStep({...other,canReview:false}).action,undefined,'viewers get no review button');
+ assert.equal(taskNextStep({...general,assigned:false,canDevelop:false}).action,undefined);
+ const code={...general,kind:'code',result:null,hasWorkshop:false};
+ assert.equal(taskNextStep({...code,isAdmin:true}).action,'setup');
+ assert.equal(taskNextStep({...code,isAdmin:false}).action,undefined);
+ assert.match(taskNextStep({...code,isAdmin:false}).text,/Projekt-Admin/);
 });
