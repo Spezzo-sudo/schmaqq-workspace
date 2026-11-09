@@ -12,16 +12,20 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
 
 ## 2. Offen und als Nächstes (in dieser Reihenfolge)
 
-1. **Sol, zweiter Prüflauf läuft (09.11.).** Testkonto `analyse` / Passwort im Chat (nur Test). Probeprojekt (ValueRacer):
-   analyse = Admin, Prüfregel „Admin darf allein freigeben“, Konfiguration
-   `{"version":1,"check":["test","-f","site/index.html"],"preview":{"build":["true"],"directory":"site"}}` bestätigt.
-   Sol soll die Übung und eine Code-Aufgabe (site/index.html → Prüfung → Vorschau → freigeben → zusammenführen → live)
-   ganz durchspielen, in 1280 px und 390 px. Danach: Ergebnis kritisch auswerten, ein Paket bauen, Konto entfernen.
-   Schon notiert für das Paket: Einrichtung ist der unübersichtlichste Teil – Kästen in Kästen (zerquetschte Texte),
-   zwei Wege („Projekt einrichten“ / „Hier einrichten“), „PC oder Server hinzufügen“ öffnet mitten im Weg, nach
-   „Startklar“ fehlt ein sichtbares „Einrichtung ändern“ (heute nur Einstellungen → Für Entwickler → … einrichten),
-   Einstellungen-Seite sehr lang.
-   GitHub-App „Make public“ erst, wenn Markus eigene Repos verbinden will.
+1. **Team-Werkstatt + Einstellungen – PR offen.** Sols 2. Lauf (09.11.): Übung bis „Fertig“ ok; Code-Kette blockiert,
+   weil nur der Besitzer einer Werkstatt darauf arbeiten durfte (betraf jedes Mitglied ausser Marco). Marco: „Ja“ zur
+   Team-Werkstatt. Gebaut: `selfhost/team-workshop.mjs` – Server-Worker eines Projekt-Admins ist für Entwickler des
+   Projekts nutzbar, nur für dort eingerichtete Projekte, PCs bleiben privat, Admin kann es pro Projekt abschalten
+   („Werkstatt fürs Team“ unter „Wer darf was“); `resolveDevice` nutzt `usableExecutors`; `/api/ai` und
+   `/api/development` liefern die Team-Werkstatt; Test `team-workshop.test.mjs`. Einstellungen: Name/Ziel nur Admin,
+   „Gemeinsames Repository“ (veraltet), „Repository anlegen“ (live nicht funktionsfähig), „Import auf eigenem PC“ und
+   „Projekt einrichten“-Doppelweg entfernt; Startklar mit „Anderes Repository wählen“ / „Einrichtung ändern“;
+   „Eigener PC (optional)“ unter Für Entwickler; „Direkt durch die Werkstatt“ nur ohne GitHub. Begriffe
+   „Diese Fassung freigeben“ statt „Passt“. `selfhost/layout-check.mjs` (lokal mit Playwright) prüft gequetschte
+   und überlaufende Texte, seitliches Scrollen, doppelte Navigation – vor jedem Paket laufen lassen.
+   Danach: Sol 3. Lauf (komplette Code-Kette), dann Testkonto entfernen.
+   Offen aus Sols Lauf: selbst prüfbare Aufgabe unter „Bei dir“, Ladeanzeige „Aktueller Stand“ vs. „wird geladen“,
+   allgemeines Gespräch erklärt, warum es keine Aufgaben-Umwandlung gibt.
 2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
    Vorschau ansehen, „Passt“, ein eigenes privates Repo verbinden. Das schliesst Etappe 1 ab.
 3. **Etappe 3 „KI im Raum“** (siehe PLAN.md): erst klären, ob der ChatGPT-Business-Workspace die

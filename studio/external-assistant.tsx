@@ -30,6 +30,6 @@ export default function ExternalAssistant(props:{projectTitle:string;project:str
    {props.kind==='general'&&props.onResult&&<button type="button" className="rw-button" onClick={props.onResult}>Antwort als Ergebnis festhalten</button>}
   </div>
   {failed&&<p className="rw-error" role="alert">Kopieren nicht möglich. Markiere den Text im Feld und kopiere ihn selbst.</p>}
-  <small>Noch nicht verbunden? Die Einrichtung für ChatGPT, Claude und Gemini steht in der Studio-Anleitung „KI-Assistenten verbinden“.</small>
+  <small>Noch nicht verbunden? Die Adresse zum Verbinden steht unter Mein Konto → „Dein ChatGPT verbinden“; dort siehst und trennst du auch verbundene Assistenten.</small>
  </section>;
 }

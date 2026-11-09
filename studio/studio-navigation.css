@@ -153,3 +153,9 @@
 .team-shell .team-work-card small{font-size:13px;color:var(--schmaqq-muted)}
 .team-shell .rw-muted{color:var(--schmaqq-muted)}
 .team-shell .team-next-hint{font-size:13px;color:var(--schmaqq-ink)}
+/* Message actions readable: they work, so they must not look disabled. */
+.team-shell .rw-message-actions{opacity:1}
+.team-shell .rw-message-actions>button{color:var(--schmaqq-ink);font-size:12px;min-height:32px}
+.team-shell .studio-readonly p{margin:0 0 6px}
+.team-shell .studio-dev-pc{margin-top:18px}
+.team-shell .studio-workshop-toggle{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5}
