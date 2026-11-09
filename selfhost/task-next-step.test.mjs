@@ -112,3 +112,14 @@ test('next step follows the project role: self approval in practice, no review b
  assert.equal(taskNextStep({...code,isAdmin:false}).action,undefined);
  assert.match(taskNextStep({...code,isAdmin:false}).text,/Projekt-Admin/);
 });
+
+test('a failed step stays the next step until it is retried, and an empty copy cannot be submitted',()=>{
+ const failure={action:'submit',text:'Die Änderung konnte nicht zur Prüfung gegeben werden.',detail:'Gebaute Vorschau fehlt.',mine:true};
+ const failed=step({failure});assert.equal(failed.action,'retry');assert.match(failed.text,/Gebaute Vorschau fehlt/);
+ assert.equal(step({failure:{...failure,action:'integrate'}}).label,'Nochmal zusammenführen');
+ assert.equal(step({failure:{...failure,action:'create-file'}}).action,'edit');
+ const other=step({own:false,failure:{...failure,mine:false}});assert.equal(other.action,undefined);assert.match(other.text,/Markus/);
+ assert.equal(step({failure,activeJob:'submit'}).waiting,true,'running work wins over an old failure');
+ const empty=step({hasChange:false});assert.equal(empty.action,'edit');assert.match(empty.text,/zuerst etwas/);
+ assert.equal(step({hasChange:true}).action,'submit');
+});

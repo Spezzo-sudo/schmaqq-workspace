@@ -13,6 +13,31 @@ export function taskWorkspaces(db,task){return listWorkspaces(db).filter(w=>w.ta
 export function assertAssignment(db,task,assignee){
  if(taskWorkspaces(db,task).some(w=>w.owner!==assignee))throw fail(409,'Für diese Aufgabe ist noch ein Arbeitsbereich reserviert. Erst abstimmen und den Arbeitsbereich abschließen.');
 }
+// The task's own server-side state for the next step. The latest relevant job decides:
+// a failure stays visible after reloading until a later step of the task succeeds.
+const stepActions=['prepare','create-file','save-file','codex','check','preview','review','submit','integrate'];
+const failureText={prepare:'Die Arbeitskopie konnte nicht angelegt werden.','create-file':'Die Datei konnte nicht angelegt werden.','save-file':'Die Datei konnte nicht gespeichert werden.',codex:'Die KI-Bearbeitung ist nicht fertig geworden.',check:'Die Tests sind nicht durchgelaufen.',preview:'Die Vorschau konnte nicht gebaut werden.',review:'Die Prüffassung konnte nicht erstellt werden.',submit:'Die Änderung konnte nicht zur Prüfung gegeben werden.',integrate:'Die Änderung konnte nicht zusammengeführt werden.'};
+export function taskJobState(db,taskId){
+ const jobs=db.prepare(`SELECT j.id,j.action,j.status,j.created,j.result,j.owner,m.name AS ownerName FROM jobs j JOIN members m ON m.id=j.owner
+  WHERE j.status IN ('completed','failed','interrupted') AND j.action IN (${stepActions.map(()=>'?').join(',')}) AND (
+   j.id IN (SELECT job FROM workspaces WHERE task=? AND archived=0)
+   OR json_extract(j.payload,'$.worktree') IN (SELECT job FROM workspaces WHERE task=? AND archived=0)
+   OR (j.action='integrate' AND json_extract(j.payload,'$.reviewJob') IN (SELECT r.id FROM jobs r JOIN workspaces w ON w.job=json_extract(r.payload,'$.worktree') WHERE w.task=?)))
+  ORDER BY j.created DESC,j.rowid DESC LIMIT 1`).get(...stepActions,taskId,taskId,taskId);
+ if(!jobs||jobs.status==='completed')return {lastFailure:null};
+ let result={};try{result=JSON.parse(jobs.result??'{}')??{};}catch{}
+ const detail=typeof result.error==='string'&&result.error.trim()?result.error.trim().slice(0,600):jobs.status==='interrupted'?'Die Verbindung zur Werkstatt ist abgerissen.':'';
+ return {lastFailure:{id:jobs.id,action:jobs.action,owner:jobs.owner,ownerName:jobs.ownerName,at:jobs.created,interrupted:jobs.status==='interrupted',text:failureText[jobs.action],detail}};
+}
+// Whether a working copy holds a change of its own: saved or created files, a finished
+// AI edit, uncommitted files seen by the runner, or an earlier submitted version.
+export function copyHasChange(db,workspaceId){
+ return db.prepare(`SELECT action,result FROM jobs WHERE json_extract(payload,'$.worktree')=? AND status='completed'
+  AND action IN ('save-file','create-file','codex','status','review','submit') ORDER BY created DESC`).all(workspaceId).some(j=>{
+  if(j.action!=='status')return true;
+  try{const r=JSON.parse(j.result??'{}');return typeof r.status==='string'&&r.status.trim()!=='';}catch{return false;}
+ });
+}
 export async function collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}){
  if(!['/api/collaboration','/api/collaboration/task','/api/collaboration/task-diff','/api/collaboration/change'].includes(route))return false;
  const member=user(req);
@@ -67,7 +92,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   const sourceId=sourceMeta?JSON.parse(sourceMeta.value).message:null;
   const source=sourceId?db.prepare('SELECT m.id,m.body,m.created,n.name AS authorName FROM messages m JOIN members n ON n.id=m.author WHERE m.id=? AND m.channel=?').get(sourceId,task.project):null;
   const activeJobs=db.prepare(`SELECT j.id,j.action,j.status,m.name AS ownerName FROM jobs j JOIN members m ON m.id=j.owner WHERE j.status IN ('queued','running','cancelling') AND (json_extract(j.payload,'$.worktree') IN (SELECT job FROM workspaces WHERE task=?) OR (j.action='integrate' AND json_extract(j.payload,'$.reviewJob') IN (SELECT r.id FROM jobs r JOIN workspaces w ON w.job=json_extract(r.payload,'$.worktree') WHERE w.task=?))) AND j.action NOT IN ('files','read-file','save-file') ORDER BY j.created`).all(task.id,task.id);
-  send({task:taskView(db,task),brief,reviews,activeJobs,source,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces});return true;
+  send({task:taskView(db,task),brief,reviews,activeJobs,...taskJobState(db,task.id),source,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces:workspaces.map(w=>({...w,changed:copyHasChange(db,w.id)}))});return true;
  }
  if(route!=='/api/collaboration/task'||method!=='POST')throw fail(405,'Methode nicht erlaubt.');
  const value=parse(z.discriminatedUnion('action',[

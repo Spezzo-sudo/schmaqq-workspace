@@ -2,7 +2,7 @@
  * The one next step of a task: one sentence in everyday language and at most one button.
  * The task page shows it at the top; nothing else on the page repeats it.
  */
-export type TaskStepAction='claim'|'start'|'edit'|'submit'|'resubmit'|'integrate'|'live'|'result'|'look'|'finish'|'reopen'|'setup';
+export type TaskStepAction='claim'|'start'|'edit'|'submit'|'resubmit'|'integrate'|'live'|'result'|'look'|'finish'|'reopen'|'setup'|'retry';
 /** `quiet`: the button says it all; the page shows no extra sentence. */
 export type TaskStep={text:string;action?:TaskStepAction;label?:string;waiting?:boolean;quiet?:boolean};
 export type TaskStepInput={
@@ -14,6 +14,10 @@ export type TaskStepInput={
  result?:{shared?:boolean;state:string;integrated?:boolean;stale?:boolean;mine:boolean;automatic?:boolean}|null;
  /** Code tasks: the person's own working copy exists and the Werkstatt is reachable. */
  hasCopy:boolean;hasWorkshop:boolean;
+ /** Code tasks: the own working copy holds a saved change (server-derived). Undefined: unknown, treated as changed. */
+ hasChange?:boolean;
+ /** Code tasks: the latest step of this task failed (server-derived, survives reloading). */
+ failure?:{action:string;text:string;detail:string;mine:boolean;interrupted?:boolean}|null;
  /** Taken over but not yet confirmed live (projects that go live by their own step). */
 awaitingLive?:boolean;liveHow?:string;
  /** Project role of the viewer (defaults: allowed). selfApprove: admin of a project with "Admin darf allein freigeben". */
@@ -35,6 +39,14 @@ export function taskNextStep(t:TaskStepInput):TaskStep{
  if(t.own&&t.status==='todo')return {text:'Du bist dran.',action:'start',label:'Loslegen',quiet:true};
  const r=t.result;
  if(t.kind==='code'){
+  const f=t.failure;
+  if(f){
+   const why=f.text+(f.detail?' '+f.detail:'');
+   if(!f.mine)return {text:'Bei '+t.person+' hat der letzte Schritt nicht geklappt: '+why};
+   if(['submit','review','check','preview'].includes(f.action))return {text:why+' Wenn du es behoben hast, versuche es noch einmal.',action:'retry',label:'Nochmal zur Prüfung geben'};
+   if(f.action==='integrate')return {text:why,action:'retry',label:'Nochmal zusammenführen'};
+   return {text:why,action:'edit',label:'Zur Arbeitskopie'};
+  }
   if(r?.shared&&r.stale)return t.own?{text:'Du hast seit der Prüfung noch etwas geändert. Gib die neue Fassung zur Prüfung.',action:'resubmit',label:'Neue Fassung zur Prüfung geben'}
    :{text:t.person+' muss die neue Fassung noch zur Prüfung geben.'};
   if(r?.shared&&!r.integrated){
@@ -47,7 +59,8 @@ export function taskNextStep(t:TaskStepInput):TaskStep{
   if(r?.integrated)return {text:'Die Änderung ist zusammengeführt.'};
   if(!t.own)return {text:t.person+' arbeitet daran.'};
   if(!t.hasWorkshop)return t.isAdmin===false?{text:'Wartet auf die Einrichtung: Der Projekt-Admin macht das Projekt unter Einstellungen startklar. Bis dahin kannst du im Gespräch mitarbeiten.'}:{text:'Das Projekt ist noch nicht startklar: Code und Werkstatt fehlen.',action:'setup',label:'Zur Einrichtung'};
-  if(t.hasCopy)return {text:'Wenn deine Änderung fertig ist, gib sie zur Prüfung. Dann schaut sie sich jemand anderes an.',action:'submit',label:'Zur Prüfung geben'};
+  if(t.hasCopy)return t.hasChange===false?{text:'Deine Arbeitskopie ist bereit. Ändere und speichere zuerst etwas – dann kannst du es zur Prüfung geben.',action:'edit',label:'Änderung machen',quiet:false}
+   :{text:'Wenn deine Änderung fertig ist, gib sie zur Prüfung. Dann schaut sie sich jemand anderes an.',action:'submit',label:'Zur Prüfung geben'};
   return {text:'Du bist dran: Mach die Änderung.',action:'edit',label:'Änderung machen',quiet:true};
  }
  if(r){

@@ -51,3 +51,20 @@ test('readiness check fails when the preview output folder already holds project
   const separate=await inspect('dist');assert.equal(separate.checks.find(c=>c.label==='Vorschau-Ausgabeordner getrennt von Projektdateien').ok,true);
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
+
+test('submitting a working copy without any change stops before tests and upload',async()=>{
+ const dir=mkdtempSync(path.join(os.tmpdir(),'studio-empty-submit-')),seed=path.join(dir,'seed'),origin=path.join(dir,'origin.git'),repo=path.join(dir,'repo');
+ try{
+  mkdirSync(seed,{recursive:true});writeFileSync(path.join(seed,'readme.txt'),'x');
+  const at=cwd=>(...args)=>command(['git',...args],cwd);
+  await at(seed)('init','-b','main');await at(seed)('config','user.name','Fixture');await at(seed)('config','user.email','fixture@invalid.local');
+  await at(seed)('add','.');await at(seed)('commit','-m','fixture');
+  await command(['git','clone','--bare',seed,origin],dir);await command(['git','clone',origin,repo],dir);
+  await at(repo)('config','user.name','Fixture');await at(repo)('config','user.email','fixture@invalid.local');
+  let checks=0;const runner=new LocalRunner({stateDir:path.join(dir,'state'),projects:{website:{repo,base:'main',publish:true,check:[process.execPath,'-e','0']}}});
+  const check=runner.check.bind(runner);runner.check=async(...a)=>{checks++;return check(...a);};
+  await runner.run({id:'copy',project:'website',action:'prepare',payload:{}});
+  await assert.rejects(runner.run({id:'submit',project:'website',action:'submit',payload:{worktree:'copy'}}),/noch keine Änderung/);
+  assert.equal(checks,0);
+ }finally{rmSync(dir,{recursive:true,force:true});}
+});

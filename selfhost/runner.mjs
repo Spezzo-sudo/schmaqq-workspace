@@ -178,6 +178,8 @@ export class LocalRunner{
    await this.git(w.dir,'fetch','origin');
    await this.git(w.dir,'add','--all');
    const staged=await this.git(w.dir,'diff','--cached','--name-only');if(staged)await this.git(w.dir,'commit','-m','Schmaqq Studio: Änderungen zur Prüfung');
+   // Nothing to review: stop before tests and upload instead of sharing an empty version.
+   if(!await this.git(w.dir,'diff','--name-only',await this.git(w.dir,'merge-base','HEAD',`origin/${p.base}`),'HEAD','--'))throw new Error('Es gibt noch keine Änderung gegenüber dem gemeinsamen Stand. Ändere und speichere zuerst etwas, dann gib es zur Prüfung.');
    const before=await sourceRevision(w.dir,control),checks=await this.check(w.dir,p);if(await this.git(w.dir,'status','--porcelain'))throw new Error('Arbeitskopie hat sich während der Prüfung verändert. Bitte erneut prüfen und einreichen.');
    const commit=await this.git(w.dir,'rev-parse','HEAD'),base=await this.git(w.dir,'merge-base','HEAD',`origin/${p.base}`);
    const diff=await this.git(w.dir,'diff','--no-ext-diff','--no-textconv','--no-color',base,commit,'--');

@@ -11,8 +11,9 @@ import GithubWorkflow from './github-workflow';
 import {taskNextStep,taskStages,type TaskStepAction} from './task-next-step';
 import TaskTimeline from './task-timeline';
 import {roomRequest,saveDraft,storedDraft,operationId,type RoomState,type Resource,type TeamTask,type TaskContract,type TaskResult} from './room-model';
-type Copy={id:string;owner:string;device:string;title:string;scope:string;revision:number;status:string;deviceName:string};
-type Detail={source?:{id:string;body:string;authorName:string;created:number}|null;activeJobs?:{id:string;action:string;status:string;ownerName:string}[];task:TeamTask;brief:{revision:number};comments:TaskComment[];reviews:{id:string;owner:string;ownerName:string;commit:string;state:string;created?:number}[];workspaces:Copy[];changes:{workspace:string;review?:{id:string;changedAfter?:boolean}}[]};
+type Copy={id:string;owner:string;device:string;title:string;scope:string;revision:number;status:string;deviceName:string;changed?:boolean};
+type Failure={id:string;action:string;owner:string;ownerName:string;at:number;interrupted:boolean;text:string;detail:string};
+type Detail={lastFailure?:Failure|null;source?:{id:string;body:string;authorName:string;created:number}|null;activeJobs?:{id:string;action:string;status:string;ownerName:string}[];task:TeamTask;brief:{revision:number};comments:TaskComment[];reviews:{id:string;owner:string;ownerName:string;commit:string;state:string;created?:number}[];workspaces:Copy[];changes:{workspace:string;review?:{id:string;changedAfter?:boolean}}[]};
 type Pane='conversation'|'work'|'review';
 export default function TeamTaskView({taskId,room,resources,userId,onClose,onRefresh,onConnect}:{taskId:string;room:RoomState;resources:Resource[];userId:string;onClose:()=>void;onRefresh:()=>Promise<void>;onConnect:()=>void}){
  const access=useProjectAccess(room.project.id,userId);
@@ -57,17 +58,18 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
  async function save(){if(await teamAction({action:'contract',revision:editRevision,kind,criteria,requiresReview:peer,title,description,briefRevision})){saveDraft(briefKey,'');setEditing(false);}}
  async function codeJob(operation:string,source?:string){
   if(copyState.dirty||copyState.active){setError('Zuerst den Entwurf speichern und den laufenden Vorgang beenden lassen.');return;}
-  if(!device){setError('Das Projekt ist noch nicht startklar. Die Einrichtung findest du auf der Projektübersicht.');return;}
+  if(!device&&!(myCopy&&operation!=='integrate')){setError('Das Projekt ist noch nicht startklar. Die Einrichtung findest du auf der Projektübersicht.');return;}
   setBusy(true);setError('');setRunning(operation);
   try{
    // The Werkstatt may still be finishing a short job (e.g. opening a file); wait briefly instead of failing.
-   const start=()=>roomRequest<{id:string}>('/api/development',{action:'job',operation,device:device.device,project:room.project.id,...(source?{source}:{worktree:myCopy?.id})});
+   const start=()=>roomRequest<{id:string}>('/api/development',{action:'job',operation,device:'auto',project:room.project.id,...(source?{source}:{worktree:myCopy?.id})});
    let queued:{id:string}|null=null;
    for(let attempt=0;!queued;attempt++){try{queued=await start();}catch(e){if(attempt>=9||!/läuft noch ein Vorgang/.test((e as Error).message))throw e;await new Promise(r=>setTimeout(r,2000));}}
    for(let i=0;i<600;i++){
     const {job}=await roomRequest<{job:{status:string;result?:{error?:string}}}>('/api/development/job?id='+encodeURIComponent(queued.id));
     if(job.status==='completed'){if(operation==='submit')setSelectedReview(queued.id);await Promise.all([refresh(),onRefresh()]);return;}
-    if(!['queued','running'].includes(job.status))throw Error(job.result?.error??'Der Vorgang wurde unterbrochen. Der letzte bestätigte Stand bleibt erhalten.');
+    // A failed job is part of the task's state: the server keeps it and the next step explains it.
+    if(!['queued','running'].includes(job.status)){await Promise.all([refresh(),onRefresh()]);return;}
     await new Promise(r=>setTimeout(r,1000));
    }
    throw Error('Der Rechner hat noch keinen Abschluss bestätigt. Vor einer Wiederholung den Vorgang prüfen.');
@@ -79,7 +81,7 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
  const step=task&&contract?taskNextStep({kind:contract.kind,status:task.status,own,assigned:!!task.assignee,person:person?.name??'Jemand',cancelled:contract.cancelled,blocked:contract.blocked,
   ready:task.completion.ready,requiresReview:contract.kind==='code'||contract.requiresReview,activeJob:running||detail?.activeJobs?.[0]?.action,
   result:currentResult?{shared:currentResult.shared,state:currentResult.state,integrated:currentResult.integrated,stale:staleResult,mine:currentResult.owner===userId,automatic:currentResult.workflow==='pull-request'}:null,
-  hasCopy:!!myCopy,hasWorkshop:!!device,awaitingLive:!!task.awaitingLive,liveHow:meta.liveHow,
+  hasCopy:!!myCopy,hasWorkshop:!!device||!!myCopy,hasChange:myCopy?.changed,failure:running?null:detail?.lastFailure?{action:detail.lastFailure.action,text:detail.lastFailure.text,detail:detail.lastFailure.detail,mine:detail.lastFailure.owner===userId,interrupted:detail.lastFailure.interrupted}:null,awaitingLive:!!task.awaitingLive,liveHow:meta.liveHow,
   canDevelop:access.develop,canReview:access.review,isAdmin:access.loaded?access.admin:undefined,selfApprove:access.selfApprove,reviewers:access.loaded?access.reviewers:undefined}):null;
  const stages=task&&contract?taskStages({kind:contract.kind,status:task.status,requiresReview:contract.kind==='code'||contract.requiresReview,cancelled:contract.cancelled,own,person:task.assignee?person?.name??'Jemand':null,
   result:currentResult?{shared:currentResult.shared,state:currentResult.state,integrated:currentResult.integrated,stale:staleResult,automatic:currentResult.workflow==='pull-request'}:null,
@@ -91,17 +93,19 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
   else if(next==='reopen'&&contract)void teamAction({action:'reopen',revision:contract.revision});
   else if(next==='submit'||next==='resubmit')void codeJob('submit');
   else if(next==='integrate'&&currentResult)void codeJob('integrate',currentResult.id);
+  else if(next==='retry'&&detail?.lastFailure?.action==='integrate'&&currentResult)void codeJob('integrate',currentResult.id);
+  else if(next==='retry')void codeJob('submit');
   else if(next==='edit'){changePane('work');reveal(tabs.current);}
   else if(next==='result')openResultForm();
   else if(next==='look'){changePane('review');reveal(tabs.current);}
   else if(next==='setup')onConnect();
   else if(next==='live')void teamAction({action:'went-live'});
  }
- const stepBlocked=(step?.action==='submit'||step?.action==='resubmit')&&(copyState.dirty||!!contract?.blocked);
+ const stepBlocked=(step?.action==='submit'||step?.action==='resubmit'||step?.action==='retry')&&(copyState.dirty||!!contract?.blocked);
  return <div className="rw-drawer-backdrop"><section ref={panel} className={'rw-drawer team-task'+(wide?' expanded':'')} role="dialog" aria-modal="true" aria-label="Gemeinsame Aufgabe">
   <header><button className="rw-icon" aria-label="Zurück zum Projekt" onClick={onClose}><ArrowLeft size={20}/></button><div className="rw-drawer-heading"><small>{room.project.title}</small><h2>{task?.title??'Aufgabe wird geladen …'}</h2></div><button className="rw-icon team-wide" onClick={()=>setWide(!wide)} aria-label={wide?'Kompakte Ansicht':'Breite Arbeitsansicht'}><ArrowUpRight size={17}/></button><button className="rw-icon" aria-label="Aufgabe schließen" onClick={onClose}><X size={20}/></button></header>
   <div className="team-task-scroll">
-   {error&&<p className="rw-error" role="alert">{error}</p>}
+   {error&&!step?.waiting&&<p className="rw-error" role="alert">{error}</p>}
    {task&&contract&&step&&<>
     <section className="team-task-summary">
      {/* The one next step: a sentence and at most one button. Nothing else on the page repeats it. */}
