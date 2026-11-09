@@ -112,7 +112,10 @@ test('a read-only task copy keeps a general analysis general; real file changes 
  job('failed-save','read-copy','save-file','failed');job('cancelled-ai','read-copy','codex','cancelled');
  assert.equal(taskContract(db,row(analysis)).kind,'general','Reading files keeps the explicit task kind');
  assert.equal((await f.team(f.b,'result',{task:analysis,id:randomUUID(),body:'Fremdes Ergebnis',revision:0})).status,403);
- assert.equal((await f.team(f.a,'result',{task:analysis,id:randomUUID(),body:'Analyse mit Befunden.',revision:0})).status,200);
+ const analysisResult=randomUUID();assert.equal((await f.team(f.a,'result',{task:analysis,id:analysisResult,body:'Analyse mit Befunden.',revision:0})).status,200);
+ // New tasks are reviewed by default, also without code: done only after the second person's approval.
+ assert.equal((await f.request('/api/collaboration/task',{action:'status',task:analysis,status:'done'},f.a.cookie)).status,409);
+ assert.equal((await f.team(f.b,'vote',{task:analysis,result:analysisResult,decision:'approved',body:''})).status,200);
  assert.equal((await f.request('/api/collaboration/task',{action:'status',task:analysis,status:'done'},f.a.cookie)).status,200);
 
  const edited=await f.task();await f.request('/api/collaboration/task',{action:'claim',task:edited},f.a.cookie);

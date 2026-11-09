@@ -159,7 +159,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     const converted=source?readMeta(db,key('source-task',source.id)):null;
     if(converted)return remember(db,member,value,{ok:true,task:converted.task,reused:true});
     const task=randomUUID();db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(task,value.project,value.title,value.description||source?.body||'',value.mine?'doing':'todo','Normal',value.mine?member.id:null,now());
-    storeMetadata(db,'team:v1:task:'+task,{kind:value.kind,criteria:value.criteria,requiresReview:value.kind==='code',blocked:'',cancelled:false,revision:0});
+    storeMetadata(db,'team:v1:task:'+task,{kind:value.kind,criteria:value.criteria,requiresReview:true,blocked:'',cancelled:false,revision:0});
     if(source){putMeta(db,key('source-task',source.id),{task});putMeta(db,key('task-source',task),{message:source.id,project:value.project});}
     db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(randomUUID(),member.id,'Aufgabe aus Raum: '+value.title,now());
     return remember(db,member,value,{ok:true,task});

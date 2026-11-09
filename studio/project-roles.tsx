@@ -5,7 +5,7 @@ import {initials,roomRequest} from './room-model';
 type Role='admin'|'developer'|'reviewer'|'viewer';
 type State={review:'second'|'admin-alone';mine:Role[];members:{id:string;name:string;owner:boolean;roles:Role[]}[]};
 const labels:Record<Role,string>={admin:'Admin',developer:'Entwickler',reviewer:'Prüfer',viewer:'Zuschauer'};
-const meaning:Record<Role,string>={admin:'alles, auch Rollen und Übernehmen',developer:'bearbeiten und zur Prüfung geben',reviewer:'„Passt“ oder „Ändern“ sagen',viewer:'lesen und mitreden'};
+const meaning:Record<Role,string>={admin:'alles, auch Rollen und Zusammenführen',developer:'bearbeiten und zur Prüfung geben',reviewer:'„Passt“ oder „Ändern“ sagen',viewer:'lesen und mitreden'};
 const order:Role[]=['admin','developer','reviewer','viewer'];
 
 export default function ProjectRoles({project}:{project:string}){
@@ -23,11 +23,23 @@ export default function ProjectRoles({project}:{project:string}){
   <ul className="team-members">{state.members.map(m=><li key={m.id}><span className="rw-avatar">{initials(m.name)}</span><span><strong>{m.name}</strong><small>{m.owner?'Admin (Inhaber von Studio)':describe(m.roles)}</small></span>
    {admin&&!m.owner&&<span className="studio-role-picks" role="group" aria-label={'Rollen von '+m.name}>{order.map(r=><label key={r} className={m.roles.includes(r)?'on':''}><input type="checkbox" disabled={busy} checked={m.roles.includes(r)} onChange={e=>void save({action:'roles',project,member:m.id,roles:e.target.checked?[...m.roles,r]:m.roles.filter(x=>x!==r)})}/>{labels[r]}</label>)}</span>}
   </li>)}</ul>
-  <h3>Prüfung vor dem Übernehmen</h3>
+  <h3>Prüfung vor dem Zusammenführen</h3>
   {admin?<div className="po-live-choice" role="radiogroup" aria-label="Prüfregel">
    <button role="radio" aria-checked={state.review==='second'} disabled={busy} onClick={()=>void save({action:'review',project,review:'second'})}><strong>Zweite Person prüft</strong><small>Sicherer. Niemand gibt die eigene Änderung frei.</small></button>
    <button role="radio" aria-checked={state.review==='admin-alone'} disabled={busy} onClick={()=>void save({action:'review',project,review:'admin-alone'})}><strong>Admin darf allein freigeben</strong><small>Für kleine Projekte. Im Verlauf steht, wer freigegeben hat.</small></button>
   </div>:<p>{state.review==='second'?'Eine zweite Person prüft jede Änderung.':'Der Admin darf eigene Änderungen allein freigeben.'}</p>}
   {error&&<p className="rw-error" role="alert">{error}</p>}
  </section>;
+}
+
+/** What the signed-in person may do in a project – the same rules the server enforces, so the page only offers
+ * buttons that work. Before it is loaded everything counts as allowed (the server still decides). */
+export type ProjectAccess={loaded:boolean;develop:boolean;review:boolean;admin:boolean;selfApprove:boolean;reviewers:string};
+export function useProjectAccess(project:string,userId:string):ProjectAccess{
+ const [state,setState]=useState<State|null>(null);
+ useEffect(()=>{let active=true;if(!project)return;roomRequest<State>('/api/project-roles?project='+encodeURIComponent(project)).then(r=>{if(active)setState(r);}).catch(()=>{});return()=>{active=false;};},[project]);
+ if(!state)return {loaded:false,develop:true,review:true,admin:false,selfApprove:false,reviewers:''};
+ const has=(r:Role)=>state.mine.includes(r),admin=has('admin');
+ const reviewers=state.members.filter(m=>m.id!==userId&&(m.owner||m.roles.includes('admin')||m.roles.includes('reviewer'))).map(m=>m.name).join(', ');
+ return {loaded:true,admin,develop:admin||has('developer'),review:admin||has('reviewer'),selfApprove:admin&&state.review==='admin-alone',reviewers};
 }

@@ -23,7 +23,7 @@ export default function ExternalAssistant(props:{projectTitle:string;project:str
  const text=externalHandoff(props),[copied,setCopied]=useState(''),[failed,setFailed]=useState(false);
  return <section className="team-callout external-assistant" aria-label="Mit ChatGPT oder Claude bearbeiten">
   <header className="rw-row-actions"><h3>Mit ChatGPT oder Claude bearbeiten</h3><button type="button" className="rw-icon" aria-label="Übergabe schließen" onClick={props.onClose}><X size={18}/></button></header>
-  <p>Die KI arbeitet in deinem eigenen Chat mit der dort verbundenen Studio-Verbindung. Dieser Bereich startet kein Modell. Kopiere den Auftrag und füge ihn dort ein. Verbindungen verwaltest du unter <strong>Team → Verbundene KI-Assistenten</strong>.</p>
+  <p>Die KI arbeitet in deinem eigenen Chat mit der dort verbundenen Studio-Verbindung. Dieser Bereich startet kein Modell. Kopiere den Auftrag und füge ihn dort ein. Verbindungen verwaltest du unter <strong>Mein Konto → Verbundene KI-Assistenten</strong>.</p>
   <label>Auftrag für den Chat<textarea readOnly rows={9} value={text} onFocus={e=>e.currentTarget.select()}/></label>
   <div className="rw-row-actions">
    <button type="button" className="rw-button lime" onClick={()=>{setFailed(false);void navigator.clipboard?.writeText(text).then(()=>setCopied(text)).catch(()=>setFailed(true));}}><Copy size={16}/>{copied===text?'Kopiert':'Auftrag kopieren'}</button>

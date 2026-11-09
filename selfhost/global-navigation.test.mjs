@@ -40,6 +40,7 @@ test('mobile global bar does not replace the project conversation component',()=
  assert.match(page,/studio-mobile-nav/);
  assert.match(css,/\.team-shell \.team-areas\{position:static/);
  assert.match(css,/\.team-shell \.studio-mobile-nav\{position:fixed/);
+ assert.match(css,/\n\.team-shell \.studio-mobile-nav\{display:none\}/,'above 650 px only the sidebar navigates');
  assert.doesNotMatch(page,/Codex in Studio ausführen/);
 });
 

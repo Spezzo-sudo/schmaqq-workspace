@@ -16,7 +16,7 @@ export function parseReviewDiff(diff:string):DiffLine[]{
   return {kind:'meta',old:null,next:null,text};
  });
 }
-export default function TaskReviewDiff({task,review,changedAfter=false,onClose,userId,onChange,closed=false}:{task:string;review:string;changedAfter?:boolean;onClose:()=>void;userId?:string;onChange?:()=>void;closed?:boolean}){
+export default function TaskReviewDiff({task,review,changedAfter=false,onClose,userId,onChange,closed=false,canReview=true,selfApprove=false}:{task:string;review:string;changedAfter?:boolean;onClose:()=>void;userId?:string;onChange?:()=>void;closed?:boolean;canReview?:boolean;selfApprove?:boolean}){
  const [result,setResult]=useState<DiffResult|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true);
  const [revision,setRevision]=useState(0);
  const [body,setBody]=useState(''),[busy,setBusy]=useState(false);
@@ -32,8 +32,11 @@ export default function TaskReviewDiff({task,review,changedAfter=false,onClose,u
    .finally(()=>{if(alive)setLoading(false);});return()=>{alive=false;};
  },[task,review,revision]);
  const lines=result&&result.complete?parseReviewDiff(result.diff):[];
- const stateText=result?.state==='approved'?'Freigegeben.':result?.state==='changes_requested'?'Es wurden Änderungen gewünscht.':'Wartet auf Freigabe.';
- const mine=!!userId&&result?.owner===userId;
+ // A snapshot that was never handed in ("Zur Prüfung geben") is only a look at work in progress, not a review request.
+ const draft=!!result&&result.published===false;
+ const stateText=draft?'Zwischenstand – noch nicht zur Prüfung gegeben.':result?.state==='approved'?'Freigegeben.':result?.state==='changes_requested'?'Es wurden Änderungen gewünscht.':'Wartet auf Freigabe.';
+ // Own change: only an admin in a project with "Admin darf allein freigeben" reviews it. Others need the reviewer role.
+ const mine=!!userId&&result?.owner===userId&&!selfApprove;
  // Order follows what a reviewer does: look at the preview, decide, read feedback. Code and test details stay folded.
  return <section className="r27-diff-panel review-simple" aria-label="Änderung anschauen">
   {loading&&<p role="status">Wird geladen …</p>}
@@ -42,16 +45,16 @@ export default function TaskReviewDiff({task,review,changedAfter=false,onClose,u
    <p className="review-head"><strong>Änderung von {result.ownerName}</strong> · {new Date(result.created).toLocaleString('de-CH',{dateStyle:'short',timeStyle:'short'})}<br/>{stateText}</p>
    {changedAfter&&<p role="alert" className="r27-diff-warning">Seitdem wurde noch etwas geändert. Freigeben geht erst, wenn die neue Fassung zur Prüfung gegeben ist.</p>}
    {result.preview?<a className="rw-button lime review-preview" href={result.preview} target="_blank" rel="noreferrer">Vorschau öffnen – so sieht es aus ↗</a>:<p className="muted">Für diese Fassung gibt es keine Vorschau. Unten unter „Was wurde geändert“ siehst du die Änderung im Text.</p>}
-   {userId&&!mine&&!closed&&result.state!=='approved'&&<ol className="review-checklist" aria-label="So prüfst du">
+   {userId&&!mine&&canReview&&!draft&&!closed&&result.state!=='approved'&&<ol className="review-checklist" aria-label="So prüfst du">
     <li><strong>Vorschau öffnen</strong> und durchklicken, am besten auch am Handy.</li>
     <li><strong>Prüfen:</strong> {result.contractSnapshot?.criteria?.trim()||'Macht die Änderung, was in der Aufgabe steht? Ist nichts anderes kaputtgegangen?'}</li>
     <li><strong>Entscheiden:</strong> „Passt – freigeben“ oder „Änderung wünschen“ mit einem Satz, was fehlt.</li>
    </ol>}
-   {userId&&!mine&&!closed&&result.state!=='approved'&&<form className="team-review-actions" onSubmit={e=>e.preventDefault()}>
+   {userId&&!mine&&canReview&&!draft&&!closed&&result.state!=='approved'&&<form className="team-review-actions" onSubmit={e=>e.preventDefault()}>
     <label>Deine Rückmeldung (bei „Änderung wünschen“ nötig)<textarea aria-label="Rückmeldung zur Änderung" value={body} maxLength={4000} onChange={e=>setBody(e.target.value)} placeholder="Zum Beispiel: Der Satz ist zu lang."/></label>
     <div className="rw-row-actions"><button className="rw-button lime" disabled={busy||!result.complete||changedAfter} onClick={()=>void vote('approved')}>Passt – freigeben</button><button className="rw-button" disabled={busy||!body.trim()} onClick={()=>void vote('changes')}>Änderung wünschen</button></div>
    </form>}
-   {mine&&!closed&&result.state!=='approved'&&<p className="muted">Jemand anderes schaut sich das an und gibt es frei. Eigene Änderungen kann man nicht selbst freigeben.</p>}
+   {mine&&!closed&&result.state!=='approved'&&<p className="muted">{draft?'Das ist dein Zwischenstand. Wenn du fertig bist, gib die Änderung oben zur Prüfung.':'Jemand anderes schaut sich das an und gibt es frei. Eigene Änderungen kann man nicht selbst freigeben.'}</p>}
    {!!entries.length&&<section aria-label="Rückmeldungen zu dieser Fassung"><h4>Rückmeldungen</h4>{entries.filter(e=>e.commitSha===result.commit).map(e=><blockquote key={e.id}><strong>{e.name}</strong> · {e.decision==='approved'?'Passt':e.decision==='changes'?'Änderung gewünscht':'Kommentar'}{e.body&&<p>{e.body}</p>}<small>{new Date(e.created).toLocaleString('de-DE')}</small></blockquote>)}</section>}
    <details className="review-changes"><summary>Was wurde geändert</summary>
     <p className="r27-diff-disclaimer">Grün = neu, Rot = entfernt. Gezeigt wird genau die Fassung, die zur Prüfung gegeben wurde.</p>

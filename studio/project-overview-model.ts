@@ -9,7 +9,8 @@ export function groupEvents(events:TeamEvent[],titles:Map<string,string>):EventG
  const groups:(EventGroup&{earliest:number})[]=[];
  for(const e of events){
   const last=groups.at(-1);
-  if(last&&last.actor===e.actor&&last.task===e.task&&last.kind===e.kind&&last.earliest-e.created<6*3600000){last.count++;last.earliest=e.created;continue;}
+  // Only repeat events of the same kind and meaning are grouped ("Hängt fest" and "Geht wieder weiter" stay separate).
+  if(last&&last.actor===e.actor&&last.task===e.task&&last.kind===e.kind&&(last.kind!=='block'||last.body===e.body)&&last.earliest-e.created<6*3600000){last.count++;last.earliest=e.created;continue;}
   const title=e.task?titles.get(e.task):undefined;
   let body=e.body;for(const sep of [' · ',': '])if(title&&body.endsWith(sep+title))body=body.slice(0,-(sep+title).length);
   groups.push({id:e.id,actor:e.actor,task:e.task,kind:e.kind,body,count:1,latest:e.created,earliest:e.created});
@@ -31,7 +32,7 @@ export function humanEvent(kind:string,body:string):string|null{
  if(kind==='comment')return 'Neuer Kommentar';
  if(kind==='submit')return 'Änderung zur Prüfung gegeben';
  if(kind==='review')return body.startsWith('Prüfstand freigegeben')?'Änderung freigegeben':body.startsWith('Änderungen angefordert')?'Änderung gewünscht':body.startsWith('Prüfstand erstellt')?null:'Rückmeldung gegeben';
- if(kind==='integrated'||kind==='github-merge')return 'Änderung übernommen';
+ if(kind==='integrated'||kind==='github-merge')return 'Änderung zusammengeführt';
  if(kind==='result')return 'Ergebnis aufgeschrieben';
  if(kind==='live')return 'Ist jetzt live';
  if(kind==='vote')return /Änderung/.test(body)?'Änderung gewünscht':'Ergebnis freigegeben';

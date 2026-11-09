@@ -37,7 +37,7 @@ export default function ProjectReady({room,resources,members,userId,onRepository
  if(done===3&&!open)return <section className="po-ready done" aria-label="Startklar"><p className="po-ready-title"><Check size={16} aria-hidden="true"/> <strong>Startklar</strong></p>
   <dl className="po-ready-facts"><div><dt>Code</dt><dd>{access.repository??meta.repository?.replace('https://github.com/','')}{access.protected===false&&<> · <a href={`https://github.com/${access.repository}/settings/branches`} target="_blank" rel="noreferrer">„{access.base}“ schützen ↗</a></>}</dd></div>
    <div><dt>Werkstatt</dt><dd>{ready.map(r=>r.name).join(', ')}</dd></div>
-   <div><dt>Live</dt><dd>{meta.live==='merge'?'Geht beim Übernehmen von selbst live':'Ihr schaltet selbst live'+(meta.liveHow?' – '+meta.liveHow:'')}</dd></div></dl>
+   <div><dt>Live</dt><dd>{meta.live==='merge'?'Geht beim Zusammenführen von selbst live':'Ihr schaltet selbst live'+(meta.liveHow?' – '+meta.liveHow:'')}</dd></div></dl>
   {decides&&<button className="rw-link" onClick={()=>setOpen(true)}>Ändern</button>}</section>;
  const step=(ok:boolean,title:string,body:React.ReactNode)=><li className={ok?'ok':''}><span className="po-ready-mark" aria-hidden="true">{ok?<Check size={14}/>:null}</span><div><strong>{title}</strong>{body}</div></li>;
  return <section className="po-ready" aria-labelledby="po-ready-title">
@@ -56,8 +56,8 @@ export default function ProjectReady({room,resources,members,userId,onRepository
    {step(live,'Live gehen',<>
     {/* Two calm choices. Studio itself never puts anything online; the choice only tells Studio whether a separate live step exists. */}
     {decides?<div className="po-live-choice" role="radiogroup" aria-label="Wie kommt eine Änderung online?">
-     <button role="radio" aria-checked={meta.live==='manual'} disabled={busy} onClick={()=>void chooseLive('manual')}><strong>Wir schalten selbst live</strong><small>Nach dem Übernehmen macht jemand den Livegang, z. B. über Hermes.</small></button>
-     <button role="radio" aria-checked={meta.live==='merge'} disabled={busy} onClick={()=>void chooseLive('merge')}><strong>Geht von selbst live</strong><small>Nur wählen, wenn euer Hoster jede übernommene Änderung selbst veröffentlicht.</small></button>
+     <button role="radio" aria-checked={meta.live==='manual'} disabled={busy} onClick={()=>void chooseLive('manual')}><strong>Wir schalten selbst live</strong><small>Nach dem Zusammenführen macht jemand den Livegang, z. B. über Hermes.</small></button>
+     <button role="radio" aria-checked={meta.live==='merge'} disabled={busy} onClick={()=>void chooseLive('merge')}><strong>Geht von selbst live</strong><small>Nur wählen, wenn euer Hoster jede zusammengeführte Änderung selbst veröffentlicht.</small></button>
     </div>:<p>{meta.live==='merge'?'Übernommene Änderungen gehen von selbst live.':meta.live==='manual'?'Ihr schaltet selbst live.':'Legt der Projekt-Admin fest.'}</p>}
     {meta.live==='manual'&&(decides?<form className="po-live-how" onSubmit={e=>{e.preventDefault();void chooseLive('manual',liveHow.trim());}}><label>Wie genau? (sieht jeder in der Aufgabe)<input value={liveHow} maxLength={300} onChange={e=>setLiveHow(e.target.value)} placeholder="Zum Beispiel: Marco startet den Hermes-Auftrag production-deploy-main."/></label>{liveHow.trim()!==(meta.liveHow??'')&&<button className="rw-button" disabled={busy}>Speichern</button>}</form>
      :meta.liveHow&&<p>So geht's: <strong>{meta.liveHow}</strong></p>)}
