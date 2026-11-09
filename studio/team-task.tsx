@@ -46,8 +46,9 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
  const staleResult=contract?.kind==='code'&&!!result&&!result.integrated&&(result.changedAfter===true||(result.contractRevision??0)!==contract.revision);
  useEffect(()=>{if(contract?.kind==='general')roomRequest<{history:TaskResult[]}>('/api/team/results?task='+encodeURIComponent(taskId)).then(r=>setGeneralHistory(r.history)).catch(e=>setError((e as Error).message));},[taskId,currentResult?.id,contract?.kind]);
  // Own workshop first, otherwise the project's team workshop (a project admin's server worker).
- const device=resources.find(r=>r.owner===userId&&r.online&&r.development?.some(p=>p.id===room.project.id))
-  ??resources.find(r=>r.team&&r.online&&r.development?.some(p=>p.id===room.project.id));
+ // Only a Werkstatt whose trial run passed counts (server-computed readiness, same for everyone).
+ const provenFor=(r:Resource)=>r.online&&!!r.development?.some(p=>p.id===room.project.id&&p.readiness?.ready);
+ const device=resources.find(r=>r.owner===userId&&provenFor(r))??resources.find(r=>r.team&&provenFor(r));
  function changePane(next:Pane){setPane(next);const url=new URL(location.href);url.searchParams.set('pane',next);history.replaceState(null,'',url);}
  useEffect(()=>{if(!wantsResult.current||!detail)return;wantsResult.current=false;changePane('work');if(resultField.current)reveal(resultField.current);},[detail]);
  async function action(path:string,data:Record<string,unknown>){setBusy(true);setError('');try{await roomRequest(path,data);await Promise.all([refresh(),onRefresh()]);return true;}catch(e){setError((e as Error).message);return false;}finally{setBusy(false);}}
@@ -62,7 +63,7 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
   setBusy(true);setError('');setRunning(operation);
   try{
    // The Werkstatt may still be finishing a short job (e.g. opening a file); wait briefly instead of failing.
-   const start=()=>roomRequest<{id:string}>('/api/development',{action:'job',operation,device:'auto',project:room.project.id,...(source?{source}:{worktree:myCopy?.id})});
+   const start=()=>roomRequest<{id:string}>('/api/development',{action:'job',operation,device:operation==='integrate'&&device?device.device:'auto',project:room.project.id,...(source?{source}:{worktree:myCopy?.id})});
    let queued:{id:string}|null=null;
    for(let attempt=0;!queued;attempt++){try{queued=await start();}catch(e){if(attempt>=9||!/läuft (noch|gerade) ein Vorgang/.test((e as Error).message))throw e;await new Promise(r=>setTimeout(r,2000));}}
    for(let i=0;i<600;i++){

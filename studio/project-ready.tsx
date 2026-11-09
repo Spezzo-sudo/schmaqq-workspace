@@ -21,12 +21,20 @@ export default function ProjectReady({room,resources,members,userId,onRepository
  useEffect(()=>{let active=true;githubState(project).then(s=>{if(active){setApp(s.app);setAccess(s.access);}});
   const back=githubNotice();if(back){setNotice(back.notice);if(back.error)setError(back.error);}
   return()=>{active=false;};},[project,meta.repository]);
- const ready=resources.filter(r=>r.online&&r.development?.some(p=>p.id===project));
+ // Reported: a reachable Werkstatt has the project. Ready: its trial run on the main state passed.
+ const entry=(r:Resource)=>r.development?.find(p=>p.id===project);
+ const reported=resources.filter(r=>r.online&&entry(r));
+ const ready=reported.filter(r=>entry(r)?.readiness?.ready);
+ const pending=reported.find(r=>!entry(r)?.readiness?.ready);
+ const [probing,setProbing]=useState(false);
+ async function probe(device:string){setBusy(true);setError('');setProbing(true);try{const {id}=await roomRequest<{id:string}>('/api/development',{action:'job',operation:'probe',device,project});
+  for(let i=0;i<900;i++){const {job}=await roomRequest<{job:{status:string}}>('/api/development/job?id='+encodeURIComponent(id));if(!['queued','running','cancelling'].includes(job.status))break;await new Promise(r=>setTimeout(r,2000));}
+  await onRefresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);setProbing(false);}}
  const own=resources.find(r=>r.owner===userId);
  // Done only with Studio's GitHub App access. An older deploy-key setup counts only where the app
  // cannot be set up at all; otherwise the card offers the connection instead of a false check mark.
  const appPossible=!!app&&(app.configured||app.canCreate);
- const code=!!meta.repository&&(access?.access===true||!appPossible&&ready.length>0);
+ const code=!!meta.repository&&(access?.access===true||!appPossible&&reported.length>0);
  const workshop=ready.length>0;
  const live=!!meta.live;
  const done=[code,workshop,live].filter(Boolean).length;
@@ -51,6 +59,9 @@ export default function ProjectReady({room,resources,members,userId,onRepository
     :<p>Der Inhaber verbindet Studio einmal mit GitHub. Danach geht es hier weiter.</p>)}
    {step(workshop,'Werkstatt',workshop?<><p>Bereit: Tests und Vorschau laufen auf {ready.map(r=>r.name).join(', ')}.</p>{own&&<button className="rw-link" aria-expanded={setup} onClick={()=>{setSetup(!setup);requestAnimationFrame(()=>setupPanel.current?.scrollIntoView({block:'nearest'}));}}>{setup?'Einrichtung schliessen':'Einrichtung ändern'}</button>}</>
     :!code?<p>Kommt nach dem Code.</p>
+    :pending?<><p>Die Werkstatt {pending.name} hat das Projekt, ist aber noch nicht bewiesen. {entry(pending)?.readiness?.missing}</p>{probing?<p role="status">Der Probelauf testet den gemeinsamen Stand und baut die Vorschau. Das dauert ein paar Minuten.</p>
+     :entry(pending)?.check?<button className="rw-button lime" disabled={busy||entry(pending)?.readiness?.probe?.state==='running'} onClick={()=>void probe(pending.device)}>Probelauf starten</button>
+     :own&&<button className="rw-button lime" disabled={busy} aria-expanded={setup} onClick={()=>{setSetup(!setup);requestAnimationFrame(()=>setupPanel.current?.scrollIntoView({block:'nearest'}));}}>{setup?'Einrichtung schliessen':'Einrichtung ändern'}</button>}</>
     :own?<><p>Die Werkstatt baut, testet und zeigt euch eine Vorschau. Einmal einrichten, dann läuft sie von selbst.</p><button className="rw-button lime" disabled={busy} aria-expanded={setup} onClick={()=>{setSetup(!setup);requestAnimationFrame(()=>setupPanel.current?.scrollIntoView({block:'nearest'}));}}>{setup?'Einrichtung schliessen':'Werkstatt einrichten'}</button></>
     :<p>Die Werkstatt wird noch vom Inhaber eingerichtet.</p>)}
    {step(live,'Live gehen',<>

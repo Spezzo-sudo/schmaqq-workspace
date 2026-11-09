@@ -34,6 +34,7 @@ export const jobActions: Record<string, string> = {
   'connect-project': 'Projekt auf eigenem Rechner einrichten',
   'deploy-key': 'GitHub-Schlüssel des Server-Workers',
   inspect: 'Git-Verbindung prüfen',
+  probe: 'Probelauf',
   prepare: 'Arbeitskopie erstellen',
   status: 'Änderungen ansehen',
   check: 'Tests ausführen',

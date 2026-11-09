@@ -38,7 +38,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dataDir=path.resolve(process.env.STUDIO_DATA_DIR??path.join(root,'.studio'));
 const uuid=()=>randomUUID(),now=()=>Date.now();
 // Worker jobs whose Git commands reach GitHub (clone, fetch, ls-remote, push).
-const githubJobActions=Object.freeze(['connect-project','inspect','prepare','submit','integrate']);
+const githubJobActions=Object.freeze(['connect-project','inspect','probe','prepare','submit','integrate']);
 const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$/);
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
@@ -361,7 +361,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     }
     if(v.action==='device'){const name=parse(text,v.name),t=token(),did=uuid();db.prepare('INSERT INTO devices(id,owner,name,hash) VALUES(?,?,?,?)').run(did,m.id,name,digest(t));send({id:did,token:t});return;}
     if(v.action==='revoke'){const did=parse(id,v.id);if(!db.prepare('UPDATE devices SET revoked=1 WHERE id=? AND owner=?').run(did,m.id).changes)throw fail(404,'Gerät nicht gefunden.');db.prepare("UPDATE jobs SET status='cancelled' WHERE device=? AND status='queued'").run(did);send({ok:true});return;}
-    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','prepare','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file','deploy-key']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),offset:z.number().int().min(0).max(4194304).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
+    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','probe','prepare','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file','deploy-key']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),offset:z.number().int().min(0).max(4194304).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
     if(!db.prepare('SELECT id FROM projects WHERE id=?').get(value.project))throw fail(404,'Projekt nicht gefunden.');
     // "auto" is resolved here, once; the job row then names the executor that runs it.
     // Reading needs a place in the project, changing needs the developer role, taking over a change the admin role or authorship.
@@ -370,7 +370,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     value.device=placed.device;
     if(value.operation==='deploy-key'&&placed.kind!=='server')throw fail(409,'Deploy-Keys gibt es nur für den Server-Worker. Dein PC nutzt deinen eigenen GitHub-Zugang.');
     let payload={};
-    if(['inspect','prepare'].includes(value.operation))payload=value.issue?{issue:value.issue}:{};
+    if(['inspect','prepare','probe'].includes(value.operation))payload=value.issue?{issue:value.issue}:{};
     else if(value.operation==='deploy-key')payload={};
     else if(value.operation==='integrate'){
      const source=db.prepare("SELECT * FROM jobs WHERE id=? AND project=? AND action='submit' AND status='completed'").get(value.source??'',value.project);if(!source)throw fail(400,'Ein erfolgreich eingereichter Stand wird benötigt.');const result=JSON.parse(source.result);if(reviewState(db,source)!=='approved')throw fail(409,'Die zweite Person muss genau diesen eingereichten Stand zuerst freigeben.');if(source.owner!==m.id&&!can(db,m,value.project,'admin'))throw fail(403,'Übernehmen darf der Autor oder der Projekt-Admin.');if(result.workflow==='pull-request'||metadata(db,'room:v1:project:'+value.project)?.repository&&(metadata(db,'room:v1:project:'+value.project).workflow??'pull-request')==='pull-request')throw fail(409,'Dieses Repository wird ausschließlich über Pull Request, CI und Review zusammengeführt.');

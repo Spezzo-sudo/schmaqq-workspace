@@ -115,7 +115,7 @@ export class LocalRunner{
    // A preview output folder that already holds project files would be excluded from Git
    // and overwritten by the build: creating or saving sources there can never work.
    const outputs=outputDirectories(p);
-   if(outputs.length&&remoteBranches){let clash=[];try{clash=(await this.git(p.repo,'ls-tree','-r','--name-only',`origin/${p.base}`,'--',...outputs)).split('\n').filter(Boolean);}catch{}
+   if(outputs.length&&remoteBranches){let clash=[];try{clash=(await this.git(p.repo,'ls-tree','-r','--name-only',`origin/${p.base}`,'--',...outputs)).split('\n').filter(f=>outputs.some(d=>f.startsWith(d+'/')));}catch{}
     const folder=clash.length?outputs.find(d=>clash.some(f=>f.startsWith(d+'/'))):null;
     checks.push({label:'Vorschau-Ausgabeordner getrennt von Projektdateien',ok:!clash.length,...(folder?{hint:`Im Ausgabeordner „${folder}/“ liegen bereits Projektdateien (zum Beispiel ${clash[0]}). Studio würde sie beim Bauen überschreiben und neue Dateien dort nicht speichern. In den Projekteinstellungen unter „Vorschau“ einen eigenen Ausgabeordner eintragen.`}:{})});}
    const configured=Array.isArray(p.check)&&p.check.length>0&&p.check.every(x=>typeof x==='string');
@@ -126,6 +126,23 @@ export class LocalRunner{
   // On the server worker, a GitHub App token for this job means the repository was released to Studio on GitHub;
   // an older local profile without upload permission (deploy-key era) no longer blocks sharing a task branch.
   if(job.action==='submit'&&p.publish===false&&!this.gitEnv)throw new Error('Veröffentlichen ist in diesem lokalen Projektprofil noch gesperrt.');
+  // Trial run on the shared main state: the Werkstatt counts as ready only after tests
+  // (and the preview build, if configured) passed here once.
+  if(job.action==='probe'){
+   const key='probe-'+String(job.id).replace(/[^\w-]/g,'').slice(0,80),inner={...job,payload:{...job.payload,worktree:key}};
+   const w=this.worktree({...inner,action:'check'},p);mkdirSync(path.dirname(w.dir),{recursive:true});
+   await this.git(p.repo,'fetch','origin');await this.git(p.repo,'worktree','add','-b',w.branch,w.dir,`origin/${p.base}`);
+   try{
+    const checked=await this.run({...inner,action:'check'},control);
+    let preview=false;
+    if(p.preview?.build&&p.preview?.directory){await this.run({...inner,action:'preview'},control);preview=true;}
+    else if(p.preview?.serve)preview=null;
+    return {ready:true,checks:checked.checks,preview,base:p.base,commit:await this.git(w.dir,'rev-parse','HEAD')};
+   }finally{
+    await this.git(p.repo,'worktree','remove','--force',w.dir).catch(()=>{});
+    await this.git(p.repo,'branch','-D',w.branch).catch(()=>{});
+   }
+  }
   const w=this.worktree(job,p);mkdirSync(path.dirname(w.dir),{recursive:true});
   if(job.action==='prepare'){
    await this.git(p.repo,'fetch','origin');await this.git(p.repo,'worktree','add','-b',w.branch,w.dir,`origin/${p.base}`);
@@ -204,7 +221,7 @@ export class LocalRunner{
    }
    if(p.preview?.build&&p.preview?.directory){
     await this.excludeBuildOutput(w.dir,p);
-    const before=await sourceRevision(w.dir,control);await this.untrusted(p.preview.build,w.dir,{network:'private'});const output=path.resolve(w.dir,p.preview.directory),real=realpathSync(output),workspace=realpathSync(w.dir);
+    const before=await sourceRevision(w.dir,control);await this.untrusted(p.preview.build,w.dir,{network:'private'});const output=path.resolve(w.dir,p.preview.directory);if(!existsSync(output))throw new Error(`Die Vorschau wurde gebaut, aber der Ausgabeordner „${p.preview.directory}/“ fehlt. Prüfe, ob der Build-Befehl dorthin schreibt und ob in den Projekteinstellungen der richtige Ausgabeordner eingetragen ist.`);const real=realpathSync(output),workspace=realpathSync(w.dir);
     if(!real.startsWith(workspace+path.sep)||real===workspace)throw new Error('Vorschau-Ausgabe muss innerhalb der Arbeitskopie liegen.');
     const files={};let bytes=0,count=0;
     function collect(dir){for(const item of readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,item.name);if(lstatSync(full).isSymbolicLink())throw new Error('Symlinks sind in Vorschauen nicht erlaubt.');if(item.isDirectory())collect(full);else{const data=readFileSync(full);bytes+=data.length;if(bytes>5000000||++count>500)throw new Error('Vorschau überschreitet 5 MB oder 500 Dateien.');files[path.relative(real,full).split(path.sep).join('/')]=data.toString('base64');}}}

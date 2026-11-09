@@ -21,7 +21,7 @@ Das legt ein Übungsprojekt an, das nur du siehst. Darin darfst du dich selbst f
 
 | # | Schritt | Wer | Was passiert | Danach erscheint |
 |---|---|---|---|---|
-| 1 | Projekt startklar machen | Projekt-Admin, einmal | Code auf GitHub auswählen, Werkstatt einrichten (Tests und Vorschau), Live-Weg festlegen | bei Code-Aufgaben „Änderung machen“ und die Vorschau |
+| 1 | Projekt startklar machen | Projekt-Admin, einmal | Code auf GitHub auswählen, Werkstatt einrichten (Tests und Vorschau), Probelauf bestehen, Live-Weg festlegen | bei Code-Aufgaben „Änderung machen“ und die Vorschau |
 | 2 | Aufgabe anlegen | Entwickler | im Projekt „+ Aufgabe“ oder im Gespräch aus einer Nachricht | die Aufgabe unter Aufgaben und bei der zuständigen Person unter „Meine Arbeit“ |
 | 3 | Ändern | wer die Aufgabe übernommen hat | „Aufgabe übernehmen“ → „Änderung machen“: selbst im Editor oder mit der eigenen KI (immer auch ohne KI möglich) | nach dem Speichern „Zur Prüfung geben“ |
 | 4 | Zur Prüfung geben | wer geändert hat | Studio testet und baut eine Vorschau (ein paar Minuten) | bei den Prüfern „Bitte anschauen und freigeben“ |
@@ -39,7 +39,7 @@ Aufgaben ohne Code gehen kürzer: Ergebnis aufschreiben → anschauen und freige
 | „Anschauen“ und „Diese Fassung freigeben“ | wenn jemand anderes etwas zur Prüfung gegeben hat – und nur mit der Rolle Prüfer |
 | „Änderung zusammenführen“ | nach der Freigabe – nur für den Autor oder den Projekt-Admin |
 | „Ist jetzt live“ | nach dem Zusammenführen, wenn ihr selbst live schaltet |
-| Vorschau, „Änderung machen“ | wenn das Projekt startklar ist (Werkstatt eingerichtet) |
+| Vorschau, „Änderung machen“ | wenn das Projekt startklar ist (Werkstatt eingerichtet und Probelauf bestanden) |
 | „Code auf GitHub auswählen“, Live-Weg, „Wer darf was“ ändern | nur für den Projekt-Admin (alle anderen sehen „Legt der Projekt-Admin fest“) |
 | „Einladungslink erstellen“, Mitglied „Entfernen“ | nur für den Inhaber von Studio (alle anderen können vorschlagen) |
 | „Aufgabe abschliessen“ | wenn alles erledigt ist: Ergebnis da, freigegeben, bei Code zusammengeführt |
@@ -71,7 +71,7 @@ unter Projekt → Einstellungen → „Wer darf was“.
 2. **Projekt anlegen:** Projekte → „Neues Projekt“. Du bist Admin.
 3. **Repo freigeben:** Projekt → Einstellungen → „Code auf GitHub auswählen“ → „Zugriff bei GitHub erlauben“.
    Wem das Repo gehört, gibt es auf GitHub selbst frei (private eingeschlossen) und kann es dort zurücknehmen.
-4. **Werkstatt:** dort einrichten, wo Studio es vorschlägt (Server-Worker). Danach laufen Tests und Vorschau.
+4. **Werkstatt:** dort einrichten, wo Studio es vorschlägt (Server-Worker). Dann „Probelauf starten“: Studio testet den gemeinsamen Stand und baut die Vorschau einmal. Erst danach heisst das Projekt „Startklar“. Der Vorschau-Ausgabeordner muss ein eigener Ordner sein (zum Beispiel `dist`), nicht der Ordner mit den Projektdateien.
 5. **Live-Weg** wählen und **Rollen** vergeben.
 6. **Schutz auf GitHub:** Hauptzweig mit „Require a pull request before merging“ schützen; Studio warnt sonst.
 
