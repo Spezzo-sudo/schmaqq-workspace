@@ -6,23 +6,21 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
 
 ## 1. Was live ist
 
-- Live auf studio.schmaqq.com: `1eb4456` (08.11.2026, PR #64–#66, Hermes RESULT=PASS, NRestarts 0, Worker unverändert,
-  Backup `predeploy-1eb4456-20261108T233413Z.sqlite`, Rückweg `releases/90ffcf7…`).
-  Enthält: Navigation, #Allgemein, Allgemeines Wissen, Zugang nur mit Einladung (`docs/SECURITY.md`), GitHub-Freigabe
-  für alle Mitglieder, Logo mit Studio-Label, Rollen pro Projekt, Anleitung „So funktioniert Studio“ mit Übungsrunde,
-  Aufklapper-Quadrat, Scroll-Hinweis, `studio-deploy.sh release`.
-- Livegang ab jetzt ein Auftrag: Marco „JA LIVE <kurz>“ einmal, Hermes `studio-deploy.sh release <commit>` (OPERATIONS.md).
+- Live auf studio.schmaqq.com: `cf875d2` (09.11.2026, PR #68, `release` PASS, Worker neu installiert, NRestarts 0,
+  Backup `predeploy-cf875d2-20261109T011646Z.sqlite`, Rückweg `releases/6367121…`).
+- Livegang: Marco „JA LIVE <kurz>“ einmal, Hermes `studio-deploy.sh release <voller main-Commit>` (OPERATIONS.md).
 
 ## 2. Offen und als Nächstes (in dieser Reihenfolge)
 
-1. **Verbesserungspaket nach Sols Analyse – PR offen.** Live ist `6367121`. Testkonto `analyse` (Klimafinder: Zuschauer,
-   Probeprojekt/ValueRacer: Entwickler+Prüfer) für ChatGPT-Agent „Sol“; danach Team → Entfernen. Im Paket: Knöpfe
-   folgen der Rolle (`useProjectAccess` in `studio/project-roles.tsx`, `taskNextStep` kennt canDevelop/canReview/
-   isAdmin/selfApprove/reviewers), Übung mit „Selbst anschauen und freigeben“, Zwischenstand ≠ „Wartet auf Freigabe“,
-   „Wartet auf Einrichtung durch den Projekt-Admin“, „Zur Einrichtung“ → Einstellungen, Begriffe „Aufgabe übernehmen“ /
-   „Änderung zusammenführen“, Zeitstrahl beschriftet, Aufgaben ohne Code standardmässig geprüft, Meldungen mit Titel
-   und Zeit, Handy-Menü erschien über 650 px zusätzlich (CSS-Zeile fehlte seit #63), Cursor-Sprung, Einrichtung lesbar,
-   Startklar zeigt Fakten. Danach: Sol zweiter Lauf (Prompt im Chat 09.11.).
+1. **Sol, zweiter Prüflauf läuft (09.11.).** Testkonto `analyse` / Passwort im Chat (nur Test). Probeprojekt (ValueRacer):
+   analyse = Admin, Prüfregel „Admin darf allein freigeben“, Konfiguration
+   `{"version":1,"check":["test","-f","site/index.html"],"preview":{"build":["true"],"directory":"site"}}` bestätigt.
+   Sol soll die Übung und eine Code-Aufgabe (site/index.html → Prüfung → Vorschau → freigeben → zusammenführen → live)
+   ganz durchspielen, in 1280 px und 390 px. Danach: Ergebnis kritisch auswerten, ein Paket bauen, Konto entfernen.
+   Schon notiert für das Paket: Einrichtung ist der unübersichtlichste Teil – Kästen in Kästen (zerquetschte Texte),
+   zwei Wege („Projekt einrichten“ / „Hier einrichten“), „PC oder Server hinzufügen“ öffnet mitten im Weg, nach
+   „Startklar“ fehlt ein sichtbares „Einrichtung ändern“ (heute nur Einstellungen → Für Entwickler → … einrichten),
+   Einstellungen-Seite sehr lang.
    GitHub-App „Make public“ erst, wenn Markus eigene Repos verbinden will.
 2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
    Vorschau ansehen, „Passt“, ein eigenes privates Repo verbinden. Das schliesst Etappe 1 ab.
