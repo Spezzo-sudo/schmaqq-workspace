@@ -1,3 +1,4 @@
+import {usableExecutors} from './team-workshop.mjs';
 import {z} from 'zod';
 import {metadata,storeMetadata} from './team-model.mjs';
 
@@ -80,8 +81,9 @@ export function resolveDevice(db,{member,project,device,worktree,now=Date.now()}
    placement={device:base.device,mode,reason:'Arbeitskopie liegt auf diesem Ausführer'};
   }else placement=chooseExecutor(db,{memberId:member.id,project,now});
  }else placement={device,mode,reason:'Ausdrücklich gewählt'};
- const executor=executors(db,member.id,now).find(e=>e.id===placement.device);
- if(!executor)throw fail(403,'Wähle deinen eigenen Runner.');
+ // Own devices, plus the project's team workshop (a server worker of a project admin) for its developers.
+ const executor=usableExecutors(db,member,project,now).find(e=>e.id===placement.device);
+ if(!executor)throw fail(403,'Wähle deinen eigenen Runner oder die Werkstatt des Projekts.');
  if(!allowed(mode,executor))throw fail(409,`Die Projektregel erlaubt hier nur: ${modeText[mode]}.`);
  return {...placement,kind:executor.kind,name:executor.name};
 }

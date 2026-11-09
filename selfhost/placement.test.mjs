@@ -58,6 +58,8 @@ test('placement v1 follows the project rule, prefers reachable servers and never
   const inCopy=await request('/api/development',{action:'job',device:'auto',project:'website',operation:'check',worktree:prepared.data.id},a.cookie);
   assert.equal(inCopy.status,200);assert.equal(inCopy.data.device,server.id);assert.match(inCopy.data.placement.reason,/Arbeitskopie/);
 
+  // With the project's team workshop switched off, another member cannot use this server worker (see team-workshop.test.mjs for the shared case).
+  {const {storeMetadata,metadata}=await import('./team-model.mjs');storeMetadata(app.db,'room:v1:project:website',{...(metadata(app.db,'room:v1:project:website')??{}),teamWorkshop:false});}
   assert.equal((await request('/api/development',{action:'job',device:server.id,project:'website',operation:'inspect'},b.cookie)).status,403,'Another member cannot use this server worker');
   assert.equal((await request('/api/development',{action:'job',device:'auto',project:'website',operation:'check',worktree:prepared.data.id},b.cookie)).status,403,'Another member cannot reach a copy through auto');
   assert.equal((await request('/api/development',{action:'job',device:'auto',project:'bewertungen',operation:'inspect'},a.cookie)).status,409,'Unconfigured projects are not placed');

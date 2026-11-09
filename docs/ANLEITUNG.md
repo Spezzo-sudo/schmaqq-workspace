@@ -25,7 +25,7 @@ Das legt ein Übungsprojekt an, das nur du siehst. Darin darfst du dich selbst f
 | 2 | Aufgabe anlegen | Entwickler | im Projekt „+ Aufgabe“ oder im Gespräch aus einer Nachricht | die Aufgabe unter Aufgaben und bei der zuständigen Person unter „Meine Arbeit“ |
 | 3 | Ändern | wer die Aufgabe übernommen hat | „Aufgabe übernehmen“ → „Änderung machen“: selbst im Editor oder mit der eigenen KI (immer auch ohne KI möglich) | nach dem Speichern „Zur Prüfung geben“ |
 | 4 | Zur Prüfung geben | wer geändert hat | Studio testet und baut eine Vorschau (ein paar Minuten) | bei den Prüfern „Bitte anschauen und freigeben“ |
-| 5 | Anschauen und „Passt“ | Prüfer (zweite Person; der Admin allein, wenn das Projekt es erlaubt) | Vorschau und Änderungen ansehen, „Passt“ oder „Ändern“ mit Rückmeldung | nach „Passt“ beim Autor „Änderung zusammenführen“; nach „Ändern“ ist der Autor wieder dran |
+| 5 | Anschauen und freigeben | Prüfer (zweite Person; der Admin allein, wenn das Projekt es erlaubt) | Vorschau und Änderungen ansehen, „Diese Fassung freigeben“ oder „Änderungen anfordern“ mit Rückmeldung | nach der Freigabe beim Autor „Änderung zusammenführen“; nach „Änderungen anfordern“ ist der Autor wieder dran |
 | 6 | Zusammenführen | Autor oder Projekt-Admin | bei GitHub-Projekten Pull Request anlegen und zusammenführen (GitHub-Regeln gelten weiter) | der Live-Schritt |
 | 7 | Live | je nach Projekt | geht von selbst live oder ihr schaltet selbst live (z. B. Hermes) und tippt „Ist jetzt live“ | Aufgabe erledigt |
 
@@ -36,8 +36,8 @@ Aufgaben ohne Code gehen kürzer: Ergebnis aufschreiben → anschauen und freige
 | Knopf | Erscheint erst … |
 |---|---|
 | „Zur Prüfung geben“ | wenn du die Aufgabe übernommen und eine Änderung gespeichert hast |
-| „Anschauen“ und „Passt“ | wenn jemand anderes etwas zur Prüfung gegeben hat – und nur mit der Rolle Prüfer |
-| „Änderung zusammenführen“ | nach einem „Passt“ – nur für den Autor oder den Projekt-Admin |
+| „Anschauen“ und „Diese Fassung freigeben“ | wenn jemand anderes etwas zur Prüfung gegeben hat – und nur mit der Rolle Prüfer |
+| „Änderung zusammenführen“ | nach der Freigabe – nur für den Autor oder den Projekt-Admin |
 | „Ist jetzt live“ | nach dem Zusammenführen, wenn ihr selbst live schaltet |
 | Vorschau, „Änderung machen“ | wenn das Projekt startklar ist (Werkstatt eingerichtet) |
 | „Code auf GitHub auswählen“, Live-Weg, „Wer darf was“ ändern | nur für den Projekt-Admin (alle anderen sehen „Legt der Projekt-Admin fest“) |
@@ -53,7 +53,7 @@ In jeder Aufgabe zeigt der Zeitstrahl oben dieselben Schritte. Antippen erklärt
 |---|---|
 | Admin | alles im Projekt, auch Rollen, Prüfregel, Repo, Live-Weg und Zusammenführen |
 | Entwickler | Aufgaben anlegen, ändern, zur Prüfung geben |
-| Prüfer | „Passt“ oder „Ändern“ sagen |
+| Prüfer | „Diese Fassung freigeben“ oder „Änderungen anfordern“ |
 | Zuschauer | lesen und im Gespräch mitreden |
 
 Der Inhaber von Studio ist überall Admin. Wer ein Projekt anlegt, ist dessen Admin; alle anderen sind zunächst

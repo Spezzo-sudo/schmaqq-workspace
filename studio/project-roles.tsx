@@ -3,9 +3,9 @@ import {initials,roomRequest} from './room-model';
 
 /** Who may do what in this project. The admin changes roles and the review rule; everyone else sees their own role. */
 type Role='admin'|'developer'|'reviewer'|'viewer';
-type State={review:'second'|'admin-alone';mine:Role[];members:{id:string;name:string;owner:boolean;roles:Role[]}[]};
+type State={teamWorkshop?:boolean;review:'second'|'admin-alone';mine:Role[];members:{id:string;name:string;owner:boolean;roles:Role[]}[]};
 const labels:Record<Role,string>={admin:'Admin',developer:'Entwickler',reviewer:'Prüfer',viewer:'Zuschauer'};
-const meaning:Record<Role,string>={admin:'alles, auch Rollen und Zusammenführen',developer:'bearbeiten und zur Prüfung geben',reviewer:'„Passt“ oder „Ändern“ sagen',viewer:'lesen und mitreden'};
+const meaning:Record<Role,string>={admin:'alles, auch Rollen und Zusammenführen',developer:'bearbeiten und zur Prüfung geben',reviewer:'freigeben oder Änderungen anfordern',viewer:'lesen und mitreden'};
 const order:Role[]=['admin','developer','reviewer','viewer'];
 
 export default function ProjectRoles({project}:{project:string}){
@@ -28,6 +28,9 @@ export default function ProjectRoles({project}:{project:string}){
    <button role="radio" aria-checked={state.review==='second'} disabled={busy} onClick={()=>void save({action:'review',project,review:'second'})}><strong>Zweite Person prüft</strong><small>Sicherer. Niemand gibt die eigene Änderung frei.</small></button>
    <button role="radio" aria-checked={state.review==='admin-alone'} disabled={busy} onClick={()=>void save({action:'review',project,review:'admin-alone'})}><strong>Admin darf allein freigeben</strong><small>Für kleine Projekte. Im Verlauf steht, wer freigegeben hat.</small></button>
   </div>:<p>{state.review==='second'?'Eine zweite Person prüft jede Änderung.':'Der Admin darf eigene Änderungen allein freigeben.'}</p>}
+  <h3>Werkstatt fürs Team</h3>
+  {admin?<label className="team-check studio-workshop-toggle"><input type="checkbox" checked={state.teamWorkshop!==false} disabled={busy} onChange={e=>void save({action:'workshop',project,on:e.target.checked})}/>Entwickler dürfen die Server-Werkstatt dieses Projekts nutzen – jeder in seiner eigenen Kopie</label>
+   :<p>{state.teamWorkshop!==false?'Entwickler arbeiten in der Werkstatt des Projekts, jeder in seiner eigenen Kopie.':'In diesem Projekt arbeitet jeder mit seinem eigenen PC.'}</p>}
   {error&&<p className="rw-error" role="alert">{error}</p>}
  </section>;
 }

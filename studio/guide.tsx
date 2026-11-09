@@ -12,17 +12,17 @@ type Step={id:string;title:string;who:string;what:string;then:string;where:strin
 export const guideSteps:Step[]=[
  {id:'startklar',title:'Projekt startklar machen',who:'Projekt-Admin, einmal pro Projekt',what:'Code auf GitHub auswählen, die Werkstatt einrichten (dort laufen Tests und Vorschau) und festlegen, wie ihr live geht.',then:'Danach gibt es bei Code-Aufgaben „Änderung machen“ und die Vorschau.',where:'Projekt → Einstellungen → Startklar machen',target:{project:true,tab:'connect',selector:'.po-ready'}},
  {id:'aufgabe',title:'Aufgabe anlegen',who:'Entwickler',what:'Im Projekt oben „+ Aufgabe“. Oder im Projektgespräch aus einer Nachricht eine Aufgabe machen.',then:'Die Aufgabe steht unter Aufgaben. Wer sie übernimmt, sieht sie unter „Meine Arbeit“.',where:'Projekt → „+ Aufgabe“',target:{project:true,tab:'overview',selector:'.team-head .rw-button.lime'}},
- {id:'aendern',title:'Ändern',who:'wer die Aufgabe übernommen hat',what:'„Aufgabe übernehmen“, dann „Änderung machen“: selbst im Editor oder mit deiner KI. Ohne KI geht es immer.',then:'Sobald eine Änderung gespeichert ist, erscheint „Zur Prüfung geben“.',where:'Projekt → Aufgaben → Aufgabe öffnen',target:{project:true,tab:'tasks',selector:'.team-task-list'}},
+ {id:'aendern',title:'Ändern',who:'wer die Aufgabe übernommen hat',what:'„Aufgabe übernehmen“, dann unter „Ändern“: „Selbst bearbeiten“ im Editor oder mit deiner KI. Ohne KI geht es immer.',then:'Sobald eine Änderung gespeichert ist, erscheint „Zur Prüfung geben“.',where:'Projekt → Aufgaben → Aufgabe öffnen',target:{project:true,tab:'tasks',selector:'.team-task-list'}},
  {id:'pruefung',title:'Zur Prüfung geben',who:'wer geändert hat',what:'Studio testet die Änderung und baut eine Vorschau. Das dauert ein paar Minuten; du siehst, was gerade passiert.',then:'Die Prüfer sehen auf „Meine Arbeit“: „Bitte anschauen und freigeben“.',where:'In der Aufgabe, oben',target:{page:'rooms',selector:'.home-hero'}},
- {id:'passt',title:'Anschauen und „Passt“',who:'Prüfer – eine zweite Person (oder der Admin allein, wenn das Projekt es erlaubt)',what:'Vorschau öffnen, Änderungen ansehen, dann „Passt“ oder „Ändern“ mit einer kurzen Rückmeldung.',then:'Nach „Passt“ erscheint beim Autor „Änderung zusammenführen“. Nach „Ändern“ ist der Autor wieder dran.',where:'„Meine Arbeit“ → Aufgabe → Anschauen',target:{page:'rooms',selector:'.home-hero'}},
+ {id:'passt',title:'Anschauen und freigeben',who:'Prüfer – eine zweite Person (oder der Admin allein, wenn das Projekt es erlaubt)',what:'Vorschau öffnen, Änderungen ansehen, dann „Diese Fassung freigeben“ oder „Änderungen anfordern“ mit einer kurzen Rückmeldung.',then:'Nach „Passt“ erscheint beim Autor „Änderung zusammenführen“. Nach „Ändern“ ist der Autor wieder dran.',where:'„Meine Arbeit“ → Aufgabe → Anschauen',target:{page:'rooms',selector:'.home-hero'}},
  {id:'uebernehmen',title:'Zusammenführen',who:'Autor oder Projekt-Admin',what:'„Änderung zusammenführen“. Bei GitHub-Projekten legt Studio einen Pull Request an und führt ihn zusammen – die Regeln auf GitHub gelten weiter.',then:'Danach kommt der Live-Schritt.',where:'In der Aufgabe, oben',target:{project:true,tab:'tasks',selector:'.team-task-list'}},
  {id:'live',title:'Live',who:'je nach Projekt',what:'Entweder geht es beim Zusammenführen von selbst live, oder ihr schaltet selbst live (z. B. über Hermes) und tippt danach „Ist jetzt live“.',then:'Die Aufgabe ist erledigt.',where:'Projekt → Einstellungen → Live gehen',target:{project:true,tab:'connect',selector:'.po-ready'}}
 ];
 
 export const laterItems:[string,string][]=[
  ['„Zur Prüfung geben“','erst wenn du die Aufgabe übernommen und eine Änderung gespeichert hast.'],
- ['„Anschauen“ und „Passt“','erst wenn jemand anderes etwas zur Prüfung gegeben hat – und nur mit der Rolle Prüfer.'],
- ['„Änderung zusammenführen“','erst nach einem „Passt“ – und nur für den Autor oder den Projekt-Admin.'],
+ ['„Anschauen“ und „Diese Fassung freigeben“','erst wenn jemand anderes etwas zur Prüfung gegeben hat – und nur mit der Rolle Prüfer.'],
+ ['„Änderung zusammenführen“','erst nach der Freigabe – und nur für den Autor oder den Projekt-Admin.'],
  ['„Ist jetzt live“','erst nach dem Zusammenführen, wenn ihr selbst live schaltet.'],
  ['Vorschau und „Änderung machen“','erst wenn das Projekt startklar ist (Werkstatt eingerichtet).'],
  ['„Code auf GitHub auswählen“, Live-Weg, „Wer darf was“ ändern','nur für den Projekt-Admin. Alle anderen sehen „Legt der Projekt-Admin fest“.'],
@@ -30,8 +30,8 @@ export const laterItems:[string,string][]=[
  ['„Aufgabe abschliessen“','erst wenn alles erledigt ist: Ergebnis da, freigegeben, bei Code zusammengeführt.']
 ];
 
-const roles:[string,string][]=[['Admin','alles im Projekt, auch Rollen, Prüfregel, Repo und Zusammenführen'],['Entwickler','Aufgaben anlegen, ändern, zur Prüfung geben'],['Prüfer','„Passt“ oder „Ändern“ sagen'],['Zuschauer','lesen und im Gespräch mitreden']];
-const places:[string,string][]=[['Arbeit','was bei dir ansteht – der nächste Schritt steht ganz oben'],['Projekte','alle Projekte; darin Übersicht, Aufgaben, Gespräch, Wissen, Einstellungen. Unten: Allgemeines Wissen'],['Gespräche','„Allgemein“ für alle, darunter die Gespräche der Projekte'],['Team','wer dabei ist, einladen oder vorschlagen'],['Deine Initialen oben rechts','Mein Konto: ChatGPT verbinden, Assistenten trennen, Daten, Abmelden – und diese Anleitung']];
+const roles:[string,string][]=[['Admin','alles im Projekt, auch Rollen, Prüfregel, Repo und Zusammenführen'],['Entwickler','Aufgaben anlegen, ändern, zur Prüfung geben'],['Prüfer','„Diese Fassung freigeben“ oder „Änderungen anfordern“'],['Zuschauer','lesen und im Gespräch mitreden']];
+const places:[string,string][]=[['Arbeit','was bei dir ansteht – der nächste Schritt steht ganz oben'],['Projekte','alle Projekte; darin Übersicht, Aufgaben, Gespräch, Wissen, Einstellungen. Unten: Allgemeines Wissen'],['Gespräche','„Allgemein“ für alle, darunter die Gespräche der Projekte'],['Team','wer dabei ist, einladen oder vorschlagen'],['Mein Konto (am Handy: deine Initialen oben rechts)',' ChatGPT verbinden, Assistenten trennen, Daten, Abmelden – und diese Anleitung']];
 
 export default function GuidePage({practice,onShow,onPractice,onDeletePractice,busy}:{practice:string|null;onShow:(t:GuideTarget)=>void;onPractice:()=>void;onDeletePractice:()=>void;busy:boolean}){
  const [open,setOpen]=useState<string|null>(guideSteps[0].id);

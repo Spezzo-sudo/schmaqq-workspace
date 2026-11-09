@@ -1,5 +1,6 @@
 import http from 'node:http';
 import {isRemoved} from './team-access.mjs';
+import {teamDevices} from './team-workshop.mjs';
 import {requirePermission,selfApproval,can,projectRoles,setRoles,setReviewRule,reviewRule,rolesOf,roleNames} from './project-roles.mjs';
 import {Readable} from 'node:stream';
 import {DatabaseSync} from 'node:sqlite';
@@ -156,12 +157,13 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     if(method==='GET'){
      const project=parse(id,url.searchParams.get('project'));if(!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt fehlt.');
      const people=db.prepare('SELECT id,name,role FROM members ORDER BY name').all().filter(p=>!isRemoved(db,p.id));
-     send({review:reviewRule(db,project),explicit:!!projectRoles(db,project),mine:rolesOf(db,member,project),members:people.map(p=>({id:p.id,name:p.name,owner:p.role==='owner',roles:rolesOf(db,p,project)}))});return;
+     send({teamWorkshop:metadata(db,'room:v1:project:'+project)?.teamWorkshop!==false,review:reviewRule(db,project),explicit:!!projectRoles(db,project),mine:rolesOf(db,member,project),members:people.map(p=>({id:p.id,name:p.name,owner:p.role==='owner',roles:rolesOf(db,p,project)}))});return;
     }
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
-    const v=parse(z.discriminatedUnion('action',[z.object({action:z.literal('roles'),project:id,member:id,roles:z.array(z.enum(roleNames)).max(4)}),z.object({action:z.literal('review'),project:id,review:z.enum(['second','admin-alone'])})]),await readJSON(req,4096));
+    const v=parse(z.discriminatedUnion('action',[z.object({action:z.literal('roles'),project:id,member:id,roles:z.array(z.enum(roleNames)).max(4)}),z.object({action:z.literal('review'),project:id,review:z.enum(['second','admin-alone'])}),z.object({action:z.literal('workshop'),project:id,on:z.boolean()})]),await readJSON(req,4096));
     requirePermission(db,member,v.project,'admin');
     transaction(db,()=>{
+     if(v.action==='workshop'){storeMetadata(db,'room:v1:project:'+v.project,{...(metadata(db,'room:v1:project:'+v.project)??{}),teamWorkshop:v.on});teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:v.on?'Team-Werkstatt eingeschaltet':'Team-Werkstatt ausgeschaltet'});return;}
      if(v.action==='review'){setReviewRule(db,v.project,v.review);teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:v.review==='admin-alone'?'Prüfregel: Admin darf allein freigeben':'Prüfregel: zweite Person prüft'});return;}
      const target=db.prepare('SELECT id,role FROM members WHERE id=?').get(v.member);if(!target||isRemoved(db,target.id))throw fail(404,'Mitglied fehlt.');
      if(target.role==='owner')throw fail(400,'Der Inhaber ist immer Admin.');
@@ -326,7 +328,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    }
    if(route==='/api/development'){
     const m=user(req);
-    if(method==='GET'){const devices=db.prepare("SELECT d.id,d.owner,d.name,d.seen,d.revoked,CASE WHEN json_extract(h.value,'$.kind')='server' THEN 'server' ELSE 'pc' END AS kind FROM devices d LEFT JOIN workspace_meta h ON h.key='executor:v1:host:'||d.id WHERE d.revoked=0").all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));send({devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all(),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)})),readiness:projectReadiness(db,m.id,{appShares})});return;}
+    if(method==='GET'){const devices=db.prepare("SELECT d.id,d.owner,d.name,d.seen,d.revoked,CASE WHEN json_extract(h.value,'$.kind')='server' THEN 'server' ELSE 'pc' END AS kind FROM devices d LEFT JOIN workspace_meta h ON h.key='executor:v1:host:'||d.id WHERE d.revoked=0").all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));const teamDeviceMap={};for(const p of db.prepare('SELECT id FROM projects').all())for(const d of teamDevices(db,m,p.id))(teamDeviceMap[d]??=[]).push(p.id);send({teamDevices:teamDeviceMap,devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all(),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)})),readiness:projectReadiness(db,m.id,{appShares})});return;}
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     // Bound editor payloads by the runner's 64 KiB byte limit and by
     // Zod's 65536-character cap; JSON escaping needs a separate wire limit.
