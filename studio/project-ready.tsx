@@ -33,8 +33,12 @@ export default function ProjectReady({room,resources,members,userId,onRepository
  async function act(run:()=>Promise<unknown>){setBusy(true);setError('');try{await run();}catch(e){setError((e as Error).message);setBusy(false);}}
  async function chooseLive(value:'merge'|'manual',how?:string){setBusy(true);setError('');try{await roomRequest('/api/team',{action:'live',project,revision:meta.revision,live:value,...(how!==undefined?{liveHow:how}:{})});await onRefresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  if(!app||!access)return <section className="po-ready" aria-label="Startklar"><p role="status">Einrichtung wird geprüft …</p></section>;
- // Complete: one quiet line; details stay reachable.
- if(done===3&&!open)return <section className="po-ready done" aria-label="Startklar"><p><Check size={16} aria-hidden="true"/> <strong>Startklar.</strong> Code, Werkstatt und Live-Weg sind eingerichtet.</p><button className="rw-button subtle" onClick={()=>setOpen(true)}>Ansehen</button></section>;
+ // Complete: the three facts stay visible in three short lines (they matter for orientation); changing them is one tap away.
+ if(done===3&&!open)return <section className="po-ready done" aria-label="Startklar"><p className="po-ready-title"><Check size={16} aria-hidden="true"/> <strong>Startklar</strong></p>
+  <dl className="po-ready-facts"><div><dt>Code</dt><dd>{access.repository??meta.repository?.replace('https://github.com/','')}{access.protected===false&&<> · <a href={`https://github.com/${access.repository}/settings/branches`} target="_blank" rel="noreferrer">„{access.base}“ schützen ↗</a></>}</dd></div>
+   <div><dt>Werkstatt</dt><dd>{ready.map(r=>r.name).join(', ')}</dd></div>
+   <div><dt>Live</dt><dd>{meta.live==='merge'?'Geht beim Übernehmen von selbst live':'Ihr schaltet selbst live'+(meta.liveHow?' – '+meta.liveHow:'')}</dd></div></dl>
+  {decides&&<button className="rw-link" onClick={()=>setOpen(true)}>Ändern</button>}</section>;
  const step=(ok:boolean,title:string,body:React.ReactNode)=><li className={ok?'ok':''}><span className="po-ready-mark" aria-hidden="true">{ok?<Check size={14}/>:null}</span><div><strong>{title}</strong>{body}</div></li>;
  return <section className="po-ready" aria-labelledby="po-ready-title">
   <h2 id="po-ready-title">Startklar machen <span>{done} von 3</span></h2>

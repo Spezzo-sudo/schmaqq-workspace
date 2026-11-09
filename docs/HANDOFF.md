@@ -15,9 +15,12 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
 
 ## 2. Offen und als Nächstes (in dieser Reihenfolge)
 
-1. **PR #67 Anmeldung** (Benutzername statt Pflicht-E-Mail, Passwort ändern, Link „Neues Passwort“ vom Inhaber): nach „Ja“
-   zusammenführen und mit `release` live bringen.
-   Marco: GitHub-App → Advanced → „Make public“ (Schutz live); bei Klimafinder „Leise-Priorität“ → „Zur Prüfung geben“.
+1. **Verbesserungspaket in Arbeit (Branch, noch kein PR – wartet auf Sols Analyse):** Live ist `6367121` (#67, `release`
+   lief erstmals PASS). Testkonto `analyse` (Klimafinder: Zuschauer, Probeprojekt/ValueRacer: Entwickler+Prüfer) für
+   ChatGPT-Agent „Sol“; danach Team → Entfernen. Schon gebaut: Cursor sprang alle 5 s in das erste Feld (RoomModal-Fokus
+   hing an `onClose`), Einrichtungshinweise ein Wort pro Zeile (`.po-ready li li`), „Startklar“ zeigt fertig die drei
+   Fakten statt zuzuklappen, ChatGPT-Anmeldung in Mein Konto nur wenn eingerichtet, Einrichtung in Alltagssprache.
+   Marco: GitHub-App „Make public“ erledigt? Leise-Priorität „Zur Prüfung geben“.
 2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
    Vorschau ansehen, „Passt“, ein eigenes privates Repo verbinden. Das schliesst Etappe 1 ab.
 3. **Etappe 3 „KI im Raum“** (siehe PLAN.md): erst klären, ob der ChatGPT-Business-Workspace die

@@ -81,7 +81,7 @@ export function proposeProjectPlan(repo,{configuration,serve,head=''}={}){
   config=validateProjectPlan(serve?{...config,preview:{serve}}:config);
   if(config.prepare.length)notes.push('Die Vorbereitung läuft erst beim Testen oder bei der Vorschau, in der jeweiligen Arbeitskopie. Paketdownloads benötigen erlaubte Quellen; diese Prüfung bestätigt noch keinen Download oder Build.');
   if(!config.preview)notes.push('Eine Vorschau ist noch nicht konfiguriert. Tests können unabhängig davon eingerichtet werden.');
- }else notes.push('Keine eindeutige Testkonfiguration gefunden. Eine verbundene KI kann aus den Projektdateien eine studio.project.json vorschlagen; du kannst den Vorschlag unter Erweitert einfügen.');
+ }else notes.push('Studio hat keine Tests gefunden. Ändern und Prüfen geht trotzdem, nur ohne automatische Tests und Vorschau. Für Entwickler: unter „eigene Konfiguration“ eine studio.project.json einfügen – eine KI kann sie aus den Projektdateien vorschlagen.');
  const revision=createHash('sha256').update(JSON.stringify({files,head,config,source})).digest('hex');
  return {revision,source,label,state:config?'proposed':'needs_configuration',configuration:config,notes,tools:[]};
 }
