@@ -6,26 +6,29 @@ Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes
 
 ## 1. Was live ist
 
-- Live auf studio.schmaqq.com: `cf875d2` (09.11.2026, PR #68, `release` PASS, Worker neu installiert, NRestarts 0,
-  Backup `predeploy-cf875d2-20261109T011646Z.sqlite`, Rückweg `releases/6367121…`).
+- Live auf studio.schmaqq.com: `cc9c241` (09.11.2026, PR #69, `release` PASS, Worker neu installiert, NRestarts 0,
+  Backup `predeploy-cc9c241-20261109T220653Z.sqlite`, Rückweg `releases/cf875d2…`).
+  Enthält u. a.: Team-Werkstatt (`selfhost/team-workshop.mjs`), Rollen pro Projekt, Zugang nur mit Einladung,
+  Benutzername-Anmeldung, Anleitung + Übung, aufgeräumte Einstellungen, `selfhost/layout-check.mjs`.
+  Live geprüft (Testkonto Analyse): Team-Werkstatt im Probeprojekt sichtbar, in Klimafinder (Zuschauer) nicht.
 - Livegang: Marco „JA LIVE <kurz>“ einmal, Hermes `studio-deploy.sh release <voller main-Commit>` (OPERATIONS.md).
+- GitHub-Prüfung startete bei #69 erst mit Verspätung; ein roter Lauf auf altem Code (release-smoke Zeile 24) gehörte
+  nicht zu #69. Lokal zusätzlich: `node selfhost/release.mjs` + `node selfhost/release-smoke.mjs <dir>` (nicht in verify).
 
 ## 2. Offen und als Nächstes (in dieser Reihenfolge)
 
-1. **Team-Werkstatt + Einstellungen – PR offen.** Sols 2. Lauf (09.11.): Übung bis „Fertig“ ok; Code-Kette blockiert,
-   weil nur der Besitzer einer Werkstatt darauf arbeiten durfte (betraf jedes Mitglied ausser Marco). Marco: „Ja“ zur
-   Team-Werkstatt. Gebaut: `selfhost/team-workshop.mjs` – Server-Worker eines Projekt-Admins ist für Entwickler des
-   Projekts nutzbar, nur für dort eingerichtete Projekte, PCs bleiben privat, Admin kann es pro Projekt abschalten
-   („Werkstatt fürs Team“ unter „Wer darf was“); `resolveDevice` nutzt `usableExecutors`; `/api/ai` und
-   `/api/development` liefern die Team-Werkstatt; Test `team-workshop.test.mjs`. Einstellungen: Name/Ziel nur Admin,
-   „Gemeinsames Repository“ (veraltet), „Repository anlegen“ (live nicht funktionsfähig), „Import auf eigenem PC“ und
-   „Projekt einrichten“-Doppelweg entfernt; Startklar mit „Anderes Repository wählen“ / „Einrichtung ändern“;
-   „Eigener PC (optional)“ unter Für Entwickler; „Direkt durch die Werkstatt“ nur ohne GitHub. Begriffe
-   „Diese Fassung freigeben“ statt „Passt“. `selfhost/layout-check.mjs` (lokal mit Playwright) prüft gequetschte
-   und überlaufende Texte, seitliches Scrollen, doppelte Navigation – vor jedem Paket laufen lassen.
-   Danach: Sol 3. Lauf (komplette Code-Kette), dann Testkonto entfernen.
-   Offen aus Sols Lauf: selbst prüfbare Aufgabe unter „Bei dir“, Ladeanzeige „Aktueller Stand“ vs. „wird geladen“,
-   allgemeines Gespräch erklärt, warum es keine Aufgaben-Umwandlung gibt.
+1. **Sol, dritter Prüflauf** (ChatGPT-Agent, Testkonto `Analyse` / `Analyse12345`, nur Test): Probeprojekt (ValueRacer),
+   Analyse = Admin, Prüfregel „Admin darf allein freigeben“, Konfiguration
+   `{"version":1,"check":["test","-f","site/index.html"],"preview":{"build":["true"],"directory":"site"}}`.
+   Ziel: Übung bis „Fertig“ und Code-Kette (site/index.html → Prüfung → Vorschau → freigeben → zusammenführen →
+   „Ist jetzt live“) in 1280 px und 390 px. Ergebnis kritisch prüfen (nicht blind übernehmen), ein Paket bauen.
+   Danach Testkonto entfernen (Team → Entfernen).
+   Offen aus Lauf 2: selbst prüfbare Aufgabe unter „Bei dir“, Ladeanzeige „Aktueller Stand“ vs. „wird geladen“,
+   allgemeines Gespräch erklärt fehlende Aufgaben-Umwandlung, „Zeig mir wo“ beim Live-Schritt.
+   Danach Reihenfolge (mit Marco abgestimmt): Markus einladen → schmaqq.com (`Spezzo-sudo/NetzKontor`,
+   `marketing/site`) als Studio-Projekt, erste Aufgabe „Weg ins Studio“, Website angleichen → Etappe 3 „KI im Raum“
+   → SCHMAQQ-Projekte (u. a. Bewertungsdienst in NetzKontor `app/`). NetzKontor hat eigene Regeln (AGENTS.md).
+   GitHub-App „Make public“ erst, wenn Markus eigene Repos verbinden will.
 2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
    Vorschau ansehen, „Passt“, ein eigenes privates Repo verbinden. Das schliesst Etappe 1 ab.
 3. **Etappe 3 „KI im Raum“** (siehe PLAN.md): erst klären, ob der ChatGPT-Business-Workspace die
