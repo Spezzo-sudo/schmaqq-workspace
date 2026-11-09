@@ -2,6 +2,7 @@ import http from 'node:http';
 import {isRemoved} from './team-access.mjs';
 import {teamDevices} from './team-workshop.mjs';
 import {requirePermission,selfApproval,can,projectRoles,setRoles,setReviewRule,reviewRule,rolesOf,roleNames} from './project-roles.mjs';
+import {expireStaleJobs,activeJobInCopy,HEARTBEAT_LIMIT_MS,lostText} from './job-lifecycle.mjs';
 import {Readable} from 'node:stream';
 import {DatabaseSync} from 'node:sqlite';
 import {createPluginHttpRoutes} from './studio-plugin-http.mjs';
@@ -97,7 +98,10 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
   ledgerDb=new DatabaseSync(path.join(path.dirname(filename),'plugin-mutations.sqlite'));
   try{plugin=createPluginHttpRoutes({db,ledgerDb,origin,clients:pluginClients,dynamic:pluginDynamicClients,fetchMetadata:pluginFetchMetadata,clientHosts:pluginClientHosts,user,readJSON,execute:executeAsMember});}catch(e){ledgerDb.close();db.close();throw e;}
  }
+ let lastExpiry=0;
  const handleRequest=async(req,res)=>{
+  // Stale jobs end on the server's clock, not only when the same runner asks again.
+  if(now()-lastExpiry>15000){lastExpiry=now();try{expireStaleJobs(db,now());}catch(e){console.error('job expiry failed',e.message);}}
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');
   const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
   try{
@@ -345,10 +349,14 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      });send({ok:true});return;
     }
     if(v.action==='cancel'){
-     const jid=parse(id,v.id),j=db.prepare("SELECT * FROM jobs WHERE id=? AND (owner=? OR (action='local-ai' AND device IN (SELECT id FROM devices WHERE owner=?)))").get(jid,m.id,m.id);
+     const jid=parse(id,v.id),any=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);
+     // Own jobs, local AI on an own machine, or – for the project admin – anyone's job in the project.
+     const j=any&&(any.owner===m.id||any.action==='local-ai'&&db.prepare('SELECT 1 FROM devices WHERE id=? AND owner=?').get(any.device,m.id)||can(db,m,any.project,'admin'))?any:null;
      if(!j)throw fail(404,'Eigener Auftrag nicht gefunden.');
-     if(j.status==='running'&&!['codex','check','local-ai'].includes(j.action))throw fail(409,'Diesen Git-Schritt bitte erst beenden lassen.');
      if(!['queued','running','cancelling'].includes(j.status))throw fail(409,'Auftrag ist bereits beendet.');
+     // A silent runner cannot confirm a stop: end the job here instead of waiting forever.
+     if(j.status!=='queued'&&(j.heartbeat??j.started??j.created)<now()-HEARTBEAT_LIMIT_MS){db.prepare("UPDATE jobs SET status='interrupted',lease=NULL,result=? WHERE id=?").run(JSON.stringify({error:lostText}),jid);send({ok:true});return;}
+     if(j.status==='running'&&!['codex','check','local-ai'].includes(j.action))throw fail(409,'Diesen Git-Schritt bitte erst beenden lassen.');
      db.prepare('UPDATE jobs SET status=? WHERE id=?').run(j.status==='queued'?'cancelled':'cancelling',jid);send({ok:true});return;
     }
     if(v.action==='device'){const name=parse(text,v.name),t=token(),did=uuid();db.prepare('INSERT INTO devices(id,owner,name,hash) VALUES(?,?,?,?)').run(did,m.id,name,digest(t));send({id:did,token:t});return;}
@@ -376,7 +384,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      if(value.operation!=='files'&&!value.file)throw fail(400,'Dateipfad fehlt.');
      if(value.operation==='save-file'&&(value.content===undefined||!value.revision))throw fail(400,'Dateistand fehlt.');
      if(['save-file','create-file'].includes(value.operation)&&Buffer.byteLength(value.content??'','utf8')>65536)throw fail(413,'UTF-8-Datei ist größer als 64 KiB.');
-     if(db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device))throw fail(409,'Bitte den laufenden Auftrag zuerst beenden lassen.');
+     if(activeJobInCopy(db,payload.worktree))throw fail(409,'In dieser Arbeitskopie läuft gerade ein Vorgang. Bitte kurz warten.');
      if(value.offset!==undefined&&value.operation!=='read-file')throw fail(400,'Abschnittsweises Lesen gibt es nur für read-file.');
      payload={...payload,file:value.file,revision:value.revision,content:value.content,...(value.offset!==undefined?{offset:value.offset}:{})};
     }
@@ -388,7 +396,9 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     }
     const sharedProject=metadata(db,'room:v1:project:'+value.project);
     if(sharedProject?.repository){payload.expectedRepository=sharedProject.repository;payload.expectedBase=sharedProject.base??'main';}
-    if(['review','submit','integrate'].includes(value.operation)&&db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device))throw fail(409,'Auf deinem Rechner läuft noch ein Vorgang. Den bestätigten Abschluss abwarten.');
+    // Other people's work on the same machine only queues this job; the runner works one job after another.
+    if(['review','submit'].includes(value.operation)&&activeJobInCopy(db,payload.worktree))throw fail(409,'In dieser Arbeitskopie läuft noch ein Vorgang. Den bestätigten Abschluss abwarten.');
+    if(value.operation==='integrate'&&db.prepare("SELECT id FROM jobs WHERE action='integrate' AND json_extract(payload,'$.reviewJob')=? AND status IN ('queued','running','cancelling')").get(payload.reviewJob))throw fail(409,'Diese Änderung wird bereits zusammengeführt.');
     payload.placement={mode:placed.mode,kind:placed.kind,reason:placed.reason};
     const jid=uuid();transaction(db,()=>{
      if(value.operation==='prepare'){

@@ -123,3 +123,8 @@ test('a failed step stays the next step until it is retried, and an empty copy c
  const empty=step({hasChange:false});assert.equal(empty.action,'edit');assert.match(empty.text,/zuerst etwas/);
  assert.equal(step({hasChange:true}).action,'submit');
 });
+
+test('work queued behind another person on a shared Werkstatt says who is ahead',()=>{
+ const queued=step({activeJob:'submit',activeBehind:'Markus'});
+ assert.equal(queued.waiting,true);assert.match(queued.text,/Aufgabe von Markus/);assert.match(queued.text,/als Nächstes dran/);
+});

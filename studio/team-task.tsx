@@ -13,7 +13,7 @@ import TaskTimeline from './task-timeline';
 import {roomRequest,saveDraft,storedDraft,operationId,type RoomState,type Resource,type TeamTask,type TaskContract,type TaskResult} from './room-model';
 type Copy={id:string;owner:string;device:string;title:string;scope:string;revision:number;status:string;deviceName:string;changed?:boolean};
 type Failure={id:string;action:string;owner:string;ownerName:string;at:number;interrupted:boolean;text:string;detail:string};
-type Detail={lastFailure?:Failure|null;source?:{id:string;body:string;authorName:string;created:number}|null;activeJobs?:{id:string;action:string;status:string;ownerName:string}[];task:TeamTask;brief:{revision:number};comments:TaskComment[];reviews:{id:string;owner:string;ownerName:string;commit:string;state:string;created?:number}[];workspaces:Copy[];changes:{workspace:string;review?:{id:string;changedAfter?:boolean}}[]};
+type Detail={lastFailure?:Failure|null;source?:{id:string;body:string;authorName:string;created:number}|null;activeJobs?:{id:string;action:string;status:string;ownerName:string;behind?:string}[];task:TeamTask;brief:{revision:number};comments:TaskComment[];reviews:{id:string;owner:string;ownerName:string;commit:string;state:string;created?:number}[];workspaces:Copy[];changes:{workspace:string;review?:{id:string;changedAfter?:boolean}}[]};
 type Pane='conversation'|'work'|'review';
 export default function TeamTaskView({taskId,room,resources,userId,onClose,onRefresh,onConnect}:{taskId:string;room:RoomState;resources:Resource[];userId:string;onClose:()=>void;onRefresh:()=>Promise<void>;onConnect:()=>void}){
  const access=useProjectAccess(room.project.id,userId);
@@ -64,7 +64,7 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
    // The Werkstatt may still be finishing a short job (e.g. opening a file); wait briefly instead of failing.
    const start=()=>roomRequest<{id:string}>('/api/development',{action:'job',operation,device:'auto',project:room.project.id,...(source?{source}:{worktree:myCopy?.id})});
    let queued:{id:string}|null=null;
-   for(let attempt=0;!queued;attempt++){try{queued=await start();}catch(e){if(attempt>=9||!/läuft noch ein Vorgang/.test((e as Error).message))throw e;await new Promise(r=>setTimeout(r,2000));}}
+   for(let attempt=0;!queued;attempt++){try{queued=await start();}catch(e){if(attempt>=9||!/läuft (noch|gerade) ein Vorgang/.test((e as Error).message))throw e;await new Promise(r=>setTimeout(r,2000));}}
    for(let i=0;i<600;i++){
     const {job}=await roomRequest<{job:{status:string;result?:{error?:string}}}>('/api/development/job?id='+encodeURIComponent(queued.id));
     if(job.status==='completed'){if(operation==='submit')setSelectedReview(queued.id);await Promise.all([refresh(),onRefresh()]);return;}
@@ -79,7 +79,7 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
  const chooseReview=selectedReview||detail?.reviews[0]?.id||'';
  const meta=room.meta as RoomState['meta']&{live?:'merge'|'manual';liveHow?:string};
  const step=task&&contract?taskNextStep({kind:contract.kind,status:task.status,own,assigned:!!task.assignee,person:person?.name??'Jemand',cancelled:contract.cancelled,blocked:contract.blocked,
-  ready:task.completion.ready,requiresReview:contract.kind==='code'||contract.requiresReview,activeJob:running||detail?.activeJobs?.[0]?.action,
+  ready:task.completion.ready,requiresReview:contract.kind==='code'||contract.requiresReview,activeJob:running||detail?.activeJobs?.[0]?.action,activeBehind:detail?.activeJobs?.[0]?.behind,
   result:currentResult?{shared:currentResult.shared,state:currentResult.state,integrated:currentResult.integrated,stale:staleResult,mine:currentResult.owner===userId,automatic:currentResult.workflow==='pull-request'}:null,
   hasCopy:!!myCopy,hasWorkshop:!!device||!!myCopy,hasChange:myCopy?.changed,failure:running?null:detail?.lastFailure?{action:detail.lastFailure.action,text:detail.lastFailure.text,detail:detail.lastFailure.detail,mine:detail.lastFailure.owner===userId,interrupted:detail.lastFailure.interrupted}:null,awaitingLive:!!task.awaitingLive,liveHow:meta.liveHow,
   canDevelop:access.develop,canReview:access.review,isAdmin:access.loaded?access.admin:undefined,selfApprove:access.selfApprove,reviewers:access.loaded?access.reviewers:undefined}):null;

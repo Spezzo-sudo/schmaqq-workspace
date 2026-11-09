@@ -10,6 +10,8 @@ export type TaskStepInput={
  cancelled:boolean;blocked:string;ready:boolean;requiresReview:boolean;
  /** Running work for this task, e.g. 'submit' while the change is tested and shared. */
  activeJob?:string;
+ /** The task's job waits behind this person's work on a shared Werkstatt. */
+ activeBehind?:string;
  /** `automatic`: Studio takes an approved change over by itself (GitHub); otherwise the author does it. */
  result?:{shared?:boolean;state:string;integrated?:boolean;stale?:boolean;mine:boolean;automatic?:boolean}|null;
  /** Code tasks: the person's own working copy exists and the Werkstatt is reachable. */
@@ -30,6 +32,7 @@ export function taskNextStep(t:TaskStepInput):TaskStep{
  if(t.cancelled)return {text:'Diese Aufgabe wurde abgebrochen.'};
  if(t.awaitingLive)return {text:'Zusammengeführt, aber noch nicht live.'+(t.liveHow?' So geht ihr live: '+t.liveHow:' Schaltet es live und bestätigt es dann hier.'),action:'live',label:'Ist jetzt live'};
  if(t.status==='done')return t.own?{text:'Erledigt.',action:'reopen',label:'Wieder öffnen'}:{text:'Erledigt.'};
+ if(t.activeJob&&t.activeBehind)return {waiting:true,text:'Die Werkstatt ist gerade mit einer Aufgabe von '+t.activeBehind+' beschäftigt. Dieser Schritt ist als Nächstes dran.'};
  if(t.activeJob)return {waiting:true,text:t.activeJob==='submit'?'Die Änderung wird getestet und zur Prüfung gegeben. Das dauert ein paar Minuten.'
   :t.activeJob==='integrate'?'Die freigegebene Änderung wird übernommen. Das dauert einen Moment.'
   :'Die Werkstatt arbeitet gerade an dieser Aufgabe.'};
