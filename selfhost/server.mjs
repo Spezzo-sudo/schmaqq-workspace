@@ -2,6 +2,7 @@ import http from 'node:http';
 import {isRemoved} from './team-access.mjs';
 import {teamDevices} from './team-workshop.mjs';
 import {requirePermission,selfApproval,can,projectRoles,setRoles,setReviewRule,reviewRule,rolesOf,roleNames} from './project-roles.mjs';
+import {expireStaleJobs,activeJobInCopy,HEARTBEAT_LIMIT_MS,lostText} from './job-lifecycle.mjs';
 import {Readable} from 'node:stream';
 import {DatabaseSync} from 'node:sqlite';
 import {createPluginHttpRoutes} from './studio-plugin-http.mjs';
@@ -37,7 +38,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dataDir=path.resolve(process.env.STUDIO_DATA_DIR??path.join(root,'.studio'));
 const uuid=()=>randomUUID(),now=()=>Date.now();
 // Worker jobs whose Git commands reach GitHub (clone, fetch, ls-remote, push).
-const githubJobActions=Object.freeze(['connect-project','inspect','prepare','submit','integrate']);
+const githubJobActions=Object.freeze(['connect-project','inspect','probe','prepare','submit','integrate']);
 const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$/);
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
@@ -97,7 +98,10 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
   ledgerDb=new DatabaseSync(path.join(path.dirname(filename),'plugin-mutations.sqlite'));
   try{plugin=createPluginHttpRoutes({db,ledgerDb,origin,clients:pluginClients,dynamic:pluginDynamicClients,fetchMetadata:pluginFetchMetadata,clientHosts:pluginClientHosts,user,readJSON,execute:executeAsMember});}catch(e){ledgerDb.close();db.close();throw e;}
  }
+ let lastExpiry=0;
  const handleRequest=async(req,res)=>{
+  // Stale jobs end on the server's clock, not only when the same runner asks again.
+  if(now()-lastExpiry>15000){lastExpiry=now();try{expireStaleJobs(db,now());}catch(e){console.error('job expiry failed',e.message);}}
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');
   const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
   try{
@@ -120,6 +124,8 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     if(value.mode==='apply'&&!value.expectedPlan)throw fail(400,'Zuerst Projekt prüfen und den Einrichtungsplan bestätigen.');
     if(value.configuration&&!value.mode)throw fail(400,'Projektkonfiguration zuerst als Plan prüfen.');
     if(!db.prepare('SELECT id FROM devices WHERE id=? AND owner=? AND revoked=0').get(value.device,member.id))throw fail(403,'Nur deinen eigenen Rechner einrichten.');
+    // A Werkstatt for a project is for people who work on its code.
+    requirePermission(db,member,value.project,'develop');
     if(value.mode&&deviceHost(db,value.device)?.setupPlanVersion!==1)throw fail(409,'Dieser Runner unterstützt den Einrichtungsplan noch nicht. Runner aktualisieren und seine neue Bereitschaftsmeldung abwarten.');
     const meta=metadata(db,'room:v1:project:'+value.project);if(!meta?.teamShared||!meta.repository)throw fail(409,'Zuerst das gemeinsame Repository in diesem Projekt festlegen.');
     if(value.workflow!==(meta.workflow??'pull-request'))throw fail(409,'Die gewählte Übernahmeregel passt nicht zum gemeinsamen Projekt.');
@@ -136,12 +142,11 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     const member=user(req);
     if(method==='GET'){
      const job=parse(id,url.searchParams.get('job'));
+     {const target=db.prepare('SELECT owner,project FROM jobs WHERE id=?').get(job);if(target&&target.owner!==member.id)requirePermission(db,member,target.project,'view');}
      if(githubWorkflow.appMode()){
-      // Status checks also finish what an earlier attempt could not: open the pull request,
-      // and merge it once approved in Studio and accepted by GitHub.
+      // Status checks finish what an earlier attempt could not: open the pull request.
+      // Merging stays an explicit step of the author or a project admin.
       try{await githubWorkflow.perform('open',job,member);}catch{}
-      const shared=db.prepare("SELECT * FROM jobs WHERE id=? AND action='submit' AND status='completed'").get(job);
-      if(shared&&reviewState(db,shared)==='approved'&&(shared.owner===member.id||can(db,member,shared.project,'admin'))){try{send(await githubWorkflow.perform('merge',job,member));return;}catch{}}
      }
      send(githubWorkflow.configured(member)?await githubWorkflow.perform('refresh',job,member):{configured:false,state:'not_configured',reason:'Persönlicher Repository-Zugang noch nicht eingerichtet. Die Kontoanmeldung allein erlaubt keine Repository-Aktionen.'});return;
     }
@@ -150,6 +155,12 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     const target=db.prepare('SELECT owner,project FROM jobs WHERE id=?').get(value.job);if(!target)throw fail(404,'Stand fehlt.');
     if(value.action==='merge'&&target.owner!==member.id)requirePermission(db,member,target.project,'admin');
     else requirePermission(db,member,target.project,value.action==='refresh'?'view':'develop');
+    // A merge that GitHub refuses (conflict, missing checks, branch rules) keeps its reason at the task.
+    if(value.action==='merge'){
+     try{const merged=await githubWorkflow.perform('merge',value.job,member);db.prepare('DELETE FROM workspace_meta WHERE key=?').run('team:v1:merge-wait:'+value.job);send(merged);}
+     catch(e){storeMetadata(db,'team:v1:merge-wait:'+value.job,{reason:e.status&&e.status<500?e.message:'GitHub ist gerade nicht erreichbar. Bitte später erneut versuchen.',at:now(),by:member.id});throw e;}
+     return;
+    }
     send(await githubWorkflow.perform(value.action,value.job,member));return;
    }
    if(route==='/api/project-roles'){
@@ -189,7 +200,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(route==='/api/runner/poll'&&method==='POST'){
     const d=device(req);db.prepare('UPDATE devices SET seen=? WHERE id=?').run(now(),d.id);
     // A lost acknowledgement must never execute a code job a second time.
-    db.prepare("UPDATE jobs SET status='interrupted',result=? WHERE device=? AND status IN ('running','cancelling') AND heartbeat<?").run(JSON.stringify({error:'Verbindung zum Runner verloren. Ergebnis vor erneutem Start lokal prüfen.'}),d.id,now()-120000);
+    db.prepare("UPDATE jobs SET status='interrupted',result=? WHERE device=? AND status IN ('running','cancelling') AND heartbeat<?").run(JSON.stringify({error:lostText}),d.id,now()-120000);
     const job=transaction(db,()=>{if(db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('running','cancelling')").get(d.id))return null;const j=db.prepare("SELECT * FROM jobs WHERE device=? AND status='queued' ORDER BY created LIMIT 1").get(d.id);if(!j)return null;
      if(j.action==='local-ai'&&!aiAccess(db,j)){db.prepare("UPDATE jobs SET status='failed',result=? WHERE id=?").run(JSON.stringify({error:'Modellzugang vor dem Start nicht mehr verfügbar.'}),j.id);return null;}
      if(j.action==='integrate'){
@@ -273,7 +284,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(route==='/api/development/reviews'){
     const m=user(req);
     if(method==='GET'){
-     const jid=parse(id,url.searchParams.get('job')),job=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);if(!job)throw fail(404,'Prüfauftrag fehlt.');
+     const jid=parse(id,url.searchParams.get('job')),job=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);if(!job)throw fail(404,'Prüfauftrag fehlt.');if(job.owner!==m.id)requirePermission(db,m,job.project,'view');
      send({state:reviewState(db,job),entries:db.prepare('SELECT code_reviews.id,commit_sha AS commitSha,reviewer,members.name AS name,decision,body,created FROM code_reviews JOIN members ON members.id=reviewer WHERE job=? ORDER BY seq').all(jid)});return;
     }
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
@@ -294,11 +305,11 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     else db.prepare('INSERT INTO code_reviews(id,job,commit_sha,reviewer,decision,body,created) VALUES(?,?,?,?,?,?,?)').run(v.id,job.id,v.commit,m.id,v.decision,v.body,now());
     const linked=db.prepare("SELECT task FROM workspaces WHERE job=json_extract(?,'$.worktree')").get(job.payload);
     if(linked?.task){if(v.decision==='changes')db.prepare("UPDATE tasks SET status='doing' WHERE id=?").run(linked.task);teamEvent(db,{actor:m.id,project:job.project,task:linked.task,kind:'review',body:v.decision==='approved'?'Prüfstand freigegeben':v.decision==='changes'?'Änderungen angefordert':'Rückmeldung zum Prüfstand'});}
-    // "Passt" on a shared change: Studio opens the pull request if needed and merges it once GitHub
-    // reports it conflict-free and checked. Otherwise the approval stays and the next status check retries.
+    // Approval only approves. Studio makes sure the pull request exists; merging is a separate
+    // step of the author or a project admin ("Änderung zusammenführen").
     let github;
     if(v.decision==='approved'&&job.action==='submit'&&result.workflow==='pull-request'&&githubWorkflow.appMode()&&reviewState(db,job)==='approved'){
-     try{await githubWorkflow.perform('open',job.id,m);github=await githubWorkflow.perform('merge',job.id,m);}
+     try{github=await githubWorkflow.perform('open',job.id,m);}
      catch(e){github={state:'waiting',reason:e.status&&e.status<500?e.message:'GitHub ist gerade nicht erreichbar. Studio versucht es beim nächsten Abgleich erneut.'};}
     }
     send({ok:true,state:reviewState(db,job),...(github?{github}:{})});return;
@@ -314,21 +325,21 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(route==='/api/development/job'&&method==='GET'){
     const m=user(req);const jid=parse(id,url.searchParams.get('id'));
     const job=db.prepare('SELECT id,owner,device,project,action,payload,status,created,started,result FROM jobs WHERE id=?').get(jid);
-    if(!job)throw fail(404,'Auftrag fehlt.');if(job.action==='local-ai'&&job.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(job.device,m.id))throw fail(403,'KI-Anfrage ist nur für Absender und Rechnerbesitzer sichtbar.');if(['files','read-file','save-file','create-file'].includes(job.action)&&job.owner!==m.id)throw fail(403,'Dateiinhalte sind nur in der eigenen Arbeitskopie verfügbar.');
+    if(!job)throw fail(404,'Auftrag fehlt.');if(job.owner!==m.id&&job.action!=='local-ai')requirePermission(db,m,job.project,'view');if(job.action==='local-ai'&&job.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(job.device,m.id))throw fail(403,'KI-Anfrage ist nur für Absender und Rechnerbesitzer sichtbar.');if(['files','read-file','save-file','create-file'].includes(job.action)&&job.owner!==m.id)throw fail(403,'Dateiinhalte sind nur in der eigenen Arbeitskopie verfügbar.');
     // Results come from the executor itself; say so, so nobody mistakes them for an independent check.
     const executor=db.prepare('SELECT name FROM devices WHERE id=?').get(job.device),kind=metadata(db,'executor:v1:host:'+job.device)?.kind==='server'?'server':'pc';
     send({job:{...job,payload:JSON.parse(job.payload),result:job.result?JSON.parse(job.result):null,executor:{name:executor?.name??null,kind},resultSource:'Vom Ausführer gemeldet, nicht unabhängig geprüft. Vor einer Veröffentlichung prüft die zweite Person bzw. CI.'}});return;
    }
    if(route==='/api/development/events'&&method==='GET'){
     const m=user(req);const jid=parse(id,url.searchParams.get('job'));
-    const eventJob=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);if(!eventJob)throw fail(404,'Auftrag fehlt.');if(eventJob.action==='local-ai'&&eventJob.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(eventJob.device,m.id))throw fail(403,'KI-Auftrag ist privat.');
+    const eventJob=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);if(!eventJob)throw fail(404,'Auftrag fehlt.');if(eventJob.owner!==m.id&&eventJob.action!=='local-ai')requirePermission(db,m,eventJob.project,'view');if(eventJob.action==='local-ai'&&eventJob.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(eventJob.device,m.id))throw fail(403,'KI-Auftrag ist privat.');
     if(['files','read-file','save-file','create-file'].includes(eventJob.action)&&eventJob.owner!==m.id)throw fail(403,'Dateiprotokolle sind nur in der eigenen Arbeitskopie verfügbar.');
     const after=parse(z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER),url.searchParams.get('after')??0);
     send({events:db.prepare('SELECT seq,type,text,created FROM job_events WHERE job=? AND seq>? ORDER BY seq').all(jid,after)});return;
    }
    if(route==='/api/development'){
     const m=user(req);
-    if(method==='GET'){const devices=db.prepare("SELECT d.id,d.owner,d.name,d.seen,d.revoked,CASE WHEN json_extract(h.value,'$.kind')='server' THEN 'server' ELSE 'pc' END AS kind FROM devices d LEFT JOIN workspace_meta h ON h.key='executor:v1:host:'||d.id WHERE d.revoked=0").all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));const teamDeviceMap={};for(const p of db.prepare('SELECT id FROM projects').all())for(const d of teamDevices(db,m,p.id))(teamDeviceMap[d]??=[]).push(p.id);send({teamDevices:teamDeviceMap,devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all(),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)})),readiness:projectReadiness(db,m.id,{appShares})});return;}
+    if(method==='GET'){const devices=db.prepare("SELECT d.id,d.owner,d.name,d.seen,d.revoked,CASE WHEN json_extract(h.value,'$.kind')='server' THEN 'server' ELSE 'pc' END AS kind FROM devices d LEFT JOIN workspace_meta h ON h.key='executor:v1:host:'||d.id WHERE d.revoked=0").all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().filter(j=>j.owner===m.id||can(db,m,j.project,'view')).map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));const teamDeviceMap={};for(const p of db.prepare('SELECT id FROM projects').all())for(const d of teamDevices(db,m,p.id))(teamDeviceMap[d]??=[]).push(p.id);send({teamDevices:teamDeviceMap,devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all(),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)})),readiness:projectReadiness(db,m.id,{appShares})});return;}
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     // Bound editor payloads by the runner's 64 KiB byte limit and by
     // Zod's 65536-character cap; JSON escaping needs a separate wire limit.
@@ -345,15 +356,19 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      });send({ok:true});return;
     }
     if(v.action==='cancel'){
-     const jid=parse(id,v.id),j=db.prepare("SELECT * FROM jobs WHERE id=? AND (owner=? OR (action='local-ai' AND device IN (SELECT id FROM devices WHERE owner=?)))").get(jid,m.id,m.id);
+     const jid=parse(id,v.id),any=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);
+     // Own jobs, local AI on an own machine, or – for the project admin – anyone's job in the project.
+     const j=any&&(any.owner===m.id||any.action==='local-ai'&&db.prepare('SELECT 1 FROM devices WHERE id=? AND owner=?').get(any.device,m.id)||can(db,m,any.project,'admin'))?any:null;
      if(!j)throw fail(404,'Eigener Auftrag nicht gefunden.');
-     if(j.status==='running'&&!['codex','check','local-ai'].includes(j.action))throw fail(409,'Diesen Git-Schritt bitte erst beenden lassen.');
      if(!['queued','running','cancelling'].includes(j.status))throw fail(409,'Auftrag ist bereits beendet.');
+     // A silent runner cannot confirm a stop: end the job here instead of waiting forever.
+     if(j.status!=='queued'&&(j.heartbeat??j.started??j.created)<now()-HEARTBEAT_LIMIT_MS){db.prepare("UPDATE jobs SET status='interrupted',lease=NULL,result=? WHERE id=?").run(JSON.stringify({error:lostText}),jid);send({ok:true});return;}
+     if(j.status==='running'&&!['codex','check','local-ai'].includes(j.action))throw fail(409,'Diesen Git-Schritt bitte erst beenden lassen.');
      db.prepare('UPDATE jobs SET status=? WHERE id=?').run(j.status==='queued'?'cancelled':'cancelling',jid);send({ok:true});return;
     }
     if(v.action==='device'){const name=parse(text,v.name),t=token(),did=uuid();db.prepare('INSERT INTO devices(id,owner,name,hash) VALUES(?,?,?,?)').run(did,m.id,name,digest(t));send({id:did,token:t});return;}
     if(v.action==='revoke'){const did=parse(id,v.id);if(!db.prepare('UPDATE devices SET revoked=1 WHERE id=? AND owner=?').run(did,m.id).changes)throw fail(404,'Gerät nicht gefunden.');db.prepare("UPDATE jobs SET status='cancelled' WHERE device=? AND status='queued'").run(did);send({ok:true});return;}
-    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','prepare','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file','deploy-key']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),offset:z.number().int().min(0).max(4194304).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
+    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','probe','prepare','update','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file','deploy-key']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),offset:z.number().int().min(0).max(4194304).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
     if(!db.prepare('SELECT id FROM projects WHERE id=?').get(value.project))throw fail(404,'Projekt nicht gefunden.');
     // "auto" is resolved here, once; the job row then names the executor that runs it.
     // Reading needs a place in the project, changing needs the developer role, taking over a change the admin role or authorship.
@@ -362,7 +377,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     value.device=placed.device;
     if(value.operation==='deploy-key'&&placed.kind!=='server')throw fail(409,'Deploy-Keys gibt es nur für den Server-Worker. Dein PC nutzt deinen eigenen GitHub-Zugang.');
     let payload={};
-    if(['inspect','prepare'].includes(value.operation))payload=value.issue?{issue:value.issue}:{};
+    if(['inspect','prepare','probe'].includes(value.operation))payload=value.issue?{issue:value.issue}:{};
     else if(value.operation==='deploy-key')payload={};
     else if(value.operation==='integrate'){
      const source=db.prepare("SELECT * FROM jobs WHERE id=? AND project=? AND action='submit' AND status='completed'").get(value.source??'',value.project);if(!source)throw fail(400,'Ein erfolgreich eingereichter Stand wird benötigt.');const result=JSON.parse(source.result);if(reviewState(db,source)!=='approved')throw fail(409,'Die zweite Person muss genau diesen eingereichten Stand zuerst freigeben.');if(source.owner!==m.id&&!can(db,m,value.project,'admin'))throw fail(403,'Übernehmen darf der Autor oder der Projekt-Admin.');if(result.workflow==='pull-request'||metadata(db,'room:v1:project:'+value.project)?.repository&&(metadata(db,'room:v1:project:'+value.project).workflow??'pull-request')==='pull-request')throw fail(409,'Dieses Repository wird ausschließlich über Pull Request, CI und Review zusammengeführt.');
@@ -376,19 +391,21 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      if(value.operation!=='files'&&!value.file)throw fail(400,'Dateipfad fehlt.');
      if(value.operation==='save-file'&&(value.content===undefined||!value.revision))throw fail(400,'Dateistand fehlt.');
      if(['save-file','create-file'].includes(value.operation)&&Buffer.byteLength(value.content??'','utf8')>65536)throw fail(413,'UTF-8-Datei ist größer als 64 KiB.');
-     if(db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device))throw fail(409,'Bitte den laufenden Auftrag zuerst beenden lassen.');
+     if(activeJobInCopy(db,payload.worktree))throw fail(409,'In dieser Arbeitskopie läuft gerade ein Vorgang. Bitte kurz warten.');
      if(value.offset!==undefined&&value.operation!=='read-file')throw fail(400,'Abschnittsweises Lesen gibt es nur für read-file.');
      payload={...payload,file:value.file,revision:value.revision,content:value.content,...(value.offset!==undefined?{offset:value.offset}:{})};
     }
     if(payload.worktree){
      const linked=db.prepare('SELECT t.* FROM tasks t JOIN workspaces w ON w.task=t.id WHERE w.job=?').get(payload.worktree);
      if(linked&&linked.assignee!==m.id)throw fail(409,'Diese Aufgabe wurde inzwischen übergeben. Bitte den aktuellen Stand prüfen.');
-     if(linked&&linked.status==='done'&&['save-file','create-file','codex','submit','review'].includes(value.operation))throw fail(409,'Abgeschlossene Aufgabe zuerst wieder öffnen.');
+     if(linked&&linked.status==='done'&&['save-file','create-file','codex','submit','review','update'].includes(value.operation))throw fail(409,'Abgeschlossene Aufgabe zuerst wieder öffnen.');
      if(linked){const contract=taskContract(db,linked);payload.contractRevision=contract.revision;payload.contractSnapshot={title:linked.title,description:linked.description,criteria:contract.criteria};}
     }
     const sharedProject=metadata(db,'room:v1:project:'+value.project);
     if(sharedProject?.repository){payload.expectedRepository=sharedProject.repository;payload.expectedBase=sharedProject.base??'main';}
-    if(['review','submit','integrate'].includes(value.operation)&&db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device))throw fail(409,'Auf deinem Rechner läuft noch ein Vorgang. Den bestätigten Abschluss abwarten.');
+    // Other people's work on the same machine only queues this job; the runner works one job after another.
+    if(['review','submit','update'].includes(value.operation)&&activeJobInCopy(db,payload.worktree))throw fail(409,'In dieser Arbeitskopie läuft noch ein Vorgang. Den bestätigten Abschluss abwarten.');
+    if(value.operation==='integrate'&&db.prepare("SELECT id FROM jobs WHERE action='integrate' AND json_extract(payload,'$.reviewJob')=? AND status IN ('queued','running','cancelling')").get(payload.reviewJob))throw fail(409,'Diese Änderung wird bereits zusammengeführt.');
     payload.placement={mode:placed.mode,kind:placed.kind,reason:placed.reason};
     const jid=uuid();transaction(db,()=>{
      if(value.operation==='prepare'){

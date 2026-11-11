@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { assertAssignment } from './collaboration.mjs';
 import {assertTaskStatus} from './team-model.mjs';
-import {requirePermission} from './project-roles.mjs';
+import {requirePermission,can} from './project-roles.mjs';
+import {hiddenPractice} from './practice.mjs';
 
 // The browser and Studio backend share an unchanged workspace JSON contract.
 // Keep authorization, optimistic document revisions and message idempotency
@@ -35,7 +36,8 @@ const actions = z.discriminatedUnion('action', [z.object({
   action: z.literal('message'),
   id,
   channel: id,
-  body: z.string().trim().min(1).max(4000)
+  body: z.string().trim().min(1).max(4000),
+  replyTo: id.optional()
 }), z.object({
   action: z.literal('document'),
   id: id.optional(),
@@ -64,12 +66,19 @@ export function createWorkspaceHttpRoute({
       const m = user(req);
       db.prepare('UPDATE members SET seen=? WHERE id=?').run(now(), m.id);
       if (method === 'GET') {
+        // Same project roles as the new view: only projects the person has a role in.
+        const visible = project => !hiddenPractice(db, project, m.id) && can(db, m, project, 'view');
         send({
-          projects: db.prepare('SELECT * FROM projects ORDER BY created,id').all(),
-          tasks: db.prepare('SELECT * FROM tasks ORDER BY created DESC').all(),
+          projects: db.prepare('SELECT * FROM projects ORDER BY created,id').all().filter(p => visible(p.id)),
+          tasks: db.prepare('SELECT * FROM tasks ORDER BY created DESC').all().filter(t => visible(t.project)),
           members: db.prepare("SELECT id,name,email,role,seen,EXISTS(SELECT 1 FROM workspace_meta w WHERE w.key='member:v1:removed:'||members.id) AS removed,(SELECT json_extract(w.value,'$.by') FROM workspace_meta w WHERE w.key='member:v1:invited:'||members.id) AS invitedBy FROM members ORDER BY name").all(),
-          messages: db.prepare('SELECT * FROM (SELECT * FROM messages ORDER BY created DESC LIMIT 500) ORDER BY created').all(),
-          documents: db.prepare("SELECT d.*,(SELECT json_extract(m.value,'$.project') FROM workspace_meta m WHERE m.key='room:v1:note:'||d.id) AS project FROM documents d ORDER BY d.updated DESC").all(),
+          messages: db.prepare('SELECT * FROM (SELECT * FROM messages ORDER BY created DESC LIMIT 2000) ORDER BY created').all().filter(x => x.channel === 'general' || visible(x.channel)).slice(-500).map(x => {
+            if (x.channel !== 'general') return x;
+            const meta = key => { const row = db.prepare('SELECT value FROM workspace_meta WHERE key=?').get(key); return row ? JSON.parse(row.value) : null; };
+            const task = meta('room:v1:source-task:' + x.id)?.task ?? null, taskRow = task ? db.prepare('SELECT project FROM tasks WHERE id=?').get(task) : null;
+            return { ...x, replyTo: meta('room:v1:message:' + x.id)?.replyTo ?? null, taskId: taskRow && visible(taskRow.project) ? task : null, taskProject: taskRow && visible(taskRow.project) ? taskRow.project : null };
+          }),
+          documents: db.prepare("SELECT d.*,(SELECT json_extract(m.value,'$.project') FROM workspace_meta m WHERE m.key='room:v1:note:'||d.id) AS project FROM documents d ORDER BY d.updated DESC").all().filter(d => !d.project || visible(d.project)),
           activities: db.prepare('SELECT * FROM activities ORDER BY created DESC LIMIT 30').all()
         });
         return true;
@@ -93,7 +102,9 @@ export function createWorkspaceHttpRoute({
         if (!r.changes) throw fail(404, 'Aufgabe fehlt.');
       } else if (v.action === 'message') {
         if (v.channel !== 'general' && !db.prepare('SELECT id FROM projects WHERE id=?').get(v.channel)) throw fail(404, 'Raum fehlt.');
-        db.prepare('INSERT OR IGNORE INTO messages VALUES(?,?,?,?,?)').run(v.id, v.channel, m.id, v.body, now());
+        if (v.replyTo && !db.prepare('SELECT id FROM messages WHERE id=? AND channel=?').get(v.replyTo, v.channel)) throw fail(400, 'Die Nachricht, auf die du antwortest, gehört nicht zu diesem Gespräch.');
+        const inserted = db.prepare('INSERT OR IGNORE INTO messages VALUES(?,?,?,?,?)').run(v.id, v.channel, m.id, v.body, now()).changes;
+        if (inserted && v.replyTo) db.prepare('INSERT OR REPLACE INTO workspace_meta VALUES(?,?)').run('room:v1:message:' + v.id, JSON.stringify({ kind: 'human', replyTo: v.replyTo }));
       } else if (v.id) {
         if (!db.prepare('UPDATE documents SET title=?,body=?,author=?,updated=?,revision=revision+1 WHERE id=? AND revision=?').run(v.title, v.body, m.id, now(), v.id, v.revision ?? 0).changes) throw fail(409, 'Dokument inzwischen geändert. Entwurf kopieren und neu laden.');
       } else db.prepare('INSERT INTO documents VALUES(?,?,?,?,1,?)').run(uuid(), v.title, v.body, m.id, now());

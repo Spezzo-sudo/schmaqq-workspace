@@ -2,7 +2,7 @@ import {existsSync,lstatSync,mkdirSync,readFileSync,realpathSync,writeFileSync,r
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {githubRepository} from './github-import.mjs';
-import {proposeProjectPlan,requiredPrograms,findPrograms} from './project-plan.mjs';
+import {proposeProjectPlan,requiredPrograms,findPrograms,outputDirectories} from './project-plan.mjs';
 import {launcherPrograms} from './job-client.mjs';
 
 export function managedProjects(state){
@@ -13,6 +13,15 @@ export function managedProjects(state){
  for(const [id,p] of Object.entries(data))if(!/^[\w-]{1,100}$/.test(id)||!p||typeof p.repo!=='string'||!realpathSync(p.repo).startsWith(root))throw Error('Projektfreigabe zeigt außerhalb des persönlichen Runnerbereichs.');
  return data;
 }
+// A preview output or generated folder that already holds project files would be excluded
+// from Git and overwritten by the build: refuse it when the Werkstatt is set up, not later.
+async function outputClash(runner,target,config){
+ const outputs=outputDirectories(config);if(!outputs.length)return null;
+ let files=[];try{files=(await runner.git(target,'ls-tree','-r','--name-only','HEAD','--',...outputs)).split('\n').filter(f=>outputs.some(d=>f.startsWith(d+'/')));}catch{return null;}
+ if(!files.length)return null;
+ return {folder:outputs.find(d=>files.some(f=>f.startsWith(d+'/')))??outputs[0],file:files[0]};
+}
+const clashText=c=>`Der Vorschau-Ausgabeordner „${c.folder}/“ enthält bereits Projektdateien (zum Beispiel ${c.file}). Studio würde ihn beim Bauen überschreiben und darin keine Änderungen speichern. Einen eigenen Ausgabeordner wählen, zum Beispiel „dist“.`;
 export async function connectManagedProject(runner,job){
  let p={...job.payload};const source=githubRepository(p.repository),managed=managedProjects(runner.state);
  if(!/^[\w-]{1,100}$/.test(job.project)||!/^[\w./-]{1,100}$/.test(p.base??'')||p.base.startsWith('-')||p.base.includes('..'))throw Error('Projekt oder Zielbranch ungültig.');
@@ -63,6 +72,8 @@ export async function connectManagedProject(runner,job){
    if(plan.configuration.preview?.serve&&(!runner.config.launcher||runner.config.kind!=='server')){
     plan.state='needs_configuration';plan.notes.push('Diese Live-Vorschau benötigt einen Server-Worker mit isoliertem Job-Starter.');
    }
+   const clash=await outputClash(runner,target,plan.configuration);
+   if(clash){plan.state='needs_configuration';plan.notes.push(clashText(clash));}
   }
   if(p.mode==='plan')return {setupPlan:plan};
   if(!p.expectedPlan||p.expectedPlan!==plan.revision)throw Error('Der Projektstand oder die Konfiguration hat sich geändert. Projekt erneut prüfen und den neuen Vorschlag bestätigen.');
@@ -74,6 +85,7 @@ export async function connectManagedProject(runner,job){
   const detected=detectProject(target,{staticPreviewOptional:!!p.serve});p={...p,...detected};
  }
  const preview=p.preview||p.serve?{...(p.preview??{}),...(p.serve?{serve:{argv:p.serve.argv,port:p.serve.port}}:{})}:undefined;
+ {const clash=await outputClash(runner,target,{preview,generated:p.generated});if(clash)throw Error(clashText(clash));}
  const config={...existing,preview:undefined,prepare:[],requires:[],generated:[],projectPlanVersion:undefined,repo:realpathSync(target),base:p.base,check:p.check,publish:p.publish===true,allowCodex:p.allowCodex===true,workflow:p.workflow==='direct'?'direct':'pull-request',...(preview?{preview}:{}),...(confirmed?{prepare:confirmed.prepare,requires:confirmed.requires,generated:confirmed.generated,projectPlanVersion:1}:{})};
  if(existing&&!managed[job.project]){
   saveProjectSettings(runner.state,job.project,config);

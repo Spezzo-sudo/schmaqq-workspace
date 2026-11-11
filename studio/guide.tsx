@@ -10,7 +10,7 @@ export type GuideTarget={page?:'rooms'|'team'|'account';project?:boolean;tab?:Ro
 type Step={id:string;title:string;who:string;what:string;then:string;where:string;target?:GuideTarget};
 
 export const guideSteps:Step[]=[
- {id:'startklar',title:'Projekt startklar machen',who:'Projekt-Admin, einmal pro Projekt',what:'Code auf GitHub auswählen, die Werkstatt einrichten (dort laufen Tests und Vorschau) und festlegen, wie ihr live geht.',then:'Danach gibt es bei Code-Aufgaben „Änderung machen“ und die Vorschau.',where:'Projekt → Einstellungen → Startklar machen',target:{project:true,tab:'connect',selector:'.po-ready'}},
+ {id:'startklar',title:'Projekt startklar machen',who:'Projekt-Admin, einmal pro Projekt',what:'Code auf GitHub auswählen, die Werkstatt einrichten (dort laufen Tests und Vorschau), einen Probelauf bestehen und festlegen, wie ihr live geht.',then:'Danach gibt es bei Code-Aufgaben „Änderung machen“ und die Vorschau.',where:'Projekt → Einstellungen → Startklar machen',target:{project:true,tab:'connect',selector:'.po-ready'}},
  {id:'aufgabe',title:'Aufgabe anlegen',who:'Entwickler',what:'Im Projekt oben „+ Aufgabe“. Oder im Projektgespräch aus einer Nachricht eine Aufgabe machen.',then:'Die Aufgabe steht unter Aufgaben. Wer sie übernimmt, sieht sie unter „Meine Arbeit“.',where:'Projekt → „+ Aufgabe“',target:{project:true,tab:'overview',selector:'.team-head .rw-button.lime'}},
  {id:'aendern',title:'Ändern',who:'wer die Aufgabe übernommen hat',what:'„Aufgabe übernehmen“, dann unter „Ändern“: „Selbst bearbeiten“ im Editor oder mit deiner KI. Ohne KI geht es immer.',then:'Sobald eine Änderung gespeichert ist, erscheint „Zur Prüfung geben“.',where:'Projekt → Aufgaben → Aufgabe öffnen',target:{project:true,tab:'tasks',selector:'.team-task-list'}},
  {id:'pruefung',title:'Zur Prüfung geben',who:'wer geändert hat',what:'Studio testet die Änderung und baut eine Vorschau. Das dauert ein paar Minuten; du siehst, was gerade passiert.',then:'Die Prüfer sehen auf „Meine Arbeit“: „Bitte anschauen und freigeben“.',where:'In der Aufgabe, oben',target:{page:'rooms',selector:'.home-hero'}},
@@ -24,7 +24,7 @@ export const laterItems:[string,string][]=[
  ['„Anschauen“ und „Diese Fassung freigeben“','erst wenn jemand anderes etwas zur Prüfung gegeben hat – und nur mit der Rolle Prüfer.'],
  ['„Änderung zusammenführen“','erst nach der Freigabe – und nur für den Autor oder den Projekt-Admin.'],
  ['„Ist jetzt live“','erst nach dem Zusammenführen, wenn ihr selbst live schaltet.'],
- ['Vorschau und „Änderung machen“','erst wenn das Projekt startklar ist (Werkstatt eingerichtet).'],
+ ['Vorschau und „Änderung machen“','erst wenn das Projekt startklar ist: Werkstatt eingerichtet und ein Probelauf (Tests und Vorschau auf dem gemeinsamen Stand) bestanden.'],
  ['„Code auf GitHub auswählen“, Live-Weg, „Wer darf was“ ändern','nur für den Projekt-Admin. Alle anderen sehen „Legt der Projekt-Admin fest“.'],
  ['„Einladungslink erstellen“, „Neues Passwort“, Mitglied „Entfernen“','nur für den Inhaber von Studio. Alle anderen können Leute vorschlagen. Das eigene Passwort ändert jeder unter Mein Konto.'],
  ['„Aufgabe abschliessen“','erst wenn alles erledigt ist: Ergebnis da, freigegeben, bei Code zusammengeführt.']

@@ -144,6 +144,7 @@ test('a preparation that rewrites tracked code prevents submit from pushing the 
  const git=runner.git.bind(runner);let pushes=0;
  runner.git=async(dir,...args)=>{if(args[0]==='push'){pushes++;throw Error('No push expected');}return git(dir,...args);};
  await runner.run({id:'copy',project:'project',action:'prepare',payload:{}});
+ await runner.run({id:'change',project:'project',action:'create-file',payload:{worktree:'copy',file:'note.txt',content:'own change'}});
  await assert.rejects(runner.run({id:'submit',project:'project',action:'submit',payload:{worktree:'copy'}}),/Quelldateien verändert/);
  assert.equal(pushes,0);assert.equal(readFileSync(path.join(f.repo,'source.txt'),'utf8'),'original');
 });

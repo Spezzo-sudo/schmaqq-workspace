@@ -9,6 +9,22 @@ const program=value=>typeof value==='string'&&/^[\w.+-]{1,100}$/.test(value)&&!v
 export function projectDirectory(value){
  return typeof value==='string'&&value.length<=240&&!path.isAbsolute(value)&&!/[\\:\x00-\x1f]/.test(value)&&value.split('/').every(p=>p&&p!=='.'&&p!=='..'&&p.toLowerCase()!=='.git');
 }
+// Folders Studio treats as build output: the preview output and declared generated
+// folders. They are excluded from Git per work copy, so sources must not live there.
+export function outputDirectories(p){
+ return [...new Set([...(p?.preview?.directory?[p.preview.directory]:[]),...(p?.generated??[])])].map(d=>d.replace(/\/+$/,'')).filter(Boolean);
+}
+export function outputDirectoryOf(file,p){
+ return outputDirectories(p).find(d=>file===d||file.startsWith(d+'/'))??null;
+}
+export function outputFolderMessage(file,folder){
+ return `„${file}“ liegt im Ordner „${folder}/“. Diesen Ordner erzeugt Studio beim Bauen der Vorschau jedes Mal neu, deshalb kann dort keine Datei angelegt werden. Lege die Datei in einem anderen Ordner an oder bitte die Projektleitung, in den Projekteinstellungen unter „Vorschau“ einen eigenen Ausgabeordner einzutragen (zum Beispiel „dist“).`;
+}
+// Git's own text is English and names commands the person cannot run in Studio.
+export function gitAddMessage(file,message=''){
+ if(/ignored by one of your \.gitignore files/i.test(message))return `„${file}“ wird in diesem Projekt absichtlich nicht gespeichert: Der Pfad steht in einer Ausschlussliste (.gitignore). Die Datei wurde nicht angelegt. Wähle einen anderen Ordner oder bitte die Projektleitung, die Ausschlussregel im Repository anzupassen.`;
+ return `„${file}“ konnte nicht zum Projekt hinzugefügt werden und wurde nicht angelegt. Versuche es erneut; wenn es wieder scheitert, gib der Projektleitung diese technische Meldung weiter: ${String(message).split('\n')[0].slice(0,300)}`;
+}
 export function validateProjectPlan(value){
  if(!value||Array.isArray(value)||value.version!==1)fail('Die Projektkonfiguration benötigt version: 1.');
  const allowed=['version','prepare','check','preview','requires','generated'];

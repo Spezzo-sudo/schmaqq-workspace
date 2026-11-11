@@ -7,11 +7,11 @@ const commit=value=>typeof value==='string'&&/^[a-f0-9]{40,64}$/.test(value)?val
 export function changeOverview(db,workspaces){
  const query=db.prepare(`SELECT id,action,status,created,result FROM jobs
   WHERE json_extract(payload,'$.worktree')=? AND owner=? AND device=? AND project=?
-  AND action IN ('status','check','preview','review','submit','save-file','create-file','codex')
+  AND action IN ('status','check','preview','review','submit','save-file','create-file','codex','update')
   ORDER BY created DESC,rowid DESC LIMIT 100`);
  return workspaces.map(w=>{
   const jobs=query.all(w.id,w.owner,w.device,w.project).map(j=>{let data={};try{data=JSON.parse(j.result??'{}')??{};}catch{}return {...j,data,source:sourceEvidence(data.source)};});
-  const mutation=jobs.findIndex(j=>['save-file','create-file'].includes(j.action)&&j.status==='completed'||j.action==='codex'&&j.status!=='queued'||['check','preview','review','submit'].includes(j.action)&&['failed','cancelled','interrupted'].includes(j.status));
+  const mutation=jobs.findIndex(j=>['save-file','create-file','update'].includes(j.action)&&j.status==='completed'||j.action==='codex'&&j.status!=='queued'||['check','preview','review','submit'].includes(j.action)&&['failed','cancelled','interrupted'].includes(j.status));
   const observed=jobs.findIndex(j=>j.status==='completed'&&j.source);
   const observation=observed>=0?{...jobs[observed].source,valid:!(mutation>=0&&mutation<observed)}:null;
   const evidence=job=>{

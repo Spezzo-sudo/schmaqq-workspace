@@ -1,4 +1,5 @@
 import {usableExecutors} from './team-workshop.mjs';
+import {can} from './project-roles.mjs';
 import {z} from 'zod';
 import {metadata,storeMetadata} from './team-model.mjs';
 
@@ -23,13 +24,14 @@ const hostKey=device=>'executor:v1:host:'+device,placementKey=project=>'executor
 export function recordHost(db,deviceId,host,now=Date.now()){storeMetadata(db,hostKey(deviceId),{...host,updated:now});}
 export function deviceHost(db,deviceId){return metadata(db,hostKey(deviceId));}
 export function placementMode(db,project){const mode=metadata(db,placementKey(project))?.mode;return placementModes.includes(mode)?mode:'auto';}
+// The project admin decides, like every other project rule.
 export function canConfigurePlacement(db,member,project){
- return member.role==='owner'||db.prepare('SELECT owner FROM project_starts WHERE project=?').get(project)?.owner===member.id;
+ return can(db,member,project,'admin');
 }
 export function setPlacement(db,{member,project,mode},now=Date.now()){
  if(!placementModes.includes(mode))throw fail(400,'Unbekannte Ausführungsregel.');
  if(!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt nicht gefunden.');
- if(!canConfigurePlacement(db,member,project))throw fail(403,'Nur die verantwortliche Person kann die Ausführungsregel ändern.');
+ if(!canConfigurePlacement(db,member,project))throw fail(403,'Die Ausführungsregel ändert der Projekt-Admin.');
  storeMetadata(db,placementKey(project),{mode,updatedBy:member.id,updated:now});
 }
 
@@ -56,7 +58,9 @@ const label=executor=>`${executor.name} (${executor.kind==='server'?'Server':'PC
  * recently seen. No silent fallback outside the project rule.
  */
 export function chooseExecutor(db,{memberId,project,now=Date.now()}){
- const mode=placementMode(db,project),own=executors(db,memberId,now);
+ // Own executors plus the project's team workshop: people without an own PC get a Werkstatt too.
+ const member=db.prepare('SELECT id,role FROM members WHERE id=?').get(memberId);
+ const mode=placementMode(db,project),own=member?usableExecutors(db,member,project,now):[];
  const candidates=own.filter(e=>allowed(mode,e)&&e.online&&e.projects?.includes(project));
  candidates.sort((a,b)=>(a.kind==='server'?0:1)-(b.kind==='server'?0:1)||Number(a.busy)-Number(b.busy)||b.seen-a.seen);
  const chosen=candidates[0];

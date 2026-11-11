@@ -1,12 +1,12 @@
 import { spawn } from 'node:child_process';
-import { mkdirSync,readFileSync,readdirSync,lstatSync,existsSync,realpathSync,appendFileSync } from 'node:fs';
+import { mkdirSync,readFileSync,readdirSync,lstatSync,existsSync,realpathSync,appendFileSync,rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {aiCapabilities,runLocalAi} from './local-ai.mjs';
 import {command} from './process.mjs';
 import {launcherCommand,launcherServe,launcherPrograms} from './job-client.mjs';
-import {projectDirectory,findPrograms,requiredPrograms} from './project-plan.mjs';
+import {projectDirectory,findPrograms,requiredPrograms,outputDirectories,outputDirectoryOf,outputFolderMessage,gitAddMessage} from './project-plan.mjs';
 import {allowedFile,readSource,readSourceSection,saveSource,createSource} from './files.mjs';
 import {runCodex} from './codex-run.mjs';
 import {sourceRevision,stableSource} from './source-revision.mjs';
@@ -112,6 +112,12 @@ export class LocalRunner{
    // No remote URL or command output in shared logs: a configured URL may contain credentials.
    const remoteBranches=await probe('Hauptzweig erreichbar (Lesezugriff)',['ls-remote','--exit-code','origin',`refs/heads/${p.base}`]);
    const author=await probe('Lokale Git-Identität',['var','GIT_AUTHOR_IDENT']);
+   // A preview output folder that already holds project files would be excluded from Git
+   // and overwritten by the build: creating or saving sources there can never work.
+   const outputs=outputDirectories(p);
+   if(outputs.length&&remoteBranches){let clash=[];try{clash=(await this.git(p.repo,'ls-tree','-r','--name-only',`origin/${p.base}`,'--',...outputs)).split('\n').filter(f=>outputs.some(d=>f.startsWith(d+'/')));}catch{}
+    const folder=clash.length?outputs.find(d=>clash.some(f=>f.startsWith(d+'/'))):null;
+    checks.push({label:'Vorschau-Ausgabeordner getrennt von Projektdateien',ok:!clash.length,...(folder?{hint:`Im Ausgabeordner „${folder}/“ liegen bereits Projektdateien (zum Beispiel ${clash[0]}). Studio würde sie beim Bauen überschreiben und neue Dateien dort nicht speichern. In den Projekteinstellungen unter „Vorschau“ einen eigenen Ausgabeordner eintragen.`}:{})});}
    const configured=Array.isArray(p.check)&&p.check.length>0&&p.check.every(x=>typeof x==='string');
    checks.push({label:'Lokaler Testbefehl konfiguriert',ok:configured},{label:'Codex lokal freigegeben',ok:!!p.allowCodex,optional:true});
    return {ready:!!remote&&!!remoteBranches&&!!author&&configured&&checks.filter(c=>!c.optional).every(c=>c.ok),base:p.base,checks,note:'Nur Lesezugriff geprüft. Schreibrechte und Testausführung folgen beim Einreichen.'};
@@ -120,6 +126,23 @@ export class LocalRunner{
   // On the server worker, a GitHub App token for this job means the repository was released to Studio on GitHub;
   // an older local profile without upload permission (deploy-key era) no longer blocks sharing a task branch.
   if(job.action==='submit'&&p.publish===false&&!this.gitEnv)throw new Error('Veröffentlichen ist in diesem lokalen Projektprofil noch gesperrt.');
+  // Trial run on the shared main state: the Werkstatt counts as ready only after tests
+  // (and the preview build, if configured) passed here once.
+  if(job.action==='probe'){
+   const key='probe-'+String(job.id).replace(/[^\w-]/g,'').slice(0,80),inner={...job,payload:{...job.payload,worktree:key}};
+   const w=this.worktree({...inner,action:'check'},p);mkdirSync(path.dirname(w.dir),{recursive:true});
+   await this.git(p.repo,'fetch','origin');await this.git(p.repo,'worktree','add','-b',w.branch,w.dir,`origin/${p.base}`);
+   try{
+    const checked=await this.run({...inner,action:'check'},control);
+    let preview=false;
+    if(p.preview?.build&&p.preview?.directory){await this.run({...inner,action:'preview'},control);preview=true;}
+    else if(p.preview?.serve)preview=null;
+    return {ready:true,checks:checked.checks,preview,base:p.base,commit:await this.git(w.dir,'rev-parse','HEAD')};
+   }finally{
+    await this.git(p.repo,'worktree','remove','--force',w.dir).catch(()=>{});
+    await this.git(p.repo,'branch','-D',w.branch).catch(()=>{});
+   }
+  }
   const w=this.worktree(job,p);mkdirSync(path.dirname(w.dir),{recursive:true});
   if(job.action==='prepare'){
    await this.git(p.repo,'fetch','origin');await this.git(p.repo,'worktree','add','-b',w.branch,w.dir,`origin/${p.base}`);
@@ -130,7 +153,7 @@ export class LocalRunner{
    if(!/^[a-f0-9]{40,64}$/.test(job.payload.commit)||!/^studio\/[\w-]+$/.test(job.payload.branch))throw new Error('Ungültiger Prüfstand.');
    await this.git(p.repo,'fetch','origin');const remote=await this.git(p.repo,'rev-parse',`origin/${job.payload.branch}`);if(remote!==job.payload.commit)throw new Error('Der eingereichte Branch wurde inzwischen verändert. Erneut einreichen.');
    await this.git(p.repo,'worktree','add','--detach',w.dir,`origin/${p.base}`);
-   try{await this.git(w.dir,'merge','--no-ff','--no-edit',job.payload.commit);}catch(e){await this.git(w.dir,'merge','--abort').catch(()=>{});throw new Error('Zusammenführung gestoppt: Git-Konflikt. Der gemeinsame Hauptzweig bleibt unverändert. '+e.message);}
+   try{await this.git(w.dir,'merge','--no-ff','--no-edit',job.payload.commit);}catch{const files=(await this.git(w.dir,'diff','--name-only','--diff-filter=U').catch(()=>'')).split('\n').filter(Boolean);await this.git(w.dir,'merge','--abort').catch(()=>{});throw new Error('Zusammenführen gestoppt: Der gemeinsame Stand hat sich inzwischen an denselben Stellen geändert'+(files.length?' ('+files.slice(0,10).join(', ')+')':'')+'. Der gemeinsame Stand bleibt unverändert. Bring die Arbeitskopie auf den neuen Stand und gib sie erneut zur Prüfung.');}
    const checks=await this.check(w.dir,p);if(await this.git(w.dir,'status','--porcelain'))throw new Error('Tests haben die Integrations-Arbeitskopie verändert. Zusammenführung gestoppt.');const commit=await this.git(w.dir,'rev-parse','HEAD');
    // No force push: concurrent integration is rejected by the remote.
    await this.git(w.dir,'push','origin',`HEAD:refs/heads/${p.base}`);return {commit,checks,integrated:true};
@@ -141,8 +164,9 @@ export class LocalRunner{
   }
   if(await this.git(w.dir,'branch','--show-current')!==w.branch)throw new Error('Arbeitszweig wurde außerhalb des Workspace geändert.');
   if(job.action==='create-file'){
+   const folder=outputDirectoryOf(String(job.payload.file??''),p);if(folder)throw new Error(outputFolderMessage(job.payload.file,folder));
    const created=createSource(w.dir,job.payload.file,job.payload.content??'');
-   await this.git(w.dir,'add','--',job.payload.file);
+   try{await this.git(w.dir,'add','--',job.payload.file);}catch(e){rmSync(path.join(w.dir,...job.payload.file.split('/')),{force:true});throw new Error(gitAddMessage(job.payload.file,e.message));}
    control.onEvent?.({type:'files',text:'Datei erstellt: '+job.payload.file});
    return {...created,source:await sourceRevision(w.dir,control)};
   }
@@ -164,17 +188,35 @@ export class LocalRunner{
    control.onEvent?.({type:'files',text:'Datei gespeichert: '+job.payload.file});
    return {...saved,source};
   }
-  if(job.action==='status')return {branch:w.branch,status:await this.git(w.dir,'status','--short'),diff:(await this.git(w.dir,'diff','HEAD','--')).slice(0,50000),commit:await this.git(w.dir,'rev-parse','HEAD'),source:await sourceRevision(w.dir,control)};
+  // Bring the copy up to the shared main state. Saved work is committed first; on a conflict
+  // nothing changes and the files are named, so people can agree who adapts what.
+  if(job.action==='update'){
+   await this.git(w.dir,'fetch','origin');
+   await this.git(w.dir,'add','--all');
+   if(await this.git(w.dir,'diff','--cached','--name-only'))await this.git(w.dir,'commit','-m','Schmaqq Studio: gespeicherte Änderungen');
+   const before=await this.git(w.dir,'rev-parse','HEAD');
+   try{await this.git(w.dir,'merge','--no-edit',`origin/${p.base}`);}
+   catch(e){
+    const files=(await this.git(w.dir,'diff','--name-only','--diff-filter=U').catch(()=>'')).split('\n').filter(Boolean);
+    await this.git(w.dir,'merge','--abort').catch(()=>{});
+    if(await this.git(w.dir,'rev-parse','HEAD')!==before)await this.git(w.dir,'reset','--hard',before);
+    throw new Error(files.length?`Der neue gemeinsame Stand ändert dieselben Stellen wie deine Änderung: ${files.slice(0,10).join(', ')}. Deine Arbeitskopie bleibt unverändert. Stimmt euch ab, wer die Stelle anpasst – oder löst es am eigenen PC mit Git.`:'Der neue gemeinsame Stand konnte nicht übernommen werden. Deine Arbeitskopie bleibt unverändert.');
+   }
+   return {updated:true,commit:await this.git(w.dir,'rev-parse','HEAD'),behind:0,source:await sourceRevision(w.dir,control)};
+  }
+  if(job.action==='status')return {behind:await this.behind(w.dir,p),branch:w.branch,status:await this.git(w.dir,'status','--short'),diff:(await this.git(w.dir,'diff','HEAD','--')).slice(0,50000),commit:await this.git(w.dir,'rev-parse','HEAD'),source:await sourceRevision(w.dir,control)};
   if(['check','review','submit','preview'].includes(job.action))await this.excludeBuildOutput(w.dir,p);
   if(job.action==='check'){const before=await sourceRevision(w.dir,control),checks=await this.check(w.dir,p);return {checks,commit:await this.git(w.dir,'rev-parse','HEAD'),source:stableSource(before,await sourceRevision(w.dir,control))};}
   if(['review','submit'].includes(job.action)){
    await this.git(w.dir,'fetch','origin');
    await this.git(w.dir,'add','--all');
    const staged=await this.git(w.dir,'diff','--cached','--name-only');if(staged)await this.git(w.dir,'commit','-m','Schmaqq Studio: Änderungen zur Prüfung');
+   // Nothing to review: stop before tests and upload instead of sharing an empty version.
+   if(!await this.git(w.dir,'diff','--name-only',await this.git(w.dir,'merge-base','HEAD',`origin/${p.base}`),'HEAD','--'))throw new Error('Es gibt noch keine Änderung gegenüber dem gemeinsamen Stand. Ändere und speichere zuerst etwas, dann gib es zur Prüfung.');
    const before=await sourceRevision(w.dir,control),checks=await this.check(w.dir,p);if(await this.git(w.dir,'status','--porcelain'))throw new Error('Arbeitskopie hat sich während der Prüfung verändert. Bitte erneut prüfen und einreichen.');
    const commit=await this.git(w.dir,'rev-parse','HEAD'),base=await this.git(w.dir,'merge-base','HEAD',`origin/${p.base}`);
    const diff=await this.git(w.dir,'diff','--no-ext-diff','--no-textconv','--no-color',base,commit,'--');
-   const result={checks,workflow:p.workflow??'direct',branch:w.branch,commit,base,diff:diff.slice(0,50000),diffTruncated:diff.length>=50000,published:job.action==='submit',source:stableSource(before,await sourceRevision(w.dir,control))};
+   const result={behind:await this.behind(w.dir,p),checks,workflow:p.workflow??'direct',branch:w.branch,commit,base,diff:diff.slice(0,50000),diffTruncated:diff.length>=50000,published:job.action==='submit',source:stableSource(before,await sourceRevision(w.dir,control))};
    if(p.preview?.build&&p.preview?.directory){
     const preview=await this.run({...job,action:'preview'},control);
     if(await this.git(w.dir,'status','--porcelain'))throw new Error('Der Vorschau-Build hat Quelldateien verändert. Erneut testen und einreichen.');
@@ -195,11 +237,11 @@ export class LocalRunner{
    }
    if(p.preview?.build&&p.preview?.directory){
     await this.excludeBuildOutput(w.dir,p);
-    const before=await sourceRevision(w.dir,control);await this.untrusted(p.preview.build,w.dir,{network:'private'});const output=path.resolve(w.dir,p.preview.directory),real=realpathSync(output),workspace=realpathSync(w.dir);
+    const before=await sourceRevision(w.dir,control);await this.untrusted(p.preview.build,w.dir,{network:'private'});const output=path.resolve(w.dir,p.preview.directory);if(!existsSync(output))throw new Error(`Die Vorschau wurde gebaut, aber der Ausgabeordner „${p.preview.directory}/“ fehlt. Prüfe, ob der Build-Befehl dorthin schreibt und ob in den Projekteinstellungen der richtige Ausgabeordner eingetragen ist.`);const real=realpathSync(output),workspace=realpathSync(w.dir);
     if(!real.startsWith(workspace+path.sep)||real===workspace)throw new Error('Vorschau-Ausgabe muss innerhalb der Arbeitskopie liegen.');
     const files={};let bytes=0,count=0;
     function collect(dir){for(const item of readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,item.name);if(lstatSync(full).isSymbolicLink())throw new Error('Symlinks sind in Vorschauen nicht erlaubt.');if(item.isDirectory())collect(full);else{const data=readFileSync(full);bytes+=data.length;if(bytes>5000000||++count>500)throw new Error('Vorschau überschreitet 5 MB oder 500 Dateien.');files[path.relative(real,full).split(path.sep).join('/')]=data.toString('base64');}}}
-    collect(real);if(!files['index.html'])throw new Error('Gebauter Vorschau fehlt index.html.');return {previewBundle:files,source:stableSource(before,await sourceRevision(w.dir,control))};
+    collect(real);if(!files['index.html'])throw new Error(`Die Vorschau wurde gebaut, aber im Ausgabeordner „${p.preview.directory}/“ liegt keine index.html. Prüfe, ob der Build-Befehl dorthin schreibt und ob in den Projekteinstellungen der richtige Ausgabeordner eingetragen ist.`);return {previewBundle:files,source:stableSource(before,await sourceRevision(w.dir,control))};
    }
    if(!p.preview?.argv||!p.preview?.url)throw new Error('Vorschau auf diesem PC noch nicht konfiguriert.');
    // A long-running preview server would execute project code outside the job launcher.
@@ -217,6 +259,8 @@ export class LocalRunner{
   }
   throw new Error('Unbekannter Auftrag.');
  }
+ // How many commits of the shared main state this copy does not contain yet (as of the last fetch).
+ async behind(dir,p){try{return Number(await this.git(dir,'rev-list','--count',`HEAD..origin/${p.base}`))||0;}catch{return 0;}}
  async check(dir,p){if(!p.check?.length)throw new Error('Vor Einreichung muss ein lokaler Testbefehl konfiguriert werden.');await this.prepareEnvironment(dir,p);return this.untrusted(p.check,dir,{timeout:600000,network:'private'});}
  close(){for(const child of this.previews.values())child.kill();}
 }

@@ -6,7 +6,9 @@ export type RoomNote={id:string;title:string;body:string;author:string;updated:n
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
 export type RoomRun={id:string;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;task:string|null};
 export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];runs:RoomRun[]};
-export type Resource={team?:boolean;device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;publish:boolean}[]};
+/** Server-computed: ready only after a passed trial run on the shared main state. */
+export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;state:'ok'|'running'|'failed';at:number;error?:string}|null};
+export type Resource={team?:boolean;device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;readiness?:WorkshopReadiness;publish:boolean}[]};
 export type ContextPreview={text:string;hash:string;messageIds:string[];task:string|null};
 export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect';
 export type RoomPage='rooms'|'projects'|'conversations'|'team'|'account'|'guide';
@@ -49,3 +51,11 @@ export type TeamTask=Task&{contract:TaskContract;completion:{ready:boolean;missi
 export type TeamEvent={id:string;actor:string;project:string;task:string|null;kind:string;body:string;created:number};
 export type TeamJob={id:string;owner:string;project:string;action:string;status:string;created:number;task:string|null};
 export type TeamState={tasks:TeamTask[];events:TeamEvent[];unread?:TeamEvent[];active?:TeamJob[]};
+
+/** A task title from a message: first line, at most 100 characters, cut at a word boundary with a visible "…". */
+export function taskTitleFrom(body:string){
+ const line=body.split('\n').map(l=>l.trim()).find(Boolean)??'';
+ if(line.length<=100)return line;
+ const cut=line.slice(0,99),space=cut.lastIndexOf(' ');
+ return (space>40?cut.slice(0,space):cut).replace(/[\s,.;:–-]+$/,'')+'…';
+}

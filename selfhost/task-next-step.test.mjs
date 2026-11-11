@@ -18,7 +18,9 @@ test('a code task names exactly one next step along the whole way',()=>{
  assert.equal(step({own:false,result:{shared:true,state:'pending',stale:true,mine:false}}).action,undefined);
  assert.equal(step({result:{shared:true,state:'changes_requested',mine:true}}).action,'look');
  assert.equal(step({result:{shared:true,state:'approved',mine:true}}).action,'integrate','without GitHub the author takes the change over');
- assert.equal(step({result:{shared:true,state:'approved',mine:true,automatic:true}}).action,undefined,'with GitHub Studio does it');
+ assert.equal(step({result:{shared:true,state:'approved',mine:true,automatic:true}}).action,'integrate','with GitHub, too, approval only approves; the author merges');
+ assert.equal(step({own:false,isAdmin:true,result:{shared:true,state:'approved',mine:false}}).action,'integrate','the project admin may merge as well');
+ const dropped=step({result:{shared:true,state:'pending',mine:true,dropped:['Markus']}});assert.match(dropped.text,/Freigabe von Markus zählt nicht mehr/);assert.equal(dropped.action,undefined);
  assert.equal(step({own:false,result:{shared:true,state:'approved',mine:false}}).action,undefined);
  assert.equal(step({ready:true}).action,'finish');
  assert.equal(step({status:'done'}).action,'reopen');
@@ -57,7 +59,7 @@ test('lists use one short status per task and sort it to the right person',()=>{
  assert.deepEqual(s(t({status:'review',completion:{ready:false,result:shared}}),'other'),{text:'Bitte anschauen und freigeben',mine:true,group:'mine'});
  assert.equal(s(t({status:'review',completion:{ready:false,result:{...shared,state:'changes_requested'}}})).text,'Änderung gewünscht – bitte überarbeiten');
  assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved'}}})).text,'Freigegeben – bitte zusammenführen');
- assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved',workflow:'pull-request'}}})).text,'Freigegeben – wird zusammengeführt');
+ assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved',workflow:'pull-request'}}})).text,'Freigegeben – bitte zusammenführen','GitHub projects merge by the same explicit step');
  assert.equal(s(t({completion:{ready:true,result:{...shared,state:'approved',integrated:true}}})).text,'Fertig – bitte abschliessen');
  assert.equal(s(t({contract:{kind:'code',blocked:'Warte',cancelled:false,requiresReview:true}})).text,'Hängt fest: Warte');
  assert.equal(s(t({status:'done'})).group,'done');
@@ -111,4 +113,31 @@ test('next step follows the project role: self approval in practice, no review b
  assert.equal(taskNextStep({...code,isAdmin:true}).action,'setup');
  assert.equal(taskNextStep({...code,isAdmin:false}).action,undefined);
  assert.match(taskNextStep({...code,isAdmin:false}).text,/Projekt-Admin/);
+});
+
+test('a failed step stays the next step until it is retried, and an empty copy cannot be submitted',()=>{
+ const failure={action:'submit',text:'Die Änderung konnte nicht zur Prüfung gegeben werden.',detail:'Gebaute Vorschau fehlt.',mine:true};
+ const failed=step({failure});assert.equal(failed.action,'retry');assert.match(failed.text,/Gebaute Vorschau fehlt/);
+ assert.equal(step({failure:{...failure,action:'integrate'}}).label,'Nochmal zusammenführen');
+ assert.equal(step({failure:{...failure,action:'create-file'}}).action,'edit');
+ const other=step({own:false,failure:{...failure,mine:false}});assert.equal(other.action,undefined);assert.match(other.text,/Markus/);
+ assert.equal(step({failure,activeJob:'submit'}).waiting,true,'running work wins over an old failure');
+ const empty=step({hasChange:false});assert.equal(empty.action,'edit');assert.match(empty.text,/zuerst etwas/);
+ assert.equal(step({hasChange:true}).action,'submit');
+});
+
+test('work queued behind another person on a shared Werkstatt says who is ahead',()=>{
+ const queued=step({activeJob:'submit',activeBehind:'Markus'});
+ assert.equal(queued.waiting,true);assert.match(queued.text,/Aufgabe von Markus/);assert.match(queued.text,/als Nächstes dran/);
+});
+
+test('a copy behind the shared state is brought up to date first, and a stale merge points there',()=>{
+ const behind=step({behind:2});assert.equal(behind.action,'update');assert.match(behind.text,/2 neue Änderungen/);
+ assert.equal(step({behind:1,result:{shared:true,state:'pending',stale:true,mine:true}}).action,'update');
+ assert.equal(step({behind:3,result:{shared:true,state:'pending',mine:true}}).action,undefined,'a version waiting for review is not touched');
+ assert.equal(step({behind:0}).action,'submit');
+ const conflict=step({failure:{action:'integrate',text:'Die Änderung konnte nicht zusammengeführt werden.',detail:'Zusammenführen gestoppt: Der gemeinsame Stand hat sich inzwischen an denselben Stellen geändert (page.txt).',mine:true}});
+ assert.equal(conflict.action,'update');
+ const failedUpdate=step({failure:{action:'update',text:'Die Arbeitskopie konnte nicht auf den neuen Stand gebracht werden.',detail:'… page.txt …',mine:true}});
+ assert.equal(failedUpdate.action,undefined);assert.match(failedUpdate.text,/page\.txt/);
 });

@@ -2,16 +2,56 @@ import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {transaction} from './store.mjs';
 import {listWorkspaces} from './workspaces.mjs';
-import {reviewState} from './reviews.mjs';
-import {requirePermission} from './project-roles.mjs';
+import {reviewState,droppedApprovals} from './reviews.mjs';
+import {requirePermission,can} from './project-roles.mjs';
 import {changeOverview} from './change-overview.mjs';
-import {taskView,assertTaskStatus,teamEvent,taskContract,invalidateTaskResult,storeMetadata} from './team-model.mjs';
+import {taskView,assertTaskStatus,teamEvent,taskContract,invalidateTaskResult,storeMetadata,metadata} from './team-model.mjs';
 
 const id=z.string().regex(/^[\w-]{1,100}$/);
 const fail=(status,message)=>Object.assign(new Error(message),{status});
 export function taskWorkspaces(db,task){return listWorkspaces(db).filter(w=>w.taskId===task&&!w.archived);}
 export function assertAssignment(db,task,assignee){
  if(taskWorkspaces(db,task).some(w=>w.owner!==assignee))throw fail(409,'Für diese Aufgabe ist noch ein Arbeitsbereich reserviert. Erst abstimmen und den Arbeitsbereich abschließen.');
+}
+// The task's own server-side state for the next step. The latest relevant job decides:
+// a failure stays visible after reloading until a later step of the task succeeds.
+const stepActions=['prepare','create-file','save-file','codex','update','check','preview','review','submit','integrate'];
+const failureText={prepare:'Die Arbeitskopie konnte nicht angelegt werden.','create-file':'Die Datei konnte nicht angelegt werden.','save-file':'Die Datei konnte nicht gespeichert werden.',codex:'Die KI-Bearbeitung ist nicht fertig geworden.',update:'Die Arbeitskopie konnte nicht auf den neuen Stand gebracht werden.',check:'Die Tests sind nicht durchgelaufen.',preview:'Die Vorschau konnte nicht gebaut werden.',review:'Die Prüffassung konnte nicht erstellt werden.',submit:'Die Änderung konnte nicht zur Prüfung gegeben werden.',integrate:'Die Änderung konnte nicht zusammengeführt werden.'};
+export function taskJobState(db,taskId){
+ const jobs=db.prepare(`SELECT j.id,j.action,j.status,j.created,j.result,j.owner,m.name AS ownerName FROM jobs j JOIN members m ON m.id=j.owner
+  WHERE j.status IN ('completed','failed','interrupted') AND j.action IN (${stepActions.map(()=>'?').join(',')}) AND (
+   j.id IN (SELECT job FROM workspaces WHERE task=? AND archived=0)
+   OR json_extract(j.payload,'$.worktree') IN (SELECT job FROM workspaces WHERE task=? AND archived=0)
+   OR (j.action='integrate' AND json_extract(j.payload,'$.reviewJob') IN (SELECT r.id FROM jobs r JOIN workspaces w ON w.job=json_extract(r.payload,'$.worktree') WHERE w.task=?)))
+  ORDER BY j.created DESC,j.rowid DESC LIMIT 1`).get(...stepActions,taskId,taskId,taskId);
+ if(!jobs||jobs.status==='completed')return {lastFailure:null};
+ let result={};try{result=JSON.parse(jobs.result??'{}')??{};}catch{}
+ const detail=typeof result.error==='string'&&result.error.trim()?result.error.trim().slice(0,600):jobs.status==='interrupted'?'Die Verbindung zur Werkstatt ist abgerissen.':'';
+ return {lastFailure:{id:jobs.id,action:jobs.action,owner:jobs.owner,ownerName:jobs.ownerName,at:jobs.created,interrupted:jobs.status==='interrupted',text:failureText[jobs.action],detail}};
+}
+// Whether a working copy holds a change of its own: saved or created files, a finished
+// AI edit, uncommitted files seen by the runner, or an earlier submitted version.
+// How far the copy is behind the shared main state, as last measured by the runner.
+export function copyBehind(db,workspaceId){
+ for(const j of db.prepare(`SELECT result FROM jobs WHERE json_extract(payload,'$.worktree')=? AND status='completed' AND action IN ('status','review','submit','update') ORDER BY created DESC,rowid DESC LIMIT 5`).all(workspaceId)){
+  try{const r=JSON.parse(j.result??'{}');if(Number.isInteger(r.behind))return Math.max(0,r.behind);}catch{}
+ }
+ return 0;
+}
+export function copyHasChange(db,workspaceId){
+ return db.prepare(`SELECT action,result FROM jobs WHERE json_extract(payload,'$.worktree')=? AND status='completed'
+  AND action IN ('save-file','create-file','codex','status','review','submit') ORDER BY created DESC`).all(workspaceId).some(j=>{
+  if(j.action!=='status')return true;
+  try{const r=JSON.parse(j.result??'{}');return typeof r.status==='string'&&r.status.trim()!=='';}catch{return false;}
+ });
+}
+// A live preview (app with server) runs at most an hour and only until the next live preview on
+// the same Werkstatt. An expired link is not offered as if it still worked.
+function previewLink(db,preview){
+ if(typeof preview?.url!=='string')return {preview:null};
+ if(preview.scope!=='live')return {preview:preview.url};
+ const live=metadata(db,'preview:v1:live:'+(preview.url.match(/\/([\w-]{40,60})\/?$/)?.[1]??''));
+ return live&&live.expires>Date.now()?{preview:preview.url}:{preview:null,previewExpired:true};
 }
 export async function collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}){
  if(!['/api/collaboration','/api/collaboration/task','/api/collaboration/task-diff','/api/collaboration/change'].includes(route))return false;
@@ -22,8 +62,8 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   if(method!=='GET')throw fail(405,'Methode nicht erlaubt.');
   const taskId=parse(id,url.searchParams.get('task'));
   const reviewId=parse(id,url.searchParams.get('review'));
-  const task=db.prepare('SELECT id FROM tasks WHERE id=?').get(taskId);
-  if(!task)throw fail(404,'Aufgabe fehlt.');
+  const task=db.prepare('SELECT id,project FROM tasks WHERE id=?').get(taskId);
+  if(!task)throw fail(404,'Aufgabe fehlt.');requirePermission(db,member,task.project,'view');
   const job=db.prepare(`SELECT j.id,j.owner,j.created,j.result,m.name AS ownerName FROM jobs j
    JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree')
    JOIN members m ON m.id=j.owner
@@ -36,7 +76,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   const complete=typeof result.diff==='string'&&result.diffTruncated!==true&&diff.length<50000;
   const contractSnapshot=JSON.parse(db.prepare('SELECT payload FROM jobs WHERE id=?').get(job.id).payload).contractSnapshot??null;
   send({review:job.id,owner:job.owner,ownerName:job.ownerName,state:reviewState(db,{...job,action:'review',status:'completed'}),checks:typeof result.checks==='string'?result.checks:'Kein Testprotokoll vorhanden.',published:result.published===true,commit:typeof result.commit==='string'&&/^[a-f0-9]{40,64}$/.test(result.commit)?result.commit:null,
-   created:job.created,complete,diff:complete?diff:'',limited:!complete,contractSnapshot,preview:typeof result.preview?.url==='string'?result.preview.url:null});return true;
+   created:job.created,complete,diff:complete?diff:'',limited:!complete,contractSnapshot,...previewLink(db,result.preview)});return true;
  }
  if(route==='/api/collaboration/change'){
   if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
@@ -52,22 +92,27 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
  if(route==='/api/collaboration'&&method==='GET'){
   const project=parse(id,url.searchParams.get('project')??'all');
   if(project!=='all'&&!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt fehlt.');
+  if(project!=='all')requirePermission(db,member,project,'view');
+  const visible=p=>can(db,member,p,'view');
   const tasks=db.prepare(`SELECT t.*,(SELECT count(*) FROM task_comments c WHERE c.task=t.id) AS commentCount FROM tasks t WHERE (?='all' OR project=?) ORDER BY created DESC,id`).all(project,project);
   const workspaces=listWorkspaces(db).filter(w=>project==='all'||w.project===project);
-  send({tasks,workspaces,changes:changeOverview(db,workspaces)});return true;
+  const shown=workspaces.filter(w=>visible(w.project));
+  send({tasks:tasks.filter(t=>visible(t.project)),workspaces:shown,changes:changeOverview(db,shown)});return true;
  }
  if(route==='/api/collaboration/task'&&method==='GET'){
-  const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(parse(id,url.searchParams.get('id')));if(!task)throw fail(404,'Aufgabe fehlt.');
-  const reviews=db.prepare("SELECT j.*,m.name AS ownerName FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree') JOIN members m ON m.id=j.owner WHERE w.task=? AND j.action IN ('review','submit') AND j.status='completed' ORDER BY j.created DESC,j.id").all(task.id).map(j=>({id:j.id,owner:j.owner,ownerName:j.ownerName,created:j.created,commit:JSON.parse(j.result??'{}').commit??'',state:reviewState(db,j)}));
+  const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(parse(id,url.searchParams.get('id')));if(!task)throw fail(404,'Aufgabe fehlt.');requirePermission(db,member,task.project,'view');
+  const reviews=db.prepare("SELECT j.*,m.name AS ownerName FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree') JOIN members m ON m.id=j.owner WHERE w.task=? AND j.action IN ('review','submit') AND j.status='completed' ORDER BY j.created DESC,j.id").all(task.id).map(j=>({id:j.id,owner:j.owner,ownerName:j.ownerName,created:j.created,commit:JSON.parse(j.result??'{}').commit??'',state:reviewState(db,j),dropped:droppedApprovals(db,j),mergeWait:metadata(db,'team:v1:merge-wait:'+j.id)??null}));
   // This is the existing single private Studio team, not a public/tenant API.
   const workspaces=taskWorkspaces(db,task.id);
   const briefRow=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('taskflow:v1:brief:'+task.id);
   const brief={revision:briefRow?JSON.parse(briefRow.value).revision:0};
   const sourceMeta=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:task-source:'+task.id);
   const sourceId=sourceMeta?JSON.parse(sourceMeta.value).message:null;
-  const source=sourceId?db.prepare('SELECT m.id,m.body,m.created,n.name AS authorName FROM messages m JOIN members n ON n.id=m.author WHERE m.id=? AND m.channel=?').get(sourceId,task.project):null;
+  const source=sourceId?db.prepare("SELECT m.id,m.body,m.created,m.channel,n.name AS authorName FROM messages m JOIN members n ON n.id=m.author WHERE m.id=? AND (m.channel=? OR m.channel='general')").get(sourceId,task.project):null;
   const activeJobs=db.prepare(`SELECT j.id,j.action,j.status,m.name AS ownerName FROM jobs j JOIN members m ON m.id=j.owner WHERE j.status IN ('queued','running','cancelling') AND (json_extract(j.payload,'$.worktree') IN (SELECT job FROM workspaces WHERE task=?) OR (j.action='integrate' AND json_extract(j.payload,'$.reviewJob') IN (SELECT r.id FROM jobs r JOIN workspaces w ON w.job=json_extract(r.payload,'$.worktree') WHERE w.task=?))) AND j.action NOT IN ('files','read-file','save-file') ORDER BY j.created`).all(task.id,task.id);
-  send({task:taskView(db,task),brief,reviews,activeJobs,source,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces});return true;
+  // A queued job of this task may wait behind someone else's work on the same Werkstatt.
+  for(const j of activeJobs)if(j.status==='queued'){const ahead=db.prepare("SELECT m.name FROM jobs o JOIN members m ON m.id=o.owner WHERE o.device=(SELECT device FROM jobs WHERE id=?) AND o.status IN ('running','cancelling') AND o.id<>? LIMIT 1").get(j.id,j.id);if(ahead)j.behind=ahead.name;}
+  send({task:taskView(db,task),brief,reviews,activeJobs,...taskJobState(db,task.id),source,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces:workspaces.map(w=>({...w,changed:copyHasChange(db,w.id),behind:copyBehind(db,w.id)}))});return true;
  }
  if(route!=='/api/collaboration/task'||method!=='POST')throw fail(405,'Methode nicht erlaubt.');
  const value=parse(z.discriminatedUnion('action',[

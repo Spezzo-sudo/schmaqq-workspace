@@ -95,7 +95,7 @@ const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('share-result'),id,project:id,job:id})
 ]);
 
-import {requirePermission,startRoles} from './project-roles.mjs';
+import {requirePermission,startRoles,can} from './project-roles.mjs';
 import {hiddenPractice,practiceOwner} from './practice.mjs';
 export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
  return async function roomRoute({route,method,req,url,send}){
@@ -104,10 +104,12 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
   if(method==='GET'){
    db.prepare('UPDATE members SET seen=? WHERE id=?').run(now(),member.id);
    if(route==='/api/rooms'){
-    send({rooms:db.prepare("SELECT p.*,(SELECT count(*) FROM tasks t WHERE t.project=p.id AND t.status!='done') AS openTasks,(SELECT max(created) FROM messages m WHERE m.channel=p.id) AS lastMessage FROM projects p WHERE NOT EXISTS (SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:project:'||p.id AND json_extract(m.value,'$.archived')=1) ORDER BY COALESCE((SELECT max(created) FROM messages WHERE channel=p.id),p.created) DESC,p.id").all().filter(r=>!hiddenPractice(db,r.id,member.id)).map(r=>({...r,practice:!!practiceOwner(db,r.id)}))});return true;
+    send({rooms:db.prepare("SELECT p.*,(SELECT count(*) FROM tasks t WHERE t.project=p.id AND t.status!='done') AS openTasks,(SELECT max(created) FROM messages m WHERE m.channel=p.id) AS lastMessage FROM projects p WHERE NOT EXISTS (SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:project:'||p.id AND json_extract(m.value,'$.archived')=1) ORDER BY COALESCE((SELECT max(created) FROM messages WHERE channel=p.id),p.created) DESC,p.id").all().filter(r=>!hiddenPractice(db,r.id,member.id)&&can(db,member,r.id,'view')).map(r=>({...r,practice:!!practiceOwner(db,r.id)}))});return true;
    }
    const project=parse(id,url.searchParams.get('project'));const p=requireProject(db,project);
    if(hiddenPractice(db,project,member.id))throw fail(404,'Projekt fehlt.');
+   // Reading a project needs a role in it; whoever was taken out of the project sees nothing anymore.
+   requirePermission(db,member,project,'view');
    if(route==='/api/room/context'){const task=url.searchParams.get('task');send(buildRoomContext(db,project,task?parse(id,task):undefined));return true;}
    if(route==='/api/room/tasks'){send(listRoomTasks(db,project,{query:parse(z.string().max(160),url.searchParams.get('q')??''),includeDone:url.searchParams.get('done')==='1'}));return true;}
    const before=url.searchParams.get('before');
@@ -155,7 +157,8 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     return remember(db,member,value,{ok:true,message:value.id});
    }
    if(value.action==='task'){
-    const source=requireSource(db,value.project,value.source);
+    // Source: a message of this project, or of the team-wide #Allgemein (everyone reads it).
+    const source=value.source&&db.prepare("SELECT * FROM messages WHERE id=? AND channel='general'").get(value.source)||requireSource(db,value.project,value.source);
     const converted=source?readMeta(db,key('source-task',source.id)):null;
     if(converted)return remember(db,member,value,{ok:true,task:converted.task,reused:true});
     const task=randomUUID();db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(task,value.project,value.title,value.description||source?.body||'',value.mine?'doing':'todo','Normal',value.mine?member.id:null,now());

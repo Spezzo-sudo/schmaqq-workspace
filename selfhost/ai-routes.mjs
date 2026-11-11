@@ -3,6 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {transaction} from './store.mjs';
 import {hostSchema,recordHost} from './placement.mjs';
+import {workshopReadiness} from './workshop-readiness.mjs';
 const id=z.string().regex(/^[\w-]{1,100}$/),model=z.string().min(1).max(200);
 const fail=(status,message)=>Object.assign(new Error(message),{status});
 export function aiAccess(db,job){
@@ -30,7 +31,7 @@ export async function aiRoute({route,method,req,db,user,device,send,readJSON,par
   const team=new Map();for(const p of db.prepare('SELECT id FROM projects').all())for(const d of teamDevices(db,m,p.id))team.set(d,[...(team.get(d)??[]),p.id]);
   for(const d of team.keys())if(!resources.some(r=>r.device===d)){const row=db.prepare('SELECT r.device,r.models,r.status,0 AS allowTeam,r.projects,r.codex,r.updated,d.owner,d.name,m.name AS ownerName FROM ai_resources r JOIN devices d ON r.device=d.id JOIN members m ON d.owner=m.id WHERE r.device=? AND d.revoked=0').get(d);if(row)resources.push({...row,models:[],projects:JSON.parse(row.projects),grants:[],codex:'private',online:Date.now()-row.updated<60000});}
   for(const resource of resources){const state=db.prepare('SELECT projects FROM runner_project_state WHERE device=?').get(resource.device);const all=state?JSON.parse(state.projects):[];
-   resource.development=resource.owner===m.id?all:all.filter(p=>team.get(resource.device)?.includes(p.id));resource.team=resource.owner!==m.id&&team.has(resource.device);}
+   resource.development=(resource.owner===m.id?all:all.filter(p=>team.get(resource.device)?.includes(p.id))).map(p=>({...p,readiness:workshopReadiness(db,resource.device,p)}));resource.team=resource.owner!==m.id&&team.has(resource.device);}
   send({resources,jobs,members:db.prepare('SELECT id,name FROM members').all()});return true;
  }
  if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');const v=await readJSON(req);

@@ -114,7 +114,8 @@ export default function Development({projects,userId,canInvite=false,initialProj
  // The task header decides its next step with the same preview capability as the result panel.
  useEffect(()=>{onPreviewConfigured?.(!!personal.cap?.preview);},[personal.cap?.preview,onPreviewConfigured]);
  // Opening or listing files is a job too, but it is not "work" the person started.
- const activeWork=active&&jobs.some(j=>j.device===device&&['queued','running','cancelling'].includes(j.status)&&!['files','read-file','save-file'].includes(j.action));
+ // Only work in this copy counts; other people's jobs on a shared Werkstatt merely queue ahead.
+ const activeWork=active&&jobs.some(j=>j.device===device&&(worktree?j.id===worktree||j.payload?.worktree===worktree:j.owner===userId)&&['queued','running','cancelling'].includes(j.status)&&!['files','read-file','save-file'].includes(j.action));
  useEffect(()=>{onCopyState?.({id:worktree,dirty:editorDirty,active:activeWork});},[worktree,editorDirty,activeWork,onCopyState]);
  const setup=setupSteps({hasDevice:ownDevices.length>0,online,projectStatus:personal.projectStatus,inspection:personal.inspection?{status:personal.inspection.status,ready:!!personal.inspection.ready}:null,
   hasCopy:workspaces.some(w=>w.owner===userId&&w.project===project&&w.status==='completed'&&!w.archived&&!w.revoked),checkPassed:jobs.some(j=>j.owner===userId&&j.project===project&&j.action==='check'&&j.status==='completed'),
