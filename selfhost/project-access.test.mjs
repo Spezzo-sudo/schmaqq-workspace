@@ -60,3 +60,24 @@ test('project access follows the roles: removed people read nothing, an appointe
  review=(await request('/api/collaboration/task?id=task-1',null,a)).data.reviews[0];
  assert.equal(review.state,'pending');assert.deepEqual(review.dropped,['B']);
 });
+
+test('#Allgemein: answer a message and turn it into a task of a chosen project',async t=>{
+ const dir=mkdtempSync(path.join(os.tmpdir(),'studio-general-')),origin='http://127.0.0.1:44893';
+ const app=createStudioServer({seedProjects:true,filename:path.join(dir,'studio.sqlite'),origin,previewOrigin:'http://127.0.0.1:44894'});
+ await new Promise(r=>app.server.listen(0,'127.0.0.1',r));const host='http://127.0.0.1:'+app.server.address().port;
+ t.after(async()=>{await new Promise(r=>app.server.close(r));app.db.close();rmSync(dir,{recursive:true,force:true});});
+ const request=async(route,value,cookie)=>{const r=await fetch(host+route,{method:value?'POST':'GET',headers:{...(value?{Origin:origin,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},...(value?{body:JSON.stringify(value)}:{})});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};};
+ const a=(await request('/api/auth/register',{invite:createInvite(app.db,'a@fixture.invalid','owner'),name:'A',password:'fixture-password-1234'})).cookie;
+ const b=(await request('/api/auth/register',{invite:createInvite(app.db,'b@fixture.invalid'),name:'B',password:'fixture-password-1234'})).cookie;
+ const project=(await request('/api/room',{action:'create',id:randomUUID(),title:'Team',description:''},a)).data.project;
+ assert.equal((await request('/api/workspace',{action:'message',id:'g1',channel:'general',body:'Wir sollten die Startseite ruhiger gestalten.'},a)).status,200);
+ assert.equal((await request('/api/workspace',{action:'message',id:'g2',channel:'general',body:'Gute Idee, ich mache eine Aufgabe daraus.',replyTo:'g1'},b)).status,200);
+ app.db.prepare("INSERT INTO messages VALUES('p1',?,(SELECT id FROM members WHERE name='A'),'Projekt',0)").run(project);
+ assert.equal((await request('/api/workspace',{action:'message',id:'g3',channel:'general',body:'x',replyTo:'p1'},b)).status,400,'answers stay in the same conversation');
+ const task=await request('/api/room',{action:'task',id:randomUUID(),project,title:'Startseite ruhiger gestalten',source:'g1'},b);
+ assert.equal(task.status,200);
+ const general=(await request('/api/workspace',null,b)).data.messages;
+ assert.equal(general.find(m=>m.id==='g2').replyTo,'g1');
+ const source=general.find(m=>m.id==='g1');assert.equal(source.taskId,task.data.task);assert.equal(source.taskProject,project);
+ assert.equal((await request('/api/collaboration/task?id='+task.data.task,null,b)).data.source.id,'g1','the task shows where it came from');
+});

@@ -159,3 +159,10 @@
 .team-shell .studio-readonly p{margin:0 0 6px}
 .team-shell .studio-dev-pc{margin-top:18px}
 .team-shell .studio-workshop-toggle{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5}
+.studio-general-messages li>div{min-width:0;flex:1}
+.studio-general-quote{margin:2px 0 4px;font-size:.85rem;border-left:3px solid var(--schmaqq-rule);padding-left:8px}
+.studio-general-actions{display:flex;flex-wrap:wrap;gap:14px;margin:6px 0 0;font-size:.85rem}
+.studio-general-actions .rw-link{display:inline-flex;align-items:center;gap:4px}
+.studio-general-convert{display:grid;gap:8px;margin-top:10px;padding:12px;border:1px solid var(--schmaqq-rule);background:var(--schmaqq-paper,#fff)}
+.studio-general-convert label{display:grid;gap:4px;font-size:.85rem}
+.studio-general-replying{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:.85rem;color:var(--schmaqq-ink-muted,#555)}

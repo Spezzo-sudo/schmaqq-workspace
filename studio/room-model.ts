@@ -51,3 +51,11 @@ export type TeamTask=Task&{contract:TaskContract;completion:{ready:boolean;missi
 export type TeamEvent={id:string;actor:string;project:string;task:string|null;kind:string;body:string;created:number};
 export type TeamJob={id:string;owner:string;project:string;action:string;status:string;created:number;task:string|null};
 export type TeamState={tasks:TeamTask[];events:TeamEvent[];unread?:TeamEvent[];active?:TeamJob[]};
+
+/** A task title from a message: first line, at most 100 characters, cut at a word boundary with a visible "…". */
+export function taskTitleFrom(body:string){
+ const line=body.split('\n').map(l=>l.trim()).find(Boolean)??'';
+ if(line.length<=100)return line;
+ const cut=line.slice(0,99),space=cut.lastIndexOf(' ');
+ return (space>40?cut.slice(0,space):cut).replace(/[\s,.;:–-]+$/,'')+'…';
+}

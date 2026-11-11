@@ -108,7 +108,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   const brief={revision:briefRow?JSON.parse(briefRow.value).revision:0};
   const sourceMeta=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:task-source:'+task.id);
   const sourceId=sourceMeta?JSON.parse(sourceMeta.value).message:null;
-  const source=sourceId?db.prepare('SELECT m.id,m.body,m.created,n.name AS authorName FROM messages m JOIN members n ON n.id=m.author WHERE m.id=? AND m.channel=?').get(sourceId,task.project):null;
+  const source=sourceId?db.prepare("SELECT m.id,m.body,m.created,m.channel,n.name AS authorName FROM messages m JOIN members n ON n.id=m.author WHERE m.id=? AND (m.channel=? OR m.channel='general')").get(sourceId,task.project):null;
   const activeJobs=db.prepare(`SELECT j.id,j.action,j.status,m.name AS ownerName FROM jobs j JOIN members m ON m.id=j.owner WHERE j.status IN ('queued','running','cancelling') AND (json_extract(j.payload,'$.worktree') IN (SELECT job FROM workspaces WHERE task=?) OR (j.action='integrate' AND json_extract(j.payload,'$.reviewJob') IN (SELECT r.id FROM jobs r JOIN workspaces w ON w.job=json_extract(r.payload,'$.worktree') WHERE w.task=?))) AND j.action NOT IN ('files','read-file','save-file') ORDER BY j.created`).all(task.id,task.id);
   // A queued job of this task may wait behind someone else's work on the same Werkstatt.
   for(const j of activeJobs)if(j.status==='queued'){const ahead=db.prepare("SELECT m.name FROM jobs o JOIN members m ON m.id=o.owner WHERE o.device=(SELECT device FROM jobs WHERE id=?) AND o.status IN ('running','cancelling') AND o.id<>? LIMIT 1").get(j.id,j.id);if(ahead)j.behind=ahead.name;}

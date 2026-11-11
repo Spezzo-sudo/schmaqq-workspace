@@ -157,7 +157,8 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     return remember(db,member,value,{ok:true,message:value.id});
    }
    if(value.action==='task'){
-    const source=requireSource(db,value.project,value.source);
+    // Source: a message of this project, or of the team-wide #Allgemein (everyone reads it).
+    const source=value.source&&db.prepare("SELECT * FROM messages WHERE id=? AND channel='general'").get(value.source)||requireSource(db,value.project,value.source);
     const converted=source?readMeta(db,key('source-task',source.id)):null;
     if(converted)return remember(db,member,value,{ok:true,task:converted.task,reused:true});
     const task=randomUUID();db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(task,value.project,value.title,value.description||source?.body||'',value.mine?'doing':'todo','Normal',value.mine?member.id:null,now());

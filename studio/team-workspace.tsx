@@ -112,7 +112,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
    </div>:
    route.page==='conversations'?<div className="rw-page team-page studio-conversations-page">
     <h1>Gespräche</h1>
-    <GeneralChat userId={user.userId}/>
+    <GeneralChat userId={user.userId} onTask={(room,task)=>navigate({page:'rooms',room,tab:'tasks',task})}/>
     {!!rooms.length&&<section aria-labelledby="studio-project-talks"><h2 id="studio-project-talks">In den Projekten</h2>
      {rooms.map(r=><button className="team-work-card" key={r.id} onClick={()=>navigate({room:r.id,tab:'talk',task:'',page:'rooms'})}><MessageSquare size={18}/><span><strong>{r.title}</strong><small>{r.lastMessage?'Letzte Nachricht '+new Date(r.lastMessage).toLocaleString('de-DE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Noch keine Nachricht'}</small></span><ChevronRight size={17}/></button>)}
     </section>}

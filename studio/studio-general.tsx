@@ -1,11 +1,11 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {Copy,Download,FileText,KeyRound,Plus,Send} from 'lucide-react';
-import {initials,type RoomState,type TeamTask} from './room-model';
+import {Copy,Download,FileText,KeyRound,ListPlus,Plus,Reply,Send,X} from 'lucide-react';
+import {initials,roomRequest,taskTitleFrom,type RoomState,type TeamTask} from './room-model';
 
 /** Studio-wide content that used to live only in the former view: #Allgemein, general documents, data export. */
 type Doc={id:string;title:string;body:string;author:string;revision:number;updated:number;project?:string|null};
-type Message={id:string;channel:string;author:string;body:string;created:number};
-type Workspace={members:{id:string;name:string}[];messages:Message[];documents:Doc[]};
+type Message={id:string;channel:string;author:string;body:string;created:number;replyTo?:string|null;taskId?:string|null;taskProject?:string|null};
+type Workspace={members:{id:string;name:string}[];messages:Message[];documents:Doc[];projects:{id:string;title:string}[]};
 const when=(t:number)=>new Date(t).toLocaleString('de-DE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 
 function useWorkspace(){
@@ -16,21 +16,44 @@ function useWorkspace(){
  return {data,error,post,load};
 }
 
-/** The team-wide conversation (#Allgemein), now in the new view. */
-export function GeneralChat({userId}:{userId:string}){
- const {data,error,post}=useWorkspace(),[text,setText]=useState(''),[sending,setSending]=useState(false),[failed,setFailed]=useState('');
+/** The team-wide conversation (#Allgemein): the same message actions as in a project – answer, and turn into a task of a chosen project. */
+export function GeneralChat({userId,onTask}:{userId:string;onTask?:(project:string,task:string)=>void}){
+ const {data,error,post,load}=useWorkspace(),[text,setText]=useState(''),[sending,setSending]=useState(false),[failed,setFailed]=useState('');
+ const [reply,setReply]=useState<Message|null>(null),[convert,setConvert]=useState<Message|null>(null),[project,setProject]=useState(''),[title,setTitle]=useState('');
  const list=useRef<HTMLOListElement|null>(null);
- const messages=(data?.messages??[]).filter(m=>m.channel==='general').slice(-60);
+ const all=(data?.messages??[]).filter(m=>m.channel==='general'),messages=all.slice(-60);
  const name=(id:string)=>data?.members.find(m=>m.id===id)?.name??'Jemand';
+ const projects=data?.projects??[];
  useEffect(()=>{if(list.current)list.current.scrollTop=list.current.scrollHeight;},[messages.length]);
- async function send(e:React.FormEvent){e.preventDefault();if(!text.trim()||sending)return;setSending(true);setFailed('');try{await post({action:'message',id:crypto.randomUUID(),channel:'general',body:text});setText('');}catch(err){setFailed((err as Error).message+' Dein Text bleibt stehen.');}finally{setSending(false);}}
+ async function send(e:React.FormEvent){e.preventDefault();if(!text.trim()||sending)return;setSending(true);setFailed('');try{await post({action:'message',id:crypto.randomUUID(),channel:'general',body:text,...(reply?{replyTo:reply.id}:{})});setText('');setReply(null);}catch(err){setFailed((err as Error).message);}finally{setSending(false);}}
+ function startConvert(m:Message){setConvert(m);setTitle(taskTitleFrom(m.body));setProject(projects.length===1?projects[0].id:'');setFailed('');}
+ async function createTask(e:React.FormEvent){e.preventDefault();if(!convert||!project||!title.trim()||sending)return;setSending(true);setFailed('');
+  try{const r=await roomRequest<{task:string}>('/api/room',{action:'task',id:crypto.randomUUID(),project,title:title.trim(),source:convert.id});setConvert(null);await load();onTask?.(project,r.task);}
+  catch(err){setFailed((err as Error).message);}finally{setSending(false);}}
  return <section className="studio-general-chat" aria-labelledby="general-chat">
   <h2 id="general-chat">Allgemein</h2>
-  <p className="studio-page-intro">Für alles, was zu keinem Projekt gehört. Das ganze Team liest mit.</p>
+  <p className="studio-page-intro">Für alles, was zu keinem Projekt gehört. Das ganze Team liest mit. Wird aus einer Nachricht Arbeit, mach sie zur Aufgabe in einem Projekt.</p>
   {error&&<p className="rw-error" role="alert">{error}</p>}
-  {!!messages.length&&<ol ref={list} className="studio-general-messages">{messages.map(m=><li key={m.id} className={m.author===userId?'own':''}><span className="rw-avatar">{initials(name(m.author))}</span><div><p className="studio-general-meta"><strong>{m.author===userId?'Du':name(m.author)}</strong><time>{when(m.created)}</time></p><p>{m.body}</p></div></li>)}</ol>}
+  {!!messages.length&&<ol ref={list} className="studio-general-messages">{messages.map(m=>{const quoted=m.replyTo?all.find(x=>x.id===m.replyTo):null;const taskProject=projects.find(p=>p.id===m.taskProject);
+   return <li key={m.id} className={m.author===userId?'own':''}><span className="rw-avatar">{initials(name(m.author))}</span><div>
+    <p className="studio-general-meta"><strong>{m.author===userId?'Du':name(m.author)}</strong><time>{when(m.created)}</time></p>
+    {m.replyTo&&<p className="rw-muted studio-general-quote">Antwort auf {quoted?name(quoted.author)+': „'+taskTitleFrom(quoted.body)+'“':'eine ältere Nachricht'}</p>}
+    <p>{m.body}</p>
+    <p className="studio-general-actions">
+     <button className="rw-link" onClick={()=>{setReply(m);document.getElementById('general-text')?.focus();}}><Reply size={14} aria-hidden="true"/> Antworten</button>
+     {m.taskId&&taskProject?<button className="rw-link" onClick={()=>onTask?.(taskProject.id,m.taskId!)}>Aufgabe in {taskProject.title} öffnen</button>
+      :!m.taskId&&!!projects.length&&<button className="rw-link" onClick={()=>startConvert(m)}><ListPlus size={14} aria-hidden="true"/> Als Aufgabe</button>}
+    </p>
+    {convert?.id===m.id&&<form className="studio-general-convert" onSubmit={createTask}>
+     <label>In welches Projekt?<select required value={project} onChange={e=>setProject(e.target.value)}><option value="">Projekt wählen</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
+     <label>Was soll passieren?<input required maxLength={160} value={title} onChange={e=>setTitle(e.target.value)}/></label>
+     <div className="rw-row-actions"><button className="rw-button lime" disabled={sending||!project||!title.trim()}>Aufgabe anlegen</button><button type="button" className="rw-button" onClick={()=>setConvert(null)}>Abbrechen</button></div>
+     <small className="rw-muted">Die Nachricht wird mit der Aufgabe verknüpft. Anlegen darf, wer im Projekt Entwickler ist.</small>
+    </form>}
+   </div></li>;})}</ol>}
   {data&&!messages.length&&<p className="rw-muted">Noch keine Nachricht. Schreib die erste.</p>}
-  <form className="studio-general-composer" onSubmit={send}><label className="sr-only" htmlFor="general-text">Nachricht an alle</label><textarea id="general-text" value={text} maxLength={4000} placeholder="Nachricht an alle" onChange={e=>setText(e.target.value)}/><button className="rw-button lime" disabled={!text.trim()||sending}><Send size={16}/>{sending?'Wird gesendet …':'Senden'}</button></form>
+  {reply&&<p className="studio-general-replying">Antwort auf {name(reply.author)}: „{taskTitleFrom(reply.body)}“ <button className="rw-icon" aria-label="Antwort abbrechen" onClick={()=>setReply(null)}><X size={14}/></button></p>}
+  <form className="studio-general-composer" onSubmit={send}><label className="sr-only" htmlFor="general-text">Nachricht an alle</label><textarea id="general-text" value={text} maxLength={4000} placeholder={reply?'Deine Antwort':'Nachricht an alle'} onChange={e=>setText(e.target.value)}/><button className="rw-button lime" disabled={!text.trim()||sending}><Send size={16}/>{sending?'Wird gesendet …':'Senden'}</button></form>
   {failed&&<p className="rw-error" role="alert">{failed}</p>}
  </section>;
 }
