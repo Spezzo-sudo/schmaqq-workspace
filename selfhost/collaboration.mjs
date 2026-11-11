@@ -45,6 +45,14 @@ export function copyHasChange(db,workspaceId){
   try{const r=JSON.parse(j.result??'{}');return typeof r.status==='string'&&r.status.trim()!=='';}catch{return false;}
  });
 }
+// A live preview (app with server) runs at most an hour and only until the next live preview on
+// the same Werkstatt. An expired link is not offered as if it still worked.
+function previewLink(db,preview){
+ if(typeof preview?.url!=='string')return {preview:null};
+ if(preview.scope!=='live')return {preview:preview.url};
+ const live=metadata(db,'preview:v1:live:'+(preview.url.match(/\/([\w-]{40,60})\/?$/)?.[1]??''));
+ return live&&live.expires>Date.now()?{preview:preview.url}:{preview:null,previewExpired:true};
+}
 export async function collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}){
  if(!['/api/collaboration','/api/collaboration/task','/api/collaboration/task-diff','/api/collaboration/change'].includes(route))return false;
  const member=user(req);
@@ -68,7 +76,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   const complete=typeof result.diff==='string'&&result.diffTruncated!==true&&diff.length<50000;
   const contractSnapshot=JSON.parse(db.prepare('SELECT payload FROM jobs WHERE id=?').get(job.id).payload).contractSnapshot??null;
   send({review:job.id,owner:job.owner,ownerName:job.ownerName,state:reviewState(db,{...job,action:'review',status:'completed'}),checks:typeof result.checks==='string'?result.checks:'Kein Testprotokoll vorhanden.',published:result.published===true,commit:typeof result.commit==='string'&&/^[a-f0-9]{40,64}$/.test(result.commit)?result.commit:null,
-   created:job.created,complete,diff:complete?diff:'',limited:!complete,contractSnapshot,preview:typeof result.preview?.url==='string'?result.preview.url:null});return true;
+   created:job.created,complete,diff:complete?diff:'',limited:!complete,contractSnapshot,...previewLink(db,result.preview)});return true;
  }
  if(route==='/api/collaboration/change'){
   if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');

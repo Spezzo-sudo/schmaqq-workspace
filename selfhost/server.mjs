@@ -200,7 +200,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(route==='/api/runner/poll'&&method==='POST'){
     const d=device(req);db.prepare('UPDATE devices SET seen=? WHERE id=?').run(now(),d.id);
     // A lost acknowledgement must never execute a code job a second time.
-    db.prepare("UPDATE jobs SET status='interrupted',result=? WHERE device=? AND status IN ('running','cancelling') AND heartbeat<?").run(JSON.stringify({error:'Verbindung zum Runner verloren. Ergebnis vor erneutem Start lokal prüfen.'}),d.id,now()-120000);
+    db.prepare("UPDATE jobs SET status='interrupted',result=? WHERE device=? AND status IN ('running','cancelling') AND heartbeat<?").run(JSON.stringify({error:lostText}),d.id,now()-120000);
     const job=transaction(db,()=>{if(db.prepare("SELECT id FROM jobs WHERE device=? AND status IN ('running','cancelling')").get(d.id))return null;const j=db.prepare("SELECT * FROM jobs WHERE device=? AND status='queued' ORDER BY created LIMIT 1").get(d.id);if(!j)return null;
      if(j.action==='local-ai'&&!aiAccess(db,j)){db.prepare("UPDATE jobs SET status='failed',result=? WHERE id=?").run(JSON.stringify({error:'Modellzugang vor dem Start nicht mehr verfügbar.'}),j.id);return null;}
      if(j.action==='integrate'){

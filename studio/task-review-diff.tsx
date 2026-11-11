@@ -2,7 +2,7 @@ import {useEffect,useState,useRef} from 'react';
 import {GitCommitHorizontal,RefreshCw} from 'lucide-react';
 import {roomRequest} from './room-model';
 
-type DiffResult={review:string;owner:string;ownerName:string;state:string;checks:string;published:boolean;preview:string|null;contractSnapshot?:{title:string;description:string;criteria:string}|null;commit:string|null;created:number;complete:boolean;diff:string;limited:boolean};
+type DiffResult={review:string;owner:string;ownerName:string;state:string;checks:string;published:boolean;preview:string|null;previewExpired?:boolean;contractSnapshot?:{title:string;description:string;criteria:string}|null;commit:string|null;created:number;complete:boolean;diff:string;limited:boolean};
 type DiffLine={kind:'add'|'remove'|'meta'|'context';old:number|null;next:number|null;text:string};
 export function parseReviewDiff(diff:string):DiffLine[]{
  let old=0,next=0;
@@ -44,18 +44,18 @@ export default function TaskReviewDiff({task,review,changedAfter=false,onClose,u
   {result&&<>
    <p className="review-head"><strong>Änderung von {result.ownerName}</strong> · {new Date(result.created).toLocaleString('de-CH',{dateStyle:'short',timeStyle:'short'})}<br/>{stateText}</p>
    {changedAfter&&<p role="alert" className="r27-diff-warning">Seitdem wurde noch etwas geändert. Freigeben geht erst, wenn die neue Fassung zur Prüfung gegeben ist.</p>}
-   {result.preview?<a className="rw-button lime review-preview" href={result.preview} target="_blank" rel="noreferrer">Vorschau öffnen – so sieht es aus ↗</a>:<p className="muted">Für diese Fassung gibt es keine Vorschau. Unten unter „Was wurde geändert“ siehst du die Änderung im Text.</p>}
+   {result.preview?<a className="rw-button lime review-preview" href={result.preview} target="_blank" rel="noreferrer">Vorschau öffnen – so sieht es aus ↗</a>:result.previewExpired?<p className="muted">Die Live-Vorschau dieser Fassung ist abgelaufen: Sie läuft höchstens eine Stunde und nur bis zur nächsten Live-Vorschau auf dieser Werkstatt. Die Person, die geändert hat, kann sie unter „Ändern“ neu starten. Unten unter „Was wurde geändert“ siehst du die Änderung im Text.</p>:<p className="muted">Für diese Fassung gibt es keine Vorschau. Unten unter „Was wurde geändert“ siehst du die Änderung im Text.</p>}
    {userId&&!mine&&canReview&&!draft&&!closed&&result.state!=='approved'&&<ol className="review-checklist" aria-label="So prüfst du">
     <li><strong>Vorschau öffnen</strong> und durchklicken, am besten auch am Handy.</li>
     <li><strong>Prüfen:</strong> {result.contractSnapshot?.criteria?.trim()||'Macht die Änderung, was in der Aufgabe steht? Ist nichts anderes kaputtgegangen?'}</li>
-    <li><strong>Entscheiden:</strong> „Passt – freigeben“ oder „Änderung wünschen“ mit einem Satz, was fehlt.</li>
+    <li><strong>Entscheiden:</strong> „Diese Fassung freigeben“ oder „Änderungen anfordern“ mit einem Satz, was fehlt.</li>
    </ol>}
    {userId&&!mine&&canReview&&!draft&&!closed&&result.state!=='approved'&&<form className="team-review-actions" onSubmit={e=>e.preventDefault()}>
-    <label>Deine Rückmeldung (bei „Änderung wünschen“ nötig)<textarea aria-label="Rückmeldung zur Änderung" value={body} maxLength={4000} onChange={e=>setBody(e.target.value)} placeholder="Zum Beispiel: Der Satz ist zu lang."/></label>
-    <div className="rw-row-actions"><button className="rw-button lime" disabled={busy||!result.complete||changedAfter} onClick={()=>void vote('approved')}>Passt – freigeben</button><button className="rw-button" disabled={busy||!body.trim()} onClick={()=>void vote('changes')}>Änderung wünschen</button></div>
+    <label>Deine Rückmeldung (bei „Änderungen anfordern“ nötig)<textarea aria-label="Rückmeldung zur Änderung" value={body} maxLength={4000} onChange={e=>setBody(e.target.value)} placeholder="Zum Beispiel: Der Satz ist zu lang."/></label>
+    <div className="rw-row-actions"><button className="rw-button lime" disabled={busy||!result.complete||changedAfter} onClick={()=>void vote('approved')}>Diese Fassung freigeben</button><button className="rw-button" disabled={busy||!body.trim()} onClick={()=>void vote('changes')}>Änderungen anfordern</button></div>
    </form>}
    {mine&&!closed&&result.state!=='approved'&&<p className="muted">{draft?'Das ist dein Zwischenstand. Wenn du fertig bist, gib die Änderung oben zur Prüfung.':'Jemand anderes schaut sich das an und gibt es frei. Eigene Änderungen kann man nicht selbst freigeben.'}</p>}
-   {!!entries.length&&<section aria-label="Rückmeldungen zu dieser Fassung"><h4>Rückmeldungen</h4>{entries.filter(e=>e.commitSha===result.commit).map(e=><blockquote key={e.id}><strong>{e.name}</strong> · {e.decision==='approved'?'Passt':e.decision==='changes'?'Änderung gewünscht':'Kommentar'}{e.body&&<p>{e.body}</p>}<small>{new Date(e.created).toLocaleString('de-DE')}</small></blockquote>)}</section>}
+   {!!entries.length&&<section aria-label="Rückmeldungen zu dieser Fassung"><h4>Rückmeldungen</h4>{entries.filter(e=>e.commitSha===result.commit).map(e=><blockquote key={e.id}><strong>{e.name}</strong> · {e.decision==='approved'?'Freigegeben':e.decision==='changes'?'Änderungen angefordert':'Kommentar'}{e.body&&<p>{e.body}</p>}<small>{new Date(e.created).toLocaleString('de-DE')}</small></blockquote>)}</section>}
    <details className="review-changes"><summary>Was wurde geändert</summary>
     <p className="r27-diff-disclaimer">Grün = neu, Rot = entfernt. Gezeigt wird genau die Fassung, die zur Prüfung gegeben wurde.</p>
     {!result.complete?<p role="alert" className="rw-error">Die Änderung ist zu gross, um sie hier vollständig zu zeigen. Bitte nicht anhand dieser Ansicht freigeben.</p>:

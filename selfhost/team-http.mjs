@@ -146,7 +146,11 @@ export function createTeamRoute({db,user,readJSON,parse}){
     if(result.owner===member.id&&!selfApproval(db,member.id,task.project))throw teamError(403,'Eigene Ergebnisse können nicht unabhängig freigegeben werden.');
     if(v.decision==='changes'&&!v.body)throw teamError(400,'Bitte die gewünschten Änderungen beschreiben.');
     const votes=[...(result.votes??[]),{reviewer:member.id,decision:v.decision,body:v.body,created:Date.now()}];
-    storeMetadata(db,'team:v1:result:'+task.id,{...result,votes,state:v.decision==='approved'?'approved':'changes_requested'});
+    // Same rule as for code: each person's latest decision counts; an open change request blocks
+    // until that person decides again or a new result comes – a second approval does not override it.
+    const latest=new Map();for(const vote of [...votes].reverse())if(vote.decision!=='comment'&&!latest.has(vote.reviewer))latest.set(vote.reviewer,vote.decision);
+    const decisions=[...latest.values()],state=decisions.includes('changes')?'changes_requested':decisions.includes('approved')?'approved':'pending';
+    storeMetadata(db,'team:v1:result:'+task.id,{...result,votes,state});
     if(v.decision==='changes')db.prepare("UPDATE tasks SET status='doing' WHERE id=?").run(task.id);
    }
    teamEvent(db,{actor:member.id,project:task.project,task:task.id,kind:v.action,body:({contract:'Abschlussbedingungen aktualisiert',block:v.reason?'Blockierung festgehalten':'Blockierung geklärt',takeover:'Aufgabe übernommen: '+v.reason,result:'Ergebnis eingereicht',vote:v.action==='vote'&&v.decision==='approved'?'Ergebnis freigegeben':'Änderungen angefordert',cancel:'Aufgabe abgebrochen',reopen:'Aufgabe wieder geöffnet'})[v.action]+': '+task.title});

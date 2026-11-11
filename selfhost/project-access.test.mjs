@@ -29,6 +29,10 @@ test('project access follows the roles: removed people read nothing, an appointe
  assert.equal((await request('/api/room/context?project='+project,null,c)).status,403,'also for connected AI assistants');
  assert.equal((await request('/api/collaboration/task?id=task-1',null,c)).status,403);
  assert.ok(!(await request('/api/team',null,c)).data.tasks.some(x=>x.project===project));
+ app.db.prepare("INSERT INTO messages VALUES('msg-1',?,?,'Nur fürs Projekt',?)").run(project,aId,Date.now());
+ const older=(await request('/api/workspace',null,c)).data;
+ assert.ok(!older.projects.some(p=>p.id===project)&&!older.tasks.some(x=>x.project===project)&&!older.messages.some(x=>x.channel===project),'the former view follows the same roles');
+ assert.ok((await request('/api/workspace',null,a)).data.messages.some(x=>x.id==='msg-1'));
 
  // B as appointed admin decides the live path and the placement rule.
  await roles(bId,['admin']);

@@ -27,6 +27,10 @@ test('two people on one Werkstatt: other work only queues, silent jobs end on th
  const insert=(jid,owner,action,status,payload={},extra={})=>app.db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created,started,heartbeat,result) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(jid,owner,worker.id,project,action,JSON.stringify(payload),status,extra.created??Date.now(),extra.started??null,extra.heartbeat??null,JSON.stringify(extra.result??{branch:'studio/'+jid}));
  for(const [copy,owner] of [['copy-a',aId],['copy-b',bId]]){insert(copy,owner,'prepare','completed');app.db.prepare("INSERT INTO workspaces(job,title,scope,task,archived,revision) VALUES(?,'Kopie','',NULL,0,1)").run(copy);}
 
+ // B has no PC of their own: "auto" picks the project's team workshop.
+ const auto=await request('/api/development',{action:'job',device:'auto',project,operation:'inspect'},b.cookie);
+ assert.equal(auto.status,200);assert.equal(app.db.prepare('SELECT device FROM jobs WHERE id=?').get(auto.data.id).device,worker.id);
+ app.db.prepare("UPDATE jobs SET status='completed' WHERE id=?").run(auto.data.id);
  // A's tests run on the shared Werkstatt; B can still open files and submit – the work queues.
  insert('test-a',aId,'check','running',{worktree:'copy-a'},{started:Date.now(),heartbeat:Date.now()});
  const read=await request('/api/development',{action:'job',device:'auto',project,operation:'read-file',worktree:'copy-b',file:'site/index.html'},b.cookie);

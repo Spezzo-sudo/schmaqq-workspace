@@ -5,7 +5,7 @@ import type {Stage} from './task-next-step';
 const icons:Record<string,LucideIcon>={Ändern:Pencil,Erledigen:Pencil,Anschauen:Eye,Zusammenführen:ArrowRightToLine,Live:Globe,Fertig:Flag};
 const stateText={done:'Erledigt',now:'Jetzt',next:'Kommt noch'};
 /** For steps still to come: what has to happen first (same wording as the guide "So funktioniert Studio"). */
-const unlock:Record<string,string>={Anschauen:'Kommt, sobald die Änderung oder das Ergebnis zur Prüfung gegeben ist.',Zusammenführen:'Der Knopf erscheint nach einem „Passt“ – für den Autor oder den Projekt-Admin.',Live:'Kommt nach dem Zusammenführen.',Fertig:'Kommt, wenn alles freigegeben ist.'};
+const unlock:Record<string,string>={Anschauen:'Kommt, sobald die Änderung oder das Ergebnis zur Prüfung gegeben ist.',Zusammenführen:'Der Knopf erscheint nach der Freigabe – für den Autor oder den Projekt-Admin.',Live:'Kommt nach dem Zusammenführen.',Fertig:'Kommt, wenn alles freigegeben ist.'};
 
 /** The way of a task as round symbols: lime = done, dark ring = now, light coral = still to come. Tap a step for a short explanation. */
 export default function TaskTimeline({stages}:{stages:Stage[]}){

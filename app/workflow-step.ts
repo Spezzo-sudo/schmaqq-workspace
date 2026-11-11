@@ -19,7 +19,7 @@ const step=(stage:StepStage,action:StepAction,title:string,reason:string,tone:Ne
 
 function setupStep({hasDevice,online,projectStatus,inspection}:SetupInput,hasCopy:boolean,cautions:string[]):NextStep|null{
  if(!hasDevice)return step('pc','connect-pc','Verbinde zuerst deinen PC','Dein PC führt Code, Tests und Codex aus. Das Studio verbindet eure Arbeit.');
- if(!online)return step('pc','reconnect-pc','Deinen PC wieder verbinden','Der ausgewählte PC meldet sich gerade nicht. Starte auf diesem PC den bereits eingerichteten Studio-Runner. Du musst keinen neuen PC registrieren. Deine Arbeitskopien bleiben erhalten.','warning');
+ if(!online)return step('pc','reconnect-pc','Werkstatt wieder verbinden','Die gewählte Werkstatt meldet sich gerade nicht. Ist es dein eigener PC, starte dort den eingerichteten Studio-Runner – du musst keinen neuen PC registrieren. Ist es die Team-Werkstatt, sag dem Projekt-Admin Bescheid. Deine Arbeitskopien bleiben erhalten.','warning');
  if(projectStatus==='missing')return step('project','configure-project','Dieses Projekt auf deinem PC einrichten','Dein PC ist verbunden, aber dieses Projekt ist dort noch nicht freigegeben. Ergänze die bestehende Runner-Konfiguration, statt einen neuen Zugang anzulegen.','warning');
  // Older runners never report projects; keep working but say what is unconfirmed.
  if(projectStatus==='unknown')cautions.push('Dein PC hat dieses Projekt noch nicht aktuell gemeldet. Runner neu starten oder aktualisieren; die Online-Anzeige allein bestätigt keinen Projektzugriff.');
@@ -36,11 +36,11 @@ function copyStep({status,own,online,revoked,archived}:CopyInput):NextStep|null{
  if(status==='running')return step('copy','wait','Arbeitskopie wird erstellt','Die Erstellung läuft auf dem PC.');
  if(status==='cancelling')return step('copy','wait','Erstellung wird abgebrochen','Der PC bestätigt den Abbruch.');
  if(failed.includes(status))return own
-  ?step('copy',status==='interrupted'?'reconnect-pc':'create-copy',`Erstellung ${failureLabel[status]}`,status==='interrupted'?'PC wieder verbinden und den unterbrochenen Start im Entwicklungsverlauf prüfen.':'Details stehen im Entwicklungsverlauf. Danach eine neue Arbeitskopie anlegen.','error')
+  ?step('copy',status==='interrupted'?'reconnect-pc':'create-copy',`Erstellung ${failureLabel[status]}`,status==='interrupted'?'Werkstatt wieder verbinden und den unterbrochenen Start im Entwicklungsverlauf prüfen.':'Details stehen im Entwicklungsverlauf. Danach eine neue Arbeitskopie anlegen.','error')
   :step('copy','none',`Erstellung ${failureLabel[status]}`,'Die zuständige Person muss die Arbeitskopie neu starten.','warning');
  if(status!=='completed')return step('copy','none','Status der Arbeitskopie unbekannt','Entwicklungsverlauf prüfen.','warning');
  if(own&&revoked)return step('pc','connect-pc','PC-Zugang widerrufen','Dieser PC darf keine Aufträge mehr ausführen. Verbinde einen PC neu; gespeicherte Dateien bleiben erhalten.','error');
- if(own&&!online)return step('pc','reconnect-pc','Deinen PC wieder verbinden, um weiterzuarbeiten.','Tests, Vorschau und Dateiaufträge laufen nur, wenn dein PC verbunden ist.','warning');
+ if(own&&!online)return step('pc','reconnect-pc','Werkstatt wieder verbinden, um weiterzuarbeiten.','Tests, Vorschau und Dateiaufträge laufen nur, wenn die Werkstatt mit deiner Arbeitskopie verbunden ist.','warning');
  return null;
 }
 

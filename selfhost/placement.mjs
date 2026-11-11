@@ -58,7 +58,9 @@ const label=executor=>`${executor.name} (${executor.kind==='server'?'Server':'PC
  * recently seen. No silent fallback outside the project rule.
  */
 export function chooseExecutor(db,{memberId,project,now=Date.now()}){
- const mode=placementMode(db,project),own=executors(db,memberId,now);
+ // Own executors plus the project's team workshop: people without an own PC get a Werkstatt too.
+ const member=db.prepare('SELECT id,role FROM members WHERE id=?').get(memberId);
+ const mode=placementMode(db,project),own=member?usableExecutors(db,member,project,now):[];
  const candidates=own.filter(e=>allowed(mode,e)&&e.online&&e.projects?.includes(project));
  candidates.sort((a,b)=>(a.kind==='server'?0:1)-(b.kind==='server'?0:1)||Number(a.busy)-Number(b.busy)||b.seen-a.seen);
  const chosen=candidates[0];

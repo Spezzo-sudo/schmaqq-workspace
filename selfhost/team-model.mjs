@@ -45,7 +45,7 @@ export function completion(db,task){
   if(!result)missing.push('Ein getesteter Prüfstand fehlt.');
   else{
    if(!result.shared)missing.push('Der Code ist noch nicht als Branch mit dem Team geteilt.');
-   if(result.state!=='approved')missing.push('Die Freigabe einer zweiten Person fehlt.');
+   if(result.state!=='approved')missing.push('Die Freigabe fehlt.');
    if(!result.integrated)missing.push('Der freigegebene Stand ist noch nicht zusammengeführt.');
    if(result.changedAfter)missing.push('Nach dem Prüfstand wurde weitergearbeitet. Einen neuen Stand einreichen.');
    if(result.contractRevision!==contract.revision)missing.push('Die Abschlussbedingungen wurden geändert. Einen neuen Prüfstand erstellen.');
@@ -53,7 +53,7 @@ export function completion(db,task){
  }else if(!result)missing.push('Das erreichte Ergebnis bitte zuerst festhalten.');
  else{
   if(result.contractRevision!==contract.revision)missing.push('Das Ergebnis gehört zu früheren Abschlussbedingungen. Erneut einreichen.');
-  if(contract.requiresReview&&result.state!=='approved')missing.push('Die Freigabe einer zweiten Person fehlt.');
+  if(contract.requiresReview&&result.state!=='approved')missing.push('Die Freigabe fehlt.');
  }
  return {ready:missing.length===0,missing,result};
 }

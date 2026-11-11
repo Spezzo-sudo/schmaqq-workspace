@@ -124,7 +124,7 @@ export function taskStages(t:StageInput):Stage[]{
  const live=t.liveMode==='merge'?merged:t.liveMode==='manual'?t.live:false;
  return marks([changed,approved,merged,live]).map((state,i)=>({state,...[
   {label:'Ändern',detail:!t.person?'Noch niemand kümmert sich darum':t.own?'Du änderst es – selbst oder mit KI':t.person+' ändert es'},
-  {label:'Anschauen',detail:'Jemand anderes öffnet die Vorschau und sagt „Passt“'},
+  {label:'Anschauen',detail:'Jemand anderes schaut es an und tippt „Diese Fassung freigeben“'},
   {label:'Zusammenführen',detail:(t.own?'Du drückst':who+' drückt')+' „Änderung zusammenführen“'},
   {label:'Live',detail:t.liveMode==='merge'?'Geht beim Zusammenführen automatisch live':t.liveMode==='manual'?(t.liveHow||'Ihr schaltet selbst live')+' – danach „Ist jetzt live“':'Noch nicht festgelegt – unter Einstellungen'}
  ][i]}));
