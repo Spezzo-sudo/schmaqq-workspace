@@ -2,8 +2,8 @@ import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {transaction} from './store.mjs';
 import {listWorkspaces} from './workspaces.mjs';
-import {reviewState} from './reviews.mjs';
-import {requirePermission} from './project-roles.mjs';
+import {reviewState,droppedApprovals} from './reviews.mjs';
+import {requirePermission,can} from './project-roles.mjs';
 import {changeOverview} from './change-overview.mjs';
 import {taskView,assertTaskStatus,teamEvent,taskContract,invalidateTaskResult,storeMetadata} from './team-model.mjs';
 
@@ -47,8 +47,8 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   if(method!=='GET')throw fail(405,'Methode nicht erlaubt.');
   const taskId=parse(id,url.searchParams.get('task'));
   const reviewId=parse(id,url.searchParams.get('review'));
-  const task=db.prepare('SELECT id FROM tasks WHERE id=?').get(taskId);
-  if(!task)throw fail(404,'Aufgabe fehlt.');
+  const task=db.prepare('SELECT id,project FROM tasks WHERE id=?').get(taskId);
+  if(!task)throw fail(404,'Aufgabe fehlt.');requirePermission(db,member,task.project,'view');
   const job=db.prepare(`SELECT j.id,j.owner,j.created,j.result,m.name AS ownerName FROM jobs j
    JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree')
    JOIN members m ON m.id=j.owner
@@ -77,13 +77,16 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
  if(route==='/api/collaboration'&&method==='GET'){
   const project=parse(id,url.searchParams.get('project')??'all');
   if(project!=='all'&&!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt fehlt.');
+  if(project!=='all')requirePermission(db,member,project,'view');
+  const visible=p=>can(db,member,p,'view');
   const tasks=db.prepare(`SELECT t.*,(SELECT count(*) FROM task_comments c WHERE c.task=t.id) AS commentCount FROM tasks t WHERE (?='all' OR project=?) ORDER BY created DESC,id`).all(project,project);
   const workspaces=listWorkspaces(db).filter(w=>project==='all'||w.project===project);
-  send({tasks,workspaces,changes:changeOverview(db,workspaces)});return true;
+  const shown=workspaces.filter(w=>visible(w.project));
+  send({tasks:tasks.filter(t=>visible(t.project)),workspaces:shown,changes:changeOverview(db,shown)});return true;
  }
  if(route==='/api/collaboration/task'&&method==='GET'){
-  const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(parse(id,url.searchParams.get('id')));if(!task)throw fail(404,'Aufgabe fehlt.');
-  const reviews=db.prepare("SELECT j.*,m.name AS ownerName FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree') JOIN members m ON m.id=j.owner WHERE w.task=? AND j.action IN ('review','submit') AND j.status='completed' ORDER BY j.created DESC,j.id").all(task.id).map(j=>({id:j.id,owner:j.owner,ownerName:j.ownerName,created:j.created,commit:JSON.parse(j.result??'{}').commit??'',state:reviewState(db,j)}));
+  const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(parse(id,url.searchParams.get('id')));if(!task)throw fail(404,'Aufgabe fehlt.');requirePermission(db,member,task.project,'view');
+  const reviews=db.prepare("SELECT j.*,m.name AS ownerName FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree') JOIN members m ON m.id=j.owner WHERE w.task=? AND j.action IN ('review','submit') AND j.status='completed' ORDER BY j.created DESC,j.id").all(task.id).map(j=>({id:j.id,owner:j.owner,ownerName:j.ownerName,created:j.created,commit:JSON.parse(j.result??'{}').commit??'',state:reviewState(db,j),dropped:droppedApprovals(db,j)}));
   // This is the existing single private Studio team, not a public/tenant API.
   const workspaces=taskWorkspaces(db,task.id);
   const briefRow=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('taskflow:v1:brief:'+task.id);

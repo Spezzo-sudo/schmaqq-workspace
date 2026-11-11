@@ -13,7 +13,7 @@ export type TaskStepInput={
  /** The task's job waits behind this person's work on a shared Werkstatt. */
  activeBehind?:string;
  /** `automatic`: Studio takes an approved change over by itself (GitHub); otherwise the author does it. */
- result?:{shared?:boolean;state:string;integrated?:boolean;stale?:boolean;mine:boolean;automatic?:boolean}|null;
+ result?:{shared?:boolean;state:string;integrated?:boolean;stale?:boolean;mine:boolean;automatic?:boolean;dropped?:string[]}|null;
  /** Code tasks: the person's own working copy exists and the Werkstatt is reachable. */
  hasCopy:boolean;hasWorkshop:boolean;
  /** Code tasks: the own working copy holds a saved change (server-derived). Undefined: unknown, treated as changed. */
@@ -53,9 +53,12 @@ export function taskNextStep(t:TaskStepInput):TaskStep{
   if(r?.shared&&r.stale)return t.own?{text:'Du hast seit der Prüfung noch etwas geändert. Gib die neue Fassung zur Prüfung.',action:'resubmit',label:'Neue Fassung zur Prüfung geben'}
    :{text:t.person+' muss die neue Fassung noch zur Prüfung geben.'};
   if(r?.shared&&!r.integrated){
-   if(r.state==='approved')return r.automatic?{text:'Freigegeben. Studio führt die Änderung jetzt zusammen.'}
-    :t.own?{text:'Freigegeben. Führe die Änderung jetzt zusammen.',action:'integrate',label:'Änderung zusammenführen'}:{text:'Freigegeben. '+t.person+' führt die Änderung zusammen.'};
+   // Approval only approves; the author (or a project admin) takes the change over – also with GitHub.
+   if(r.state==='approved')return t.own?{text:'Freigegeben. Führe die Änderung jetzt zusammen.',action:'integrate',label:'Änderung zusammenführen'}
+    :t.isAdmin?{text:'Freigegeben. '+t.person+' führt die Änderung zusammen – als Projekt-Admin kannst du es auch selbst tun.',action:'integrate',label:'Änderung zusammenführen'}
+    :{text:'Freigegeben. '+t.person+' führt die Änderung zusammen.'};
    if(r.state==='changes_requested')return t.own?{text:'Es wurden Änderungen gewünscht. Schau dir die Rückmeldung an.',action:'look',label:'Rückmeldung ansehen'}:{text:t.person+' überarbeitet die Änderung.'};
+   if(r.state==='pending'&&r.dropped?.length){const who=r.dropped.join(' und ');return {text:'Die Freigabe von '+who+' zählt nicht mehr, weil '+(r.dropped.length>1?'sie':who)+' im Projekt nicht mehr Prüfer '+(r.dropped.length>1?'sind':'ist')+'. Die Änderung braucht eine neue Freigabe.'+(r.mine?'':t.canReview===false?'':' Schau sie dir an.'),...(!r.mine&&t.canReview!==false?{action:'look' as const,label:'Anschauen'}:{})};}
    return r.mine?(t.selfApprove?{text:'In diesem Projekt darfst du als Admin selbst freigeben.',action:'look',label:'Selbst anschauen und freigeben'}:{text:'Deine Änderung wartet auf eine zweite Person.'+(t.reviewers?' Prüfen kann: '+t.reviewers+'.':t.reviewers===''?' Im Projekt gibt es noch keinen Prüfer – der Projekt-Admin vergibt die Rolle unter Einstellungen.':'')})
     :t.canReview===false?{text:t.person+' hat eine Änderung zur Prüfung gegeben. Prüfen darf, wer im Projekt Prüfer ist.'}:{text:t.person+' hat eine Änderung zur Prüfung gegeben. Schau sie dir an.',action:'look',label:'Anschauen'};
   }
@@ -90,8 +93,7 @@ export function taskSummary(t:TaskSummaryInput,me:string,name:(id:string)=>strin
  if(r&&waiting&&r.state==='changes_requested')return r.owner===me?{text:'Änderung gewünscht – bitte überarbeiten',mine:true,group:'mine'}:{text:who+' überarbeitet es',mine:false,group:'others'};
  if(r&&waiting)return r.owner===me?{text:'Wartet darauf, dass jemand es anschaut',mine:false,group:'others'}:{text:'Bitte anschauen und freigeben',mine:true,group:'mine'};
  if(t.completion.ready)return own?{text:'Fertig – bitte abschliessen',mine:true,group:'mine'}:{text:who+' kann abschliessen',mine:false,group:'others'};
- if(r&&t.contract.kind==='code'&&r.state==='approved'&&!r.integrated)return r.workflow==='pull-request'?{text:'Freigegeben – wird zusammengeführt',mine:false,group:'others'}
-  :r.owner===me?{text:'Freigegeben – bitte zusammenführen',mine:true,group:'mine'}:{text:'Freigegeben – '+who+' führt zusammen',mine:false,group:'others'};
+ if(r&&t.contract.kind==='code'&&r.state==='approved'&&!r.integrated)return r.owner===me?{text:'Freigegeben – bitte zusammenführen',mine:true,group:'mine'}:{text:'Freigegeben – '+who+' führt zusammen',mine:false,group:'others'};
  if(own)return {text:t.status==='todo'?'Du bist dran – noch nicht begonnen':'Du bist dran',mine:true,group:'mine'};
  return {text:who+' ist dran',mine:false,group:'others'};
 }
@@ -116,7 +118,7 @@ export function taskStages(t:StageInput):Stage[]{
  return marks([changed,approved,merged,live]).map((state,i)=>({state,...[
   {label:'Ändern',detail:!t.person?'Noch niemand kümmert sich darum':t.own?'Du änderst es – selbst oder mit KI':t.person+' ändert es'},
   {label:'Anschauen',detail:'Jemand anderes öffnet die Vorschau und sagt „Passt“'},
-  {label:'Zusammenführen',detail:r?.automatic?'Studio führt es nach dem „Passt“ selbst zusammen':(t.own?'Du drückst':who+' drückt')+' „Änderung zusammenführen“'},
+  {label:'Zusammenführen',detail:(t.own?'Du drückst':who+' drückt')+' „Änderung zusammenführen“'},
   {label:'Live',detail:t.liveMode==='merge'?'Geht beim Zusammenführen automatisch live':t.liveMode==='manual'?(t.liveHow||'Ihr schaltet selbst live')+' – danach „Ist jetzt live“':'Noch nicht festgelegt – unter Einstellungen'}
  ][i]}));
 }

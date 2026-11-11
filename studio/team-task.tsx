@@ -13,7 +13,7 @@ import TaskTimeline from './task-timeline';
 import {roomRequest,saveDraft,storedDraft,operationId,type RoomState,type Resource,type TeamTask,type TaskContract,type TaskResult} from './room-model';
 type Copy={id:string;owner:string;device:string;title:string;scope:string;revision:number;status:string;deviceName:string;changed?:boolean};
 type Failure={id:string;action:string;owner:string;ownerName:string;at:number;interrupted:boolean;text:string;detail:string};
-type Detail={lastFailure?:Failure|null;source?:{id:string;body:string;authorName:string;created:number}|null;activeJobs?:{id:string;action:string;status:string;ownerName:string;behind?:string}[];task:TeamTask;brief:{revision:number};comments:TaskComment[];reviews:{id:string;owner:string;ownerName:string;commit:string;state:string;created?:number}[];workspaces:Copy[];changes:{workspace:string;review?:{id:string;changedAfter?:boolean}}[]};
+type Detail={lastFailure?:Failure|null;source?:{id:string;body:string;authorName:string;created:number}|null;activeJobs?:{id:string;action:string;status:string;ownerName:string;behind?:string}[];task:TeamTask;brief:{revision:number};comments:TaskComment[];reviews:{id:string;owner:string;ownerName:string;commit:string;state:string;created?:number;dropped?:string[]}[];workspaces:Copy[];changes:{workspace:string;review?:{id:string;changedAfter?:boolean}}[]};
 type Pane='conversation'|'work'|'review';
 export default function TeamTaskView({taskId,room,resources,userId,onClose,onRefresh,onConnect}:{taskId:string;room:RoomState;resources:Resource[];userId:string;onClose:()=>void;onRefresh:()=>Promise<void>;onConnect:()=>void}){
  const access=useProjectAccess(room.project.id,userId);
@@ -81,7 +81,7 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
  const meta=room.meta as RoomState['meta']&{live?:'merge'|'manual';liveHow?:string};
  const step=task&&contract?taskNextStep({kind:contract.kind,status:task.status,own,assigned:!!task.assignee,person:person?.name??'Jemand',cancelled:contract.cancelled,blocked:contract.blocked,
   ready:task.completion.ready,requiresReview:contract.kind==='code'||contract.requiresReview,activeJob:running||detail?.activeJobs?.[0]?.action,activeBehind:detail?.activeJobs?.[0]?.behind,
-  result:currentResult?{shared:currentResult.shared,state:currentResult.state,integrated:currentResult.integrated,stale:staleResult,mine:currentResult.owner===userId,automatic:currentResult.workflow==='pull-request'}:null,
+  result:currentResult?{shared:currentResult.shared,state:currentResult.state,integrated:currentResult.integrated,stale:staleResult,mine:currentResult.owner===userId,automatic:currentResult.workflow==='pull-request',dropped:detail?.reviews.find(r=>r.id===currentResult.id)?.dropped}:null,
   hasCopy:!!myCopy,hasWorkshop:!!device||!!myCopy,hasChange:myCopy?.changed,failure:running?null:detail?.lastFailure?{action:detail.lastFailure.action,text:detail.lastFailure.text,detail:detail.lastFailure.detail,mine:detail.lastFailure.owner===userId,interrupted:detail.lastFailure.interrupted}:null,awaitingLive:!!task.awaitingLive,liveHow:meta.liveHow,
   canDevelop:access.develop,canReview:access.review,isAdmin:access.loaded?access.admin:undefined,selfApprove:access.selfApprove,reviewers:access.loaded?access.reviewers:undefined}):null;
  const stages=task&&contract?taskStages({kind:contract.kind,status:task.status,requiresReview:contract.kind==='code'||contract.requiresReview,cancelled:contract.cancelled,own,person:task.assignee?person?.name??'Jemand':null,
@@ -93,8 +93,9 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
   else if(next==='finish')void taskAction({action:'status',status:'done'});
   else if(next==='reopen'&&contract)void teamAction({action:'reopen',revision:contract.revision});
   else if(next==='submit'||next==='resubmit')void codeJob('submit');
-  else if(next==='integrate'&&currentResult)void codeJob('integrate',currentResult.id);
+  else if((next==='integrate'||next==='retry'&&detail?.lastFailure?.action==='integrate')&&currentResult?.workflow==='pull-request')void action('/api/github-workflow',{action:'merge',job:currentResult.id});
   else if(next==='retry'&&detail?.lastFailure?.action==='integrate'&&currentResult)void codeJob('integrate',currentResult.id);
+  else if(next==='integrate'&&currentResult)void codeJob('integrate',currentResult.id);
   else if(next==='retry')void codeJob('submit');
   else if(next==='edit'){changePane('work');reveal(tabs.current);}
   else if(next==='result')openResultForm();

@@ -51,13 +51,18 @@ In jeder Aufgabe zeigt der Zeitstrahl oben dieselben Schritte. Antippen erklärt
 
 | Rolle | Darf |
 |---|---|
-| Admin | alles im Projekt, auch Rollen, Prüfregel, Repo, Live-Weg und Zusammenführen |
-| Entwickler | Aufgaben anlegen, ändern, zur Prüfung geben |
+| Admin | alles im Projekt, auch Rollen, Prüfregel, Repo, Live-Weg, Ausführungsregel und Zusammenführen |
+| Entwickler | Aufgaben anlegen, ändern, zur Prüfung geben, den eigenen PC als Werkstatt für das Projekt einrichten |
 | Prüfer | „Diese Fassung freigeben“ oder „Änderungen anfordern“ |
 | Zuschauer | lesen und im Gespräch mitreden |
 
 Der Inhaber von Studio ist überall Admin. Wer ein Projekt anlegt, ist dessen Admin; alle anderen sind zunächst
-Entwickler und Prüfer. Rollen und Prüfregel („Zweite Person prüft“ oder „Admin darf allein freigeben“) stehen
+Entwickler und Prüfer. Wer im Projekt keine Rolle (mehr) hat, sieht das Projekt nicht – auch nicht über einen
+angeschlossenen KI-Assistenten.
+
+Die Freigabe gibt nur frei. Zusammenführen ist immer ein eigener Schritt des Autors oder des Projekt-Admins,
+auch bei GitHub-Projekten. Eine Freigabe zählt nur, solange die Person im Projekt Prüfer ist; verliert sie die
+Rolle, sagt die Aufgabe, dass eine neue Freigabe nötig ist. Rollen und Prüfregel („Zweite Person prüft“ oder „Admin darf allein freigeben“) stehen
 unter Projekt → Einstellungen → „Wer darf was“.
 
 ## Für Einrichter und Admins

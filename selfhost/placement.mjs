@@ -1,4 +1,5 @@
 import {usableExecutors} from './team-workshop.mjs';
+import {can} from './project-roles.mjs';
 import {z} from 'zod';
 import {metadata,storeMetadata} from './team-model.mjs';
 
@@ -23,13 +24,14 @@ const hostKey=device=>'executor:v1:host:'+device,placementKey=project=>'executor
 export function recordHost(db,deviceId,host,now=Date.now()){storeMetadata(db,hostKey(deviceId),{...host,updated:now});}
 export function deviceHost(db,deviceId){return metadata(db,hostKey(deviceId));}
 export function placementMode(db,project){const mode=metadata(db,placementKey(project))?.mode;return placementModes.includes(mode)?mode:'auto';}
+// The project admin decides, like every other project rule.
 export function canConfigurePlacement(db,member,project){
- return member.role==='owner'||db.prepare('SELECT owner FROM project_starts WHERE project=?').get(project)?.owner===member.id;
+ return can(db,member,project,'admin');
 }
 export function setPlacement(db,{member,project,mode},now=Date.now()){
  if(!placementModes.includes(mode))throw fail(400,'Unbekannte Ausführungsregel.');
  if(!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt nicht gefunden.');
- if(!canConfigurePlacement(db,member,project))throw fail(403,'Nur die verantwortliche Person kann die Ausführungsregel ändern.');
+ if(!canConfigurePlacement(db,member,project))throw fail(403,'Die Ausführungsregel ändert der Projekt-Admin.');
  storeMetadata(db,placementKey(project),{mode,updatedBy:member.id,updated:now});
 }
 

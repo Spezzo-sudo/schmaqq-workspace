@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {randomUUID} from 'node:crypto';
 import {transaction} from './store.mjs';
-import {requirePermission,selfApproval} from './project-roles.mjs';
+import {requirePermission,selfApproval,can} from './project-roles.mjs';
 import {hiddenPractice} from './practice.mjs';
 import {metadata,storeMetadata,teamEvent,taskContract,taskView,completion,latestGeneralResult,invalidateTaskResult,teamError,hasCodeChanges,quietJobActions} from './team-model.mjs';
 const id=z.string().regex(/^[\w-]{1,100}$/),revision=z.number().int().min(0);
@@ -24,13 +24,13 @@ export function createTeamRoute({db,user,readJSON,parse}){
   if(!['/api/team','/api/team/knowledge','/api/team/results'].includes(route))return false;const member=user(req);
   if(route==='/api/team/results'){
    if(method!=='GET')throw teamError(405,'Methode nicht erlaubt.');
-   const task=parse(id,url.searchParams.get('task'));if(!db.prepare('SELECT id FROM tasks WHERE id=?').get(task))throw teamError(404,'Aufgabe fehlt.');
+   const task=parse(id,url.searchParams.get('task'));const row=db.prepare('SELECT id,project FROM tasks WHERE id=?').get(task);if(!row)throw teamError(404,'Aufgabe fehlt.');requirePermission(db,member,row.project,'view');
    const history=db.prepare("SELECT value FROM workspace_meta WHERE key LIKE 'team:v1:result-history:%' AND json_extract(value,'$.task')=? ORDER BY json_extract(value,'$.created') DESC LIMIT 1000").all(task).map(r=>JSON.parse(r.value));
    send({history});return true;
   }
   if(route==='/api/team/knowledge'){
    if(method!=='GET')throw teamError(405,'Methode nicht erlaubt.');
-   const project=parse(id,url.searchParams.get('project'));
+   const project=parse(id,url.searchParams.get('project'));requirePermission(db,member,project,'view');
    const notes=db.prepare("SELECT d.*,m.value AS meta FROM documents d JOIN workspace_meta m ON m.key='room:v1:note:'||d.id WHERE json_extract(m.value,'$.project')=? ORDER BY d.updated DESC LIMIT 1000").all(project).map(({meta,...n})=>({...n,...JSON.parse(meta)}));
    const versions=db.prepare("SELECT value FROM workspace_meta WHERE key LIKE 'team:v1:note-version:%' AND json_extract(value,'$.project')=? ORDER BY json_extract(value,'$.revision') DESC LIMIT 1000").all(project).map(r=>JSON.parse(r.value));
    send({notes,versions});return true;
@@ -44,7 +44,7 @@ export function createTeamRoute({db,user,readJSON,parse}){
    // Only kind and state of unfinished work, never payloads or results.
    const active=db.prepare(`SELECT j.id,j.owner,j.project,j.action,j.status,j.created,w.task FROM jobs j LEFT JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree')
     WHERE j.status IN ('queued','running','cancelling') AND (? IS NULL OR j.project=?) ORDER BY j.created DESC LIMIT 20`).all(project,project);
-   const visible=p=>!hiddenPractice(db,p,member.id);
+   const visible=p=>!hiddenPractice(db,p,member.id)&&can(db,member,p,'view');
    send({tasks:tasks.filter(t=>visible(t.project)),events:events.filter(e=>!e.project||visible(e.project)),unread:unread.filter(e=>!e.project||visible(e.project)),active:active.filter(j=>visible(j.project))});return true;
   }
   if(method!=='POST')throw teamError(405,'Methode nicht erlaubt.');
@@ -72,7 +72,7 @@ export function createTeamRoute({db,user,readJSON,parse}){
     if(!db.prepare('SELECT id FROM projects WHERE id=?').get(v.project))throw teamError(404,'Projekt fehlt.');
     const meta=metadata(db,'room:v1:project:'+v.project,{revision:0,repository:null});
     if(meta.revision!==v.revision)throw teamError(409,'Projekteinstellungen inzwischen geändert. Bitte neu laden.');
-    if(member.role!=='owner'&&meta.createdBy!==member.id)throw teamError(403,'Wie das Projekt live geht, legt der Inhaber fest.');
+    if(!can(db,member,v.project,'admin'))throw teamError(403,'Wie das Projekt live geht, legt der Projekt-Admin fest.');
     storeMetadata(db,'room:v1:project:'+v.project,{...meta,live:v.live,...(v.liveHow!==undefined?{liveHow:v.liveHow}:{}),revision:meta.revision+1});
     teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:v.live==='merge'?'Live-Weg: automatisch beim Übernehmen':'Live-Weg: eigener Schritt nach dem Übernehmen'});return;
    }
@@ -83,7 +83,7 @@ export function createTeamRoute({db,user,readJSON,parse}){
     if(v.archived&&db.prepare("SELECT id FROM tasks WHERE project=? AND status!='done'").get(p.id))throw teamError(409,'Vor der Archivierung offene Aufgaben abschließen oder abbrechen.');
     db.prepare('UPDATE projects SET title=?,description=? WHERE id=?').run(v.title,v.description,p.id);
     if((v.base&&v.base!==(meta.base??'main')||v.workflow&&v.workflow!==(meta.workflow??'pull-request'))){
-     if(member.role!=='owner'&&meta.createdBy!==member.id)throw teamError(403,'Projektregeln ändert die Projekt- oder Workspace-Verwaltung.');
+     if(!can(db,member,v.project,'admin'))throw teamError(403,'Projektregeln ändert der Projekt-Admin.');
      if(db.prepare('SELECT w.job FROM workspaces w JOIN jobs j ON j.id=w.job WHERE j.project=? AND w.archived=0').get(p.id))throw teamError(409,'Aktive Bearbeitungen vor einer Änderung der Projektregeln abschließen.');
     }
     storeMetadata(db,'room:v1:project:'+p.id,{...meta,base:v.base??meta.base??'main',workflow:v.workflow??meta.workflow??'pull-request',archived:v.archived,revision:meta.revision+1});

@@ -18,7 +18,9 @@ test('a code task names exactly one next step along the whole way',()=>{
  assert.equal(step({own:false,result:{shared:true,state:'pending',stale:true,mine:false}}).action,undefined);
  assert.equal(step({result:{shared:true,state:'changes_requested',mine:true}}).action,'look');
  assert.equal(step({result:{shared:true,state:'approved',mine:true}}).action,'integrate','without GitHub the author takes the change over');
- assert.equal(step({result:{shared:true,state:'approved',mine:true,automatic:true}}).action,undefined,'with GitHub Studio does it');
+ assert.equal(step({result:{shared:true,state:'approved',mine:true,automatic:true}}).action,'integrate','with GitHub, too, approval only approves; the author merges');
+ assert.equal(step({own:false,isAdmin:true,result:{shared:true,state:'approved',mine:false}}).action,'integrate','the project admin may merge as well');
+ const dropped=step({result:{shared:true,state:'pending',mine:true,dropped:['Markus']}});assert.match(dropped.text,/Freigabe von Markus zählt nicht mehr/);assert.equal(dropped.action,undefined);
  assert.equal(step({own:false,result:{shared:true,state:'approved',mine:false}}).action,undefined);
  assert.equal(step({ready:true}).action,'finish');
  assert.equal(step({status:'done'}).action,'reopen');
@@ -57,7 +59,7 @@ test('lists use one short status per task and sort it to the right person',()=>{
  assert.deepEqual(s(t({status:'review',completion:{ready:false,result:shared}}),'other'),{text:'Bitte anschauen und freigeben',mine:true,group:'mine'});
  assert.equal(s(t({status:'review',completion:{ready:false,result:{...shared,state:'changes_requested'}}})).text,'Änderung gewünscht – bitte überarbeiten');
  assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved'}}})).text,'Freigegeben – bitte zusammenführen');
- assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved',workflow:'pull-request'}}})).text,'Freigegeben – wird zusammengeführt');
+ assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved',workflow:'pull-request'}}})).text,'Freigegeben – bitte zusammenführen','GitHub projects merge by the same explicit step');
  assert.equal(s(t({completion:{ready:true,result:{...shared,state:'approved',integrated:true}}})).text,'Fertig – bitte abschliessen');
  assert.equal(s(t({contract:{kind:'code',blocked:'Warte',cancelled:false,requiresReview:true}})).text,'Hängt fest: Warte');
  assert.equal(s(t({status:'done'})).group,'done');
