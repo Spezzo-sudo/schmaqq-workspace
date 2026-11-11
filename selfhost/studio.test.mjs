@@ -99,7 +99,7 @@ test('two real Git workspaces: tests, reviewed merge, conflict stop and static p
   writeFileSync(path.join(a.path,'value.txt'),'Marco\n');writeFileSync(path.join(b.path,'value.txt'),'Markus\n');
   const submittedA=await runnerA.run({id:randomUUID(),project:'website',action:'submit',payload:{worktree:aid}}),submittedB=await runnerB.run({id:randomUUID(),project:'website',action:'submit',payload:{worktree:bid}});
   const merged=await runnerA.run({id:randomUUID(),project:'website',action:'integrate',payload:submittedA});assert.equal(merged.integrated,true);
-  await assert.rejects(()=>runnerB.run({id:randomUUID(),project:'website',action:'integrate',payload:submittedB}),/Git-Konflikt/);
+  await assert.rejects(()=>runnerB.run({id:randomUUID(),project:'website',action:'integrate',payload:submittedB}),/an denselben Stellen geändert/);
   const remoteMain=await git(dir,'--git-dir',bare,'rev-parse','refs/heads/main');assert.equal(remoteMain,merged.commit);
   const reviewed=new LocalRunner({...configs[0],stateDir:path.join(dir,'review-runner'),projects:{website:{...configs[0].projects.website,workflow:'pull-request',requireIssue:true,publish:false}}});
   await assert.rejects(()=>reviewed.run({id:randomUUID(),project:'website',action:'prepare',payload:{}}),/GitHub-Issues/);

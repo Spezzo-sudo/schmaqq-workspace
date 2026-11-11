@@ -5,7 +5,7 @@ import {listWorkspaces} from './workspaces.mjs';
 import {reviewState,droppedApprovals} from './reviews.mjs';
 import {requirePermission,can} from './project-roles.mjs';
 import {changeOverview} from './change-overview.mjs';
-import {taskView,assertTaskStatus,teamEvent,taskContract,invalidateTaskResult,storeMetadata} from './team-model.mjs';
+import {taskView,assertTaskStatus,teamEvent,taskContract,invalidateTaskResult,storeMetadata,metadata} from './team-model.mjs';
 
 const id=z.string().regex(/^[\w-]{1,100}$/);
 const fail=(status,message)=>Object.assign(new Error(message),{status});
@@ -15,8 +15,8 @@ export function assertAssignment(db,task,assignee){
 }
 // The task's own server-side state for the next step. The latest relevant job decides:
 // a failure stays visible after reloading until a later step of the task succeeds.
-const stepActions=['prepare','create-file','save-file','codex','check','preview','review','submit','integrate'];
-const failureText={prepare:'Die Arbeitskopie konnte nicht angelegt werden.','create-file':'Die Datei konnte nicht angelegt werden.','save-file':'Die Datei konnte nicht gespeichert werden.',codex:'Die KI-Bearbeitung ist nicht fertig geworden.',check:'Die Tests sind nicht durchgelaufen.',preview:'Die Vorschau konnte nicht gebaut werden.',review:'Die Prüffassung konnte nicht erstellt werden.',submit:'Die Änderung konnte nicht zur Prüfung gegeben werden.',integrate:'Die Änderung konnte nicht zusammengeführt werden.'};
+const stepActions=['prepare','create-file','save-file','codex','update','check','preview','review','submit','integrate'];
+const failureText={prepare:'Die Arbeitskopie konnte nicht angelegt werden.','create-file':'Die Datei konnte nicht angelegt werden.','save-file':'Die Datei konnte nicht gespeichert werden.',codex:'Die KI-Bearbeitung ist nicht fertig geworden.',update:'Die Arbeitskopie konnte nicht auf den neuen Stand gebracht werden.',check:'Die Tests sind nicht durchgelaufen.',preview:'Die Vorschau konnte nicht gebaut werden.',review:'Die Prüffassung konnte nicht erstellt werden.',submit:'Die Änderung konnte nicht zur Prüfung gegeben werden.',integrate:'Die Änderung konnte nicht zusammengeführt werden.'};
 export function taskJobState(db,taskId){
  const jobs=db.prepare(`SELECT j.id,j.action,j.status,j.created,j.result,j.owner,m.name AS ownerName FROM jobs j JOIN members m ON m.id=j.owner
   WHERE j.status IN ('completed','failed','interrupted') AND j.action IN (${stepActions.map(()=>'?').join(',')}) AND (
@@ -31,6 +31,13 @@ export function taskJobState(db,taskId){
 }
 // Whether a working copy holds a change of its own: saved or created files, a finished
 // AI edit, uncommitted files seen by the runner, or an earlier submitted version.
+// How far the copy is behind the shared main state, as last measured by the runner.
+export function copyBehind(db,workspaceId){
+ for(const j of db.prepare(`SELECT result FROM jobs WHERE json_extract(payload,'$.worktree')=? AND status='completed' AND action IN ('status','review','submit','update') ORDER BY created DESC,rowid DESC LIMIT 5`).all(workspaceId)){
+  try{const r=JSON.parse(j.result??'{}');if(Number.isInteger(r.behind))return Math.max(0,r.behind);}catch{}
+ }
+ return 0;
+}
 export function copyHasChange(db,workspaceId){
  return db.prepare(`SELECT action,result FROM jobs WHERE json_extract(payload,'$.worktree')=? AND status='completed'
   AND action IN ('save-file','create-file','codex','status','review','submit') ORDER BY created DESC`).all(workspaceId).some(j=>{
@@ -86,7 +93,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
  }
  if(route==='/api/collaboration/task'&&method==='GET'){
   const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(parse(id,url.searchParams.get('id')));if(!task)throw fail(404,'Aufgabe fehlt.');requirePermission(db,member,task.project,'view');
-  const reviews=db.prepare("SELECT j.*,m.name AS ownerName FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree') JOIN members m ON m.id=j.owner WHERE w.task=? AND j.action IN ('review','submit') AND j.status='completed' ORDER BY j.created DESC,j.id").all(task.id).map(j=>({id:j.id,owner:j.owner,ownerName:j.ownerName,created:j.created,commit:JSON.parse(j.result??'{}').commit??'',state:reviewState(db,j),dropped:droppedApprovals(db,j)}));
+  const reviews=db.prepare("SELECT j.*,m.name AS ownerName FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree') JOIN members m ON m.id=j.owner WHERE w.task=? AND j.action IN ('review','submit') AND j.status='completed' ORDER BY j.created DESC,j.id").all(task.id).map(j=>({id:j.id,owner:j.owner,ownerName:j.ownerName,created:j.created,commit:JSON.parse(j.result??'{}').commit??'',state:reviewState(db,j),dropped:droppedApprovals(db,j),mergeWait:metadata(db,'team:v1:merge-wait:'+j.id)??null}));
   // This is the existing single private Studio team, not a public/tenant API.
   const workspaces=taskWorkspaces(db,task.id);
   const briefRow=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('taskflow:v1:brief:'+task.id);
@@ -97,7 +104,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   const activeJobs=db.prepare(`SELECT j.id,j.action,j.status,m.name AS ownerName FROM jobs j JOIN members m ON m.id=j.owner WHERE j.status IN ('queued','running','cancelling') AND (json_extract(j.payload,'$.worktree') IN (SELECT job FROM workspaces WHERE task=?) OR (j.action='integrate' AND json_extract(j.payload,'$.reviewJob') IN (SELECT r.id FROM jobs r JOIN workspaces w ON w.job=json_extract(r.payload,'$.worktree') WHERE w.task=?))) AND j.action NOT IN ('files','read-file','save-file') ORDER BY j.created`).all(task.id,task.id);
   // A queued job of this task may wait behind someone else's work on the same Werkstatt.
   for(const j of activeJobs)if(j.status==='queued'){const ahead=db.prepare("SELECT m.name FROM jobs o JOIN members m ON m.id=o.owner WHERE o.device=(SELECT device FROM jobs WHERE id=?) AND o.status IN ('running','cancelling') AND o.id<>? LIMIT 1").get(j.id,j.id);if(ahead)j.behind=ahead.name;}
-  send({task:taskView(db,task),brief,reviews,activeJobs,...taskJobState(db,task.id),source,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces:workspaces.map(w=>({...w,changed:copyHasChange(db,w.id)}))});return true;
+  send({task:taskView(db,task),brief,reviews,activeJobs,...taskJobState(db,task.id),source,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces:workspaces.map(w=>({...w,changed:copyHasChange(db,w.id),behind:copyBehind(db,w.id)}))});return true;
  }
  if(route!=='/api/collaboration/task'||method!=='POST')throw fail(405,'Methode nicht erlaubt.');
  const value=parse(z.discriminatedUnion('action',[

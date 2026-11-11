@@ -130,3 +130,14 @@ test('work queued behind another person on a shared Werkstatt says who is ahead'
  const queued=step({activeJob:'submit',activeBehind:'Markus'});
  assert.equal(queued.waiting,true);assert.match(queued.text,/Aufgabe von Markus/);assert.match(queued.text,/als Nächstes dran/);
 });
+
+test('a copy behind the shared state is brought up to date first, and a stale merge points there',()=>{
+ const behind=step({behind:2});assert.equal(behind.action,'update');assert.match(behind.text,/2 neue Änderungen/);
+ assert.equal(step({behind:1,result:{shared:true,state:'pending',stale:true,mine:true}}).action,'update');
+ assert.equal(step({behind:3,result:{shared:true,state:'pending',mine:true}}).action,undefined,'a version waiting for review is not touched');
+ assert.equal(step({behind:0}).action,'submit');
+ const conflict=step({failure:{action:'integrate',text:'Die Änderung konnte nicht zusammengeführt werden.',detail:'Zusammenführen gestoppt: Der gemeinsame Stand hat sich inzwischen an denselben Stellen geändert (page.txt).',mine:true}});
+ assert.equal(conflict.action,'update');
+ const failedUpdate=step({failure:{action:'update',text:'Die Arbeitskopie konnte nicht auf den neuen Stand gebracht werden.',detail:'… page.txt …',mine:true}});
+ assert.equal(failedUpdate.action,undefined);assert.match(failedUpdate.text,/page\.txt/);
+});

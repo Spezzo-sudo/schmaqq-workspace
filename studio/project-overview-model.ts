@@ -1,7 +1,7 @@
 import type {TeamEvent} from './room-model';
 
 export type TaskPane='result'|'review'|'work';
-export const runningLabels:Record<string,string>={codex:'KI arbeitet an der Aufgabe',check:'Tests laufen',preview:'Vorschau wird gebaut',prepare:'Werkstatt wird vorbereitet',inspect:'Projekt wird geprüft',probe:'Probelauf: Tests und Vorschau auf dem gemeinsamen Stand',review:'Änderung wird vorbereitet',submit:'Änderung wird zur Prüfung gegeben',integrate:'Änderung wird übernommen','deploy-key':'Zugang wird eingerichtet'};
+export const runningLabels:Record<string,string>={codex:'KI arbeitet an der Aufgabe',check:'Tests laufen',preview:'Vorschau wird gebaut',prepare:'Werkstatt wird vorbereitet',inspect:'Projekt wird geprüft',probe:'Probelauf: Tests und Vorschau auf dem gemeinsamen Stand',update:'Arbeitskopie wird auf den neuen Stand gebracht',review:'Änderung wird vorbereitet',submit:'Änderung wird zur Prüfung gegeben',integrate:'Änderung wird übernommen','deploy-key':'Zugang wird eingerichtet'};
 const groupLabels:Record<string,(n:number)=>string>={'save-file':n=>n+' Dateien gespeichert','create-file':n=>n+' Dateien erstellt',check:n=>'Tests '+n+'× abgeschlossen',codex:n=>n+' KI-Bearbeitungen abgeschlossen',preview:n=>n+' Vorschauen erstellt',message:n=>n+' neue Nachrichten im Projektgespräch',comment:n=>n+' neue Kommentare'};
 export type EventGroup={id:string;actor:string;task:string|null;kind:string;body:string;count:number;latest:number};
 /** Consecutive entries (newest first) of the same person, task and kind within six hours read as one line. */

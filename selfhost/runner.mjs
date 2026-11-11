@@ -153,7 +153,7 @@ export class LocalRunner{
    if(!/^[a-f0-9]{40,64}$/.test(job.payload.commit)||!/^studio\/[\w-]+$/.test(job.payload.branch))throw new Error('Ungültiger Prüfstand.');
    await this.git(p.repo,'fetch','origin');const remote=await this.git(p.repo,'rev-parse',`origin/${job.payload.branch}`);if(remote!==job.payload.commit)throw new Error('Der eingereichte Branch wurde inzwischen verändert. Erneut einreichen.');
    await this.git(p.repo,'worktree','add','--detach',w.dir,`origin/${p.base}`);
-   try{await this.git(w.dir,'merge','--no-ff','--no-edit',job.payload.commit);}catch(e){await this.git(w.dir,'merge','--abort').catch(()=>{});throw new Error('Zusammenführung gestoppt: Git-Konflikt. Der gemeinsame Hauptzweig bleibt unverändert. '+e.message);}
+   try{await this.git(w.dir,'merge','--no-ff','--no-edit',job.payload.commit);}catch{const files=(await this.git(w.dir,'diff','--name-only','--diff-filter=U').catch(()=>'')).split('\n').filter(Boolean);await this.git(w.dir,'merge','--abort').catch(()=>{});throw new Error('Zusammenführen gestoppt: Der gemeinsame Stand hat sich inzwischen an denselben Stellen geändert'+(files.length?' ('+files.slice(0,10).join(', ')+')':'')+'. Der gemeinsame Stand bleibt unverändert. Bring die Arbeitskopie auf den neuen Stand und gib sie erneut zur Prüfung.');}
    const checks=await this.check(w.dir,p);if(await this.git(w.dir,'status','--porcelain'))throw new Error('Tests haben die Integrations-Arbeitskopie verändert. Zusammenführung gestoppt.');const commit=await this.git(w.dir,'rev-parse','HEAD');
    // No force push: concurrent integration is rejected by the remote.
    await this.git(w.dir,'push','origin',`HEAD:refs/heads/${p.base}`);return {commit,checks,integrated:true};
@@ -188,7 +188,23 @@ export class LocalRunner{
    control.onEvent?.({type:'files',text:'Datei gespeichert: '+job.payload.file});
    return {...saved,source};
   }
-  if(job.action==='status')return {branch:w.branch,status:await this.git(w.dir,'status','--short'),diff:(await this.git(w.dir,'diff','HEAD','--')).slice(0,50000),commit:await this.git(w.dir,'rev-parse','HEAD'),source:await sourceRevision(w.dir,control)};
+  // Bring the copy up to the shared main state. Saved work is committed first; on a conflict
+  // nothing changes and the files are named, so people can agree who adapts what.
+  if(job.action==='update'){
+   await this.git(w.dir,'fetch','origin');
+   await this.git(w.dir,'add','--all');
+   if(await this.git(w.dir,'diff','--cached','--name-only'))await this.git(w.dir,'commit','-m','Schmaqq Studio: gespeicherte Änderungen');
+   const before=await this.git(w.dir,'rev-parse','HEAD');
+   try{await this.git(w.dir,'merge','--no-edit',`origin/${p.base}`);}
+   catch(e){
+    const files=(await this.git(w.dir,'diff','--name-only','--diff-filter=U').catch(()=>'')).split('\n').filter(Boolean);
+    await this.git(w.dir,'merge','--abort').catch(()=>{});
+    if(await this.git(w.dir,'rev-parse','HEAD')!==before)await this.git(w.dir,'reset','--hard',before);
+    throw new Error(files.length?`Der neue gemeinsame Stand ändert dieselben Stellen wie deine Änderung: ${files.slice(0,10).join(', ')}. Deine Arbeitskopie bleibt unverändert. Stimmt euch ab, wer die Stelle anpasst – oder löst es am eigenen PC mit Git.`:'Der neue gemeinsame Stand konnte nicht übernommen werden. Deine Arbeitskopie bleibt unverändert.');
+   }
+   return {updated:true,commit:await this.git(w.dir,'rev-parse','HEAD'),behind:0,source:await sourceRevision(w.dir,control)};
+  }
+  if(job.action==='status')return {behind:await this.behind(w.dir,p),branch:w.branch,status:await this.git(w.dir,'status','--short'),diff:(await this.git(w.dir,'diff','HEAD','--')).slice(0,50000),commit:await this.git(w.dir,'rev-parse','HEAD'),source:await sourceRevision(w.dir,control)};
   if(['check','review','submit','preview'].includes(job.action))await this.excludeBuildOutput(w.dir,p);
   if(job.action==='check'){const before=await sourceRevision(w.dir,control),checks=await this.check(w.dir,p);return {checks,commit:await this.git(w.dir,'rev-parse','HEAD'),source:stableSource(before,await sourceRevision(w.dir,control))};}
   if(['review','submit'].includes(job.action)){
@@ -200,7 +216,7 @@ export class LocalRunner{
    const before=await sourceRevision(w.dir,control),checks=await this.check(w.dir,p);if(await this.git(w.dir,'status','--porcelain'))throw new Error('Arbeitskopie hat sich während der Prüfung verändert. Bitte erneut prüfen und einreichen.');
    const commit=await this.git(w.dir,'rev-parse','HEAD'),base=await this.git(w.dir,'merge-base','HEAD',`origin/${p.base}`);
    const diff=await this.git(w.dir,'diff','--no-ext-diff','--no-textconv','--no-color',base,commit,'--');
-   const result={checks,workflow:p.workflow??'direct',branch:w.branch,commit,base,diff:diff.slice(0,50000),diffTruncated:diff.length>=50000,published:job.action==='submit',source:stableSource(before,await sourceRevision(w.dir,control))};
+   const result={behind:await this.behind(w.dir,p),checks,workflow:p.workflow??'direct',branch:w.branch,commit,base,diff:diff.slice(0,50000),diffTruncated:diff.length>=50000,published:job.action==='submit',source:stableSource(before,await sourceRevision(w.dir,control))};
    if(p.preview?.build&&p.preview?.directory){
     const preview=await this.run({...job,action:'preview'},control);
     if(await this.git(w.dir,'status','--porcelain'))throw new Error('Der Vorschau-Build hat Quelldateien verändert. Erneut testen und einreichen.');
@@ -243,6 +259,8 @@ export class LocalRunner{
   }
   throw new Error('Unbekannter Auftrag.');
  }
+ // How many commits of the shared main state this copy does not contain yet (as of the last fetch).
+ async behind(dir,p){try{return Number(await this.git(dir,'rev-list','--count',`HEAD..origin/${p.base}`))||0;}catch{return 0;}}
  async check(dir,p){if(!p.check?.length)throw new Error('Vor Einreichung muss ein lokaler Testbefehl konfiguriert werden.');await this.prepareEnvironment(dir,p);return this.untrusted(p.check,dir,{timeout:600000,network:'private'});}
  close(){for(const child of this.previews.values())child.kill();}
 }

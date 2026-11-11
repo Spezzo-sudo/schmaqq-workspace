@@ -35,6 +35,7 @@ export const jobActions: Record<string, string> = {
   'deploy-key': 'GitHub-Schlüssel des Server-Workers',
   inspect: 'Git-Verbindung prüfen',
   probe: 'Probelauf',
+  update: 'Auf den neuen Stand bringen',
   prepare: 'Arbeitskopie erstellen',
   status: 'Änderungen ansehen',
   check: 'Tests ausführen',

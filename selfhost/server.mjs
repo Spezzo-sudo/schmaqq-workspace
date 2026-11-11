@@ -155,6 +155,12 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     const target=db.prepare('SELECT owner,project FROM jobs WHERE id=?').get(value.job);if(!target)throw fail(404,'Stand fehlt.');
     if(value.action==='merge'&&target.owner!==member.id)requirePermission(db,member,target.project,'admin');
     else requirePermission(db,member,target.project,value.action==='refresh'?'view':'develop');
+    // A merge that GitHub refuses (conflict, missing checks, branch rules) keeps its reason at the task.
+    if(value.action==='merge'){
+     try{const merged=await githubWorkflow.perform('merge',value.job,member);db.prepare('DELETE FROM workspace_meta WHERE key=?').run('team:v1:merge-wait:'+value.job);send(merged);}
+     catch(e){storeMetadata(db,'team:v1:merge-wait:'+value.job,{reason:e.status&&e.status<500?e.message:'GitHub ist gerade nicht erreichbar. Bitte später erneut versuchen.',at:now(),by:member.id});throw e;}
+     return;
+    }
     send(await githubWorkflow.perform(value.action,value.job,member));return;
    }
    if(route==='/api/project-roles'){
@@ -362,7 +368,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     }
     if(v.action==='device'){const name=parse(text,v.name),t=token(),did=uuid();db.prepare('INSERT INTO devices(id,owner,name,hash) VALUES(?,?,?,?)').run(did,m.id,name,digest(t));send({id:did,token:t});return;}
     if(v.action==='revoke'){const did=parse(id,v.id);if(!db.prepare('UPDATE devices SET revoked=1 WHERE id=? AND owner=?').run(did,m.id).changes)throw fail(404,'Gerät nicht gefunden.');db.prepare("UPDATE jobs SET status='cancelled' WHERE device=? AND status='queued'").run(did);send({ok:true});return;}
-    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','probe','prepare','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file','deploy-key']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),offset:z.number().int().min(0).max(4194304).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
+    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','probe','prepare','update','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file','deploy-key']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),offset:z.number().int().min(0).max(4194304).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
     if(!db.prepare('SELECT id FROM projects WHERE id=?').get(value.project))throw fail(404,'Projekt nicht gefunden.');
     // "auto" is resolved here, once; the job row then names the executor that runs it.
     // Reading needs a place in the project, changing needs the developer role, taking over a change the admin role or authorship.
@@ -392,13 +398,13 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     if(payload.worktree){
      const linked=db.prepare('SELECT t.* FROM tasks t JOIN workspaces w ON w.task=t.id WHERE w.job=?').get(payload.worktree);
      if(linked&&linked.assignee!==m.id)throw fail(409,'Diese Aufgabe wurde inzwischen übergeben. Bitte den aktuellen Stand prüfen.');
-     if(linked&&linked.status==='done'&&['save-file','create-file','codex','submit','review'].includes(value.operation))throw fail(409,'Abgeschlossene Aufgabe zuerst wieder öffnen.');
+     if(linked&&linked.status==='done'&&['save-file','create-file','codex','submit','review','update'].includes(value.operation))throw fail(409,'Abgeschlossene Aufgabe zuerst wieder öffnen.');
      if(linked){const contract=taskContract(db,linked);payload.contractRevision=contract.revision;payload.contractSnapshot={title:linked.title,description:linked.description,criteria:contract.criteria};}
     }
     const sharedProject=metadata(db,'room:v1:project:'+value.project);
     if(sharedProject?.repository){payload.expectedRepository=sharedProject.repository;payload.expectedBase=sharedProject.base??'main';}
     // Other people's work on the same machine only queues this job; the runner works one job after another.
-    if(['review','submit'].includes(value.operation)&&activeJobInCopy(db,payload.worktree))throw fail(409,'In dieser Arbeitskopie läuft noch ein Vorgang. Den bestätigten Abschluss abwarten.');
+    if(['review','submit','update'].includes(value.operation)&&activeJobInCopy(db,payload.worktree))throw fail(409,'In dieser Arbeitskopie läuft noch ein Vorgang. Den bestätigten Abschluss abwarten.');
     if(value.operation==='integrate'&&db.prepare("SELECT id FROM jobs WHERE action='integrate' AND json_extract(payload,'$.reviewJob')=? AND status IN ('queued','running','cancelling')").get(payload.reviewJob))throw fail(409,'Diese Änderung wird bereits zusammengeführt.');
     payload.placement={mode:placed.mode,kind:placed.kind,reason:placed.reason};
     const jid=uuid();transaction(db,()=>{

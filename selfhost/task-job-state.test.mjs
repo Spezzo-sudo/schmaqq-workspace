@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {openStore} from './store.mjs';
-import {taskJobState,copyHasChange} from './collaboration.mjs';
+import {taskJobState,copyHasChange,copyBehind} from './collaboration.mjs';
 
 function fixture(){
  const dir=mkdtempSync(path.join(os.tmpdir(),'studio-task-state-')),db=openStore(path.join(dir,'studio.db'),{seedProjects:false});
@@ -42,5 +42,15 @@ test('a working copy counts as changed only after something was saved or found c
   f.job('st','status','completed',{status:''});assert.equal(copyHasChange(f.db,'copy'),false);
   f.job('cf','create-file','failed',{error:'x'});assert.equal(copyHasChange(f.db,'copy'),false);
   f.job('st2','status','completed',{status:' M site/index.html'});assert.equal(copyHasChange(f.db,'copy'),true);
+ }finally{f.close();}
+});
+
+test('how far a copy is behind comes from the latest runner measurement',()=>{
+ const f=fixture();
+ try{
+  assert.equal(copyBehind(f.db,'copy'),0);
+  f.job('st','status','completed',{status:'',behind:3});assert.equal(copyBehind(f.db,'copy'),3);
+  f.job('up','update','completed',{behind:0});assert.equal(copyBehind(f.db,'copy'),0);
+  f.job('up2','update','failed',{error:'Konflikt'});assert.equal(copyBehind(f.db,'copy'),0,'a failed update measures nothing');
  }finally{f.close();}
 });
