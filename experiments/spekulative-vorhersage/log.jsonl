@@ -8,3 +8,5 @@
 {"durchgang":"A","schritt":4,"vorhersage":{"schritt":4,"aktion":"status_abfragen","parameter":{"auftrag":2}},"sicherheit":30}
 {"durchgang":"B","schritt":5,"vorhersage":{"schritt":5,"aktion":"status_abfragen","parameter":{"auftrag":4}},"sicherheit":40}
 {"durchgang":"A","schritt":5,"vorhersage":{"schritt":5,"aktion":"album_erstellen","parameter":{"name":"Auto","aus_schritt":4}},"sicherheit":35}
+{"durchgang":"A","schritt":6,"vorhersage":{"schritt":6,"aktion":"status_abfragen","parameter":{"auftrag":4}},"sicherheit":30}
+{"durchgang":"B","schritt":6,"vorhersage":{"schritt":6,"aktion":"fotos_suchen","parameter":{"suchbegriff":"Urlaub","zeitraum":"2025"}},"sicherheit":25}
