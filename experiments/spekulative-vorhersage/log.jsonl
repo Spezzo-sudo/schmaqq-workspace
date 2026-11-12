@@ -4,3 +4,5 @@
 {"durchgang":"B","schritt":2,"vorhersage":{"schritt":2,"aktion":"antwort_entwerfen","parameter":{"app":"whatsapp","kontakt":"Mama","ton":"freundlich"}},"sicherheit":15}
 {"durchgang":"B","schritt":3,"vorhersage":{"schritt":3,"aktion":"fotos_indexieren","parameter":{"zeitraum":"alle"}},"sicherheit":35}
 {"durchgang":"A","schritt":3,"vorhersage":{"schritt":3,"aktion":"album_erstellen","parameter":{"name":"Whiteboard","aus_schritt":1}},"sicherheit":30}
+{"durchgang":"B","schritt":4,"vorhersage":{"schritt":4,"aktion":"antwort_entwerfen","parameter":{"app":"signal","kontakt":"Mama","ton":"freundlich"}},"sicherheit":30}
+{"durchgang":"A","schritt":4,"vorhersage":{"schritt":4,"aktion":"status_abfragen","parameter":{"auftrag":2}},"sicherheit":30}
