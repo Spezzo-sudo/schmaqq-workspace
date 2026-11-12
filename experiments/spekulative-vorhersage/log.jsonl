@@ -12,3 +12,5 @@
 {"durchgang":"B","schritt":6,"vorhersage":{"schritt":6,"aktion":"fotos_suchen","parameter":{"suchbegriff":"Urlaub","zeitraum":"2025"}},"sicherheit":25}
 {"durchgang":"B","schritt":7,"vorhersage":{"schritt":7,"aktion":"album_erstellen","parameter":{"name":"Urlaub 2026","aus_schritt":6}},"sicherheit":60}
 {"durchgang":"A","schritt":7,"vorhersage":{"schritt":7,"aktion":"status_abfragen","parameter":{"auftrag":6}},"sicherheit":35}
+{"durchgang":"A","schritt":8,"vorhersage":{"schritt":8,"aktion":"status_abfragen","parameter":{"auftrag":7}},"sicherheit":30}
+{"durchgang":"B","schritt":8,"vorhersage":{"schritt":8,"aktion":"status_abfragen","parameter":{"auftrag":7}},"sicherheit":35}

@@ -1,0 +1,32 @@
+
+Durchgang A
+Schritt  echte Aktion                Aktion exakt  Sicherh.
+      1  fotos_suchen                nein   nein         40
+      2  fotos_suchen                ja     nein         30
+      3  status_abfragen             nein   nein         30
+      4  fotos_suchen                nein   nein         30
+      5  status_abfragen             nein   nein         35
+      6  fotos_indexieren            nein   nein         30
+      7  album_erstellen             nein   nein         35
+      8  album_erstellen             nein   nein         30
+Aktion richtig: 1/8 · exakt richtig (Auftrag vorab startbar): 0/8
+Wartezeit gesamt ohne Vorhersage: 313.8 s · mit Vorhersage: 313.8 s · versteckt: 0 %
+Vorhersagen mit Sicherheit >= 35: 3, davon exakt richtig: 0
+
+Durchgang B
+Schritt  echte Aktion                Aktion exakt  Sicherh.
+      1  nachrichten_zusammenfassen  nein   nein         45
+      2  antwort_entwerfen           ja     JA           15
+      3  nachrichten_zusammenfassen  nein   nein         35
+      4  fotos_indexieren            nein   nein         30
+      5  status_abfragen             ja     JA           40
+      6  fotos_suchen                ja     nein         25
+      7  album_erstellen             ja     JA           60
+      8  status_abfragen             ja     JA           35
+Aktion richtig: 5/8 · exakt richtig (Auftrag vorab startbar): 4/8
+Wartezeit gesamt ohne Vorhersage: 353.8 s · mit Vorhersage: 343.6 s · versteckt: 3 %
+Vorhersagen mit Sicherheit >= 35: 5, davon exakt richtig: 3
+
+Variante Vorrat (alle Vorhersagen vorab rechnen und aufheben)
+Durchgang A: Wartezeit 313.8 s -> 13.8 s · versteckt: 96 % · umsonst gerechnet: 7 s
+Durchgang B: Wartezeit 353.8 s -> 43.6 s · versteckt: 88 % · umsonst gerechnet: 11 s
