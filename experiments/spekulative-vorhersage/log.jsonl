@@ -6,3 +6,5 @@
 {"durchgang":"A","schritt":3,"vorhersage":{"schritt":3,"aktion":"album_erstellen","parameter":{"name":"Whiteboard","aus_schritt":1}},"sicherheit":30}
 {"durchgang":"B","schritt":4,"vorhersage":{"schritt":4,"aktion":"antwort_entwerfen","parameter":{"app":"signal","kontakt":"Mama","ton":"freundlich"}},"sicherheit":30}
 {"durchgang":"A","schritt":4,"vorhersage":{"schritt":4,"aktion":"status_abfragen","parameter":{"auftrag":2}},"sicherheit":30}
+{"durchgang":"B","schritt":5,"vorhersage":{"schritt":5,"aktion":"status_abfragen","parameter":{"auftrag":4}},"sicherheit":40}
+{"durchgang":"A","schritt":5,"vorhersage":{"schritt":5,"aktion":"album_erstellen","parameter":{"name":"Auto","aus_schritt":4}},"sicherheit":35}
