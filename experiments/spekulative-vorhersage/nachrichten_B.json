@@ -1,0 +1,10 @@
+[
+{"schritt":1,"aktion":"nachrichten_zusammenfassen","parameter":{"app":"whatsapp","zeitraum":"heute"}},
+{"schritt":2,"aktion":"antwort_entwerfen","parameter":{"app":"whatsapp","kontakt":"Mama","ton":"freundlich"}},
+{"schritt":3,"aktion":"nachrichten_zusammenfassen","parameter":{"app":"signal","zeitraum":"heute"}},
+{"schritt":4,"aktion":"fotos_indexieren","parameter":{"zeitraum":"alle"}},
+{"schritt":5,"aktion":"status_abfragen","parameter":{"auftrag":4}},
+{"schritt":6,"aktion":"fotos_suchen","parameter":{"suchbegriff":"Urlaub","zeitraum":"2026"}},
+{"schritt":7,"aktion":"album_erstellen","parameter":{"name":"Urlaub 2026","aus_schritt":6}},
+{"schritt":8,"aktion":"status_abfragen","parameter":{"auftrag":7}}
+]
