@@ -10,3 +10,5 @@
 {"durchgang":"A","schritt":5,"vorhersage":{"schritt":5,"aktion":"album_erstellen","parameter":{"name":"Auto","aus_schritt":4}},"sicherheit":35}
 {"durchgang":"A","schritt":6,"vorhersage":{"schritt":6,"aktion":"status_abfragen","parameter":{"auftrag":4}},"sicherheit":30}
 {"durchgang":"B","schritt":6,"vorhersage":{"schritt":6,"aktion":"fotos_suchen","parameter":{"suchbegriff":"Urlaub","zeitraum":"2025"}},"sicherheit":25}
+{"durchgang":"B","schritt":7,"vorhersage":{"schritt":7,"aktion":"album_erstellen","parameter":{"name":"Urlaub 2026","aus_schritt":6}},"sicherheit":60}
+{"durchgang":"A","schritt":7,"vorhersage":{"schritt":7,"aktion":"status_abfragen","parameter":{"auftrag":6}},"sicherheit":35}
