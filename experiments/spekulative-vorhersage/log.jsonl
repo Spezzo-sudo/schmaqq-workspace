@@ -1,2 +1,5 @@
 {"durchgang":"A","schritt":1,"vorhersage":{"schritt":1,"aktion":"fotos_indexieren","parameter":{"zeitraum":"alle"}},"sicherheit":40}
 {"durchgang":"B","schritt":1,"vorhersage":{"schritt":1,"aktion":"fotos_indexieren","parameter":{"zeitraum":"alle"}},"sicherheit":45}
+{"durchgang":"A","schritt":2,"vorhersage":{"schritt":2,"aktion":"fotos_suchen","parameter":{"suchbegriff":"Whiteboard","zeitraum":"2025"}},"sicherheit":30}
+{"durchgang":"B","schritt":2,"vorhersage":{"schritt":2,"aktion":"antwort_entwerfen","parameter":{"app":"whatsapp","kontakt":"Mama","ton":"freundlich"}},"sicherheit":15}
+{"durchgang":"B","schritt":3,"vorhersage":{"schritt":3,"aktion":"fotos_indexieren","parameter":{"zeitraum":"alle"}},"sicherheit":35}
