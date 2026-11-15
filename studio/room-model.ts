@@ -1,11 +1,15 @@
 import type {Task} from '../app/workspace-model';
 export type Room={id:string;title:string;description:string;color:string;stage:string;openTasks?:number;lastMessage?:number;practice?:boolean};
-export type RoomMember={id:string;name:string;role:string;seen:number;removed?:number|boolean;invitedBy?:string|null};
-export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;replyTo?:string|null;kind?:'human'|'ai-shared';model?:string;taskId?:string|null};
+export type RoomMember={id:string;name:string;role:string;seen:number;removed?:number|boolean;invitedBy?:string|null;projectRoles?:string[]};
+export type RoomAgentRole='coordinator'|'developer'|'reviewer'|'researcher';
+export type RoomAgentCapability='chat'|'task-plan'|'task-delegate'|'code-work'|'review-support';
+export type RoomAgent={id:string;project:string;name:string;role:RoomAgentRole;avatar:string;purpose:string;model:string;capabilities:RoomAgentCapability[];active:boolean;createdBy:string;updatedBy?:string;created:number;updated:number};
+export type AgentHandoff={toAgent:string;summary:string;status:'delegated'|'in_progress'|'completed'};
+export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;senderAgent?:string|null;handoff?:AgentHandoff|null};
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
 export type RoomRun={id:string;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;task:string|null};
-export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];runs:RoomRun[]};
+export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[]};
 /** Server-computed: ready only after a passed trial run on the shared main state. */
 export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;state:'ok'|'running'|'failed';at:number;error?:string}|null};
 export type Resource={team?:boolean;device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;readiness?:WorkshopReadiness;publish:boolean}[]};
@@ -59,3 +63,49 @@ export function taskTitleFrom(body:string){
  const cut=line.slice(0,99),space=cut.lastIndexOf(' ');
  return (space>40?cut.slice(0,space):cut).replace(/[\s,.;:–-]+$/,'')+'…';
 }
+
+export const agentRoleLabels:Record<RoomAgentRole,string>={
+ coordinator:'Koordinator',
+ developer:'Entwickler-Agent',
+ reviewer:'Prüf-Agent',
+ researcher:'Recherche-Agent'
+};
+
+export const agentCapabilityLabels:Record<RoomAgentCapability,string>={
+ chat:'Projektgespräch',
+ 'task-plan':'Aufgaben planen',
+ 'task-delegate':'Aufgaben delegieren',
+ 'code-work':'Code-Vorschläge',
+ 'review-support':'Review-Vorprüfung'
+};
+
+export function memberRoleSummary(member:RoomMember):string{
+ const roles=member.projectRoles??[];
+ if(roles.includes('admin')||member.role==='owner')return 'Admin';
+ const parts:string[]=[];
+ if(roles.includes('developer')||!roles.length)parts.push('Entwickler');
+ if(roles.includes('reviewer')||!roles.length)parts.push('Prüfer');
+ if(!parts.length&&roles.includes('viewer'))parts.push('Zuschauer');
+ return parts.join(' · ')||'Mitglied';
+}
+
+export type MessengerFilter=
+ |{kind:'all'}
+ |{kind:'handoffs'}
+ |{kind:'member';id:string}
+ |{kind:'agent';id:string}
+ |{kind:'topic';taskId:string};
+
+export function filterMessengerMessages(messages:RoomMessage[],filter:MessengerFilter,search=''):RoomMessage[]{
+ const q=search.trim().toLowerCase();
+ return messages.filter(m=>{
+  if(q&&!m.body.toLowerCase().includes(q))return false;
+  if(filter.kind==='all')return true;
+  if(filter.kind==='handoffs')return Boolean(m.handoff||m.kind==='agent-handoff'||m.senderAgent||m.recipientKind==='agent'||m.kind==='ai-shared');
+  if(filter.kind==='member')return m.author===filter.id||m.recipient===filter.id;
+  if(filter.kind==='agent')return m.senderAgent===filter.id||m.recipient===filter.id||m.handoff?.toAgent===filter.id;
+  if(filter.kind==='topic')return m.taskId===filter.taskId||m.topicTask===filter.taskId;
+  return true;
+ });
+}
+

@@ -1,4 +1,13 @@
 {
+  "project_messenger_team_agents_20261115": {
+    "state": "implemented_on_feature_branch_verified_not_deployed",
+    "branch": "feat/project-messenger-team-agents-20261115",
+    "implemented": "Project-bound Messenger in Conversation (studio/room-components.tsx, studio/room-model.ts, selfhost/room-http.mjs) backed by persistent SQLite messages and workspace_meta without adding new SQL tables (preserving the 25-object schema baseline). Includes: (1) Contacts & Channels rail with group chat, Agent & Handoffs view, human teammates with project roles and online state, and project AI agent team members with name, avatar, role (coordinator/developer/reviewer/researcher), capabilities, and selectable model; (2) Task/Topic binding on messages with clickable topic pills and topic filtering; (3) Direct recipient addressing (member or project agent) and message replies; (4) Bounded Coordinator-to-Agent handoff records with server-enforced role/capability checks (403 for non-coordinator agents, 403 for viewer-only members, 400 for self-handoff).",
+    "verification": "Full Linux studio:verify PASS: 327 tests (324 PASS, 0 FAIL, 3 expected skips), including selfhost/project-messenger.test.mjs, selfhost/room-http.test.mjs, selfhost/global-navigation.test.mjs, selfhost/schema-preflight.test.mjs and selfhost/schema-migration.test.mjs; Source Guard, TypeScript (tsc --noEmit) and Vite build PASS.",
+    "limits": "Agent team members and Coordinator handoffs are durable project records and structured Messenger workflows, not autonomous background model loops; real model execution remains explicitly user/connector-triggered via personal OAuth MCP or opted-in runner resources. No production deployment or merge performed.",
+    "next": "Stage 2: Connect Coordinator handoffs to explicit MCP/Runner job proposals with human confirmation and task-pane deep-linking.",
+    "production_changed": false
+  },
   "klimafinder_practice_20261030": {
     "state": "review_ready_not_shared",
     "update": "Own network namespace per test/build job live (a4c1667, rollback fed02f9). Klimafinder check fully green incl. test_backend; review commit 67b1cab on studio/ff3f7e80 with preview; not published (worker upload not permitted).",

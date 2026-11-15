@@ -114,7 +114,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
     <h1>Gespräche</h1>
     <GeneralChat userId={user.userId} onTask={(room,task)=>navigate({page:'rooms',room,tab:'tasks',task})}/>
     {!!rooms.length&&<section aria-labelledby="studio-project-talks"><h2 id="studio-project-talks">In den Projekten</h2>
-     {rooms.map(r=><button className="team-work-card" key={r.id} onClick={()=>navigate({room:r.id,tab:'talk',task:'',page:'rooms'})}><MessageSquare size={18}/><span><strong>{r.title}</strong><small>{r.lastMessage?'Letzte Nachricht '+new Date(r.lastMessage).toLocaleString('de-DE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Noch keine Nachricht'}</small></span><ChevronRight size={17}/></button>)}
+     {rooms.map(r=><button className="team-work-card" key={r.id} onClick={()=>navigate({room:r.id,tab:'talk',task:'',page:'rooms'})}><MessageSquare size={18}/><span><strong>{r.title}{r.practice&&<em className="studio-practice-tag">Übung</em>}</strong><small>{[r.lastMessage?'Letzte Nachricht '+new Date(r.lastMessage).toLocaleString('de-DE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Noch keine Nachricht',r.openTasks?r.openTasks===1?'1 offene Aufgabe':r.openTasks+' offene Aufgaben':null].filter(Boolean).join(' · ')}</small></span><ChevronRight size={17}/></button>)}
     </section>}
    </div>:
    !route.room?<div className="rw-page team-home"><h1>Meine Arbeit</h1>
@@ -135,7 +135,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
     <nav className="team-areas" aria-label="Bereiche des Projekts">{tabs.map(t=>{const Icon=areaIcons[t.id]??Home;return <button key={t.id} className={tab===t.id?'active':''} aria-current={tab===t.id?'page':undefined} onClick={()=>navigate({tab:t.id,task:''})}><Icon size={19} aria-hidden="true"/><span>{t.label}</span></button>;})}</nav>
     <div className={'team-project-content'+(rooms.find(r=>r.id===route.room)?.practice?' studio-practice':'')}>
      {tab==='overview'&&<ProjectOverview room={room} tasks={projectTasks} events={projectEvents} active={(team.active??[]).filter(j=>j.project===route.room)} members={members} resources={resources} userId={user.userId} onOpenTask={openTask} onTab={tab=>navigate({tab,task:''})} onRepository={()=>setModal({kind:'repository'})} onRefresh={refresh}/>}
-     {tab==='talk'&&<Conversation key={room.project.id} room={room} userId={user.userId} search="" refresh={refresh} onTask={id=>navigate({task:id})} onConvert={(kind,source)=>setModal({kind,source})}/>}
+     {tab==='talk'&&<Conversation key={room.project.id} room={room} resources={resources} userId={user.userId} search="" refresh={refresh} onTask={id=>navigate({task:id})} onConvert={(kind,source)=>setModal({kind,source})}/>}
      {tab==='tasks'&&<TaskList tasks={projectTasks} userId={user.userId} name={name} search={search} onSearch={setSearch} onOpen={openTask}/>}
      {tab==='knowledge'&&<TeamKnowledge room={room} search="" refresh={refresh} onNew={kind=>setModal({kind})} onSource={source=>{navigate({tab:'talk'});requestAnimationFrame(()=>document.getElementById('message-'+source)?.scrollIntoView({block:'center'}));}}/>}
      {tab==='knowledge'&&<ProjectBriefing room={room} tasks={projectTasks}/>}
