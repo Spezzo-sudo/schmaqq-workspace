@@ -87,12 +87,43 @@ export function listRoomTasks(db,project,{query='',includeDone=false}={}){
   total:matches.length,complete:matches.length<=50&&rows.length<500};
 }
 
-const agentRoles=z.enum(['coordinator','developer','reviewer','researcher']);
+const avatarPresetIds=z.enum(['leitwolf','herr-grau','mara','frau-kern','otto','nova','dachs','fuchs','baer','rabe','schaefer','eule']);
+const agentRoles=z.enum(['coordinator','advisor','frontend','developer','reviewer','operations','strategy','researcher','debugger','infrastructure','security','support','knowledge']);
 const agentCapabilities=z.enum(['chat','task-plan','task-delegate','code-work','review-support','context-read','code-worktree','review-check']);
+const agentContextSources=z.enum(['messages','tasks','decisions','notes','repository','runs']);
+const agentPermissionsSchema=z.object({
+ readProject:z.boolean(),
+ writeMessages:z.boolean(),
+ manageTasks:z.boolean(),
+ editCode:z.boolean(),
+ prepareReviews:z.boolean(),
+ delegateAgents:z.boolean()
+});
 const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('create'),id,title,description:z.string().trim().max(12000).default('')}),
  z.object({action:z.literal('message'),id,project:id,body,replyTo:id.optional(),topicTask:id.optional(),recipient:id.optional(),senderAgent:id.optional(),handoff:z.object({toAgent:id,summary:z.string().trim().min(1).max(600),status:z.enum(['delegated','in_progress','completed','requested','stopped']).default('delegated')}).optional()}),
- z.object({action:z.literal('agent'),id,project:id,agentId:id.optional(),name:z.string().trim().min(1).max(80),role:agentRoles,avatar:z.string().trim().max(16).default(''),purpose:z.string().trim().max(600).default(''),model:z.string().trim().min(1).max(200).default('gpt-5-codex'),capabilities:z.array(agentCapabilities).max(6).default(['chat']),active:z.boolean().default(true)}),
+ z.object({
+  action:z.literal('agent'),
+  id,
+  project:id,
+  agentId:id.optional(),
+  name:z.string().trim().min(1).max(80),
+  nickname:z.string().trim().max(60).default(''),
+  role:agentRoles,
+  avatar:z.string().trim().max(16).default(''),
+  avatarPresetId:z.union([avatarPresetIds,z.literal('')]).nullable().optional(),
+  avatarPackId:z.string().regex(/^[a-z0-9-]{1,40}$/).default('field-guild-r2'),
+  purpose:z.string().trim().max(600).default(''),
+  personality:z.string().trim().max(600).default(''),
+  responsibility:z.string().trim().max(800).default(''),
+  model:z.string().trim().min(1).max(200).default('gpt-5-codex'),
+  modelDevice:z.union([id,z.literal('')]).nullable().optional(),
+  capabilities:z.array(agentCapabilities).max(6).default(['chat']),
+  contextSources:z.array(agentContextSources).max(6).default(['messages','tasks','decisions']),
+  knowledgeScope:z.string().trim().max(400).default(''),
+  permissions:agentPermissionsSchema.optional(),
+  active:z.boolean().default(true)
+ }),
  z.object({action:z.literal('task'),id,project:id,title,description:z.string().trim().max(12000).default(''),kind:z.enum(['general','code']).default('general'),criteria:z.string().trim().max(4000).default(''),source:id.optional(),mine:z.boolean().optional()}),
  z.object({action:z.literal('note'),id,project:id,title,body,kind:z.enum(['note','decision']),source:id.optional()}),
  z.object({action:z.literal('link'),id,project:id,title,url:z.string().max(2000),kind:z.enum(['reference','chatgpt','github','result'])}),
@@ -128,7 +159,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     const meta=readMeta(db,key('run',j.id));let result;try{result=JSON.parse(j.result??'null');}catch{result=null;}
     return {...j,result:undefined,output:typeof result?.output==='string'?result.output.slice(0,24000):null,error:typeof result?.error==='string'?result.error.slice(0,1000):null,model:meta.model,task:meta.task,sharedMessage:meta.sharedMessage??null};
    });
-   const members=db.prepare('SELECT id,name,role,seen FROM members ORDER BY name').all().map(m=>({...m,removed:isRemoved(db,m.id),projectRoles:rolesOf(db,m,project)}));
+   const members=db.prepare('SELECT id,name,role,seen FROM members ORDER BY name').all().filter(m=>!isRemoved(db,m.id)&&can(db,m,project,'view')).map(m=>({...m,removed:false,projectRoles:rolesOf(db,m,project)}));
    send({project:p,meta:roomMeta(db,project),messages,more,notes:notesFor(db,project),links:linksFor(db,project),tasks:db.prepare('SELECT * FROM tasks WHERE project=? ORDER BY created DESC,id').all(project),members,agents:agentsFor(db,project),runs});return true;
   }
   if(method!=='POST'||route!=='/api/room')throw fail(405,'Methode nicht erlaubt.');
@@ -160,8 +191,56 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     const agentId=value.agentId??randomUUID(),agentKey=key('agent',value.project+':'+agentId);
     const existing=readMeta(db,agentKey);
     if(!existing&&agentsFor(db,value.project).length>=20)throw fail(409,'In diesem Projekt sind bereits 20 KI-Teammitglieder eingerichtet.');
-    const capabilities=[...new Set(['chat',...value.capabilities,...(value.role==='coordinator'?['task-delegate']:[])])];
-    const record={id:agentId,project:value.project,name:value.name,role:value.role,avatar:value.avatar,purpose:value.purpose,model:value.model,capabilities,active:value.active,createdBy:existing?.createdBy??member.id,updatedBy:member.id,created:existing?.created??now(),updated:now()};
+    if(value.modelDevice&&!db.prepare('SELECT id FROM devices WHERE id=? AND revoked=0').get(value.modelDevice))throw fail(400,'Der gewählte Modellzugang ist nicht registriert oder wurde widerrufen.');
+    // Permissions are strictly separate from avatar, personality, and role labels.
+    // Only when permissions are omitted (legacy callers) do we derive defaults.
+    const permissions=value.permissions?{
+     readProject:Boolean(value.permissions.readProject),
+     writeMessages:Boolean(value.permissions.writeMessages),
+     manageTasks:Boolean(value.permissions.manageTasks),
+     editCode:Boolean(value.permissions.editCode),
+     prepareReviews:Boolean(value.permissions.prepareReviews),
+     delegateAgents:Boolean(value.permissions.delegateAgents)
+    }:{
+     readProject:true,
+     writeMessages:true,
+     manageTasks:value.capabilities.includes('task-plan'),
+     editCode:value.capabilities.includes('code-work')||value.capabilities.includes('code-worktree'),
+     prepareReviews:value.capabilities.includes('review-support')||value.capabilities.includes('review-check'),
+     delegateAgents:value.capabilities.includes('task-delegate')||value.role==='coordinator'
+    };
+    const capabilities=value.permissions?[
+     ...(permissions.readProject?['context-read']:[]),
+     ...(permissions.writeMessages?['chat']:[]),
+     ...(permissions.manageTasks?['task-plan']:[]),
+     ...(permissions.editCode?['code-work']:[]),
+     ...(permissions.prepareReviews?['review-support']:[]),
+     ...(permissions.delegateAgents?['task-delegate']:[])
+    ]:[...new Set(['chat',...value.capabilities,...(value.role==='coordinator'?['task-delegate']:[])])];
+    const record={
+     id:agentId,
+     project:value.project,
+     name:value.name,
+     nickname:value.nickname??existing?.nickname??'',
+     role:value.role,
+     avatar:value.avatar,
+     avatarPresetId:value.avatarPresetId!==undefined?value.avatarPresetId:(existing?.avatarPresetId??null),
+     avatarPackId:value.avatarPackId??existing?.avatarPackId??'field-guild-r2',
+     purpose:value.purpose,
+     personality:value.personality??existing?.personality??'',
+     responsibility:value.responsibility??existing?.responsibility??'',
+     model:value.model,
+     modelDevice:value.modelDevice!==undefined?value.modelDevice:(existing?.modelDevice??null),
+     capabilities,
+     contextSources:[...new Set(value.contextSources)],
+     knowledgeScope:value.knowledgeScope??existing?.knowledgeScope??'',
+     permissions,
+     active:value.active,
+     createdBy:existing?.createdBy??member.id,
+     updatedBy:member.id,
+     created:existing?.created??now(),
+     updated:now()
+    };
     putMeta(db,agentKey,record);
     teamEvent(db,{actor:member.id,project:value.project,kind:'agent',body:(existing?'KI-Teammitglied aktualisiert: ':'KI-Teammitglied im Projekt: ')+value.name});
     return remember(db,member,value,{ok:true,agent:agentId,agentId});
@@ -182,13 +261,16 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
      if(!value.senderAgent)throw fail(400,'Für eine Agenten-Übergabe wird ein absendender Agent benötigt.');
      const sAgent=readMeta(db,key('agent',value.project+':'+value.senderAgent));
      if(!sAgent||!sAgent.active)throw fail(400,'Der gewählte Agent ist in diesem Projekt nicht aktiv.');
+     if(sAgent.permissions&&sAgent.permissions.writeMessages===false)throw fail(403,'Für dieses KI-Teammitglied ist das Schreiben von Nachrichten nicht freigegeben.');
      senderAgent=sAgent.id;
      senderModel=sAgent.model;
      if(value.handoff){
-      if(sAgent.role!=='coordinator'&&!sAgent.capabilities?.includes('task-delegate'))throw fail(403,'Nur ein Koordinator-Agent darf Aufgaben an weitere Agenten delegieren.');
+      const allowedToDelegate=sAgent.permissions?sAgent.permissions.delegateAgents===true:(sAgent.role==='coordinator'||sAgent.capabilities?.includes('task-delegate'));
+      if(!allowedToDelegate)throw fail(403,'Nur ein Agent mit ausdrücklicher Delegationsberechtigung darf Aufgaben an weitere Agenten übergeben.');
       if(value.handoff.toAgent===sAgent.id)throw fail(400,'Ein Agent kann keinen Unterauftrag an sich selbst übergeben.');
       const tAgent=readMeta(db,key('agent',value.project+':'+value.handoff.toAgent));
       if(!tAgent||!tAgent.active)throw fail(400,'Der Ziel-Agent ist in diesem Projekt nicht aktiv.');
+      if(tAgent.permissions&&tAgent.permissions.readProject===false)throw fail(400,'Der Ziel-Agent besitzt keinen Lesezugriff auf dieses Projekt.');
       handoff={fromAgent:sAgent.id,toAgent:tAgent.id,task:value.topicTask??null,status:value.handoff.status,summary:value.handoff.summary};
       if(!value.recipient){recipientKind='agent';}
      }
@@ -197,6 +279,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(value.id,value.project,member.id,value.body,now());
     putMeta(db,key('message',value.id),{
      kind:handoff?'agent-handoff':senderAgent?'agent':'human',
+     origin:senderAgent?'human-authored':'human',
      replyTo:value.replyTo??null,
      ...(senderModel?{model:senderModel}:{}),
      ...(value.topicTask?{topicTask:value.topicTask}:{}),
@@ -247,7 +330,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     const output=JSON.parse(job.result??'null')?.output;if(typeof output!=='string'||!output.trim())throw fail(409,'Dieser Auftrag enthält noch keine teilbare Antwort.');
     const message=randomUUID(),text=output.slice(0,3900)+(output.length>3900?'\n[Auszug; vollständige Antwort beim Auftrag]':'');
     db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(message,value.project,member.id,text,now());
-    putMeta(db,key('message',message),{kind:'ai-shared',model:run.model,job:job.id,reviewed:false});putMeta(db,key('run',job.id),{...run,sharedMessage:message});
+    putMeta(db,key('message',message),{kind:'ai-shared',origin:'verified-run',model:run.model,job:job.id,reviewed:false});putMeta(db,key('run',job.id),{...run,sharedMessage:message});
     return remember(db,member,value,{ok:true,message});
    }
    throw fail(400,'Unbekannte Raumaktion.');

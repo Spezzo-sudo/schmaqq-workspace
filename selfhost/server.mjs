@@ -437,9 +437,11 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(route.startsWith('/api/'))throw fail(404,'Schnittstelle nicht gefunden.');
    if(method!=='GET'&&method!=='HEAD')throw fail(405,'Methode nicht erlaubt.');
    const filename=path.resolve(staticDir,'.'+decodeURIComponent(route));if(!filename.startsWith(path.resolve(staticDir)+path.sep)&&filename!==path.resolve(staticDir))throw fail(403,'Ungültiger Pfad.');
-   const target=existsSync(filename)&&statSync(filename).isFile()?filename:path.join(staticDir,'index.html');
+   const exists=existsSync(filename)&&statSync(filename).isFile();
+   if(!exists&&route.startsWith('/avatars/'))throw fail(404,'Avatar-Bilddatei noch nicht hinterlegt.');
+   const target=exists?filename:path.join(staticDir,'index.html');
    if(!existsSync(target))throw fail(503,'Oberfläche zuerst mit npm run studio:build erstellen.');
-   const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.woff2':'font/woff2'}[path.extname(target)]??'application/octet-stream';res.writeHead(200,{'Content-Type':mime});res.end(readFileSync(target));
+   const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.json':'application/json','.woff2':'font/woff2'}[path.extname(target)]??'application/octet-stream';res.writeHead(200,{'Content-Type':mime});res.end(readFileSync(target));
   }catch(e){if(!e.status)console.error('studio request failed',e.message);send({error:e.status?e.message:'Anfrage fehlgeschlagen.'},e.status??500);}
  };
  const server=http.createServer(handleRequest);

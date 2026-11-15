@@ -5,7 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {createStudioServer} from './server.mjs';
 import {createInvite} from './store.mjs';
-import {filterMessengerMessages,memberRoleSummary} from '../studio/room-model.ts';
+import {filterMessengerMessages,memberRoleSummary,agentEffectivePermissions,agentExecutionStatus} from '../studio/room-model.ts';
+import {FIELD_GUILD_R2_PRESETS,filterAvatarPresets,findAvatarPreset,resolveAgentAvatar} from '../studio/avatar-catalog.ts';
 
 async function fixture(t){
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-messenger-'));
@@ -31,11 +32,34 @@ async function fixture(t){
   people.push({...member,cookie:result.cookie,name});
  }
  const [marco,markus,viewer]=people;
- return {app,post,get,marco,markus,viewer};
+ return {app,host,post,get,marco,markus,viewer};
 }
 
-test('project messenger: AI team members, addressed messages, task topics, coordinator handoffs, and role boundaries',async t=>{
- const {post,get,marco,markus,viewer}=await fixture(t);
+test('Field Guild R2 avatar catalog: 12 stable presets, human/animal filters, and fallback resolution',()=>{
+ const expectedIds=['leitwolf','herr-grau','mara','frau-kern','otto','nova','dachs','fuchs','baer','rabe','schaefer','eule'];
+ assert.deepEqual(FIELD_GUILD_R2_PRESETS.map(p=>p.id),expectedIds);
+ assert.equal(filterAvatarPresets('all').length,12);
+ assert.equal(filterAvatarPresets('human').length,6);
+ assert.equal(filterAvatarPresets('animal').length,6);
+ assert.equal(filterAvatarPresets('all','Security').length,1);
+ assert.equal(filterAvatarPresets('all','Security')[0].id,'rabe');
+
+ const grau=findAvatarPreset('herr-grau');
+ assert.ok(grau);
+ assert.equal(grau.assetPath,'/avatars/field-guild-r2/herr-grau.png');
+ assert.equal(grau.fallbackCode,'HG');
+
+ const resolvedPreset=resolveAgentAvatar({name:'Architekt Grau',avatarPresetId:'herr-grau',avatar:''});
+ assert.equal(resolvedPreset.assetPath,'/avatars/field-guild-r2/herr-grau.png');
+ assert.equal(resolvedPreset.fallbackCode,'HG');
+
+ const resolvedCustom=resolveAgentAvatar({name:'Eigener Kollege',avatarPresetId:'',avatar:'EK'});
+ assert.equal(resolvedCustom.assetPath,null);
+ assert.equal(resolvedCustom.fallbackCode,'EK');
+});
+
+test('project messenger & Field Guild R2 profiles: configurable agent profiles, server-enforced permissions, and origin honesty',async t=>{
+ const {app,post,get,marco,markus,viewer}=await fixture(t);
 
  const created=await post({action:'create',id:'op-room-1',title:'Mobile Messenger',description:'Gemeinsame Projektsteuerung'},marco.cookie);
  assert.equal(created.status,200);
@@ -49,16 +73,22 @@ test('project messenger: AI team members, addressed messages, task topics, coord
  const deniedAgent=await post({action:'agent',id:'op-agent-denied',project,name:'Unbefugt',role:'developer',model:'gpt-5-codex'},viewer.cookie);
  assert.equal(deniedAgent.status,403);
 
- // Marco creates a Coordinator agent (idempotent replay + conflict detection verified)
+ // Marco creates a Coordinator agent with Field Guild R2 preset "leitwolf"
  const coordPayload={
   action:'agent',
   id:'op-agent-coord',
   project,
-  name:'Koordinator-Agent',
-  avatar:'KO',
+  name:'Leitwolf',
+  nickname:'Taktgeber',
+  avatar:'LW',
+  avatarPresetId:'leitwolf',
   role:'coordinator',
   model:'gpt-5-codex',
   purpose:'Zerlegt Projektziele und delegiert Teilaufgaben begrenzt an Spezial-Agenten',
+  personality:'Ruhig, verbindlich, behält Abhängigkeiten im Blick',
+  responsibility:'Projektkoordination und strukturierte Übergaben',
+  knowledgeScope:'Gesamtes Projekt, Aufgaben und Entscheidungen',
+  contextSources:['messages','tasks','decisions','repository'],
   capabilities:['chat','task-plan']
  };
  const coordRes=await post(coordPayload,marco.cookie);
@@ -73,20 +103,34 @@ test('project messenger: AI team members, addressed messages, task topics, coord
  const coordConflict=await post({...coordPayload,name:'Anderer Name'},marco.cookie);
  assert.equal(coordConflict.status,409);
 
- // Markus creates a Reviewer specialist agent
- const revAgentRes=await post({
+ // Markus creates "Herr Grau" with full Field Guild R2 profile fields (character chosen independently of role/model)
+ const grauRes=await post({
   action:'agent',
-  id:'op-agent-rev',
+  id:'op-agent-grau',
   project,
-  name:'Prüf-Agent',
-  avatar:'PR',
-  role:'reviewer',
+  name:'Herr Grau',
+  nickname:'Der Prüfer',
+  avatar:'HG',
+  avatarPresetId:'herr-grau',
+  role:'advisor',
   model:'gpt-4.1',
-  purpose:'Prüft Änderungen auf mobile Bedienbarkeit und Tests',
-  capabilities:['chat','review-support']
+  purpose:'Prüft Architektur, Systemgrenzen und mobile Bedienbarkeit',
+  personality:'Trocken, präzise, skeptisch gegenüber unnötiger Komplexität',
+  responsibility:'Architekturberatung und Review-Vorbereitung',
+  knowledgeScope:'selfhost/, studio/, Architektur-Entscheidungen',
+  contextSources:['messages','tasks','decisions','repository','runs'],
+  capabilities:['chat','review-support'],
+  permissions:{
+   readProject:true,
+   writeMessages:true,
+   manageTasks:false,
+   editCode:false,
+   prepareReviews:true,
+   delegateAgents:false
+  }
  },markus.cookie);
- assert.equal(revAgentRes.status,200);
- const revAgentId=revAgentRes.data.agentId;
+ assert.equal(grauRes.status,200);
+ const revAgentId=grauRes.data.agentId;
 
  // Create a task to serve as a conversation topic
  const taskRes=await post({
@@ -110,16 +154,74 @@ test('project messenger: AI team members, addressed messages, task topics, coord
  },marco.cookie);
  assert.equal(msg1.status,200);
 
- // Non-coordinator agent cannot delegate via handoff
+ // Agent without delegateAgents permission cannot delegate via handoff
  const deniedHandoff=await post({
   action:'message',
   id:'msg-denied-handoff',
   project,
-  body:'Versuch einer Übergabe durch Prüf-Agent',
+  body:'Versuch einer Übergabe durch Herr Grau',
   senderAgent:revAgentId,
   handoff:{toAgent:coordId,summary:'Darf nicht delegieren'}
  },markus.cookie);
  assert.equal(deniedHandoff.status,403);
+
+ // Security check: Avatar or role alone NEVER grants permission if permissions.delegateAgents is false
+ const restrictedCoordRes=await post({
+  action:'agent',
+  id:'op-agent-restricted-coord',
+  project,
+  name:'Leitwolf Ohne Delegationsrecht',
+  avatarPresetId:'leitwolf',
+  role:'coordinator',
+  model:'gpt-5-codex',
+  capabilities:['chat','task-plan','task-delegate'],
+  permissions:{
+   readProject:true,
+   writeMessages:true,
+   manageTasks:false,
+   editCode:false,
+   prepareReviews:false,
+   delegateAgents:false
+  }
+ },marco.cookie);
+ assert.equal(restrictedCoordRes.status,200);
+ const restrictedHandoff=await post({
+  action:'message',
+  id:'msg-restricted-handoff',
+  project,
+  body:'Trotz Rolle coordinator und Avatar leitwolf ist delegateAgents gesperrt',
+  senderAgent:restrictedCoordRes.data.agentId,
+  handoff:{toAgent:revAgentId,summary:'Muss serverseitig abgelehnt werden'}
+ },marco.cookie);
+ assert.equal(restrictedHandoff.status,403);
+
+ // Security check: Agent with writeMessages=false cannot post messages
+ const silentAgentRes=await post({
+  action:'agent',
+  id:'op-agent-silent',
+  project,
+  name:'Eule Nur-Lesen',
+  avatarPresetId:'eule',
+  role:'knowledge',
+  model:'gpt-4.1',
+  permissions:{
+   readProject:true,
+   writeMessages:false,
+   manageTasks:false,
+   editCode:false,
+   prepareReviews:false,
+   delegateAgents:false
+  }
+ },marco.cookie);
+ assert.equal(silentAgentRes.status,200);
+ const deniedWriteMsg=await post({
+  action:'message',
+  id:'msg-denied-write',
+  project,
+  body:'Darf nicht schreiben',
+  senderAgent:silentAgentRes.data.agentId
+ },marco.cookie);
+ assert.equal(deniedWriteMsg.status,403);
 
  // Coordinator agent cannot delegate to itself
  const selfHandoff=await post({
@@ -132,7 +234,7 @@ test('project messenger: AI team members, addressed messages, task topics, coord
  },marco.cookie);
  assert.equal(selfHandoff.status,400);
 
- // Coordinator delegates a bounded review check to the Reviewer agent on the task topic
+ // Authorized Coordinator delegates a bounded review check to Herr Grau on the task topic
  const handoffMsg=await post({
   action:'message',
   id:'msg-handoff-1',
@@ -145,19 +247,37 @@ test('project messenger: AI team members, addressed messages, task topics, coord
  },marco.cookie);
  assert.equal(handoffMsg.status,200);
 
- // Verify room state returns agents, enriched member roles, and linked message metadata
+ // Verify room state returns agents, full R2 profile fields, and honest message origin
  const roomState=await get(`/api/room?project=${encodeURIComponent(project)}`,markus.cookie);
  assert.equal(roomState.status,200);
- assert.equal(roomState.data.agents.length,2);
  const coord=roomState.data.agents.find(a=>a.id===coordId);
- assert.equal(coord.name,'Koordinator-Agent');
- assert.ok(coord.capabilities.includes('task-delegate'),'coordinator automatically receives task-delegate');
+ assert.equal(coord.name,'Leitwolf');
+ assert.equal(coord.nickname,'Taktgeber');
+ assert.equal(coord.avatarPresetId,'leitwolf');
+ assert.ok(coord.capabilities.includes('task-delegate'));
+ assert.equal(agentEffectivePermissions(coord).delegateAgents,true);
+
+ const grau=roomState.data.agents.find(a=>a.id===revAgentId);
+ assert.equal(grau.name,'Herr Grau');
+ assert.equal(grau.nickname,'Der Prüfer');
+ assert.equal(grau.avatarPresetId,'herr-grau');
+ assert.equal(grau.role,'advisor');
+ assert.equal(grau.personality,'Trocken, präzise, skeptisch gegenüber unnötiger Komplexität');
+ assert.deepEqual(grau.contextSources,['messages','tasks','decisions','repository','runs']);
+ assert.equal(grau.permissions.prepareReviews,true);
+ assert.equal(grau.permissions.delegateAgents,false);
+
+ // Execution status never fakes model execution when no runner is online
+ const execStatus=agentExecutionStatus(grau,roomState.data,[]);
+ assert.equal(execStatus.state,'idle');
+ assert.equal(execStatus.modelAvailable,false);
 
  const m1=roomState.data.messages.find(m=>m.id==='msg-1');
  assert.equal(m1.topicTask,taskId);
  assert.equal(m1.taskId,taskId);
  assert.equal(m1.recipient,markus.id);
  assert.equal(m1.recipientKind,'member');
+ assert.equal(m1.origin,'human');
 
  const mh=roomState.data.messages.find(m=>m.id==='msg-handoff-1');
  assert.equal(mh.kind,'agent-handoff');
@@ -166,6 +286,7 @@ test('project messenger: AI team members, addressed messages, task topics, coord
  assert.equal(mh.recipientKind,'agent');
  assert.equal(mh.topicTask,taskId);
  assert.equal(mh.replyTo,'msg-1');
+ assert.equal(mh.origin,'human-authored','manual contribution in agent name is marked human-authored, never verified-run');
  assert.equal(mh.handoff.toAgent,revAgentId);
  assert.equal(mh.handoff.summary,'Mobile Viewport-Prüfung (<=650px) für Messenger-Header');
 
@@ -180,4 +301,10 @@ test('project messenger: AI team members, addressed messages, task topics, coord
 
  const guestMember=roomState.data.members.find(m=>m.id===viewer.id);
  assert.equal(memberRoleSummary(guestMember),'Zuschauer');
+
+ // Members without project view permission are excluded from project room member list
+ const revokeRes=await post({action:'roles',project,member:viewer.id,roles:[]},marco.cookie,'/api/project-roles');
+ assert.equal(revokeRes.status,200);
+ const roomAfterRevoke=await get(`/api/room?project=${encodeURIComponent(project)}`,markus.cookie);
+ assert.equal(roomAfterRevoke.data.members.some(m=>m.id===viewer.id),false);
 });
