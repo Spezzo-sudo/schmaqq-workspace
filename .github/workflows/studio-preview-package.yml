@@ -1,0 +1,60 @@
+# SCHMAQQ Studio – full-stack preview package, not a production deployment.
+# Every change on main or an open PR produces a tested Node/SQLite Studio release artifact.
+# Public Cloudflare staging must be configured separately; it needs a safe runtime and HTTPS origin.
+name: Studio Vorschau-Paket
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: studio-preview-package-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15'
+          cache: npm
+      - name: Installieren
+        run: npm ci --no-audit --no-fund
+      - name: Studio Tests, Typen und Build
+        run: |
+          umask 0022
+          npm run studio:verify
+      - name: Komplettes Node-Studio-Release bauen und isoliert starten
+        id: release
+        run: |
+          umask 0022
+          mkdir -p "$RUNNER_TEMP/studio-preview"
+          node selfhost/release.mjs > "$RUNNER_TEMP/studio-preview/release.log"
+          node --input-type=module -e '
+            import { readFileSync, copyFileSync } from "node:fs";
+            import { appendFileSync } from "node:fs";
+            import path from "node:path";
+            const s=readFileSync(process.env.RUNNER_TEMP+"/studio-preview/release.log","utf8");
+            const start=s.lastIndexOf("\n{");
+            if(start<0)throw new Error("Release JSON missing");
+            const obj=JSON.parse(s.slice(start+1));
+            if(!obj.archive||!obj.directory)throw new Error("Release artifact missing");
+            copyFileSync(obj.archive,process.env.RUNNER_TEMP+"/studio-preview/schmaqq-studio-fullstack.tar.gz");
+            appendFileSync(process.env.GITHUB_OUTPUT,"release_dir="+obj.directory+"\n");
+          '
+          node selfhost/release-smoke.mjs "${{ steps.release.outputs.release_dir }}"
+      - name: Vollständiges Vorschau-Paket sichern
+        uses: actions/upload-artifact@v4
+        with:
+          name: schmaqq-studio-fullstack-${{ github.sha }}
+          path: ${{ runner.temp }}/studio-preview/schmaqq-studio-fullstack.tar.gz
+          if-no-files-found: error
+          retention-days: 14
