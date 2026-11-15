@@ -19,6 +19,7 @@ import ProjectStart from '../app/project-start';
 import ProjectReadiness,{emptyReadiness,type Readiness} from '../app/project-readiness';
 import ProjectConnect from './project-connect';
 import ProjectReady from './project-ready';
+import ProjectAgents from './project-agents';
 import TeamTaskView from './team-task';
 import ProjectOverview,{type TaskPane} from './project-overview';
 import TeamKnowledge from './team-knowledge';
@@ -31,7 +32,7 @@ import './team-workflow.css';
 import './schmaqq-convergence.css';
 import './studio-navigation.css';
 const emptyTeam:TeamState={tasks:[],events:[]};
-const areaIcons:Record<string,typeof Home>={overview:Home,tasks:ListChecks,talk:MessageSquare,knowledge:BookOpen,connect:Settings};
+const areaIcons:Record<string,typeof Home>={overview:Home,tasks:ListChecks,talk:MessageSquare,knowledge:BookOpen,team:Users,connect:Settings};
 export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;demoMode?:boolean}){
  const [route,setRoute]=useState(readRoomRoute),[rooms,setRooms]=useState<Room[]>([]),[room,setRoom]=useState<RoomState|null>(null),[team,setTeam]=useState<TeamState>(emptyTeam);
  const [resources,setResources]=useState<Resource[]>([]),[members,setMembers]=useState<RoomMember[]>([]),[error,setError]=useState(''),[connected,setConnected]=useState(false),[search,setSearch]=useState(''),[modal,setModal]=useState<Modal|null>(null);
@@ -139,6 +140,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
      {tab==='tasks'&&<TaskList tasks={projectTasks} userId={user.userId} name={name} search={search} onSearch={setSearch} onOpen={openTask}/>}
      {tab==='knowledge'&&<TeamKnowledge room={room} search="" refresh={refresh} onNew={kind=>setModal({kind})} onSource={source=>{navigate({tab:'talk'});requestAnimationFrame(()=>document.getElementById('message-'+source)?.scrollIntoView({block:'center'}));}}/>}
      {tab==='knowledge'&&<ProjectBriefing room={room} tasks={projectTasks}/>}
+     {tab==='team'&&<ProjectAgents key={room.project.id} project={room.project.id} tasks={projectTasks} userId={user.userId} onOpenTask={openTask}/>}
      {tab==='connect'&&<ProjectSettings room={room} resources={resources} userId={user.userId} refresh={refresh} onRepository={()=>setModal({kind:'repository'})}/>}
     </div>
    </>}

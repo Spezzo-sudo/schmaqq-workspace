@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import {aiRoute,aiAccess} from './ai-routes.mjs';
+import {createAgentRoute,agentCodexPayload,recordAgentRun} from './agents.mjs';
 import {listWorkspaces,validScope,assertAvailable} from './workspaces.mjs';
 import {reviewState,completeReview} from './reviews.mjs';
 import {createPullRequestReader,configuredRepos} from './github-pr-status.mjs';
@@ -75,6 +76,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  });
  const roomRoute=createRoomRoute({db,user,readJSON,parse});
  const teamRoute=createTeamRoute({db,user,readJSON,parse});
+ const agentRoute=createAgentRoute({db,user,readJSON,parse,invoke:(memberId,route,value)=>requestAsMember(memberId,route,value)});
  const practiceRoute=createPracticeRoute({db,user,readJSON,parse});
  const githubWorkflow=createGithubWorkflow({db,tokens:demoMode?{}:githubMemberTokens(process.env.STUDIO_GITHUB_MEMBER_TOKENS),app:studioGithubApp});
  const workspaceHttpRoute=createWorkspaceHttpRoute({
@@ -87,6 +89,10 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  // headers cannot set its WeakMap identity; ordinary API auth stays unchanged.
  async function executeAsMember(memberId,route,value){
   if(!/^\/api\/(rooms|room\/(?:context|tasks)|development(?:\/job|\/workspaces)?|executors)(?:\?|$)/.test(route)||/^\/api\/(executors|development\/workspaces|room\/tasks)/.test(route)&&value)throw fail(403,'Pluginoperation nicht freigegeben.');
+  return requestAsMember(memberId,route,value);
+ }
+ // One in-process request in the name of an already authenticated member; every route check runs as usual.
+ async function requestAsMember(memberId,route,value){
   const req=Readable.from(value?[Buffer.from(JSON.stringify(value))]:[]);req.url=route;req.method=value?'POST':'GET';req.headers={origin,'content-type':'application/json'};req.socket={remoteAddress:'127.0.0.1'};
   internalMembers.set(req,memberId);
   let status=200,body;
@@ -115,6 +121,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(await githubAppRoute({route,method,req,res,url,send}))return;
    if(await collaborationRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
    if(await teamRoute({route,method,req,url,db,user,send,readJSON,parse}))return;
+   if(await agentRoute({route,method,req,url,send}))return;
    if(await practiceRoute({route,method,req,send}))return;
    if(route==='/api/team/project-connect'){
     const member=user(req);if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
@@ -368,7 +375,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     }
     if(v.action==='device'){const name=parse(text,v.name),t=token(),did=uuid();db.prepare('INSERT INTO devices(id,owner,name,hash) VALUES(?,?,?,?)').run(did,m.id,name,digest(t));send({id:did,token:t});return;}
     if(v.action==='revoke'){const did=parse(id,v.id);if(!db.prepare('UPDATE devices SET revoked=1 WHERE id=? AND owner=?').run(did,m.id).changes)throw fail(404,'Gerät nicht gefunden.');db.prepare("UPDATE jobs SET status='cancelled' WHERE device=? AND status='queued'").run(did);send({ok:true});return;}
-    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','probe','prepare','update','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file','deploy-key']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),offset:z.number().int().min(0).max(4194304).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional()}),v);
+    const value=parse(z.object({action:z.literal('job'),device:id,project:id,title:text.optional(),scope:z.string().max(240).refine(validScope).optional(),task:id.optional(),operation:z.enum(['inspect','probe','prepare','update','status','check','review','submit','preview','integrate','codex','files','read-file','save-file','create-file','create-file','deploy-key']),file:z.string().min(1).max(400).optional(),revision:z.string().regex(/^[a-f0-9]{64}$/).optional(),offset:z.number().int().min(0).max(4194304).optional(),content:z.string().max(65536).optional(),worktree:id.optional(),source:id.optional(),issue:z.number().int().positive().max(2147483647).optional(),prompt:z.string().trim().max(12000).optional(),agent:id.optional()}),v);
     if(!db.prepare('SELECT id FROM projects WHERE id=?').get(value.project))throw fail(404,'Projekt nicht gefunden.');
     // "auto" is resolved here, once; the job row then names the executor that runs it.
     // Reading needs a place in the project, changing needs the developer role, taking over a change the admin role or authorship.
@@ -385,7 +392,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      if(linked){const current=completion(db,linked).result;if(!current||current.id!==source.id||current.changedAfter||current.contractRevision!==taskContract(db,linked).revision)throw fail(409,'Der Prüfstand ist nicht mehr aktuell. Erneut einreichen und prüfen lassen.');}
      if(!/^[a-f0-9]{40,64}$/.test(result.commit)||!/^studio\/[\w-]+$/.test(result.branch))throw fail(400,'Ungültiger Git-Stand.');payload={commit:result.commit,branch:result.branch,reviewJob:source.id};
     }else{
-     const base=db.prepare("SELECT * FROM jobs WHERE id=? AND owner=? AND device=? AND project=? AND action='prepare' AND status='completed'").get(value.worktree??'',m.id,value.device,value.project);if(!base)throw fail(403,'Eine eigene vorbereitete Arbeitskopie wird benötigt.');if(db.prepare('SELECT archived FROM workspaces WHERE job=?').get(base.id)?.archived)throw fail(409,'Arbeitsbereich zuerst wieder öffnen.');payload={worktree:base.id,...(JSON.parse(base.payload).issue?{issue:JSON.parse(base.payload).issue}:{}),...(value.operation==='codex'?{prompt:value.prompt??''}:{})};if(value.operation==='codex'&&!payload.prompt)throw fail(400,'Auftrag fehlt.');
+     const base=db.prepare("SELECT * FROM jobs WHERE id=? AND owner=? AND device=? AND project=? AND action='prepare' AND status='completed'").get(value.worktree??'',m.id,value.device,value.project);if(!base)throw fail(403,'Eine eigene vorbereitete Arbeitskopie wird benötigt.');if(db.prepare('SELECT archived FROM workspaces WHERE job=?').get(base.id)?.archived)throw fail(409,'Arbeitsbereich zuerst wieder öffnen.');payload={worktree:base.id,...(JSON.parse(base.payload).issue?{issue:JSON.parse(base.payload).issue}:{}),...(value.operation==='codex'?{prompt:value.prompt??''}:{})};if(value.operation==='codex'&&!payload.prompt)throw fail(400,'Auftrag fehlt.');if(value.agent){if(value.operation!=='codex')throw fail(400,'Ein Agent übernimmt nur KI-Aufträge.');Object.assign(payload,agentCodexPayload(db,m,value.project,value.agent,payload.prompt));}
     }
     if(['files','read-file','save-file','create-file'].includes(value.operation)){
      if(value.operation!=='files'&&!value.file)throw fail(400,'Dateipfad fehlt.');
@@ -417,6 +424,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
       db.prepare('INSERT INTO workspaces(job,title,scope,task) VALUES(?,?,?,?)').run(jid,value.title??(value.issue?'Issue #'+value.issue:'Arbeitskopie'),value.scope??'',value.task??null);
       if(value.task)db.prepare("UPDATE tasks SET assignee=?,status=CASE WHEN status='todo' THEN 'doing' ELSE status END WHERE id=?").run(m.id,value.task);
      }
+     if(payload.agent)recordAgentRun(db,{job:jid,agent:payload.agent,project:value.project,task:db.prepare('SELECT task FROM workspaces WHERE job=?').get(payload.worktree)?.task,by:m.id});
     });send({ok:true,id:jid,device:value.device,placement:payload.placement});return;
    }
    if(route==='/api/development/workspaces'&&method==='GET'){

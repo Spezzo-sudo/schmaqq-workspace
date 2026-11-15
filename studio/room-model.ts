@@ -10,11 +10,11 @@ export type RoomState={project:Room;meta:{revision:number;repository:string|null
 export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;state:'ok'|'running'|'failed';at:number;error?:string}|null};
 export type Resource={team?:boolean;device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;readiness?:WorkshopReadiness;publish:boolean}[]};
 export type ContextPreview={text:string;hash:string;messageIds:string[];task:string|null};
-export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect';
+export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'team'|'connect';
 export type RoomPage='rooms'|'projects'|'conversations'|'team'|'account'|'guide';
 export type RoomRoute={room:string;tab:RoomTab;task:string;page:RoomPage};
-// The five project areas stay inside each project, independently of the global navigation. Former "Ergebnisse" live under Aufgaben → Erledigt.
-export const tabs:{id:RoomTab;label:string}[]=[{id:'overview',label:'Übersicht'},{id:'tasks',label:'Aufgaben'},{id:'talk',label:'Gespräch'},{id:'knowledge',label:'Wissen'},{id:'connect',label:'Einstellungen'}];
+// The six project areas stay inside each project, independently of the global navigation. Former "Ergebnisse" live under Aufgaben → Erledigt.
+export const tabs:{id:RoomTab;label:string}[]=[{id:'overview',label:'Übersicht'},{id:'tasks',label:'Aufgaben'},{id:'talk',label:'Gespräch'},{id:'knowledge',label:'Wissen'},{id:'team',label:'Team'},{id:'connect',label:'Einstellungen'}];
 export function readRoomRoute(search=location.search):RoomRoute{
  const p=new URLSearchParams(search),old=p.get('view'),project=p.get('project'),explicit=p.get('tab');
  const room=p.get('room')??(project&&project!=='all'?project:'');

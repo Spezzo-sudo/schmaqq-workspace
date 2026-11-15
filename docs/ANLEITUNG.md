@@ -65,6 +65,21 @@ auch bei GitHub-Projekten. Eine Freigabe zählt nur, solange die Person im Proje
 Rolle, sagt die Aufgabe, dass eine neue Freigabe nötig ist. Rollen und Prüfregel („Zweite Person prüft“ oder „Admin darf allein freigeben“) stehen
 unter Projekt → Einstellungen → „Wer darf was“.
 
+## Projektteam und Agenten
+
+Im Projekt unter **Team** stehen die Menschen des Projekts und die KI-Agenten, die ihr dazugeholt habt.
+
+- **Agent hinzufügen** (Entwickler und Admins): Name, Rolle (Entwickler, Prüfer, Recherche), wofür er da ist, und womit er arbeitet:
+  Codex mit deinem ChatGPT (Modellname und Stärke leicht/mittel/hoch wählbar) oder ein lokales Modell auf einem verbundenen PC.
+- **Ein Agent arbeitet nur auf Auftrag.** „Auftrag geben“ startet einen normalen Studio-Auftrag in deinem Namen und mit deinem KI-Zugang.
+  Niemand verbraucht das Kontingent einer anderen Person.
+- **Codex-Agenten** ändern Code in deiner Arbeitskopie einer Aufgabe auf deinem eigenen Rechner. Die Arbeitskopie legst du in der Aufgabe mit „Selbst bearbeiten“ an.
+- **Lokale Agenten** lesen den Projektstand und antworten; sie ändern keinen Code. Die Antwort sieht, wer den Auftrag gegeben hat.
+- Bei jedem Agenten steht, wer ihn ins Team geholt hat und wer ihm welchen Auftrag gegeben hat. Dasselbe steht im Verlauf des Projekts.
+- Ändern, pausieren und entfernen darf, wer den Agenten angelegt hat, oder der Projekt-Admin.
+
+Noch nicht gebaut: Agenten, die selbst weitere Agenten beauftragen, und Agenten im Gespräch per Erwähnung.
+
 ## Für Einrichter und Admins
 
 1. **Leute holen:** Team → „Jemanden einladen“ → Benutzername (z. B. `markus`) oder E-Mail eintragen →

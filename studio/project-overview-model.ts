@@ -10,7 +10,7 @@ export function groupEvents(events:TeamEvent[],titles:Map<string,string>):EventG
  for(const e of events){
   const last=groups.at(-1);
   // Only repeat events of the same kind and meaning are grouped ("Hängt fest" and "Geht wieder weiter" stay separate).
-  if(last&&last.actor===e.actor&&last.task===e.task&&last.kind===e.kind&&(last.kind!=='block'||last.body===e.body)&&last.earliest-e.created<6*3600000){last.count++;last.earliest=e.created;continue;}
+  if(last&&last.actor===e.actor&&last.task===e.task&&last.kind===e.kind&&(!['block','agent','agent-run'].includes(last.kind)||last.body===e.body)&&last.earliest-e.created<6*3600000){last.count++;last.earliest=e.created;continue;}
   const title=e.task?titles.get(e.task):undefined;
   let body=e.body;for(const sep of [' · ',': '])if(title&&body.endsWith(sep+title))body=body.slice(0,-(sep+title).length);
   groups.push({id:e.id,actor:e.actor,task:e.task,kind:e.kind,body,count:1,latest:e.created,earliest:e.created});
@@ -37,6 +37,7 @@ export function humanEvent(kind:string,body:string):string|null{
  if(kind==='live')return 'Ist jetzt live';
  if(kind==='vote')return /Änderung/.test(body)?'Änderung gewünscht':'Ergebnis freigegeben';
  if(kind==='codex')return 'KI hat an der Aufgabe gearbeitet';
+ if(kind==='agent'||kind==='agent-run')return body;
  if(kind==='knowledge')return body.startsWith('Wissen archiviert')?null:'Etwas im Wissen festgehalten';
  if(kind==='takeover'||kind==='claim')return 'Aufgabe übernommen';
  if(kind==='handoff'||kind==='assign')return 'Aufgabe weitergegeben';

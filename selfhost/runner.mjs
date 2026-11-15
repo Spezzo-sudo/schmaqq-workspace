@@ -254,7 +254,7 @@ export class LocalRunner{
   }
   if(job.action==='codex'){
    if(!p.allowCodex)throw new Error('Codex für dieses lokale Projekt noch nicht freigegeben.');
-   const result=await runCodex({executable:this.config.codex??'codex',cwd:w.dir,prompt:job.payload.prompt,sessionFile:path.join(this.state,`codex-${job.project}-${w.key}.session`),signal:control.signal,onEvent:control.onEvent});
+   const result=await runCodex({executable:this.config.codex??'codex',cwd:w.dir,prompt:job.payload.prompt,...(job.payload.model?{model:job.payload.model}:{}),...(job.payload.agent&&job.payload.effort?{effort:job.payload.effort}:{}),sessionFile:path.join(this.state,`codex-${job.project}-${w.key}.session`),signal:control.signal,onEvent:control.onEvent});
    return {...result,branch:w.branch,status:await this.git(w.dir,'status','--short')};
   }
   throw new Error('Unbekannter Auftrag.');

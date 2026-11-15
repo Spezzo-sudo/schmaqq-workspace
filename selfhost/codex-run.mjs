@@ -3,7 +3,10 @@ import {StringDecoder} from 'node:string_decoder';
 import {command} from './process.mjs';
 
 // Session identifiers stay on the owning PC and are bound to one worktree.
-export async function runCodex({executable,cwd,prompt,sessionFile,signal,onEvent=()=>{},execute=command}){
+// model and effort come from a project agent's definition; without them Codex uses the person's own defaults.
+export async function runCodex({executable,cwd,prompt,sessionFile,signal,model,effort,onEvent=()=>{},execute=command}){
+ if(model!==undefined&&!/^[\w.:/-]{1,80}$/.test(model))throw new Error('Ungültiger Modellname.');
+ if(effort!==undefined&&!['low','medium','high'].includes(effort))throw new Error('Ungültige Stärke.');
  const env={...process.env};delete env.OPENAI_API_KEY;
  const auth=await execute([executable,'login','status'],cwd,{env,timeout:20000,signal});
  if(!/chatgpt/i.test(auth))throw new Error('Bitte Codex auf diesem PC mit deinem ChatGPT-Konto anmelden.');
@@ -23,7 +26,7 @@ export async function runCodex({executable,cwd,prompt,sessionFile,signal,onEvent
   else if(event.type==='turn.started')onEvent({type:'status',text:'Codex bearbeitet deinen Auftrag.'});
   else if(event.type==='error'||event.type==='turn.failed')onEvent({type:'error',text:String(event.message??event.error?.message??'Codex-Auftrag fehlgeschlagen.').slice(-4000)});
  }
- const common=['-c','forced_login_method="chatgpt"','-c','approval_policy="never"','-c','sandbox_mode="workspace-write"'];
+ const common=['-c','forced_login_method="chatgpt"','-c','approval_policy="never"','-c','sandbox_mode="workspace-write"',...(model?['-c',`model="${model}"`]:[]),...(effort?['-c',`model_reasoning_effort="${effort}"`]:[])];
  const argv=resumed?[executable,'exec',...common,'resume','--json',session,'-']:[executable,'exec',...common,'--json','-C',cwd,'-'];
  await execute(argv,cwd,{input:prompt,env,timeout:1800000,signal,onStdout:b=>{
   buffer+=decoder.write(b);let end;while((end=buffer.indexOf('\n'))>=0){line(buffer.slice(0,end));buffer=buffer.slice(end+1);}if(buffer.length>1000000)buffer='';

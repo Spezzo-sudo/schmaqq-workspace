@@ -1,4 +1,22 @@
 {
+  "project_agents_20261115": {
+    "state": "implemented_locally_tested_not_deployed",
+    "scope": "First slice of project agents (target picture docs/STUDIO_TEAM_AGENTS_CHATGPT_MCP_BOT_HQ.md, Phase C): named AI team members per project with role, purpose, engine (Codex with the ordering person's own ChatGPT sign-in, or a local model on a connected PC), model and effort; project area 'Team' lists people and agents; an order to an agent is an ordinary Studio job of the person who gives it; who brought an agent in and who ordered what is visible to the project.",
+    "implemented": [
+      "selfhost/agents.mjs (/api/agents: list, create, update, pause, remove, run; idempotent create/run; max 12 agents and 3 concurrent agent runs per project)",
+      "/api/development job accepts agent for operation codex (identity prefix, model, effort in payload)",
+      "selfhost/codex-run.mjs passes model and model_reasoning_effort to the unchanged Codex CLI",
+      "studio/project-agents.tsx, project tab 'Team', history wording for agent events"
+    ],
+    "verification": "selfhost/agents.test.mjs (roles, name uniqueness, replay, model access per person, project scope, answer privacy, Codex only on the ordering person's own machine); node selfhost/verify.mjs --local passed (328 tests, 325 pass, 3 skipped, TypeScript, build). Browser: local throwaway Studio with two fixture accounts, Chromium at 320/360/390/768/1280 px: add agent, order, result, second person's view; no horizontal overflow.",
+    "limits": [
+      "No real Codex CLI and no real local model were run: runner side is covered by argument tests and a simulated job completion. The Codex model name is passed through unchecked; an unknown name fails at the first order.",
+      "Not tested on a real phone, not on the VPS.",
+      "Not built yet: coordinator agents that create or instruct other agents, agent-to-agent hand-over, addressing agents by mention in the conversation, live step display, budgets, Claude Code engine, ChatGPT-MCP tools for agents.",
+      "Codex agent orders need the person's working copy on the person's own machine; copies in the shared workshop are refused because that machine carries the owner's sign-in. Plain 'codex' jobs without an agent keep their earlier behaviour."
+    ],
+    "production_changed": false
+  },
   "klimafinder_practice_20261030": {
     "state": "review_ready_not_shared",
     "update": "Own network namespace per test/build job live (a4c1667, rollback fed02f9). Klimafinder check fully green incl. test_backend; review commit 67b1cab on studio/ff3f7e80 with preview; not published (worker upload not permitted).",
