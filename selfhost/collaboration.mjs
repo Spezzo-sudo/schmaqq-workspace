@@ -26,7 +26,7 @@ export function taskJobState(db,taskId){
   ORDER BY j.created DESC,j.rowid DESC LIMIT 1`).get(...stepActions,taskId,taskId,taskId);
  if(!jobs||jobs.status==='completed')return {lastFailure:null};
  let result={};try{result=JSON.parse(jobs.result??'{}')??{};}catch{}
- const detail=typeof result.error==='string'&&result.error.trim()?result.error.trim().slice(0,600):jobs.status==='interrupted'?'Die Verbindung zur Werkstatt ist abgerissen.':'';
+ const detail=typeof result.error==='string'&&result.error.trim()?result.error.trim().slice(0,1800):jobs.status==='interrupted'?'Die Verbindung zur Werkstatt ist abgerissen.':'';
  return {lastFailure:{id:jobs.id,action:jobs.action,owner:jobs.owner,ownerName:jobs.ownerName,at:jobs.created,interrupted:jobs.status==='interrupted',text:failureText[jobs.action],detail}};
 }
 // Whether a working copy holds a change of its own: saved or created files, a finished

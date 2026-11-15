@@ -119,7 +119,7 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
       {/* With a button the sentence is small help underneath (or none when the button says it all); without one it is the message. */}
       {!step.action&&<p>{step.waiting&&<span className="team-spinner" aria-hidden="true"/>}{step.text}</p>}
       {step.action&&<button className="rw-button lime" disabled={busy||stepBlocked} onClick={()=>go(step.action!)}>{step.label}</button>}
-      {step.action&&!step.quiet&&<small className="team-next-hint">{step.text}</small>}
+      {step.action&&!step.quiet&&<small className="team-next-hint" style={{whiteSpace:'pre-line'}}>{step.text}</small>}
       {stepBlocked&&copyState.dirty&&<small>Speichere zuerst deine Datei unter „Ändern“.</small>}
      </div>
      {!editing?<div className="team-brief"><h3>Worum es geht</h3><p className={'team-goal'+(fullText?'':' clamped')}>{task.description||'Noch keine Beschreibung.'}</p>{task.description.length>220&&<button className="rw-link" onClick={()=>setFullText(!fullText)}>{fullText?'Weniger anzeigen':'Ganze Beschreibung lesen'}</button>}</div>

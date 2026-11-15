@@ -6,7 +6,7 @@ export function lastProbe(db,device,project){
  if(!j)return null;
  let result={};try{result=JSON.parse(j.result??'{}')??{};}catch{}
  const state=j.status==='completed'&&result.ready===true?'ok':['queued','running','cancelling'].includes(j.status)?'running':'failed';
- return {id:j.id,state,at:j.created,...(state==='failed'?{error:typeof result.error==='string'?result.error.slice(0,600):'Der Probelauf wurde abgebrochen.'}:{})};
+ return {id:j.id,state,at:j.created,...(state==='failed'?{error:typeof result.error==='string'?result.error.slice(0,1800):'Der Probelauf wurde abgebrochen.'}:{})};
 }
 export function workshopReadiness(db,device,entry){
  const probe=lastProbe(db,device,entry.id);
