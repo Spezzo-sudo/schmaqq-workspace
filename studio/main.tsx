@@ -8,6 +8,7 @@ import RoomWorkspace from './team-workspace';
 import {roomResumeURL} from './room-model';
 import '../app/globals.css';
 import './brand.css';
+import './ui-preview.css';
 import type {ChatGPTUser} from '../app/chatgpt-auth';
 
 import {installStudioUIPreview} from './ui-preview-api';
