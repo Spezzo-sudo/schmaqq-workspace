@@ -82,7 +82,7 @@ export class LocalRunner{
   if(!before.revision)throw new Error('Vorbereitung gestoppt: Der Quellstand ist nicht vollständig prüfbar.');
   for(const argv of p.prepare){
    this.control?.onEvent?.({type:'status',text:'Projektumgebung wird in der Arbeitskopie vorbereitet.'});
-   try{await this.untrusted(argv,dir,{timeout:600000});}catch(e){this.control?.signal?.throwIfAborted();throw new Error('Projektvorbereitung fehlgeschlagen. Benötigte Pakete oder erlaubte Downloadquellen prüfen. '+e.message);}
+   try{await this.step('Die Vorbereitung',argv,()=>this.untrusted(argv,dir,{timeout:600000}));}catch(e){this.control?.signal?.throwIfAborted();throw new Error(e.message+'\nHäufige Ursache: Pakete lassen sich nicht herunterladen oder fehlen.');}
   }
   const after=await sourceRevision(dir,this.control);
   if(!after.revision||before.revision!==after.revision)throw new Error('Die Vorbereitung hat Quelldateien verändert oder nicht deklarierte Dateien erzeugt. Generierte Ordner in der Projektkonfiguration prüfen; vor Tests und Veröffentlichung stoppen.');
@@ -237,7 +237,7 @@ export class LocalRunner{
    }
    if(p.preview?.build&&p.preview?.directory){
     await this.excludeBuildOutput(w.dir,p);
-    const before=await sourceRevision(w.dir,control);await this.untrusted(p.preview.build,w.dir,{network:'private'});const output=path.resolve(w.dir,p.preview.directory);if(!existsSync(output))throw new Error(`Die Vorschau wurde gebaut, aber der Ausgabeordner „${p.preview.directory}/“ fehlt. Prüfe, ob der Build-Befehl dorthin schreibt und ob in den Projekteinstellungen der richtige Ausgabeordner eingetragen ist.`);const real=realpathSync(output),workspace=realpathSync(w.dir);
+    const before=await sourceRevision(w.dir,control);await this.step('Der Vorschau-Build',p.preview.build,()=>this.untrusted(p.preview.build,w.dir,{network:'private'}));const output=path.resolve(w.dir,p.preview.directory);if(!existsSync(output))throw new Error(`Die Vorschau wurde gebaut, aber der Ausgabeordner „${p.preview.directory}/“ fehlt. Prüfe, ob der Build-Befehl dorthin schreibt und ob in den Projekteinstellungen der richtige Ausgabeordner eingetragen ist.`);const real=realpathSync(output),workspace=realpathSync(w.dir);
     if(!real.startsWith(workspace+path.sep)||real===workspace)throw new Error('Vorschau-Ausgabe muss innerhalb der Arbeitskopie liegen.');
     const files={};let bytes=0,count=0;
     function collect(dir){for(const item of readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,item.name);if(lstatSync(full).isSymbolicLink())throw new Error('Symlinks sind in Vorschauen nicht erlaubt.');if(item.isDirectory())collect(full);else{const data=readFileSync(full);bytes+=data.length;if(bytes>5000000||++count>500)throw new Error('Vorschau überschreitet 5 MB oder 500 Dateien.');files[path.relative(real,full).split(path.sep).join('/')]=data.toString('base64');}}}
@@ -261,7 +261,20 @@ export class LocalRunner{
  }
  // How many commits of the shared main state this copy does not contain yet (as of the last fetch).
  async behind(dir,p){try{return Number(await this.git(dir,'rev-list','--count',`HEAD..origin/${p.base}`))||0;}catch{return 0;}}
- async check(dir,p){if(!p.check?.length)throw new Error('Vor Einreichung muss ein lokaler Testbefehl konfiguriert werden.');await this.prepareEnvironment(dir,p);return this.untrusted(p.check,dir,{timeout:600000,network:'private'});}
+ // A failed step names itself, its command and the end of its output – "Befehl fehlgeschlagen (1)" alone helps nobody.
+ async step(label,argv,run){
+  const verb=label==='Die Tests'?'sind':'ist';
+  try{return await run();}
+  catch(e){
+   if(e?.name==='AbortError')throw e;
+   const text=String(e?.message??''),code=text.match(/^Befehl fehlgeschlagen \((-?\d+)\)\. /)?.[1],timeout=/^Zeitlimit erreicht\. /.test(text);
+   const rest=text.replace(/^(?:Befehl fehlgeschlagen \(-?\d+\)|Zeitlimit erreicht)\. /,'');
+   if(!code&&!timeout)throw Object.assign(new Error(label+' '+verb+' fehlgeschlagen: '+rest),{cause:e});
+   const tail=rest.split('\n').map(l=>l.trimEnd()).filter(Boolean).slice(-12).join('\n').slice(-1200);
+   throw Object.assign(new Error(`${label}${argv?' („'+argv.join(' ')+'“)':''} ${timeout?(verb==='sind'?'haben':'hat')+' das Zeitlimit erreicht':verb+' fehlgeschlagen (Rückgabewert '+code+')'}. ${tail?'Letzte Ausgabe:\n'+tail:'Der Befehl hat keine Ausgabe geschrieben.'}`),{cause:e});
+  }
+ }
+ async check(dir,p){if(!p.check?.length)throw new Error('Vor Einreichung muss ein lokaler Testbefehl konfiguriert werden.');await this.prepareEnvironment(dir,p);return this.step('Die Tests',p.check,()=>this.untrusted(p.check,dir,{timeout:600000,network:'private'}));}
  close(){for(const child of this.previews.values())child.kill();}
 }
 

@@ -129,7 +129,7 @@ for(const language of ['node','python'])test(`real ${language} preparation and t
 test('preparation failure, cancellation and source mutation stop before tests or publication',async t=>{
  const f=await repository(t,{'source.txt':'original'}),runner=new LocalRunner({stateDir:path.join(f.root,'state'),projects:{}});t.after(()=>runner.close());
  const config={projectPlanVersion:1,check:[process.execPath,'-e','throw Error("test must not execute")'],requires:[],generated:[],prepare:[[process.execPath,'-e','process.exit(9)']]};
- await assert.rejects(runner.check(f.repo,config),/Projektvorbereitung fehlgeschlagen/);
+ await assert.rejects(runner.check(f.repo,config),/Die Vorbereitung .* ist fehlgeschlagen/);
  await assert.rejects(runner.check(f.repo,{...config,prepare:[[process.execPath,'-e',`require('fs').writeFileSync('source.txt','changed')`]]}),/Quelldateien verändert/);
  await f.git('restore','source.txt');
  const controller=new AbortController();runner.control={signal:controller.signal};

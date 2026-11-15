@@ -41,3 +41,13 @@ test('the trial run tests and builds the preview on the main state and leaves no
   await assert.rejects(make('out').run({id:'probe-bad',project:'website',action:'probe',payload:{}}),/Ausgabeordner „out\/“ fehlt/);
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
+
+test('a failed step names itself, its command and the end of its output',async()=>{
+ const dir=mkdtempSync(path.join(os.tmpdir(),'studio-step-'));
+ try{
+  const runner=new LocalRunner({stateDir:path.join(dir,'state'),projects:{}});
+  const p={check:[process.execPath,'-e','console.log("1 Test gestartet");console.error("AssertionError: Startseite ohne h1");process.exit(1)']};
+  await assert.rejects(runner.check(dir,p),e=>/^Die Tests \(„.*“\) sind fehlgeschlagen \(Rückgabewert 1\)\. Letzte Ausgabe:/.test(e.message)&&/Startseite ohne h1/.test(e.message));
+  await assert.rejects(runner.check(dir,{check:[process.execPath,'-e','process.exit(2)']}),/Rückgabewert 2\)\. Der Befehl hat keine Ausgabe geschrieben/);
+ }finally{rmSync(dir,{recursive:true,force:true});}
+});
