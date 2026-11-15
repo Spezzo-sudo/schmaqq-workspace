@@ -265,6 +265,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
      senderAgent=sAgent.id;
      senderModel=sAgent.model;
      if(value.handoff){
+      if(value.recipient&&value.recipient!==value.handoff.toAgent)throw fail(400,'Empfänger und Ziel der Agenten-Übergabe müssen übereinstimmen.');
       const allowedToDelegate=sAgent.permissions?sAgent.permissions.delegateAgents===true:(sAgent.role==='coordinator'||sAgent.capabilities?.includes('task-delegate'));
       if(!allowedToDelegate)throw fail(403,'Nur ein Agent mit ausdrücklicher Delegationsberechtigung darf Aufgaben an weitere Agenten übergeben.');
       if(value.handoff.toAgent===sAgent.id)throw fail(400,'Ein Agent kann keinen Unterauftrag an sich selbst übergeben.');

@@ -1,0 +1,38 @@
+diff --git a/.github/workflows/studio-ci.yml b/.github/workflows/studio-ci.yml
+index 0f272a0..856a9bf 100644
+--- a/.github/workflows/studio-ci.yml
++++ b/.github/workflows/studio-ci.yml
+@@ -5,7 +5,7 @@ name: Studio prüfen
+ 
+ on:
+   pull_request:
+-    branches: [main]
++    branches: [main, 'feat/**', 'infra/**']
+   workflow_dispatch:
+ 
+ permissions:
+@@ -31,9 +31,24 @@ jobs:
+       - name: Geheimnisse, Tests, Typen, Build
+         run: node selfhost/verify.mjs
+       - name: Release-Paket bauen und Probestart
++        id: release
+         run: |
+           node selfhost/release.mjs > "$RUNNER_TEMP/release.out"
+           dir=$(node -e 'const s=require("fs").readFileSync(process.env.RUNNER_TEMP+"/release.out","utf8");console.log(JSON.parse(s.slice(s.lastIndexOf("\n{")+1)).directory)')
+           node selfhost/release-smoke.mjs "$dir"
++          node --input-type=module -e '
++            import {readFileSync,appendFileSync} from "node:fs";
++            const raw=readFileSync(process.env.RUNNER_TEMP+"/release.out","utf8");
++            const release=JSON.parse(raw.slice(raw.lastIndexOf("\n{")+1));
++            if(!release.archive)throw new Error("Release archive missing");
++            appendFileSync(process.env.GITHUB_OUTPUT,"archive="+release.archive+"\n");
++          '
++      - name: Geprüftes Full-Stack-Paket sichern
++        uses: actions/upload-artifact@v4
++        with:
++          name: schmaqq-studio-fullstack-${{ github.sha }}
++          path: ${{ steps.release.outputs.archive }}
++          if-no-files-found: error
++          retention-days: 14
+       - name: Update-Skript prüfen
+         run: bash -n selfhost/deploy/studio-deploy.sh

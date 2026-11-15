@@ -20,7 +20,7 @@ export default function ProjectOverview({room,tasks,events,active,members,resour
  const groups=groupEvents(human,titles),shown=all?groups:groups.slice(0,5);
  const row=({task,summary}:{task:TeamTask;summary:{text:string}})=><li key={task.id}><button className="team-work-card" onClick={()=>onOpenTask(task)}><span><strong>{task.title}</strong><small>{summary.text}</small></span><ChevronRight size={17} aria-hidden="true"/></button></li>;
  return <div className="project-overview">
-  <ProjectReady room={room} resources={resources} members={members} userId={userId} onRepository={onRepository} onRefresh={onRefresh}/>
+  <p className="r3-panel-intro">{room.project.description||'Aufgaben, laufende Arbeit und Entscheidungen in diesem Projekt.'}</p>
   <section aria-labelledby="po-mine"><h2 id="po-mine">Bei dir</h2>
    {mine.length?<ul className="po-list">{mine.map(row)}</ul>:<p className="po-empty">{open.length?'Gerade liegt nichts bei dir.':'Noch keine offenen Aufgaben. Leg mit „Aufgabe“ oben die erste an.'}</p>}
   </section>
@@ -36,6 +36,7 @@ export default function ProjectOverview({room,tasks,events,active,members,resour
     </button>)}
    </div>
   </section>}
+  <details className="r3-project-setup"><summary>Projekteinrichtung</summary><ProjectReady room={room} resources={resources} members={members} userId={userId} onRepository={onRepository} onRefresh={onRefresh}/></details>
   {!!groups.length&&<section className="po-history" aria-labelledby="po-history"><h2 id="po-history">Zuletzt passiert</h2>
    <ol>{shown.map(g=>{const task=g.task?byId.get(g.task):undefined;const body=<><strong>{g.body}</strong><small>{[names.get(g.actor),task?.title].filter(Boolean).join(' · ')}</small><time dateTime={new Date(g.latest).toISOString()}>{when(g.latest)}</time></>;
     return <li key={g.id}>{task?<button onClick={()=>onOpenTask(task)}>{body}</button>:g.kind==='message'?<button onClick={()=>onTab('talk')}>{body}</button>:<div>{body}</div>}</li>;})}</ol>

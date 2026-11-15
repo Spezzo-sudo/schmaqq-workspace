@@ -49,17 +49,17 @@ export type RoomAgent={
  created:number;
  updated:number;
 };
-export type AgentHandoff={fromAgent?:string;toAgent:string;task?:string|null;summary:string;status:'delegated'|'in_progress'|'completed'};
+export type AgentHandoff={fromAgent?:string;toAgent:string;task?:string|null;summary:string;status:'delegated'|'in_progress'|'completed'|'requested'|'stopped'};
 export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;senderAgent?:string|null;handoff?:AgentHandoff|null};
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
-export type RoomRun={id:string;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;updated?:number;task:string|null};
+export type RoomRun={id:string;agentId?:string|null;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;updated?:number;task:string|null};
 export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[]};
 /** Server-computed: ready only after a passed trial run on the shared main state. */
 export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;state:'ok'|'running'|'failed';at:number;error?:string}|null};
 export type Resource={team?:boolean;device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;readiness?:WorkshopReadiness;publish:boolean}[]};
 export type ContextPreview={text:string;hash:string;messageIds:string[];task:string|null};
-export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect';
+export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect'|'files'|'activity';
 export type RoomPage='rooms'|'projects'|'conversations'|'team'|'account'|'guide';
 export type RoomRoute={room:string;tab:RoomTab;task:string;page:RoomPage};
 // The five project areas stay inside each project, independently of the global navigation. Former "Ergebnisse" live under Aufgaben → Erledigt.
@@ -68,7 +68,7 @@ export function readRoomRoute(search=location.search):RoomRoute{
  const p=new URLSearchParams(search),old=p.get('view'),project=p.get('project'),explicit=p.get('tab');
  const room=p.get('room')??(project&&project!=='all'?project:'');
  const legacyTab:Record<string,RoomTab>={tasks:'tasks',docs:'knowledge',chat:'talk',development:'connect',settings:'connect',setup:'connect',models:'connect'};
- const tab=tabs.some(t=>t.id===explicit)?explicit as RoomTab:legacyTab[old??'']??'talk';
+ const tab=(tabs.some(t=>t.id===explicit)||explicit==='files'||explicit==='activity')?explicit as RoomTab:legacyTab[old??'']??'talk';
  const requested=p.get('page');
  const page:RoomPage=requested==='team'||requested==='projects'||requested==='conversations'||requested==='account'||requested==='guide'?requested:old==='team'?'team':'rooms';
  return {room,tab,task:room?p.get('task')??'':'',page};
@@ -77,6 +77,8 @@ export function readRoomRoute(search=location.search):RoomRoute{
 export function roomResumeURL(search:string){
  const route=readRoomRoute(search),p=new URLSearchParams();
  if(/^[\w-]{1,100}$/.test(route.room)){p.set('room',route.room);if(route.tab!=='talk')p.set('tab',route.tab);if(/^[\w-]{1,100}$/.test(route.task)){p.set('task',route.task);const pane=new URLSearchParams(search).get('pane');if(['conversation','work','preview','review'].includes(pane??''))p.set('pane',pane!);}}
+ const chat=new URLSearchParams(search).get('chat');
+ if(p.has('room')&&chat&&/^(?:all|handoffs|(?:member|agent|topic):[\w-]{1,100})$/.test(chat))p.set('chat',chat);
  if(route.page!=='rooms')p.set('page',route.page);
  return '/'+(p.size?'?'+p.toString():'');
 }
@@ -185,7 +187,8 @@ export function agentExecutionStatus(agent:RoomAgent,roomOrRuns:RoomState|RoomRu
  completedRuns:RoomRun[];
 }{
  const runs=Array.isArray(roomOrRuns)?roomOrRuns:(roomOrRuns?.runs??[]);
- const agentRuns=runs.filter(r=>r.model===agent.model&&(!agent.modelDevice||r.device===agent.modelDevice));
+ // A shared model does not identify an agent. Only an explicit run association may show this character as working.
+ const agentRuns=runs.filter(r=>r.agentId===agent.id&&r.model===agent.model&&(!agent.modelDevice||r.device===agent.modelDevice));
  const activeRuns=agentRuns.filter(r=>r.status==='running'||r.status==='queued'||r.status==='cancelling');
  const completedRuns=agentRuns.filter(r=>r.status==='completed'||r.status==='failed');
  const matchingResource=(agent.modelDevice?resources.find(r=>r.device===agent.modelDevice):null)

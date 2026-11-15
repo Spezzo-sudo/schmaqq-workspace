@@ -1,0 +1,14 @@
+{
+  "passed": [
+    "real backend login and messenger render",
+    "independent drafts across conversation views",
+    "profile inspector edits persist without losing chat draft",
+    "all existing project tools integrated without losing draft",
+    "authorized file tree, revision-bound save and reload persistence",
+    "original task workflow opens from files and returns to a single editor",
+    "message survives reload and appears for second authenticated user",
+    "390px navigation, reduced viewport, overlays, focus and browser Back",
+    "no browser JavaScript errors"
+  ],
+  "errors": []
+}

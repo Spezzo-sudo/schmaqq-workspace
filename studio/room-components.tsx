@@ -1,5 +1,5 @@
-import {useEffect,useRef,useState} from 'react';
-import {ArrowRight,Bot,CheckCheck,ExternalLink,Hash,Link2,MessageSquare,Monitor,Pin,Plus,Reply,Search,Send,Shield,Sparkles,UserCircle,Users,X} from 'lucide-react';
+import {useEffect,useRef,useState,type ReactNode} from 'react';
+import {ArrowRight,Bot,CheckCheck,ExternalLink,Hash,Link2,MessageSquare,Monitor,Pin,Plus,Reply,Search,Send,Shield,Sparkles,UserCircle,Users,X,ChevronLeft,MoreHorizontal,FolderOpen} from 'lucide-react';
 import {
  roomRequest,operationId,time,initials,storedDraft,saveDraft,taskTitleFrom,
  agentRoleLabels,agentCapabilityLabels,agentContextSourceLabels,agentPermissionLabels,
@@ -9,6 +9,8 @@ import {
 } from './room-model';
 import {FIELD_GUILD_R2_PRESETS,findAvatarPreset,type AvatarPreset} from './avatar-catalog';
 import {AgentAvatar,AvatarConfigurator,AgentProfileView} from './agent-avatar';
+import {MessengerInspector} from './messenger-detail';
+import {messengerComposerTarget,messengerDraftKey,messengerFilterKey,readMessengerFilter} from './messenger-state';
 
 export type Modal={kind:'room'|'task'|'note'|'decision'|'link'|'repository';source?:RoomMessage;linkKind?:'chatgpt'|'github'|'result'|'reference'};
 
@@ -18,42 +20,69 @@ const ALL_CONTEXT_SOURCES:RoomAgentContextSource[]=['messages','tasks','decision
 const CONTEXT_SOURCE_KEYS:RoomAgentContextSource[]=['messages','tasks','decisions','repository','runs'];
 const ALL_ROLES:RoomAgentRole[]=['coordinator','advisor','frontend','reviewer','operations','strategy','debugger','researcher','infrastructure','security','support','knowledge','developer'];
 
-export function Conversation({room,resources=[],userId,search,refresh,onTask,onConvert}:{room:RoomState;resources?:Resource[];userId:string;search:string;refresh:()=>Promise<void>;onTask:(id:string)=>void;onConvert:(kind:'task'|'decision',source:RoomMessage)=>void}){
- const draftKey=`room-chat:${userId}:${room.project.id}`;
+export function Conversation({room,resources=[],userId,search,refresh,onTask,onConvert,projectNavigation,tools,detail,detailTitle,detailKey='talk',detailNavigation,onCloseDetail,onFiles}:{room:RoomState;resources?:Resource[];userId:string;search:string;refresh:()=>Promise<void>;onTask:(id:string)=>void;onConvert:(kind:'task'|'decision',source:RoomMessage)=>void;projectNavigation?:ReactNode;tools?:ReactNode;detail?:ReactNode;detailTitle?:string;detailKey?:string;detailNavigation?:ReactNode;onCloseDetail?:()=>void;onFiles?:()=>void}){
+ const [filter,setFilter]=useState<MessengerFilter>(()=>readMessengerFilter(location.search,room));
+ const draftKey=messengerDraftKey(userId,room.project.id,filter),initialTarget=messengerComposerTarget(filter);
  const [text,setText]=useState(()=>storedDraft(draftKey)),[reply,setReply]=useState<RoomMessage|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[older,setOlder]=useState<RoomMessage[]>([]),[more,setMore]=useState(room.more);
- const [filter,setFilter]=useState<MessengerFilter>({kind:'all'}),[localSearch,setLocalSearch]=useState('');
- const [recipient,setRecipient]=useState(''),[topicTask,setTopicTask]=useState(''),[senderAgent,setSenderAgent]=useState(''),[handoffTo,setHandoffTo]=useState(''),[handoffSummary,setHandoffSummary]=useState('');
- const [editingAgent,setEditingAgent]=useState<Partial<RoomAgent>|null>(null);
- const [profileAgentId,setProfileAgentId]=useState<string|null>(null);
- const [avatarPickerOpen,setAvatarPickerOpen]=useState(false);
- const [mobilePanel,setMobilePanel]=useState<'chat'|'contacts'|'topics'>('chat');
+ const [localSearch,setLocalSearch]=useState(''),[contactSearch,setContactSearch]=useState(''),[railMode,setRailMode]=useState<'chats'|'contacts'>('chats');
+ const [recipient,setRecipient]=useState(initialTarget.recipient),[topicTask,setTopicTask]=useState(initialTarget.topicTask),[senderAgent,setSenderAgent]=useState(''),[handoffTo,setHandoffTo]=useState(''),[handoffSummary,setHandoffSummary]=useState('');
+ const [editingAgent,setEditingAgent]=useState<Partial<RoomAgent>|null>(null),[profileAgentId,setProfileAgentId]=useState<string|null>(null),[avatarPickerOpen,setAvatarPickerOpen]=useState(false),[composerOptions,setComposerOptions]=useState(false);
+ const [mobilePanel,setMobilePanel]=useState<'chat'|'contacts'>(()=>window.matchMedia('(max-width:760px)').matches&&!new URLSearchParams(location.search).has('chat')?'contacts':'chat');
+ const [overlay,setOverlay]=useState(()=>window.matchMedia('(max-width:1199px)').matches);
+ const currentDraft=useRef(draftKey);currentDraft.current=draftKey;
+ const profileReturn=useRef<'chat'|'contacts'>('chat'),composerInput=useRef<HTMLTextAreaElement|null>(null);
+ useEffect(()=>{const media=window.matchMedia('(max-width:1199px)'),change=()=>setOverlay(media.matches);media.addEventListener('change',change);return()=>media.removeEventListener('change',change);},[]);
+ useEffect(()=>{const input=composerInput.current;if(input){input.style.height='auto';input.style.height=Math.min(input.scrollHeight,132)+'px';}},[text]);
  const attempt=useRef({fingerprint:'',id:''});const end=useRef<HTMLDivElement|null>(null);const first=useRef(true);
+ const stream=useRef<HTMLDivElement|null>(null),followLatest=useRef(true);
 
  const activeMembers=room.members.filter(m=>!m.removed);
  const activeAgents=(room.agents??[]).filter(a=>a.active!==false);
  const me=activeMembers.find(m=>m.id===userId);
- const canDevelop=!me||me.role==='owner'||!me.projectRoles?.length||me.projectRoles.includes('admin')||me.projectRoles.includes('developer');
+ const canDevelop=Boolean(me&&(me.role==='owner'||!me.projectRoles?.length||me.projectRoles.includes('admin')||me.projectRoles.includes('developer')));
  const connectedModels=[...new Set(resources.filter(r=>r.online).flatMap(r=>[...r.models,...(r.codex==='chatgpt'?['gpt-5-codex']:[])]))];
  const modelOptions=[...new Set([...connectedModels,...DEFAULT_MODELS])];
 
  const messages=[...new Map([...older,...room.messages].map(m=>[m.id,m])).values()].sort((a,b)=>a.created-b.created||a.id.localeCompare(b.id));
- useEffect(()=>{if(first.current&&messages.length){first.current=false;end.current?.scrollIntoView({block:'nearest'});}},[messages.length]);
+ useEffect(()=>{if(!messages.length)return;if(first.current||followLatest.current){first.current=false;requestAnimationFrame(()=>{if(stream.current)stream.current.scrollTop=stream.current.scrollHeight;});}},[messages.at(-1)?.id,messengerFilterKey(filter)]);
 
  const writableAgents=activeAgents.filter(a=>agentEffectivePermissions(a).writeMessages);
  const selectedSenderAgent=writableAgents.find(a=>a.id===senderAgent)??null;
  const canDelegate=Boolean(selectedSenderAgent&&agentEffectivePermissions(selectedSenderAgent).delegateAgents);
  const profileAgent=profileAgentId?activeAgents.find(a=>a.id===profileAgentId)??null:null;
 
- function selectFilter(next:MessengerFilter){
-  setFilter(next);
-  setProfileAgentId(null);
-  if(next.kind==='member'||next.kind==='agent')setRecipient(next.id);
-  else if(next.kind==='all')setRecipient('');
-  if(next.kind==='topic')setTopicTask(next.taskId);
-  setMobilePanel('chat');
+ function selectFilter(next:MessengerFilter,writeHistory=true){
+  saveDraft(draftKey,text);followLatest.current=true;
+  const target=messengerComposerTarget(next),nextKey=messengerDraftKey(userId,room.project.id,next);
+  currentDraft.current=nextKey;setText(storedDraft(nextKey));setFilter(next);
+  setRecipient(target.recipient);setTopicTask(target.topicTask);setReply(null);
+  setSenderAgent('');setHandoffTo('');setHandoffSummary('');setComposerOptions(false);
+  setProfileAgentId(null);setMobilePanel('chat');setError('');
+  if(writeHistory){const url=new URL(location.href);url.searchParams.set('chat',messengerFilterKey(next));history.pushState(null,'',url);}
  }
+ const restoreSelection=useRef(()=>{});restoreSelection.current=()=>{selectFilter(readMessengerFilter(location.search,room),false);if(window.matchMedia('(max-width:760px)').matches&&!new URLSearchParams(location.search).has('chat'))setMobilePanel('contacts');};
+ useEffect(()=>{const restore=()=>restoreSelection.current();window.addEventListener('popstate',restore);return()=>window.removeEventListener('popstate',restore);},[]);
+ useEffect(()=>{
+  const allowed=readMessengerFilter('?chat='+encodeURIComponent(messengerFilterKey(filter)),room);
+  if(messengerFilterKey(allowed)!==messengerFilterKey(filter)){selectFilter(allowed,false);setError('Dieser Kontakt oder dieses Thema ist nicht mehr verfügbar. Dein Textentwurf bleibt in seiner bisherigen Ansicht erhalten.');}
+ },[room.members,room.agents,room.tasks]);
+ useEffect(()=>{
+  if(detailKey==='talk')return;
+  if(editingAgent&&!window.confirm('Agentenprofil ohne Speichern verlassen?')){onCloseDetail?.();return;}
+  setProfileAgentId(null);setEditingAgent(null);
+ },[detailKey]);
+ useEffect(()=>{if((profileAgentId||editingAgent)&&detailKey!=='talk')onCloseDetail?.();},[profileAgentId,Boolean(editingAgent)]);
+ function showConversationList(){setMobilePanel('contacts');const url=new URL(location.href);url.searchParams.delete('chat');history.replaceState(null,'',url);}
+ function openProfile(id:string){profileReturn.current=mobilePanel;setProfileAgentId(id);setEditingAgent(null);setMobilePanel('chat');}
+ function closeInspector(){
+  if(editingAgent&&!window.confirm('Agentenprofil ohne Speichern schliessen?'))return;
+  const wasAgent=Boolean(profileAgentId||editingAgent);setProfileAgentId(null);setEditingAgent(null);
+  if(detail)onCloseDetail?.();if(wasAgent)setMobilePanel(profileReturn.current);
+ }
+ function resetComposer(){const target=messengerComposerTarget(filter);setRecipient(target.recipient);setTopicTask(target.topicTask);setSenderAgent('');setHandoffTo('');setHandoffSummary('');}
 
  function startCreateAgent(presetId?:string){
+  profileReturn.current=mobilePanel;setMobilePanel('chat');
   const preset=findAvatarPreset(presetId)|| (activeAgents.some(a=>a.role==='coordinator')?FIELD_GUILD_R2_PRESETS[1]:FIELD_GUILD_R2_PRESETS[0]);
   const role=preset.recommendedRole;
   const isCoord=role==='coordinator';
@@ -158,7 +187,9 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
   setBusy(true);setError('');
   try{
    await roomRequest('/api/room',{...payload,id:attempt.current.id});
-   setText('');saveDraft(draftKey,'');setReply(null);setHandoffTo('');setHandoffSummary('');
+   saveDraft(draftKey,'');
+   // A slow acknowledgement must never erase the draft of a different selected contact.
+   if(currentDraft.current===draftKey){setText('');setReply(null);setHandoffTo('');setHandoffSummary('');setComposerOptions(false);}
    await refresh();
    requestAnimationFrame(()=>end.current?.scrollIntoView({block:'nearest',behavior:'smooth'}));
   }catch(e){setError((e as Error).message);}finally{setBusy(false);}
@@ -251,135 +282,184 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
   permissions:editingAgent.permissions
  }):{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false};
 
- return <section className="rw-conversation rw-messenger" aria-label="Projektgespräch">
-  <div className="rw-messenger-mobile-tabs" role="tablist" aria-label="Messenger-Ansicht">
-   <button role="tab" aria-selected={mobilePanel==='chat'} className={mobilePanel==='chat'?'active':''} onClick={()=>setMobilePanel('chat')}><MessageSquare size={15}/>Chat ({visible.length})</button>
-   <button role="tab" aria-selected={mobilePanel==='contacts'} className={mobilePanel==='contacts'?'active':''} onClick={()=>setMobilePanel('contacts')}><Users size={15}/>Kontakte ({activeMembers.length+activeAgents.length})</button>
-   <button role="tab" aria-selected={mobilePanel==='topics'} className={mobilePanel==='topics'?'active':''} onClick={()=>setMobilePanel('topics')}><Hash size={15}/>Themen ({room.tasks.length})</button>
-  </div>
-
+ const lastFor=(view:MessengerFilter)=>filterMessengerMessages(messages,view).at(-1);
+ const matchesContact=(name:string)=>!contactSearch.trim()||name.toLowerCase().includes(contactSearch.trim().toLowerCase());
+ const listedMembers=activeMembers.filter(m=>(railMode==='contacts'||m.id!==userId&&(lastFor({kind:'member',id:m.id})||filter.kind==='member'&&filter.id===m.id))&&matchesContact(m.name+' '+memberRoleSummary(m)));
+ const listedAgents=activeAgents.filter(a=>(railMode==='contacts'||lastFor({kind:'agent',id:a.id})||filter.kind==='agent'&&filter.id===a.id)&&matchesContact(a.name+' '+(agentRoleLabels[a.role]??a.role)));
+ const hasDetail=Boolean(profileAgent||editingAgent||detail);
+ const targetName=activeAgents.find(a=>a.id===recipient)?.name??activeMembers.find(m=>m.id===recipient)?.name??recipient;
+ return <section className={'rw-conversation rw-messenger r3-messenger'+(hasDetail?' with-detail':'')} data-mobile-panel={mobilePanel} aria-label="Projektgespräch">
   <div className="rw-messenger-grid">
-   <aside className={'rw-messenger-rail'+(mobilePanel!=='chat'?' mobile-open':'')} aria-label="Kontakte, Kanäle und Themen">
-    <div className="rw-messenger-search">
-     <Search size={15} aria-hidden="true"/>
-     <input aria-label="Nachrichten im Projekt durchsuchen" value={localSearch} onChange={e=>setLocalSearch(e.target.value)} placeholder="Im Gespräch suchen …"/>
-     {localSearch&&<button className="rw-icon" onClick={()=>setLocalSearch('')} aria-label="Suche leeren"><X size={14}/></button>}
+   <aside className="rw-messenger-rail" aria-label="Gespräche und Kontakte" inert={hasDetail&&overlay?true:undefined}>
+    {projectNavigation}
+    <div className="r3-rail-heading"><h1>Gespräche</h1>{canDevelop&&<button className="r3-icon-button" aria-label="KI-Teammitglied hinzufügen" title="KI-Teammitglied hinzufügen" onClick={()=>startCreateAgent()}><Plus size={19}/></button>}</div>
+    <div className="r3-rail-tabs" role="tablist" aria-label="Gesprächsliste"><button role="tab" id="r3-tab-chats" aria-controls="r3-contact-list" aria-selected={railMode==='chats'} onClick={()=>setRailMode('chats')}>Chats</button><button role="tab" id="r3-tab-contacts" aria-controls="r3-contact-list" aria-selected={railMode==='contacts'} onClick={()=>setRailMode('contacts')}>Kontakte</button></div>
+    <div className="rw-messenger-search"><Search size={16} aria-hidden="true"/><input aria-label={railMode==='contacts'?'Kontakte suchen':'Nachrichten im Projekt durchsuchen'} value={railMode==='contacts'?contactSearch:localSearch} onChange={e=>railMode==='contacts'?setContactSearch(e.target.value):setLocalSearch(e.target.value)} placeholder={railMode==='contacts'?'Kontakt suchen …':'Nachrichten suchen …'}/>{(railMode==='contacts'?contactSearch:localSearch)&&<button className="rw-icon" onClick={()=>railMode==='contacts'?setContactSearch(''):setLocalSearch('')} aria-label="Suche leeren"><X size={14}/></button>}</div>
+    <div className="r3-contact-scroll" id="r3-contact-list" role="tabpanel" aria-labelledby={railMode==='chats'?'r3-tab-chats':'r3-tab-contacts'}>
+     {railMode==='chats'&&<div className="rw-messenger-group">
+      <button className={'rw-contact-row'+(filter.kind==='all'&&!profileAgentId?' active':'')} onClick={()=>selectFilter({kind:'all'})}><span className="rw-avatar channel"><Users size={19}/></span><span className="rw-contact-meta"><strong>Projektteam</strong><small>{messages.at(-1)?.body??'Euer gemeinsames Gespräch'}</small></span>{messages.at(-1)&&<time>{time(messages.at(-1)!.created)}</time>}</button>
+      <button className={'rw-contact-row'+(filter.kind==='handoffs'?' active':'')} onClick={()=>selectFilter({kind:'handoffs'})}><span className="rw-avatar agent"><Bot size={18}/></span><span className="rw-contact-meta"><strong>Agenten & Übergaben</strong><small>{handoffCount?handoffCount+' Beiträge im Projekt':'Aufträge und Abstimmung im Team'}</small></span></button>
+     </div>}
+     {!!listedMembers.length&&<div className="rw-messenger-group"><div className="rw-messenger-group-head"><span>Menschen</span></div>{listedMembers.map(m=>{const latest=lastFor({kind:'member',id:m.id});return <button key={m.id} className={'rw-contact-row'+(filter.kind==='member'&&filter.id===m.id?' active':'')} onClick={()=>selectFilter({kind:'member',id:m.id})}><span className="rw-avatar">{initials(m.name)}</span><span className="rw-contact-meta"><strong>{m.name}{m.id===userId?' (Du)':''}</strong><small>{latest?.body??memberRoleSummary(m)}</small></span>{latest&&<time>{time(latest.created)}</time>}</button>;})}</div>}
+     {!!listedAgents.length&&<div className="rw-messenger-group"><div className="rw-messenger-group-head"><span>KI-Team</span></div>{listedAgents.map(a=>{
+      const selected=filter.kind==='agent'&&filter.id===a.id||profileAgentId===a.id,exec=agentExecutionStatus(a,room,resources),latest=lastFor({kind:'agent',id:a.id});
+      return <div key={a.id} className={'rw-contact-card'+(selected?' active':'')}><div className="rw-contact-row rw-agent-contact-row"><button type="button" className="rw-avatar-btn" aria-label={`Profil von ${a.name} öffnen`} title={`Profil von ${a.name} öffnen`} onClick={()=>openProfile(a.id)}><AgentAvatar agent={a} size="sm" statusDot={exec.state==='running'?'running':exec.state==='ready'?'ready':'idle'}/></button><button type="button" className="rw-contact-meta-btn" onClick={()=>selectFilter({kind:'agent',id:a.id})}><span className="rw-contact-meta"><strong>{a.name}</strong><small>{latest?.body??agentRoleLabels[a.role]??a.role}</small></span></button>{latest&&<time>{time(latest.created)}</time>}</div></div>;
+     })}</div>}
+     {railMode==='chats'&&<button className="r3-directory-link" onClick={()=>setRailMode('contacts')}><Users size={16}/>{listedAgents.length?'Alle Kontakte':'KI-Team und weitere Kontakte'}<ArrowRight size={14}/></button>}
+     {railMode==='contacts'&&!listedMembers.length&&!listedAgents.length&&<p className="rw-messenger-empty">Keine passenden Kontakte.</p>}
+     {!!room.tasks.length&&<details className="r3-topic-directory"><summary>Themen & Aufgaben <span>{room.tasks.length}</span></summary>{room.tasks.slice(0,30).map(t=><div key={t.id} className="rw-topic-row"><button className={'rw-contact-row'+(filter.kind==='topic'&&filter.taskId===t.id?' active':'')} onClick={()=>selectFilter({kind:'topic',taskId:t.id})}><Hash size={15}/><span className="rw-contact-meta"><strong>{t.title}</strong></span></button><button className="rw-icon" aria-label={'Aufgabe öffnen: '+t.title} onClick={()=>onTask(t.id)}><ArrowRight size={15}/></button></div>)}</details>}
     </div>
-
-    {(mobilePanel==='chat'||mobilePanel==='contacts')&&<>
-     <div className="rw-messenger-group">
-      <div className="rw-messenger-group-head"><span>Gespräche</span></div>
-      <button className={'rw-contact-row'+(filter.kind==='all'&&!profileAgentId?' active':'')} onClick={()=>selectFilter({kind:'all'})}>
-       <span className="rw-avatar channel"><MessageSquare size={15}/></span>
-       <span className="rw-contact-meta"><strong>Alle im Projekt</strong><small>Gruppengespräch · {messages.length} {messages.length===1?'Nachricht':'Nachrichten'}</small></span>
-      </button>
-      <button className={'rw-contact-row'+(filter.kind==='handoffs'?' active':'')} onClick={()=>selectFilter({kind:'handoffs'})}>
-       <span className="rw-avatar agent"><Bot size={15}/></span>
-       <span className="rw-contact-meta"><strong>Agenten & Übergaben</strong><small>KI-Beiträge & Koordination · {handoffCount}</small></span>
-      </button>
-     </div>
-
-     <div className="rw-messenger-group">
-      <div className="rw-messenger-group-head"><span>Team ({activeMembers.length})</span></div>
-      {activeMembers.map(m=>{
-       const online=Date.now()-m.seen<120_000;
-       const selected=filter.kind==='member'&&filter.id===m.id;
-       return <button key={m.id} className={'rw-contact-row'+(selected?' active':'')} onClick={()=>selectFilter(selected?{kind:'all'}:{kind:'member',id:m.id})}>
-        <span className="rw-avatar">{initials(m.name)}<i className={'rw-status-dot'+(online?' online':'')} aria-hidden="true"/></span>
-        <span className="rw-contact-meta">
-         <strong>{m.name}{m.id===userId?' (Du)':''}</strong>
-         <small>{memberRoleSummary(m)} · {online?'Gerade aktiv':'Projektmitglied'}</small>
-        </span>
-       </button>;
-      })}
-     </div>
-
-     <div className="rw-messenger-group">
-      <div className="rw-messenger-group-head">
-       <span>KI-Teammitglieder ({activeAgents.length})</span>
-       {canDevelop&&<button className="rw-link rw-agent-add" onClick={()=>startCreateAgent()}><Plus size={14}/>Neu</button>}
-      </div>
-      {!activeAgents.length&&<p className="rw-messenger-empty">Noch kein KI-Teammitglied angelegt.{canDevelop?' Wähle z. B. Leitwolf, Herr Grau oder Mara aus der Field Guild R2.':''}</p>}
-      {activeAgents.map(a=>{
-       const selected=(filter.kind==='agent'&&filter.id===a.id)||profileAgentId===a.id;
-       const exec=agentExecutionStatus(a,room,resources);
-       const dot=exec.state==='running'?'running':exec.state==='ready'?'ready':'idle';
-       return <div key={a.id} className={'rw-contact-card'+(selected?' active':'')}>
-        <div className="rw-contact-row rw-agent-contact-row">
-         <button
-          type="button"
-          className="rw-avatar-btn"
-          title={`Profil von ${a.name} öffnen`}
-          aria-label={`Profil von ${a.name} öffnen`}
-          onClick={()=>{setProfileAgentId(a.id);setEditingAgent(null);setMobilePanel('chat');}}
-         >
-          <AgentAvatar agent={a} size="md" statusDot={dot}/>
-         </button>
-         <button
-          type="button"
-          className="rw-contact-meta-btn"
-          onClick={()=>selectFilter(filter.kind==='agent'&&filter.id===a.id?{kind:'all'}:{kind:'agent',id:a.id})}
-         >
-          <span className="rw-contact-meta">
-           <strong>{a.name}{a.nickname?` „${a.nickname}“`:''}</strong>
-           <small>{agentRoleLabels[a.role]??a.role} · <code className="rw-agent-model">{a.model}</code></small>
-           <small className="rw-agent-exec-line">{exec.modelAvailable?'Modell verbunden':'Kein Runner verbunden (Profil)'}</small>
-          </span>
-         </button>
-        </div>
-        <div className="rw-agent-caps">
-         <button type="button" className="rw-link" onClick={()=>{setProfileAgentId(a.id);setEditingAgent(null);setMobilePanel('chat');}}><UserCircle size={12}/>Profil</button>
-         {canDevelop&&<button type="button" className="rw-link" onClick={()=>{setEditingAgent(a);setProfileAgentId(null);setMobilePanel('chat');}}>Bearbeiten</button>}
-        </div>
-       </div>;
-      })}
-     </div>
-    </>}
-
-    {(mobilePanel==='chat'||mobilePanel==='topics')&&<div className="rw-messenger-group">
-     <div className="rw-messenger-group-head"><span>Themen & Aufgaben ({room.tasks.length})</span></div>
-     {!room.tasks.length&&<p className="rw-messenger-empty">Aus jeder Nachricht kannst du direkt eine Aufgabe machen.</p>}
-     {room.tasks.slice(0,15).map(t=>{
-      const count=messages.filter(m=>m.taskId===t.id||m.topicTask===t.id).length;
-      const selected=filter.kind==='topic'&&filter.taskId===t.id;
-      const statusText=t.status==='done'?'Erledigt':t.status==='review'?'Prüfung':t.status==='doing'?'In Arbeit':'Offen';
-      return <div key={t.id} className={'rw-topic-row'+(selected?' active':'')}>
-       <button className="rw-contact-row" onClick={()=>selectFilter(selected?{kind:'all'}:{kind:'topic',taskId:t.id})}>
-        <span className={'rw-topic-dot '+t.status} aria-hidden="true"/>
-        <span className="rw-contact-meta">
-         <strong>{t.title}</strong>
-         <small>{statusText}{count?` · ${count} ${count===1?'Beitrag':'Beiträge'}`:''}</small>
-        </span>
-       </button>
-       <button className="rw-icon rw-topic-open" onClick={()=>onTask(t.id)} title="Aufgabe öffnen" aria-label={'Aufgabe öffnen: '+t.title}><ArrowRight size={14}/></button>
-      </div>;
-     })}
-    </div>}
+    <div className="r3-rail-footer">{activeMembers.length} Menschen · {activeAgents.length} KI-Profile</div>
    </aside>
-
-   <div className="rw-messenger-main">
+   <div className="rw-messenger-main" inert={hasDetail&&overlay?true:undefined}>
     <header className="rw-messenger-header">
-     <div className="rw-messenger-header-title">
-      {filter.kind==='agent'&&(()=>{const a=activeAgents.find(x=>x.id===filter.id);return a?<button type="button" className="rw-avatar-btn" onClick={()=>setProfileAgentId(a.id)} title={`Profil von ${a.name} öffnen`}><AgentAvatar agent={a} size="md"/></button>:null;})()}
-      <div>
-       <strong>{activeFilterTitle}</strong>
-       <small>
-        {filter.kind==='all'&&`${activeMembers.length} ${activeMembers.length===1?'Mensch':'Menschen'} · ${activeAgents.length} ${activeAgents.length===1?'KI-Teammitglied':'KI-Teammitglieder'} im Projektraum`}
-        {filter.kind==='handoffs'&&'Nachvollziehbare KI-Beiträge und Agent-zu-Agent-Übergaben im Projekt'}
-        {filter.kind==='member'&&'Adressierte Beiträge im gemeinsamen Projektraum (für berechtigte Projektmitglieder sichtbar)'}
-        {filter.kind==='agent'&&(()=>{const a=activeAgents.find(x=>x.id===filter.id);return a?`${agentRoleLabels[a.role]} · Modell ${a.model}${a.purpose?' · '+a.purpose:''}`:'';})()}
-        {filter.kind==='topic'&&'Alle Nachrichten, Entscheidungen und Übergaben zu dieser Aufgabe'}
-       </small>
-      </div>
-     </div>
-     <div className="rw-messenger-header-actions">
-      {filter.kind==='agent'&&!profileAgent&&<button className="rw-button subtle" onClick={()=>setProfileAgentId(filter.id)}><UserCircle size={14}/>Agentenprofil</button>}
-      {filter.kind==='topic'&&<button className="rw-button subtle" onClick={()=>onTask(filter.taskId)}><CheckCheck size={14}/>Aufgabe öffnen</button>}
-      {(filter.kind!=='all'||profileAgent)&&<button className="rw-button subtle" onClick={()=>{setProfileAgentId(null);selectFilter({kind:'all'});}}><X size={14}/>Zum Chat</button>}
-      {canDevelop&&!editingAgent&&<button className="rw-button subtle" onClick={()=>startCreateAgent()}><Bot size={15}/>+ KI-Teammitglied</button>}
-     </div>
+     <button type="button" className="r3-icon-button r3-chat-back" aria-label="Zur Gesprächsliste" onClick={showConversationList}><ChevronLeft size={22}/></button>
+     {filter.kind==='agent'?(()=>{const a=activeAgents.find(a=>a.id===filter.id);return a?<button className="rw-avatar-btn" aria-label={`Profil von ${a.name} öffnen`} onClick={()=>openProfile(a.id)}><AgentAvatar agent={a} size="sm"/></button>:null;})():<span className="rw-avatar channel">{filter.kind==='handoffs'?<Bot size={19}/>:filter.kind==='member'?initials(activeMembers.find(m=>m.id===filter.id)?.name??'?'):<MessageSquare size={19}/>}</span>}
+     <div className="r3-chat-heading"><strong title={activeFilterTitle}>{filter.kind==='all'?'Projektteam':filter.kind==='agent'?activeAgents.find(a=>a.id===filter.id)?.name:filter.kind==='member'?activeMembers.find(m=>m.id===filter.id)?.name:activeFilterTitle}</strong><small><span className="r3-shared-dot"/>Projektweit sichtbar · {filter.kind==='agent'?'adressierter Austausch':filter.kind==='member'?'adressierte Beiträge':'gemeinsamer Arbeitsraum'}</small></div>
+     {tools}
     </header>
 
+    <div className="rw-chat-stream" ref={stream} onScroll={()=>{if(stream.current)followLatest.current=stream.current.scrollHeight-stream.current.scrollTop-stream.current.clientHeight<80;}}>
+     {more&&messages.length>0&&<button className="rw-button subtle" disabled={busy} onClick={()=>void loadOlder()}>Ältere Nachrichten laden</button>}
+     {!messages.length&&<div className="rw-room-welcome"><span className="rw-welcome-icon"><MessageSquare size={30}/></span><span className="rw-eyebrow">DER ANFANG IST EIN GESPRÄCH</span><h2>Ein Raum für eure nächste Idee.</h2><p>Teilt Gedanken, stellt Fragen, adressiert Teammitglieder oder KI-Agenten und verknüpft Nachrichten direkt mit Aufgaben.</p><div><button onClick={()=>{setText('Unser Ziel für dieses Projekt: ');saveDraft(draftKey,'Unser Ziel für dieses Projekt: ');}}>Ziel festhalten</button><button onClick={()=>{setText('Was müssen wir zuerst herausfinden?');saveDraft(draftKey,'Was müssen wir zuerst herausfinden?');}}>Offene Fragen sammeln</button></div></div>}
+     {visible.map(message=>{
+      const person=room.members.find(m=>m.id===message.author);
+      const sAgent=message.senderAgent?activeAgents.find(a=>a.id===message.senderAgent)??(room.agents??[]).find(a=>a.id===message.senderAgent):null;
+      const targetMember=message.recipient&&message.recipientKind==='member'?room.members.find(m=>m.id===message.recipient):null;
+      const targetAgent=message.recipient&&message.recipientKind==='agent'?(room.agents??[]).find(a=>a.id===message.recipient):null;
+      const handoffAgent=message.handoff?.toAgent?(room.agents??[]).find(a=>a.id===message.handoff!.toAgent):null;
+      const parent=messages.find(m=>m.id===message.replyTo);
+      const parentPerson=parent?room.members.find(m=>m.id===parent.author):null;
+      const parentAgent=parent?.senderAgent?(room.agents??[]).find(a=>a.id===parent.senderAgent):null;
+      const linkedTaskId=message.taskId??message.topicTask??null;
+      const linkedTask=linkedTaskId?room.tasks.find(t=>t.id===linkedTaskId):null;
+      const isAgentMsg=Boolean(sAgent||message.kind==='ai-shared'||message.kind==='agent'||message.kind==='agent-handoff');
+      const isVerifiedRun=message.origin==='verified-run'||message.kind==='ai-shared';
+      const isOwn=message.author===userId&&!isAgentMsg;
+
+      return <article className={'rw-message'+(isOwn?' r3-own':'')+(isAgentMsg?' ai':'')+(message.handoff?' handoff':'')} aria-label={isOwn?'Deine Nachricht':undefined} key={message.id} id={'message-'+message.id}>
+       {sAgent
+        ?<button type="button" className="rw-avatar-btn" onClick={()=>openProfile(sAgent.id)} title={`Profil von ${sAgent.name} öffnen`}>
+         <AgentAvatar agent={sAgent} size="md"/>
+        </button>
+        :<span className={'rw-avatar '+(isAgentMsg?'agent':'')}>
+         {message.kind==='ai-shared'?<Sparkles size={17}/>:initials(person?.name??'?')}
+        </span>}
+       <div className="rw-message-content">
+        <header>
+         <strong>
+          {sAgent
+           ?<button type="button" className="rw-link rw-msg-agent-name" onClick={()=>openProfile(sAgent.id)}>{sAgent.name}{sAgent.nickname?` „${sAgent.nickname}“`:''}</button>
+           :message.kind==='ai-shared'?message.model:person?.name??'Mitglied'}
+         </strong>
+         {sAgent&&<span className="rw-badge">{agentRoleLabels[sAgent.role]??'Agent'} · {sAgent.model}</span>}
+         {sAgent&&!isVerifiedRun&&<span className="rw-origin-badge manual" title={'Manuell erfasst von '+(person?.name??'Mitglied')+'; keine Modellgenerierung'}>Manuell protokolliert</span>}
+         {sAgent&&isVerifiedRun&&<span className="rw-origin-badge verified">Verifizierter Modelllauf</span>}
+         {!sAgent&&message.kind==='ai-shared'&&<span className="rw-badge">Verifizierter KI-Lauf · geteilt von {person?.name}</span>}
+         {(targetMember||targetAgent)&&<span className="rw-recipient-badge">An {targetAgent?`🤖 ${targetAgent.name}`:targetMember?.name} (im Projektraum)</span>}
+         <time dateTime={new Date(message.created).toISOString()}>{time(message.created)}</time>
+        </header>
+
+        {linkedTaskId&&<div className="rw-message-topic-row">
+         <button className="rw-topic-pill" onClick={()=>onTask(linkedTaskId)}><Hash size={12}/><span>Thema: {linkedTask?.title??'Verknüpfte Aufgabe'}</span><ArrowRight size={12}/></button>
+         {filter.kind!=='topic'&&<button className="rw-link rw-topic-filter-btn" onClick={()=>selectFilter({kind:'topic',taskId:linkedTaskId})}>Thema filtern</button>}
+        </div>}
+
+        {message.replyTo&&<button className="rw-reply-reference" onClick={()=>{const target=document.getElementById('message-'+message.replyTo);if(target){target.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});return;}if(messages.some(m=>m.id===message.replyTo)){selectFilter({kind:'all'});requestAnimationFrame(()=>document.getElementById('message-'+message.replyTo)?.scrollIntoView({block:'center'}));}else setError('Diese Antwort bezieht sich auf eine ältere Nachricht. Lade oben im Gespräch die älteren Nachrichten.');}}>
+         <Reply size={13}/>
+         <span><strong>{parentAgent?.name??parentPerson?.name??'Frühere Nachricht'}:</strong> {parent?.body.slice(0,120)??'Antwort auf eine frühere Raumnachricht'}</span>
+        </button>}
+
+        {message.handoff&&<div className="rw-handoff-card" role="note" aria-label="Agenten-Übergabe">
+         <div className="rw-handoff-head">
+          {sAgent?<AgentAvatar agent={sAgent} size="xs"/>:<Bot size={15}/>}
+          <ArrowRight size={13}/>
+          {handoffAgent?<AgentAvatar agent={handoffAgent} size="xs"/>:null}
+          <strong>Koordinator-Übergabe: {sAgent?.name??'Koordinator'} → {handoffAgent?.name??message.handoff.toAgent}</strong>
+          <span className="rw-badge">Beauftragt</span>
+         </div>
+         <p className="rw-handoff-summary">{message.handoff.summary}</p>
+         {canDevelop&&handoffAgent&&agentEffectivePermissions(handoffAgent).writeMessages&&<div className="rw-handoff-actions">
+          <button className="rw-link" onClick={()=>{setSenderAgent(handoffAgent.id);setReply(message);setRecipient(sAgent?.id??'');setTopicTask(linkedTaskId??'');setHandoffTo('');setHandoffSummary('');setComposerOptions(true);}}>Für {handoffAgent.name} antworten</button>
+          <button className="rw-link" onClick={()=>openProfile(handoffAgent.id)}>Profil von {handoffAgent.name}</button>
+         </div>}
+        </div>}
+
+        <p>{message.body}</p>
+        {isAgentMsg&&<details className="r3-message-provenance"><summary>Herkunft</summary><small className="rw-muted">
+         {isVerifiedRun
+          ?'Verifizierter Modelllauf – Entscheidungen und Freigaben bleiben beim Team'
+          :`Manuell protokolliert durch ${person?.name??'Mitglied'} – keine automatische Modellgenerierung`}
+        </small></details>}
+        {message.taskId&&!linkedTask&&<button className="rw-message-task" onClick={()=>onTask(message.taskId!)}><CheckCheck size={14}/>Verknüpfte Aufgabe öffnen<ArrowRight size={13}/></button>}
+
+        <details className="r3-message-menu"><summary aria-label="Nachrichtenaktionen" title="Antworten, Aufgabe oder Entscheidung"><MoreHorizontal size={18}/></summary><div className="rw-message-actions">
+         <button onClick={e=>{e.currentTarget.closest('details')?.removeAttribute('open');setReply(message);setTopicTask(linkedTaskId??'');setRecipient(sAgent?.id??(message.author!==userId?message.author:message.recipient??''));setSenderAgent('');setHandoffTo('');setHandoffSummary('');composerInput.current?.focus();}}><Reply size={14}/>Antworten</button>
+         <button onClick={e=>{e.currentTarget.closest('details')?.removeAttribute('open');linkedTaskId?onTask(linkedTaskId):onConvert('task',message);}}><CheckCheck size={14}/>{linkedTaskId?'Aufgabe':'Als Aufgabe'}</button>
+         <button onClick={e=>{e.currentTarget.closest('details')?.removeAttribute('open');onConvert('decision',message);}}><Pin size={14}/>Festhalten</button>
+        </div></details>
+       </div>
+      </article>;
+     })}
+     {messages.length>0&&!visible.length&&<p className="rw-muted">Keine Nachricht passt zum aktuellen Filter.{filter.kind!=='all'&&<> <button className="rw-link" onClick={()=>selectFilter({kind:'all'})}>Alle Nachrichten zeigen</button></>}</p>}
+     <div ref={end}/>
+    </div>
+
+    <div className="rw-composer-wrap">
+     {error&&<p role="alert" className="rw-error">{error}</p>}
+     {reply&&<div className="rw-reply-bar"><Reply size={14}/><span>Antwort auf: {reply.body.slice(0,140)}</span><button className="rw-icon" onClick={()=>setReply(null)} aria-label="Antwortbezug entfernen"><X size={14}/></button></div>}
+     {(recipient||topicTask||senderAgent)&&<div className="r3-composer-scope" aria-live="polite">{recipient&&<span>An {targetName} · im Projekt</span>}{topicTask&&<span><Hash size={12}/>{room.tasks.find(t=>t.id===topicTask)?.title??'Aufgabe'}</span>}{senderAgent&&<span className="r3-manual-scope">Manuell für {selectedSenderAgent?.name??'Agent'}</span>}<button className="rw-icon" aria-label="Zusatzangaben zurücksetzen" onClick={resetComposer}><X size={13}/></button></div>}
+     <div className="r3-compose-options" id="r3-compose-options" hidden={!composerOptions}>
+      <div className="r3-options-head"><strong>Nachrichtenoptionen</strong><button className="rw-icon" aria-label="Nachrichtenoptionen schliessen" onClick={()=>setComposerOptions(false)}><X size={16}/></button></div>
+     <div className="rw-composer-context">
+      <label className="rw-context-select">
+       <span>An (im Projektraum):</span>
+       <select aria-label="Empfänger im Projekt" value={recipient} onChange={e=>{setRecipient(e.target.value);setHandoffTo('');setHandoffSummary('');}} disabled={busy}>
+        <option value="">Alle im Projekt</option>
+        {activeMembers.length>0&&<optgroup label="Team (Menschen)">
+         {activeMembers.map(m=><option key={m.id} value={m.id}>{m.name}{m.id===userId?' (Du)':''}</option>)}
+        </optgroup>}
+        {activeAgents.length>0&&<optgroup label="KI-Teammitglieder">
+         {activeAgents.map(a=><option key={a.id} value={a.id}>🤖 {a.name} ({agentRoleLabels[a.role]})</option>)}
+        </optgroup>}
+       </select>
+      </label>
+      <label className="rw-context-select">
+       <span>Thema:</span>
+       <select aria-label="Thema oder Aufgabe zuordnen" value={topicTask} onChange={e=>setTopicTask(e.target.value)} disabled={busy}>
+        <option value="">Kein festes Thema</option>
+        {room.tasks.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
+       </select>
+      </label>
+      {canDevelop&&writableAgents.length>0&&<label className="rw-context-select">
+       <span>Beitrag erfassen als:</span>
+       <select aria-label="Als Mensch oder manuell für ein KI-Teammitglied senden" value={senderAgent} onChange={e=>{setSenderAgent(e.target.value);setHandoffTo('');setHandoffSummary('');setRecipient(messengerComposerTarget(filter).recipient);}} disabled={busy}>
+        <option value="">Ich selbst ({me?.name??'Mitglied'})</option>
+        {writableAgents.map(a=><option key={a.id} value={a.id}>Manuell für 🤖 {a.name} ({agentRoleLabels[a.role]})</option>)}
+       </select>
+      </label>}
+     </div>
+     {canDelegate&&activeAgents.length>1&&<div className="rw-composer-handoff">
+      <label className="rw-context-select">
+       <span>Koordinator-Übergabe an:</span>
+       <select aria-label="Ziel-Agent für Koordinator-Übergabe" value={handoffTo} onChange={e=>{setHandoffTo(e.target.value);setRecipient(e.target.value||messengerComposerTarget(filter).recipient);}} disabled={busy}>
+        <option value="">Keine Übergabe (normaler Beitrag)</option>
+        {activeAgents.filter(a=>a.id!==senderAgent).map(a=><option key={a.id} value={a.id}>🤖 {a.name} ({agentRoleLabels[a.role]} · {a.model})</option>)}
+       </select>
+      </label>
+      {handoffTo&&<input className="rw-handoff-input" aria-label="Kurzauftrag für die Agenten-Übergabe" value={handoffSummary} onChange={e=>setHandoffSummary(e.target.value)} maxLength={300} placeholder="Kurzauftrag für den Ziel-Agenten (optional, sonst erste Zeile der Nachricht)"/>}
+     </div>}
+      {onFiles&&<button className="rw-button subtle" onClick={()=>{setComposerOptions(false);onFiles();}}><FolderOpen size={15}/>Projektdateien öffnen</button>}
+     </div>
+     <form className="rw-composer" onSubmit={e=>{e.preventDefault();void send();}}>
+      <button type="button" className="r3-compose-plus r3-icon-button" aria-label="Nachrichtenoptionen" aria-expanded={composerOptions} aria-controls="r3-compose-options" onClick={()=>setComposerOptions(!composerOptions)}><Plus size={20}/></button>
+      <label className="rw-sr" htmlFor="rw-message">Nachricht an den Projektraum</label>
+      <textarea ref={composerInput} id="rw-message" rows={1} enterKeyHint="send" value={text} maxLength={4000} disabled={busy} onChange={e=>{setText(e.target.value);saveDraft(draftKey,e.target.value);}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void send();}}} placeholder={senderAgent?`Manuell für ${selectedSenderAgent?.name??'Agent'} protokollieren …`:recipient?'Nachricht an '+targetName+' …':'Nachricht ans Projektteam …'}/>
+      <button className="rw-send" disabled={busy||!text.trim()} aria-label="Nachricht senden"><Send size={18}/></button>
+     </form>
+    </div>
+   </div>
+   {hasDetail&&<MessengerInspector title={editingAgent?'Agentenprofil bearbeiten':profileAgent?profileAgent.name:detailTitle??'Details'} overlay={overlay} wide={detailKey==='files'||!!editingAgent} onClose={closeInspector} navigation={!profileAgent&&!editingAgent?detailNavigation:undefined}>
     {profileAgent&&!editingAgent&&<AgentProfileView
      agent={profileAgent}
      room={room}
@@ -388,18 +468,18 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
      onEdit={()=>{setEditingAgent(profileAgent);setProfileAgentId(null);}}
      onOpenAvatarPicker={()=>setAvatarPickerOpen(true)}
      onAddressInChat={()=>{setProfileAgentId(null);selectFilter({kind:'agent',id:profileAgent.id});}}
-     onActAsAgent={()=>{setProfileAgentId(null);setSenderAgent(profileAgent.id);}}
+     onActAsAgent={()=>{selectFilter({kind:'all'});setSenderAgent(profileAgent.id);setComposerOptions(true);}}
      onOpenTask={onTask}
-     onClose={()=>setProfileAgentId(null)}
+     onClose={closeInspector}
     />}
 
-    {editingAgent&&<form className="rw-agent-form" onSubmit={saveAgent} aria-label="KI-Teammitglied einrichten">
+    {editingAgent&&<form key={editingAgent.id??'new-agent'} className="rw-agent-form" onSubmit={saveAgent} aria-label="KI-Teammitglied einrichten">
      <div className="rw-agent-form-top">
       <div>
        <span className="rw-eyebrow">SCHMAQQ FIELD GUILD R2 · AGENTENPROFIL</span>
        <strong>{editingAgent.id?'KI-Teammitglied bearbeiten':'Neues KI-Teammitglied erstellen'}</strong>
       </div>
-      <button type="button" className="rw-icon" onClick={()=>setEditingAgent(null)} aria-label="Formular schließen"><X size={16}/></button>
+      <button type="button" className="rw-icon" onClick={closeInspector} aria-label="Formular schließen"><X size={16}/></button>
      </div>
 
      {/* AVATAR PICKER TRIGGER BAR */}
@@ -512,139 +592,8 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
      </footer>
     </form>}
 
-    <div className="rw-chat-stream">
-     {more&&messages.length>0&&<button className="rw-button subtle" disabled={busy} onClick={()=>void loadOlder()}>Ältere Nachrichten laden</button>}
-     {!messages.length&&<div className="rw-room-welcome"><span className="rw-welcome-icon"><MessageSquare size={30}/></span><span className="rw-eyebrow">DER ANFANG IST EIN GESPRÄCH</span><h2>Ein Raum für eure nächste Idee.</h2><p>Teilt Gedanken, stellt Fragen, adressiert Teammitglieder oder KI-Agenten und verknüpft Nachrichten direkt mit Aufgaben.</p><div><button onClick={()=>{setText('Unser Ziel für dieses Projekt: ');saveDraft(draftKey,'Unser Ziel für dieses Projekt: ');}}>Ziel festhalten</button><button onClick={()=>{setText('Was müssen wir zuerst herausfinden?');saveDraft(draftKey,'Was müssen wir zuerst herausfinden?');}}>Offene Fragen sammeln</button></div></div>}
-     {visible.map(message=>{
-      const person=room.members.find(m=>m.id===message.author);
-      const sAgent=message.senderAgent?activeAgents.find(a=>a.id===message.senderAgent)??(room.agents??[]).find(a=>a.id===message.senderAgent):null;
-      const targetMember=message.recipient&&message.recipientKind==='member'?room.members.find(m=>m.id===message.recipient):null;
-      const targetAgent=message.recipient&&message.recipientKind==='agent'?(room.agents??[]).find(a=>a.id===message.recipient):null;
-      const handoffAgent=message.handoff?.toAgent?(room.agents??[]).find(a=>a.id===message.handoff!.toAgent):null;
-      const parent=messages.find(m=>m.id===message.replyTo);
-      const parentPerson=parent?room.members.find(m=>m.id===parent.author):null;
-      const parentAgent=parent?.senderAgent?(room.agents??[]).find(a=>a.id===parent.senderAgent):null;
-      const linkedTaskId=message.taskId??message.topicTask??null;
-      const linkedTask=linkedTaskId?room.tasks.find(t=>t.id===linkedTaskId):null;
-      const isAgentMsg=Boolean(sAgent||message.kind==='ai-shared'||message.kind==='agent'||message.kind==='agent-handoff');
-      const isVerifiedRun=message.origin==='verified-run'||message.kind==='ai-shared';
-
-      return <article className={'rw-message'+(isAgentMsg?' ai':'')+(message.handoff?' handoff':'')} key={message.id} id={'message-'+message.id}>
-       {sAgent
-        ?<button type="button" className="rw-avatar-btn" onClick={()=>setProfileAgentId(sAgent.id)} title={`Profil von ${sAgent.name} öffnen`}>
-         <AgentAvatar agent={sAgent} size="md"/>
-        </button>
-        :<span className={'rw-avatar '+(isAgentMsg?'agent':'')}>
-         {message.kind==='ai-shared'?<Sparkles size={17}/>:initials(person?.name??'?')}
-        </span>}
-       <div className="rw-message-content">
-        <header>
-         <strong>
-          {sAgent
-           ?<button type="button" className="rw-link rw-msg-agent-name" onClick={()=>setProfileAgentId(sAgent.id)}>{sAgent.name}{sAgent.nickname?` „${sAgent.nickname}“`:''}</button>
-           :message.kind==='ai-shared'?message.model:person?.name??'Mitglied'}
-         </strong>
-         {sAgent&&<span className="rw-badge">{agentRoleLabels[sAgent.role]??'Agent'} · {sAgent.model}</span>}
-         {sAgent&&!isVerifiedRun&&<span className="rw-origin-badge manual">Manuell für Agent erfasst von {person?.name??'Mitglied'}</span>}
-         {sAgent&&isVerifiedRun&&<span className="rw-origin-badge verified">Verifizierter Modelllauf</span>}
-         {!sAgent&&message.kind==='ai-shared'&&<span className="rw-badge">Verifizierter KI-Lauf · geteilt von {person?.name}</span>}
-         {(targetMember||targetAgent)&&<span className="rw-recipient-badge">An {targetAgent?`🤖 ${targetAgent.name}`:targetMember?.name} (im Projektraum)</span>}
-         <time dateTime={new Date(message.created).toISOString()}>{time(message.created)}</time>
-        </header>
-
-        {linkedTaskId&&<div className="rw-message-topic-row">
-         <button className="rw-topic-pill" onClick={()=>onTask(linkedTaskId)}><Hash size={12}/><span>Thema: {linkedTask?.title??'Verknüpfte Aufgabe'}</span><ArrowRight size={12}/></button>
-         {filter.kind!=='topic'&&<button className="rw-link rw-topic-filter-btn" onClick={()=>selectFilter({kind:'topic',taskId:linkedTaskId})}>Thema filtern</button>}
-        </div>}
-
-        {message.replyTo&&<button className="rw-reply-reference" onClick={()=>document.getElementById('message-'+message.replyTo)?.scrollIntoView({block:'center',behavior:'smooth'})}>
-         <Reply size={13}/>
-         <span><strong>{parentAgent?.name??parentPerson?.name??'Frühere Nachricht'}:</strong> {parent?.body.slice(0,120)??'Antwort auf eine frühere Raumnachricht'}</span>
-        </button>}
-
-        {message.handoff&&<div className="rw-handoff-card" role="note" aria-label="Agenten-Übergabe">
-         <div className="rw-handoff-head">
-          {sAgent?<AgentAvatar agent={sAgent} size="xs"/>:<Bot size={15}/>}
-          <ArrowRight size={13}/>
-          {handoffAgent?<AgentAvatar agent={handoffAgent} size="xs"/>:null}
-          <strong>Koordinator-Übergabe: {sAgent?.name??'Koordinator'} → {handoffAgent?.name??message.handoff.toAgent}</strong>
-          <span className="rw-badge">Beauftragt</span>
-         </div>
-         <p className="rw-handoff-summary">{message.handoff.summary}</p>
-         {canDevelop&&handoffAgent&&agentEffectivePermissions(handoffAgent).writeMessages&&<div className="rw-handoff-actions">
-          <button className="rw-link" onClick={()=>{setSenderAgent(handoffAgent.id);setReply(message);if(linkedTaskId)setTopicTask(linkedTaskId);}}>Für {handoffAgent.name} antworten</button>
-          <button className="rw-link" onClick={()=>setProfileAgentId(handoffAgent.id)}>Profil von {handoffAgent.name}</button>
-         </div>}
-        </div>}
-
-        <p>{message.body}</p>
-        {isAgentMsg&&<small className="rw-muted">
-         {isVerifiedRun
-          ?'Verifizierter Modelllauf – Entscheidungen und Freigaben bleiben beim Team'
-          :`Manuell protokolliert durch ${person?.name??'Mitglied'} – keine automatische Modellgenerierung`}
-        </small>}
-        {message.taskId&&!linkedTask&&<button className="rw-message-task" onClick={()=>onTask(message.taskId!)}><CheckCheck size={14}/>Verknüpfte Aufgabe öffnen<ArrowRight size={13}/></button>}
-
-        <div className="rw-message-actions">
-         <button onClick={()=>{setReply(message);if(linkedTaskId&&!topicTask)setTopicTask(linkedTaskId);if(sAgent)setRecipient(sAgent.id);}}><Reply size={14}/>Antworten</button>
-         <button onClick={()=>linkedTaskId?onTask(linkedTaskId):onConvert('task',message)}><CheckCheck size={14}/>{linkedTaskId?'Aufgabe':'Als Aufgabe'}</button>
-         <button onClick={()=>onConvert('decision',message)}><Pin size={14}/>Festhalten</button>
-        </div>
-       </div>
-      </article>;
-     })}
-     {messages.length>0&&!visible.length&&<p className="rw-muted">Keine Nachricht passt zum aktuellen Filter.{filter.kind!=='all'&&<> <button className="rw-link" onClick={()=>selectFilter({kind:'all'})}>Alle Nachrichten zeigen</button></>}</p>}
-     <div ref={end}/>
-    </div>
-
-    <div className="rw-composer-wrap">
-     {error&&<p role="alert" className="rw-error">{error}</p>}
-     {reply&&<div className="rw-reply-bar"><Reply size={14}/><span>Antwort auf: {reply.body.slice(0,140)}</span><button className="rw-icon" onClick={()=>setReply(null)} aria-label="Antwortbezug entfernen"><X size={14}/></button></div>}
-     <div className="rw-composer-context">
-      <label className="rw-context-select">
-       <span>An (im Projektraum):</span>
-       <select aria-label="Empfänger im Projekt" value={recipient} onChange={e=>setRecipient(e.target.value)} disabled={busy}>
-        <option value="">Alle im Projekt</option>
-        {activeMembers.length>0&&<optgroup label="Team (Menschen)">
-         {activeMembers.map(m=><option key={m.id} value={m.id}>{m.name}{m.id===userId?' (Du)':''}</option>)}
-        </optgroup>}
-        {activeAgents.length>0&&<optgroup label="KI-Teammitglieder">
-         {activeAgents.map(a=><option key={a.id} value={a.id}>🤖 {a.name} ({agentRoleLabels[a.role]})</option>)}
-        </optgroup>}
-       </select>
-      </label>
-      <label className="rw-context-select">
-       <span>Thema:</span>
-       <select aria-label="Thema oder Aufgabe zuordnen" value={topicTask} onChange={e=>setTopicTask(e.target.value)} disabled={busy}>
-        <option value="">Kein festes Thema</option>
-        {room.tasks.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
-       </select>
-      </label>
-      {canDevelop&&writableAgents.length>0&&<label className="rw-context-select">
-       <span>Beitrag erfassen als:</span>
-       <select aria-label="Als Mensch oder manuell für ein KI-Teammitglied senden" value={senderAgent} onChange={e=>{setSenderAgent(e.target.value);if(!e.target.value)setHandoffTo('');}} disabled={busy}>
-        <option value="">Ich selbst ({me?.name??'Mitglied'})</option>
-        {writableAgents.map(a=><option key={a.id} value={a.id}>Manuell für 🤖 {a.name} ({agentRoleLabels[a.role]})</option>)}
-       </select>
-      </label>}
-     </div>
-     {canDelegate&&activeAgents.length>1&&<div className="rw-composer-handoff">
-      <label className="rw-context-select">
-       <span>Koordinator-Übergabe an:</span>
-       <select aria-label="Ziel-Agent für Koordinator-Übergabe" value={handoffTo} onChange={e=>{setHandoffTo(e.target.value);if(e.target.value)setRecipient(e.target.value);}} disabled={busy}>
-        <option value="">Keine Übergabe (normaler Beitrag)</option>
-        {activeAgents.filter(a=>a.id!==senderAgent).map(a=><option key={a.id} value={a.id}>🤖 {a.name} ({agentRoleLabels[a.role]} · {a.model})</option>)}
-       </select>
-      </label>
-      {handoffTo&&<input className="rw-handoff-input" aria-label="Kurzauftrag für die Agenten-Übergabe" value={handoffSummary} onChange={e=>setHandoffSummary(e.target.value)} maxLength={300} placeholder="Kurzauftrag für den Ziel-Agenten (optional, sonst erste Zeile der Nachricht)"/>}
-     </div>}
-     <form className="rw-composer" onSubmit={e=>{e.preventDefault();void send();}}>
-      <label className="rw-sr" htmlFor="rw-message">Nachricht an den Projektraum</label>
-      <textarea id="rw-message" value={text} maxLength={4000} disabled={busy} onChange={e=>{setText(e.target.value);saveDraft(draftKey,e.target.value);}} onKeyDown={e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();void send();}}} placeholder={senderAgent?`Manuell protokollierter Beitrag oder Übergabe für ${selectedSenderAgent?.name??'Agent'} …`:'Nachricht an '+room.project.title+' …'}/>
-      <footer><span/><button className="rw-send" disabled={busy||!text.trim()} aria-label="Nachricht senden"><Send size={18}/></button></footer>
-     </form>
-    </div>
-   </div>
+    {!profileAgent&&!editingAgent&&detail}
+   </MessengerInspector>}
   </div>
 
   {avatarPickerOpen&&<AvatarConfigurator

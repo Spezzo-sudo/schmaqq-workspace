@@ -1,4 +1,44 @@
 {
+  "messenger_r3_20261115": {
+    "state": "implemented_on_feature_branch_verified_not_production_deployed",
+    "branch": "feat/studio-messenger-r3-20261115",
+    "base_branch": "feat/studio-field-guild-r2-avatars-20261115",
+    "implemented": [
+      "Messenger-first project shell with compact chat/contact rail, optional shared inspector and mobile list/chat routing",
+      "Existing tasks, reviews, preview, knowledge, profiles, permissions, account/team/help routes and explicit model/context tools retained",
+      "Real project file tree reuses authorized own workspaces and existing revision-bound runner editor; no parallel file store",
+      "Per-user/project/view drafts, recipient/topic reset, browser Back, reply navigation and explicit project-wide visibility",
+      "Backend rejects conflicting handoff recipient; agent activity no longer inferred from model name alone",
+      "CI extension prepared as docs/patches/STUDIO_CI_R3.patch, NOT applied: connected OAuth access lacks workflow write scope; active workflow left unchanged"
+    ],
+    "verification": {
+      "full_suite": {
+        "tests": 337,
+        "passed": 334,
+        "failed": 0,
+        "skipped": 3
+      },
+      "focused_suite": {
+        "tests": 23,
+        "passed": 23,
+        "failed": 0
+      },
+      "browser": "Real isolated Node/SQLite backend, two local sample runners, two authenticated users; 1440x960 desktop, 390x844 mobile and 390x470 reduced viewport. Message/reply/profile persistence, file tree/read/save/reload, task return, drafts, inspector, focus and browser Back passed.",
+      "evidence": "docs/STUDIO_MESSENGER_R3.md; docs/evidence/messenger-r3; tests/studio-messenger-r3.browser.py"
+    },
+    "limits": [
+      "Contact views are addressed project-visible conversations, not private DMs",
+      "Agent handoffs are auditable records, not autonomous execution",
+      "No provider quota/token/context-percent telemetry is invented",
+      "File panel supports the existing text-file operations; binary upload and full document preview were not added",
+      "Public Pages remains a UI-fixture preview. Durable protected full-stack staging requires a separately authorized runtime/deploy channel",
+      "GitHub OAuth access cannot update workflows; CI patch requires separate authorized review/application"
+    ],
+    "production_changed": false,
+    "main_changed": false,
+    "schema_migration": false,
+    "model_calls": false
+  },
   "field_guild_r2_avatars_agent_profiles_20261115": {
     "state": "implemented_on_feature_branch_verified_not_deployed",
     "branch": "feat/studio-field-guild-r2-avatars-20261115",
