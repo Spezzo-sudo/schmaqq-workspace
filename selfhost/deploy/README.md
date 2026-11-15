@@ -80,3 +80,26 @@ zurückgerollt werden.
 Die aktuellen Template-Grenzen `MemoryMax=256M` und `CPUQuota=50%`
 sind keine Kapazitätsgarantie. Git, Codex und Build-/Test-Aufträge bleiben
 vorerst auf den jeweiligen privaten Runner-PCs.
+
+## Staging-Instanz (vorbereitet, nicht installiert)
+
+`studio-deploy.sh` kennt zwei Instanzen. Ohne `STUDIO_INSTANCE` gilt **unverändert
+Production** (Dienst `schmaqq-studio`, nur Commits von `main`, Worker-Aktualisierung).
+`STUDIO_INSTANCE=staging` arbeitet ausschliesslich mit eigenem Dienst
+`schmaqq-studio-staging`, eigenem Benutzer, eigenen Ordnern unter
+`/opt|/var/lib|/var/cache/schmaqq-studio-staging*`, eigener ENV-Datei, eigenen
+Sperrdateien und Probe-Ports 4392/4393. Der Server-Worker wird nie angefasst;
+auf Staging gibt es deshalb keine Code-Aufträge.
+
+```bash
+# Zuerst nur anzeigen, was verwendet würde (ändert nichts):
+STUDIO_INSTANCE=staging STUDIO_PUBLIC_URL=https://<staging-adresse> \
+STUDIO_SOURCE_BRANCH=<branch> selfhost/deploy/studio-deploy.sh config
+```
+
+Das Skript bricht ab, wenn Staging eine Production-Adresse, einen
+Production-Pfad (auch Unterordner), den Production-Benutzer oder Port 4310/4311
+verwenden würde. Vorlagen: `schmaqq-studio-staging.service`,
+`studio-staging.env.example`. Benutzer, Ordner, Node-Laufzeit, DNS, Proxy mit
+zusätzlicher Zugangsschranke und erste Einladung sind ein **gesondert
+freizugebender Betriebsschritt**.

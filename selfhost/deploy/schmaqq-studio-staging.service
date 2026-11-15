@@ -1,0 +1,29 @@
+[Unit]
+Description=Schmaqq Studio STAGING (separate data, no server worker; never production)
+After=network.target
+
+[Service]
+Type=simple
+User=schmaqq-studio-staging
+Group=schmaqq-studio-staging
+WorkingDirectory=/opt/schmaqq-studio-staging/current
+EnvironmentFile=/etc/schmaqq-studio-staging.env
+# R4: dedicated, version-pinned Studio Node 24 runtime; never use /usr/bin/node (system Node 22).
+# Verify executable, ownership, SHA256 and >=24.15 before enabling this template.
+ExecStart=/opt/schmaqq-studio-staging/runtime/node/bin/node selfhost/server.mjs
+Restart=on-failure
+RestartSec=5
+StateDirectory=schmaqq-studio-staging
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/schmaqq-studio-staging
+MemoryMax=256M
+CPUQuota=50%
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
