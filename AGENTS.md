@@ -3,7 +3,11 @@
 Ziel: Marco und Markus entwickeln gemeinsam digitale Services, mit eigenen Konten,
 eigenen Arbeitskopien und gegenseitigem Review. Designreferenz ist SCHMAQQ.
 
-Vor Arbeit lesen: `docs/PLAN.md`, `docs/WORKLIST.md`, `docs/STATUS.json`, dann nur relevante Source.
+Vor Arbeit zuerst `docs/CONTEXT_ENTRY.md` lesen; dann nur auftragsrelevante Abschnitte
+von `docs/PLAN.md`, `docs/WORKLIST.md` und gezielt ausgewählte Einträge aus
+`docs/STATUS.json` einsehen. Die gesamte STATUS.json nicht routinemäßig laden
+(sie ist ein umfangreiches Statusarchiv). Für Detailfragen relevante Originalquellen
+lesen und den Befund belegen; keine wichtigen Prüfungen auslassen.
 Offizieller Stand ist `main`. Historische Dokumente liegen in `docs/archive/` und sind kein Auftrag.
 Dieses Repository ist die eigenständige Anwendung `Spezzo-sudo/schmaqq-workspace`.
 Alle Befehle laufen im Repository-Root. Der frühere NetzKontor-Übergabe-Snapshot
