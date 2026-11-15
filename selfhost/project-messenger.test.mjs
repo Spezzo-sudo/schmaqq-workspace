@@ -35,14 +35,32 @@ async function fixture(t){
  return {app,host,post,get,marco,markus,viewer};
 }
 
-test('Field Guild R2 avatar catalog: 12 stable presets, human/animal filters, and fallback resolution',()=>{
+test('Field Guild R2 avatar catalog: 12 stable presets, human/animal filters, asset files, and fallback resolution',async t=>{
+ const {host}=await fixture(t);
  const expectedIds=['leitwolf','herr-grau','mara','frau-kern','otto','nova','dachs','fuchs','baer','rabe','schaefer','eule'];
  assert.deepEqual(FIELD_GUILD_R2_PRESETS.map(p=>p.id),expectedIds);
  assert.equal(filterAvatarPresets('all').length,12);
  assert.equal(filterAvatarPresets('human').length,6);
  assert.equal(filterAvatarPresets('animal').length,6);
+ assert.deepEqual(filterAvatarPresets('human').map(p=>p.id),['leitwolf','herr-grau','mara','frau-kern','otto','nova']);
+ assert.deepEqual(filterAvatarPresets('animal').map(p=>p.id),['dachs','fuchs','baer','rabe','schaefer','eule']);
  assert.equal(filterAvatarPresets('all','Security').length,1);
  assert.equal(filterAvatarPresets('all','Security')[0].id,'rabe');
+
+ for(const preset of FIELD_GUILD_R2_PRESETS){
+  const pngRes=await fetch(host+preset.assetPath);
+  assert.equal(pngRes.status,200,`PNG asset missing for ${preset.id}`);
+  assert.equal(pngRes.headers.get('content-type'),'image/png');
+  const webpRes=await fetch(host+preset.webpPath);
+  assert.equal(webpRes.status,200,`WebP asset missing for ${preset.id}`);
+  assert.equal(webpRes.headers.get('content-type'),'image/webp');
+  const thumbRes=await fetch(host+preset.thumbWebpPath);
+  assert.equal(thumbRes.status,200,`Thumbnail WebP asset missing for ${preset.id}`);
+  assert.equal(thumbRes.headers.get('content-type'),'image/webp');
+ }
+
+ const missingRes=await fetch(host+'/avatars/field-guild-r2/unbekannt.png');
+ assert.equal(missingRes.status,404);
 
  const grau=findAvatarPreset('herr-grau');
  assert.ok(grau);
@@ -51,6 +69,8 @@ test('Field Guild R2 avatar catalog: 12 stable presets, human/animal filters, an
 
  const resolvedPreset=resolveAgentAvatar({name:'Architekt Grau',avatarPresetId:'herr-grau',avatar:''});
  assert.equal(resolvedPreset.assetPath,'/avatars/field-guild-r2/herr-grau.png');
+ assert.equal(resolvedPreset.webpPath,'/avatars/field-guild-r2/herr-grau.webp');
+ assert.equal(resolvedPreset.thumbWebpPath,'/avatars/field-guild-r2/herr-grau-sm.webp');
  assert.equal(resolvedPreset.fallbackCode,'HG');
 
  const resolvedCustom=resolveAgentAvatar({name:'Eigener Kollege',avatarPresetId:'',avatar:'EK'});

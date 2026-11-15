@@ -1,26 +1,26 @@
-# SCHMAQQ Field Guild R2 – Avatar-Assets
+# SCHMAQQ Field Guild R2 — Offizielles Avatar-Paket (`field-guild-r2`)
 
-Dieses Verzeichnis enthält die Charakterportraits für das **SCHMAQQ Field Guild R2** Avatar- und Agentenprofilsystem.
-Alle Dateien unter `public/avatars/field-guild-r2/` werden beim Build (`npm run studio:build`) automatisch unter `/avatars/field-guild-r2/<dateiname>` ausgeliefert.
+Dieses Verzeichnis enthält die zwölf finalen Charakterportraits der **SCHMAQQ Field Guild R2** sowie automatisch erzeugte WebP-Varianten (`512×512` für Galerie/Profil, `128×128` für schnelle Kontaktlisten- und Chat-Badges).
 
-## Dateinamenskonvention (12 Standard-Presets)
+## Die 12 Charakter-Assets (`public/avatars/field-guild-r2/`)
 
-Um ein Einzelportrait für eine Figur bereitzustellen oder zu aktualisieren, genügt es, die jeweilige PNG-Datei (quadratisch, empfohlen `512×512` bis `1024×1024` px) unter exakt diesem Namen abzulegen – **ohne Codeänderung**:
+| Preset-ID | Originaldatei (1024×1024) | Optimiert (512×512) | Thumbnail (128×128) | Charakter & Empfohlene Rolle | Typ | Kürzel-Fallback |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `leitwolf` | `leitwolf.png` | `leitwolf.webp` | `leitwolf-sm.webp` | **Leitwolf** – Koordinator | Mensch | `LW` |
+| `herr-grau` | `herr-grau.png` | `herr-grau.webp` | `herr-grau-sm.webp` | **Herr Grau** – Technischer Berater | Mensch | `HG` |
+| `mara` | `mara.png` | `mara.webp` | `mara-sm.webp` | **Mara** – Frontend / UX | Mensch | `MA` |
+| `frau-kern` | `frau-kern.png` | `frau-kern.webp` | `frau-kern-sm.webp` | **Frau Kern** – Review / QA | Mensch | `FK` |
+| `otto` | `otto.png` | `otto.webp` | `otto-sm.webp` | **Otto** – Operations | Mensch | `OT` |
+| `nova` | `nova.png` | `nova.webp` | `nova-sm.webp` | **Nova** – Forschung / Strategie | Mensch | `NV` |
+| `dachs` | `dachs.png` | `dachs.webp` | `dachs-sm.webp` | **Dachs** – Debugging / Qualität | Tier | `DA` |
+| `fuchs` | `fuchs.png` | `fuchs.webp` | `fuchs-sm.webp` | **Fuchs** – Recherche / Ideen | Tier | `FU` |
+| `baer` | `baer.png` | `baer.webp` | `baer-sm.webp` | **Bär** – Infrastruktur / Systeme | Tier | `BA` |
+| `rabe` | `rabe.png` | `rabe.webp` | `rabe-sm.webp` | **Rabe** – Security | Tier | `RA` |
+| `schaefer` | `schaefer.png` | `schaefer.webp` | `schaefer-sm.webp` | **Schäfer** – Support | Tier | `SC` |
+| `eule` | `eule.png` | `eule.webp` | `eule-sm.webp` | **Eule** – Wissen / Dokumentation | Tier | `EU` |
 
-| Preset-ID | Pfad im Repository | Typ | Empfohlene Rolle | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| `leitwolf` | `public/avatars/field-guild-r2/leitwolf.png` | Mensch | Koordinator | Bereit für Einzelbild (Kürzel-Fallback `LW` aktiv) |
-| `herr-grau` | `public/avatars/field-guild-r2/herr-grau.png` | Mensch | Technischer Berater | **Einzelportrait hinterlegt** (`herr-grau.png`) |
-| `mara` | `public/avatars/field-guild-r2/mara.png` | Mensch | Frontend / UX | Bereit für Einzelbild (Kürzel-Fallback `MA` aktiv) |
-| `frau-kern` | `public/avatars/field-guild-r2/frau-kern.png` | Mensch | Review / QA | Bereit für Einzelbild (Kürzel-Fallback `FK` aktiv) |
-| `otto` | `public/avatars/field-guild-r2/otto.png` | Mensch | Operations | Bereit für Einzelbild (Kürzel-Fallback `OT` aktiv) |
-| `nova` | `public/avatars/field-guild-r2/nova.png` | Mensch | Forschung / Strategie | Bereit für Einzelbild (Kürzel-Fallback `NV` aktiv) |
-| `dachs` | `public/avatars/field-guild-r2/dachs.png` | Tier | Debugging / Qualität | Bereit für Einzelbild (Kürzel-Fallback `DA` aktiv) |
-| `fuchs` | `public/avatars/field-guild-r2/fuchs.png` | Tier | Recherche / Ideen | Bereit für Einzelbild (Kürzel-Fallback `FU` aktiv) |
-| `baer` | `public/avatars/field-guild-r2/baer.png` | Tier | Infrastruktur / Systeme | Bereit für Einzelbild (Kürzel-Fallback `BR` aktiv) |
-| `rabe` | `public/avatars/field-guild-r2/rabe.png` | Tier | Security | Bereit für Einzelbild (Kürzel-Fallback `RA` aktiv) |
-| `schaefer` | `public/avatars/field-guild-r2/schaefer.png` | Tier | Support | Bereit für Einzelbild (Kürzel-Fallback `SC` aktiv) |
-| `eule` | `public/avatars/field-guild-r2/eule.png` | Tier | Wissen / Dokumentation | Bereit für Einzelbild (Kürzel-Fallback `EU` aktiv) |
+## Grundsätze
 
-Zusätzlich liegt die 4×3-Charakterübersicht als Referenz unter `public/avatars/field-guild-r2/reference-team-12.png`.
-Solange für ein Preset noch keine eigene `.png`-Datei hinterlegt ist, zeigt die Komponente `<AgentAvatar>` automatisch den typografischen SCHMAQQ-Kürzel-Avatar im jeweiligen Farbakzent der Figur an.
+- Die Originaldateien (`<id>.png`) sind unverändert im Verzeichnis abgelegt.
+- `AgentAvatar` (`studio/agent-avatar.tsx`) lädt je nach Darstellungsgröße (`40px`, `48px`, `96px`, `256px`) über `<picture>` bevorzugt die optimierten WebP-Varianten und fällt automatisch auf `<id>.png` bzw. das SCHMAQQ-Kürzel (`fallbackCode`) zurück, falls eine Bilddatei in einem späteren Erweiterungspaket noch nicht vorhanden ist.
+- Avatar, Name, Rolle, Modell, Beschreibung, Kommunikationsstil und serverseitige Berechtigungen sind voneinander unabhängig konfigurierbar.

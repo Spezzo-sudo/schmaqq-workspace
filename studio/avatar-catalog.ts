@@ -29,7 +29,10 @@ export type AvatarPreset={
  traits:string;
  defaultPurpose:string;
  defaultPersonality:string;
+ objectPosition:string;
  assetPath:string;
+ webpPath:string;
+ thumbWebpPath:string;
 };
 
 export const AVATAR_PACK_R2='field-guild-r2';
@@ -41,6 +44,17 @@ export function avatarAssetPath(presetId:string,packId=AVATAR_PACK_R2,ext:'png'|
  return `/avatars/${safePack}/${safeId}.${ext}`;
 }
 
+export function avatarThumbPath(presetId:string,packId=AVATAR_PACK_R2):string{
+ const safePack=packId.replace(/[^a-z0-9-]/gi,'').toLowerCase()||AVATAR_PACK_R2;
+ const safeId=presetId.replace(/[^a-z0-9-]/gi,'').toLowerCase();
+ return `/avatars/${safePack}/${safeId}-sm.webp`;
+}
+
+/**
+ * SCHMAQQ Field Guild R2 — Die 12 offiziellen Charakter-Presets.
+ * Beschreibungen und Rollen sind Empfehlungen, keine unveränderlichen System-Prompts
+ * und keine Behauptungen über tatsächliche Modellfähigkeiten oder Berechtigungen.
+ */
 export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
  {
   id:'leitwolf',
@@ -51,10 +65,13 @@ export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
   recommendedRoleLabel:'Koordinator',
   fallbackCode:'LW',
   accent:'lime',
-  traits:'Dunkles lockiges Haar, gepflegter Vollbart, hoher Mantelkragen, ruhiger Blick',
-  defaultPurpose:'Koordiniert Projektziele, strukturiert Teilaufgaben und begleitet Übergaben im Team.',
-  defaultPersonality:'Ruhig, verbindlich und strukturierend; fasst Diskussionen präzise in klare nächste Schritte zusammen.',
-  assetPath:avatarAssetPath('leitwolf')
+  traits:'Ruhiger, selbstbewusster Kollege mit natürlicher Autorität. Organisiert, pragmatisch, verbindlich. Ein erfahrener Projektleiter, der auch einmal schmunzelt.',
+  defaultPurpose:'Zerlegt Projektziele in klare Aufgaben, hält Abhängigkeiten zusammen und delegiert Teilaufgaben strukturiert im Team.',
+  defaultPersonality:'Ruhig, selbstbewusst, pragmatisch und verbindlich – behält den Überblick und kommuniziert auf den Punkt.',
+  objectPosition:'50% 10%',
+  assetPath:avatarAssetPath('leitwolf'),
+  webpPath:avatarAssetPath('leitwolf',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('leitwolf')
  },
  {
   id:'herr-grau',
@@ -64,11 +81,14 @@ export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
   recommendedRole:'advisor',
   recommendedRoleLabel:'Technischer Berater',
   fallbackCode:'HG',
-  accent:'brass',
-  traits:'Erfahrener Ingenieur, grau meliertes Haar, Brille, kurzer schmaler Oberlippenbart, technische Weste',
-  defaultPurpose:'Prüft Architekturentscheidungen, technische Machbarkeit und langfristige Wartbarkeit.',
-  defaultPersonality:'Nüchtern, erfahren und analytisch; benennt Risiken, Abhängigkeiten und saubere Alternativen.',
-  assetPath:avatarAssetPath('herr-grau')
+  accent:'smoke',
+  traits:'Erfahrener technischer Berater. Trockener Humor, eigenwillig, analytisch, gelegentlich leicht ironisch. Der Ingenieur, der Probleme erkennt, bevor andere sie überhaupt bemerken.',
+  defaultPurpose:'Prüft Architektur, Systemgrenzen, Datenmodelle und langfristige Wartbarkeit vor kritischen Entscheidungen.',
+  defaultPersonality:'Trockener Humor, eigenwillig, analytisch und gelegentlich leicht ironisch – benennt Schwachstellen frühzeitig.',
+  objectPosition:'50% 10%',
+  assetPath:avatarAssetPath('herr-grau'),
+  webpPath:avatarAssetPath('herr-grau',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('herr-grau')
  },
  {
   id:'mara',
@@ -79,10 +99,13 @@ export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
   recommendedRoleLabel:'Frontend / UX',
   fallbackCode:'MA',
   accent:'coral',
-  traits:'Kurzer kantiger Haarschnitt, selbstbewusste Haltung, funktionale Designjacke',
-  defaultPurpose:'Gestaltet klare Benutzeroberflächen, mobile Bedienbarkeit und verständliche Nutzerflüsse.',
-  defaultPersonality:'Direkt, gestalterisch präzise und nutzerzentriert; achtet auf Smartphone-Lesbarkeit und Fokusführung.',
-  assetPath:avatarAssetPath('mara')
+  traits:'Kreativ, unabhängig, schlagfertig und etwas rebellisch. Liebt ungewöhnliche Lösungen, ist selbstbewusst und hat hohe Designansprüche.',
+  defaultPurpose:'Gestaltet klare, mobil bedienbare Oberflächen, Komponenten und verständliche Nutzerflüsse mit hohem gestalterischem Anspruch.',
+  defaultPersonality:'Kreativ, unabhängig, schlagfertig und direkt – kompromisslos bei Lesbarkeit, Layout und mobiler Bedienbarkeit.',
+  objectPosition:'50% 8%',
+  assetPath:avatarAssetPath('mara'),
+  webpPath:avatarAssetPath('mara',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('mara')
  },
  {
   id:'frau-kern',
@@ -92,11 +115,14 @@ export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
   recommendedRole:'reviewer',
   recommendedRoleLabel:'Review / QA',
   fallbackCode:'FK',
-  accent:'smoke',
-  traits:'Präziser Bob mit Pony, runde Brille, klarer Blick, strukturiertes Jackett',
-  defaultPurpose:'Bereitet Reviews vor, gleicht Änderungen mit Abnahmekriterien ab und prüft Testabdeckung.',
-  defaultPersonality:'Gründlich, sachlich und unbestechlich; trennt belegte Testergebnisse strikt von Annahmen.',
-  assetPath:avatarAssetPath('frau-kern')
+  accent:'brass',
+  traits:'Präzise, kritisch, unbestechlich und anspruchsvoll. Hinter dem skeptischen Blick steckt subtile Ironie. Findet zuverlässig Fehler und Unstimmigkeiten.',
+  defaultPurpose:'Prüft Änderungen gegen Abnahmekriterien, Regressionen und Sicherheitsgrenzen vor menschlicher Freigabe.',
+  defaultPersonality:'Präzise, kritisch, unbestechlich und anspruchsvoll mit subtiler Ironie – verlässt sich auf nachprüfbare Fakten.',
+  objectPosition:'50% 8%',
+  assetPath:avatarAssetPath('frau-kern'),
+  webpPath:avatarAssetPath('frau-kern',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('frau-kern')
  },
  {
   id:'otto',
@@ -107,24 +133,30 @@ export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
   recommendedRoleLabel:'Operations',
   fallbackCode:'OT',
   accent:'olive',
-  traits:'Kräftige Statur, robuster kurzer Bart, Werkstattjacke, Schutzbrille',
-  defaultPurpose:'Begleitet Builds, Werkstatt-Läufe, Laufzeitumgebungen und verlässliche Betriebsabläufe.',
-  defaultPersonality:'Pragmatisch, bodenständig und lösungsorientiert; konzentriert sich auf reproduzierbare Abläufe.',
-  assetPath:avatarAssetPath('otto')
+  traits:'Herzlich, humorvoll, bodenständig und handwerklich versiert. Ein erfahrener Praktiker, der auch bei komplizierten Problemen gute Laune behält.',
+  defaultPurpose:'Überwacht Build-Pfade, Runner-Bereitschaft, Dienste und stabile, reproduzierbare Abläufe.',
+  defaultPersonality:'Herzlich, humorvoll, bodenständig und handwerklich versiert – löst Probleme pragmatisch und unaufgeregt.',
+  objectPosition:'50% 8%',
+  assetPath:avatarAssetPath('otto'),
+  webpPath:avatarAssetPath('otto',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('otto')
  },
  {
   id:'nova',
   packId:AVATAR_PACK_R2,
   name:'Nova',
   kind:'human',
-  recommendedRole:'researcher',
+  recommendedRole:'strategy',
   recommendedRoleLabel:'Forschung / Strategie',
   fallbackCode:'NV',
   accent:'petrol',
-  traits:'Locker gebundene Haare, analytischer Blick, helle Forschungsjacke, dezente Optik',
-  defaultPurpose:'Untersucht neue Lösungsansätze, strategische Optionen und fachliche Zusammenhänge.',
-  defaultPersonality:'Weitsichtig, strukturiert und neugierig; stellt Optionen mit klaren Vor- und Nachteilen gegenüber.',
-  assetPath:avatarAssetPath('nova')
+  traits:'Neugierige, fantasievolle Forscherin. Nerdig, intelligent, experimentierfreudig, begeistert von komplexen Zusammenhängen und neuen Entdeckungen.',
+  defaultPurpose:'Untersucht neue Lösungswege, Produktoptionen, komplexe Zusammenhänge und langfristige Plattform-Etappen.',
+  defaultPersonality:'Neugierig, fantasievoll, nerdig und experimentierfreudig – verbindet große Zusammenhänge mit konkreten Experimenten.',
+  objectPosition:'50% 8%',
+  assetPath:avatarAssetPath('nova'),
+  webpPath:avatarAssetPath('nova',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('nova')
  },
  {
   id:'dachs',
@@ -134,11 +166,14 @@ export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
   recommendedRole:'debugger',
   recommendedRoleLabel:'Debugging / Qualität',
   fallbackCode:'DA',
-  accent:'lime',
-  traits:'Markante Schwarz-Weiss-Gesichtszeichnung, Arbeitskragen, Werkzeugstifte, hartnäckiger Ausdruck',
-  defaultPurpose:'Spürt Fehlerursachen, instabile Tests und Randfälle im Code systematisch auf.',
-  defaultPersonality:'Hartnäckig, detailgenau und geduldig; gibt sich erst mit einer verifizierten Ursache zufrieden.',
-  assetPath:avatarAssetPath('dachs')
+  accent:'brass',
+  traits:'Hartnäckiger, leicht mürrischer Spezialist. Skeptisch, detailverliebt, extrem gründlich. Humorvoll auf trockene Art. Lässt einen Fehler nicht los.',
+  defaultPurpose:'Gräbt tief in Fehlermeldungen, Race Conditions und fehlschlagende Tests, bis die tatsächliche Ursache belegt ist.',
+  defaultPersonality:'Hartnäckig, leicht mürrisch, extrem gründlich mit trockenem Humor – lässt keinen Fehler los, bevor er reproduziert ist.',
+  objectPosition:'50% 6%',
+  assetPath:avatarAssetPath('dachs'),
+  webpPath:avatarAssetPath('dachs',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('dachs')
  },
  {
   id:'fuchs',
@@ -149,10 +184,13 @@ export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
   recommendedRoleLabel:'Recherche / Ideen',
   fallbackCode:'FU',
   accent:'coral',
-  traits:'Spitze Ohren, wacher Blick, eleganter Mantel und Schal, feinsinnige Ausstrahlung',
-  defaultPurpose:'Sammelt Ideen, recherchiert Hintergründe und schlägt kreative Varianten für das Projekt vor.',
-  defaultPersonality:'Aufmerksam, einfallsreich und präzise; bringt frische Perspektiven ohne unnötigen Ballast ein.',
-  assetPath:avatarAssetPath('fuchs')
+  traits:'Charmant, clever, witzig und leicht verschmitzt. Ungewöhnliche Ideen, schnelle Auffassungsgabe und kreative Umwege sind seine Spezialität.',
+  defaultPurpose:'Sammelt Wissen, vergleicht Ansätze, findet kreative Umwege und bringt prägnante Entscheidungsvorlagen in den Raum.',
+  defaultPersonality:'Charmant, clever, witzig und leicht verschmitzt – denkt schnell um die Ecke und liefert unkonventionelle Impulse.',
+  objectPosition:'50% 4%',
+  assetPath:avatarAssetPath('fuchs'),
+  webpPath:avatarAssetPath('fuchs',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('fuchs')
  },
  {
   id:'baer',
@@ -161,12 +199,15 @@ export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
   kind:'animal',
   recommendedRole:'infrastructure',
   recommendedRoleLabel:'Infrastruktur / Systeme',
-  fallbackCode:'BR',
-  accent:'brass',
-  traits:'Grosse ruhige Silhouette, robuste technische Jacke, zuverlässige Präsenz',
-  defaultPurpose:'Überwacht Systemgrenzen, Datenbank-Integrität, Backups und stabile Schnittstellen.',
-  defaultPersonality:'Besonnen, ruhig und verlässlich; schützt bestehende Daten und bevorzugt robuste Lösungen.',
-  assetPath:avatarAssetPath('baer')
+  fallbackCode:'BA',
+  accent:'olive',
+  traits:'Ruhiger, geduldiger und beeindruckend zuverlässiger Kollege. Wenig Worte, dafür durchdachte Lösungen. Strahlt Sicherheit und Gelassenheit aus.',
+  defaultPurpose:'Sichert Datenbank-, Speicher-, Backup- und Isolationsgrenzen sowie stabile Basissysteme.',
+  defaultPersonality:'Ruhig, geduldig, wortkarg und beeindruckend zuverlässig – liefert durchdachte Lösungen mit großer Gelassenheit.',
+  objectPosition:'50% 4%',
+  assetPath:avatarAssetPath('baer'),
+  webpPath:avatarAssetPath('baer',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('baer')
  },
  {
   id:'rabe',
@@ -176,11 +217,14 @@ export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
   recommendedRole:'security',
   recommendedRoleLabel:'Security',
   fallbackCode:'RA',
-  accent:'smoke',
-  traits:'Dunkles Gefieder, wacher Blick, hoher Kragen, zurückhaltender Tech-Akzent',
-  defaultPurpose:'Prüft Berechtigungen, Zugriffswege, Sitzungsgrenzen und Sicherheitsregeln im Projekt.',
-  defaultPersonality:'Wachsam, kritisch und präzise; weist frühzeitig auf implizite Annahmen oder Rechteüberschreitungen hin.',
-  assetPath:avatarAssetPath('rabe')
+  accent:'lime',
+  traits:'Beobachtend, zurückhaltend, scharfsinnig und etwas geheimnisvoll. Analysiert Risiken, hinterfragt Annahmen und erkennt verdächtige Muster.',
+  defaultPurpose:'Analysiert Risiken, Authentifizierung, Rollenprüfung, Sandbox-Grenzen und erkennt verdächtige Muster.',
+  defaultPersonality:'Beobachtend, zurückhaltend, scharfsinnig und wachsam – hinterfragt Annahmen und prüft jede Vertrauensgrenze.',
+  objectPosition:'52% 6%',
+  assetPath:avatarAssetPath('rabe'),
+  webpPath:avatarAssetPath('rabe',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('rabe')
  },
  {
   id:'schaefer',
@@ -190,11 +234,14 @@ export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
   recommendedRole:'support',
   recommendedRoleLabel:'Support',
   fallbackCode:'SC',
-  accent:'olive',
-  traits:'Schäferhund mit aufgerichteten Ohren, Headset, konzentrierte Haltung',
-  defaultPurpose:'Hilft bei Rückfragen, Onboarding-Schritten und der Koordination offener Punkte im Team.',
-  defaultPersonality:'Hilfsbereit, aufmerksam und klar verständlich; übersetzt Technik in Alltagssprache.',
-  assetPath:avatarAssetPath('schaefer')
+  accent:'petrol',
+  traits:'Freundlich, aufmerksam, hilfsbereit und kommunikativ. Reagiert schnell, bleibt auch in hektischen Situationen positiv und unterstützt andere.',
+  defaultPurpose:'Unterstützt das Team bei Einrichtung, Onboarding, Fragen im Projektalltag und klaren Rückmeldungen.',
+  defaultPersonality:'Freundlich, aufmerksam, hilfsbereit und kommunikativ – bleibt auch in hektischen Momenten positiv und lösungsorientiert.',
+  objectPosition:'50% 4%',
+  assetPath:avatarAssetPath('schaefer'),
+  webpPath:avatarAssetPath('schaefer',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('schaefer')
  },
  {
   id:'eule',
@@ -205,10 +252,13 @@ export const FIELD_GUILD_R2_PRESETS:readonly AvatarPreset[]=Object.freeze([
   recommendedRoleLabel:'Wissen / Dokumentation',
   fallbackCode:'EU',
   accent:'petrol',
-  traits:'Grosse Augen, Brille, Notizmappe, erkenntnisorientierte Präsenz',
-  defaultPurpose:'Hält Entscheidungen, Projektwissen, Glossare und Übergabedokumentation aktuell.',
-  defaultPersonality:'Sorgfältig, reflektiert und übersichtlich; sorgt dafür, dass Beschlüsse dauerhaft auffindbar bleiben.',
-  assetPath:avatarAssetPath('eule')
+  traits:'Wissbegierig, etwas exzentrisch, wissenschaftlich und unglaublich detailorientiert. Ein nerdiger Gelehrter mit trockenem Humor und Liebe zur Dokumentation.',
+  defaultPurpose:'Hält Entscheidungen, Projektwissen, Spezifikationen und Übergabedokumentation präzise und auffindbar fest.',
+  defaultPersonality:'Wissbegierig, etwas exzentrisch, wissenschaftlich und detailorientiert mit trockenem Humor und Liebe zur Dokumentation.',
+  objectPosition:'50% 4%',
+  assetPath:avatarAssetPath('eule'),
+  webpPath:avatarAssetPath('eule',AVATAR_PACK_R2,'webp'),
+  thumbWebpPath:avatarThumbPath('eule')
  }
 ]);
 
@@ -242,6 +292,9 @@ export function resolveAgentAvatar(agent?:{
 }|null):{
  preset:AvatarPreset|null;
  assetPath:string|null;
+ webpPath:string|null;
+ thumbWebpPath:string|null;
+ objectPosition:string;
  imageUrl:string|null;
  fallbackCode:string;
  fallbackText:string;
@@ -251,9 +304,12 @@ export function resolveAgentAvatar(agent?:{
  const preset=findAvatarPreset(agent?.avatarPresetId);
  const rawAvatar=agent?.avatar?.trim()??'';
  const fallbackCode=(rawAvatar.slice(0,4)||preset?.fallbackCode||codeFromName(agent?.name||preset?.name||'AI')).toUpperCase();
- const assetPath=preset?avatarAssetPath(preset.id,agent?.avatarPackId||preset.packId):null;
+ const pack=agent?.avatarPackId||preset?.packId||AVATAR_PACK_R2;
+ const assetPath=preset?avatarAssetPath(preset.id,pack,'png'):null;
+ const webpPath=preset?avatarAssetPath(preset.id,pack,'webp'):null;
+ const thumbWebpPath=preset?avatarThumbPath(preset.id,pack):null;
+ const objectPosition=preset?.objectPosition??'50% 8%';
  const accent=preset?.accent??'lime';
  const altText=preset?`${agent?.name||preset.name} (${preset.name})`:agent?.name||'KI-Teammitglied';
- return {preset,assetPath,imageUrl:assetPath,fallbackCode,fallbackText:fallbackCode,accent,altText};
+ return {preset,assetPath,webpPath,thumbWebpPath,objectPosition,imageUrl:assetPath,fallbackCode,fallbackText:fallbackCode,accent,altText};
 }
-

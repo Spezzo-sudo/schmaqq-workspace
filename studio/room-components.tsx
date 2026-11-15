@@ -305,14 +305,28 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
        const exec=agentExecutionStatus(a,room,resources);
        const dot=exec.state==='running'?'running':exec.state==='ready'?'ready':'idle';
        return <div key={a.id} className={'rw-contact-card'+(selected?' active':'')}>
-        <button className="rw-contact-row rw-agent-contact-row" onClick={()=>selectFilter(filter.kind==='agent'&&filter.id===a.id?{kind:'all'}:{kind:'agent',id:a.id})}>
-         <AgentAvatar agent={a} size="md" statusDot={dot}/>
-         <span className="rw-contact-meta">
-          <strong>{a.name}{a.nickname?` „${a.nickname}“`:''}</strong>
-          <small>{agentRoleLabels[a.role]??a.role} · <code className="rw-agent-model">{a.model}</code></small>
-          <small className="rw-agent-exec-line">{exec.modelAvailable?'Modell verbunden':'Kein Runner verbunden (Profil)'}</small>
-         </span>
-        </button>
+        <div className="rw-contact-row rw-agent-contact-row">
+         <button
+          type="button"
+          className="rw-avatar-btn"
+          title={`Profil von ${a.name} öffnen`}
+          aria-label={`Profil von ${a.name} öffnen`}
+          onClick={()=>{setProfileAgentId(a.id);setEditingAgent(null);setMobilePanel('chat');}}
+         >
+          <AgentAvatar agent={a} size="md" statusDot={dot}/>
+         </button>
+         <button
+          type="button"
+          className="rw-contact-meta-btn"
+          onClick={()=>selectFilter(filter.kind==='agent'&&filter.id===a.id?{kind:'all'}:{kind:'agent',id:a.id})}
+         >
+          <span className="rw-contact-meta">
+           <strong>{a.name}{a.nickname?` „${a.nickname}“`:''}</strong>
+           <small>{agentRoleLabels[a.role]??a.role} · <code className="rw-agent-model">{a.model}</code></small>
+           <small className="rw-agent-exec-line">{exec.modelAvailable?'Modell verbunden':'Kein Runner verbunden (Profil)'}</small>
+          </span>
+         </button>
+        </div>
         <div className="rw-agent-caps">
          <button type="button" className="rw-link" onClick={()=>{setProfileAgentId(a.id);setEditingAgent(null);setMobilePanel('chat');}}><UserCircle size={12}/>Profil</button>
          {canDevelop&&<button type="button" className="rw-link" onClick={()=>{setEditingAgent(a);setProfileAgentId(null);setMobilePanel('chat');}}>Bearbeiten</button>}
@@ -328,7 +342,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
      {room.tasks.slice(0,15).map(t=>{
       const count=messages.filter(m=>m.taskId===t.id||m.topicTask===t.id).length;
       const selected=filter.kind==='topic'&&filter.taskId===t.id;
-      const statusText=t.status==='done'?'Erledigt':t.status==='review'?'Prüfung':t.status==='in_progress'?'In Arbeit':'Offen';
+      const statusText=t.status==='done'?'Erledigt':t.status==='review'?'Prüfung':t.status==='doing'?'In Arbeit':'Offen';
       return <div key={t.id} className={'rw-topic-row'+(selected?' active':'')}>
        <button className="rw-contact-row" onClick={()=>selectFilter(selected?{kind:'all'}:{kind:'topic',taskId:t.id})}>
         <span className={'rw-topic-dot '+t.status} aria-hidden="true"/>
@@ -346,7 +360,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
    <div className="rw-messenger-main">
     <header className="rw-messenger-header">
      <div className="rw-messenger-header-title">
-      {filter.kind==='agent'&&(()=>{const a=activeAgents.find(x=>x.id===filter.id);return a?<AgentAvatar agent={a} size="md"/>:null;})()}
+      {filter.kind==='agent'&&(()=>{const a=activeAgents.find(x=>x.id===filter.id);return a?<button type="button" className="rw-avatar-btn" onClick={()=>setProfileAgentId(a.id)} title={`Profil von ${a.name} öffnen`}><AgentAvatar agent={a} size="md"/></button>:null;})()}
       <div>
        <strong>{activeFilterTitle}</strong>
        <small>
@@ -390,19 +404,21 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
 
      {/* AVATAR PICKER TRIGGER BAR */}
      <div className="rw-fg-form-avatar-bar">
-      <AgentAvatar
-       presetId={editingAgent.avatarPresetId}
-       name={editingAgent.name||'Agent'}
-       fallbackCode={editingAgent.avatar}
-       size="lg"
-      />
+      <button type="button" className="rw-avatar-btn" onClick={()=>setAvatarPickerOpen(true)} title="Avatar auswählen">
+       <AgentAvatar
+        presetId={editingAgent.avatarPresetId}
+        name={editingAgent.name||'Agent'}
+        fallbackCode={editingAgent.avatar}
+        size="lg"
+       />
+      </button>
       <div className="rw-fg-form-avatar-meta">
        <strong>
         {findAvatarPreset(editingAgent.avatarPresetId)
          ?`Charakter: ${findAvatarPreset(editingAgent.avatarPresetId)!.name} (${findAvatarPreset(editingAgent.avatarPresetId)!.recommendedRoleLabel})`
          :'Individueller Kürzel-Avatar'}
        </strong>
-       <small>Wähle eines der 12 Field-Guild-R2-Portraits (Menschen & Tiere) oder ein eigenes Kürzel.</small>
+       <small>Wähle eines der 12 Field-Guild-R2-Portraits. Avatar, Name, Rolle, Modell und Kommunikationsstil sind frei kombinierbar.</small>
        <div className="rw-fg-form-avatar-buttons">
         <button type="button" className="rw-button lime" onClick={()=>setAvatarPickerOpen(true)}>
          <Sparkles size={15}/>Avatar auswählen
@@ -411,79 +427,83 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
       </div>
      </div>
 
-     {/* 1. IDENTITÄT */}
+     {/* 1. EINFACHE GRUNDEINSTELLUNGEN (SOFORT VERSTÄNDLICH) */}
      <fieldset className="rw-fg-fieldset">
-      <legend>1. Identität & Persönlichkeit</legend>
+      <legend>Grundeinstellungen (Identität, Rolle & Modell)</legend>
       <div className="rw-agent-form-grid">
        <label>Name des Agenten<input name="name" required maxLength={80} value={editingAgent.name??''} onChange={e=>setEditingAgent({...editingAgent,name:e.target.value})} placeholder="z. B. Herr Grau oder Leitwolf"/></label>
-       <label>Optionaler Spitzname<input name="nickname" maxLength={40} value={editingAgent.nickname??''} onChange={e=>setEditingAgent({...editingAgent,nickname:e.target.value})} placeholder="z. B. Der Architekt"/></label>
+       <label>Optionaler Spitzname<input name="nickname" maxLength={40} value={editingAgent.nickname??''} onChange={e=>setEditingAgent({...editingAgent,nickname:e.target.value})} placeholder="z. B. Der Berater"/></label>
        <label>Rolle / Fachbereich
         <select name="role" value={editingAgent.role??'coordinator'} onChange={e=>setEditingAgent({...editingAgent,role:e.target.value as RoomAgentRole})}>
          {ALL_ROLES.map(r=><option key={r} value={r}>{agentRoleLabels[r]}</option>)}
         </select>
        </label>
-       <label>Kürzel-Fallback (2–4 Zeichen)
-        <input name="avatar" maxLength={4} value={editingAgent.avatar??''} onChange={e=>setEditingAgent({...editingAgent,avatar:e.target.value.toUpperCase()})} placeholder="z. B. HG"/>
-       </label>
-      </div>
-      <label>Kurzbeschreibung im Projekt
-       <input name="purpose" maxLength={400} value={editingAgent.purpose??''} onChange={e=>setEditingAgent({...editingAgent,purpose:e.target.value})} placeholder="z. B. Prüft Systemgrenzen, Datenmodelle und langfristige Wartbarkeit"/>
-      </label>
-      <label>Persönlichkeitsprofil & Kommunikationsstil
-       <input name="personality" maxLength={400} value={editingAgent.personality??''} onChange={e=>setEditingAgent({...editingAgent,personality:e.target.value})} placeholder="z. B. Trocken, präzise, skeptisch gegenüber unnötiger Komplexität"/>
-      </label>
-     </fieldset>
-
-     {/* 2. TECHNISCHE KONFIGURATION */}
-     <fieldset className="rw-fg-fieldset">
-      <legend>2. Technische Konfiguration & Kontext</legend>
-      <div className="rw-agent-form-grid">
        <label>Ausgewähltes KI-Modell
         <input name="model" list={'agent-models-'+room.project.id} required maxLength={120} value={editingAgent.model??(connectedModels[0]??'gpt-5-codex')} onChange={e=>setEditingAgent({...editingAgent,model:e.target.value})} placeholder="z. B. gpt-5-codex"/>
         <datalist id={'agent-models-'+room.project.id}>{modelOptions.map(m=><option key={m} value={m}/>)}</datalist>
        </label>
-       <label>Zugeordneter Modellzugang / Rechner
-        <select name="modelDevice" value={editingAgent.modelDevice??''} onChange={e=>setEditingAgent({...editingAgent,modelDevice:e.target.value})}>
-         <option value="">Automatisch (freigegebener Projekt-Runner)</option>
-         {resources.map(r=><option key={r.device} value={r.device}>{r.name} ({r.ownerName} · {r.online?'Online':'Offline'})</option>)}
-        </select>
-       </label>
       </div>
-      <label>Arbeitsauftrag & Verantwortungsbereich
-       <input name="responsibility" maxLength={500} value={editingAgent.responsibility??''} onChange={e=>setEditingAgent({...editingAgent,responsibility:e.target.value})} placeholder="Wofür ist dieser Agent im Projekt konkret zuständig?"/>
+      <label>Beschreibung & Auftrag im Projekt
+       <input name="purpose" maxLength={400} value={editingAgent.purpose??''} onChange={e=>setEditingAgent({...editingAgent,purpose:e.target.value})} placeholder="z. B. Prüft Systemgrenzen, Datenmodelle und langfristige Wartbarkeit"/>
       </label>
-      <label>Relevante Wissensbereiche
-       <input name="knowledgeScope" maxLength={400} value={editingAgent.knowledgeScope??''} onChange={e=>setEditingAgent({...editingAgent,knowledgeScope:e.target.value})} placeholder="z. B. selfhost/, studio/, Architektur-Entscheidungen, Sicherheitsregeln"/>
+      <label>Kommunikationsstil & Persönlichkeit
+       <input name="personality" maxLength={400} value={editingAgent.personality??''} onChange={e=>setEditingAgent({...editingAgent,personality:e.target.value})} placeholder="z. B. Trockener Humor, analytisch, erkennt Probleme frühzeitig"/>
       </label>
-      <div className="rw-fg-check-group">
-       <span>Kontextquellen:</span>
-       {CONTEXT_SOURCE_KEYS.map(src=><label key={src} className="rw-cap-check">
-        <input type="checkbox" name={'ctx-'+src} defaultChecked={(editingAgent.contextSources??['messages','tasks','decisions']).includes(src)}/>
-        <span>{agentContextSourceLabels[src]}</span>
-       </label>)}
-      </div>
-      <div className="rw-fg-check-group">
-       <span>Fähigkeiten:</span>
-       {ALL_CAPABILITIES.map(c=><label key={c} className="rw-cap-check">
-        <input type="checkbox" name={'cap-'+c} defaultChecked={(editingAgent.capabilities??['chat','task-plan']).includes(c)}/>
-        <span>{agentCapabilityLabels[c]}</span>
-       </label>)}
-      </div>
      </fieldset>
 
-     {/* 3. BERECHTIGUNGEN */}
-     <fieldset className="rw-fg-fieldset">
-      <legend><Shield size={14}/> 3. Serverseitig geprüfte Berechtigungen</legend>
-      <p className="rw-muted">Ein Avatar oder Persönlichkeitsprofil verleiht niemals Rechte. Diese Berechtigungen werden bei jeder API-Aktion serverseitig geprüft.</p>
-      <div className="rw-fg-perm-grid">
-       {(Object.keys(agentPermissionLabels) as (keyof RoomAgentPermissions)[]).map(key=>(
-        <label key={key} className="rw-cap-check">
-         <input type="checkbox" name={'perm-'+key} defaultChecked={editingPerms[key]}/>
-         <span>{agentPermissionLabels[key]}</span>
+     {/* 2. ERWEITERTE KONFIGURATION & SERVERSEITIGE BERECHTIGUNGEN */}
+     <details className="rw-fg-advanced-details" open={Boolean(editingAgent.id)}>
+      <summary>Erweiterte Konfiguration: Modellzugang, Kontextquellen, Fähigkeiten & Berechtigungen</summary>
+      <div className="rw-fg-advanced-body">
+       <fieldset className="rw-fg-fieldset">
+        <legend>Technische Konfiguration & Projektkontext</legend>
+        <div className="rw-agent-form-grid">
+         <label>Zugeordneter Modellzugang / Rechner
+          <select name="modelDevice" value={editingAgent.modelDevice??''} onChange={e=>setEditingAgent({...editingAgent,modelDevice:e.target.value})}>
+           <option value="">Automatisch (freigegebener Projekt-Runner)</option>
+           {resources.map(r=><option key={r.device} value={r.device}>{r.name} ({r.ownerName} · {r.online?'Online':'Offline'})</option>)}
+          </select>
+         </label>
+         <label>Kürzel-Fallback (2–4 Zeichen)
+          <input name="avatar" maxLength={4} value={editingAgent.avatar??''} onChange={e=>setEditingAgent({...editingAgent,avatar:e.target.value.toUpperCase()})} placeholder="z. B. HG"/>
+         </label>
+        </div>
+        <label>Verantwortungsbereich
+         <input name="responsibility" maxLength={500} value={editingAgent.responsibility??''} onChange={e=>setEditingAgent({...editingAgent,responsibility:e.target.value})} placeholder="Wofür ist dieser Agent im Projekt konkret zuständig?"/>
         </label>
-       ))}
+        <label>Fachgebiete & Wissensbereiche
+         <input name="knowledgeScope" maxLength={400} value={editingAgent.knowledgeScope??''} onChange={e=>setEditingAgent({...editingAgent,knowledgeScope:e.target.value})} placeholder="z. B. selfhost/, studio/, Architektur-Entscheidungen, Sicherheitsregeln"/>
+        </label>
+        <div className="rw-fg-check-group">
+         <span>Kontextquellen:</span>
+         {CONTEXT_SOURCE_KEYS.map(src=><label key={src} className="rw-cap-check">
+          <input type="checkbox" name={'ctx-'+src} defaultChecked={(editingAgent.contextSources??['messages','tasks','decisions']).includes(src)}/>
+          <span>{agentContextSourceLabels[src]}</span>
+         </label>)}
+        </div>
+        <div className="rw-fg-check-group">
+         <span>Fähigkeiten:</span>
+         {ALL_CAPABILITIES.map(c=><label key={c} className="rw-cap-check">
+          <input type="checkbox" name={'cap-'+c} defaultChecked={(editingAgent.capabilities??['chat','task-plan']).includes(c)}/>
+          <span>{agentCapabilityLabels[c]}</span>
+         </label>)}
+        </div>
+       </fieldset>
+
+       <fieldset className="rw-fg-fieldset">
+        <legend><Shield size={14}/> Serverseitig geprüfte Berechtigungen</legend>
+        <p className="rw-muted">Die Avatar-Persönlichkeit vergibt niemals automatisch Rechte. Diese Berechtigungen werden bei jeder API-Aktion serverseitig geprüft.</p>
+        <div className="rw-fg-perm-grid">
+         {(Object.keys(agentPermissionLabels) as (keyof RoomAgentPermissions)[]).map(key=>(
+          <label key={key} className="rw-cap-check">
+           <input type="checkbox" name={'perm-'+key} defaultChecked={editingPerms[key]}/>
+           <span>{agentPermissionLabels[key]}</span>
+          </label>
+         ))}
+        </div>
+       </fieldset>
       </div>
-     </fieldset>
+     </details>
 
      <footer className="rw-agent-form-actions">
       {editingAgent.id&&<button type="button" className="rw-button subtle" disabled={busy} onClick={()=>void removeAgent(editingAgent as RoomAgent)}>Aus Projekt entfernen</button>}

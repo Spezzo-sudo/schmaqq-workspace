@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {Bot,Check,Cpu,FileText,FolderGit2,Layers,Lock,MessageSquare,Shield,Sparkles,UserCheck,Wrench,X} from 'lucide-react';
+import {Check,Cpu,Layers,Lock,MessageSquare,Shield,Sparkles,UserCheck,Wrench,X} from 'lucide-react';
 import {
  FIELD_GUILD_R2_PACK_ID,FIELD_GUILD_R2_PRESETS,filterAvatarPresets,findAvatarPreset,resolveAgentAvatar,
  type AvatarFilterKind,type AvatarPreset
@@ -7,7 +7,7 @@ import {
 import {
  agentRoleLabels,agentCapabilityLabels,agentContextSourceLabels,agentPermissionLabels,
  agentEffectivePermissions,agentExecutionStatus,time,
- type RoomAgent,type RoomAgentPermissions,type RoomState,type Resource,type TeamTask
+ type RoomAgent,type RoomAgentPermissions,type RoomState,type Resource
 } from './room-model';
 
 export function AgentAvatar({
@@ -39,18 +39,25 @@ export function AgentAvatar({
  },[resolved.assetPath]);
 
  const showImage=Boolean(resolved.assetPath&&!imgFailed);
+ const useThumb=size==='xs'||size==='sm'||size==='md';
+ const preferredWebp=useThumb?(resolved.thumbWebpPath??resolved.webpPath):resolved.webpPath;
 
  return <span
   className={`rw-fg-avatar rw-fg-${size} rw-fg-accent-${resolved.accent}${showImage&&imgLoaded?' has-image':''}${className?' '+className:''}`}
   title={resolved.preset?`${resolved.preset.name} (${resolved.preset.recommendedRoleLabel})`:(agent?.name??name??'KI-Teammitglied')}
  >
-  {showImage&&<img
-   src={resolved.assetPath!}
-   alt={resolved.preset?`Portrait ${resolved.preset.name}`:`Avatar ${agent?.name??name??'Agent'}`}
-   loading="lazy"
-   onLoad={()=>{setImgLoaded(true);onAssetState?.(true);}}
-   onError={()=>{setImgFailed(true);setImgLoaded(false);onAssetState?.(false);}}
-  />}
+  {showImage&&<picture className="rw-fg-picture">
+   {preferredWebp&&<source srcSet={preferredWebp} type="image/webp"/>}
+   <img
+    src={resolved.assetPath!}
+    alt={resolved.preset?`Portrait ${resolved.preset.name}`:`Avatar ${agent?.name??name??'Agent'}`}
+    style={{objectPosition:resolved.objectPosition}}
+    loading="lazy"
+    decoding="async"
+    onLoad={()=>{setImgLoaded(true);onAssetState?.(true);}}
+    onError={()=>{setImgFailed(true);setImgLoaded(false);onAssetState?.(false);}}
+   />
+  </picture>}
   {(!showImage||!imgLoaded)&&<span className="rw-fg-fallback" aria-hidden={showImage&&imgLoaded}>
    {resolved.fallbackCode}
   </span>}
@@ -88,7 +95,7 @@ export function AvatarConfigurator({
     <div>
      <span className="rw-eyebrow">SCHMAQQ FIELD GUILD R2 · AVATAR-BIBLIOTHEK</span>
      <h2>Charakter & Avatar auswählen</h2>
-     <p>Jeder Charakter ist frei wählbar – unabhängig von Rolle, Modell und Berechtigungen. Solange ein Einzelportrait noch nicht im Asset-Ordner liegt, greift automatisch das SCHMAQQ-Kürzel.</p>
+     <p>Wähle eines der zwölf offiziellen Charakterportraits. Avatar, Name, Rolle, Modell und Kommunikationsstil lassen sich unabhängig voneinander anpassen.</p>
     </div>
     <button type="button" className="rw-icon" onClick={onClose} aria-label="Avatar-Auswahl schließen"><X size={20}/></button>
    </header>
@@ -111,7 +118,7 @@ export function AvatarConfigurator({
      aria-label="Charakter oder Fachbereich suchen"
      value={query}
      onChange={e=>setQuery(e.target.value)}
-     placeholder="Name, Fachbereich oder Merkmal suchen …"
+     placeholder="Name, Fachbereich oder Charakterzug suchen …"
     />
    </div>
 
@@ -134,7 +141,7 @@ export function AvatarConfigurator({
          <span className="rw-fg-kind-pill">{preset.kind==='human'?'Mensch':'Tier'}</span>
         </div>
         <small>{preset.recommendedRoleLabel}</small>
-        <code className="rw-fg-preset-id">{preset.id}</code>
+        <code className="rw-fg-preset-id">{preset.id}.png</code>
        </div>
       </button>;
      })}
@@ -151,7 +158,7 @@ export function AvatarConfigurator({
        onAssetState={setPreviewAssetLoaded}
       />
       <div className="rw-fg-preview-badges">
-       <span className="rw-badge">{activePreset.kind==='human'?'Menschlicher Charakter':'Anthropomorpher Charakter'}</span>
+       <span className="rw-badge">{activePreset.kind==='human'?'Mensch':'Tier'}</span>
        <span className="rw-badge">{previewAssetLoaded?'Portrait geladen':'Kürzel-Fallback aktiv'}</span>
       </div>
      </div>
@@ -159,21 +166,21 @@ export function AvatarConfigurator({
      <div className="rw-fg-preview-info">
       <div className="rw-fg-preview-head">
        <h3>{activePreset.name}</h3>
-       <code>{activePreset.id}</code>
+       <code>{activePreset.id}.png</code>
       </div>
       <p className="rw-fg-preview-role">Empfohlener Fachbereich: <strong>{activePreset.recommendedRoleLabel}</strong> <small>(frei kombinierbar)</small></p>
       <p className="rw-fg-preview-traits">{activePreset.traits}</p>
       <div className="rw-fg-preview-box">
-       <strong>Typischer Auftrag</strong>
+       <strong>Empfohlener Auftrag</strong>
        <p>{activePreset.defaultPurpose}</p>
-       <strong>Kommunikationsstil</strong>
+       <strong>Kommunikationsstil & Persönlichkeit</strong>
        <p>{activePreset.defaultPersonality}</p>
       </div>
       <div className="rw-fg-asset-meta">
-       <small>Paket: <code>{FIELD_GUILD_R2_PACK_ID}</code> · Asset-Pfad: <code>{activePreset.assetPath}</code></small>
+       <small>Paket: <code>{FIELD_GUILD_R2_PACK_ID}</code> · Datei: <code>{activePreset.assetPath}</code></small>
       </div>
       <label className="rw-fg-fallback-field">
-       <span>Kürzel-Fallback (für kleine Badges / fehlende Bilddatei)</span>
+       <span>Kürzel-Fallback (für Text-Badges / eigene Kürzel)</span>
        <input
         value={fallbackInput||activePreset.fallbackCode}
         maxLength={4}
@@ -193,7 +200,7 @@ export function AvatarConfigurator({
         onClose();
        }}
       >
-       Avatar + Empfehlung übernehmen
+       Avatar + Charakter-Vorschlag übernehmen
       </button>}
       <button
        type="button"
@@ -203,7 +210,7 @@ export function AvatarConfigurator({
         onClose();
        }}
       >
-       <Check size={16}/>Figur auswählen & speichern
+       <Check size={16}/>Nur Avatar wählen & speichern
       </button>
      </footer>
     </aside>}
@@ -241,7 +248,6 @@ export function AgentProfileView({
  const assignedDevice=agent.modelDevice?resources.find(r=>r.device===agent.modelDevice):null;
 
  const agentMessages=room.messages.filter(m=>m.senderAgent===agent.id||m.recipient===agent.id||m.handoff?.toAgent===agent.id);
- const handoffs=room.messages.filter(m=>m.handoff&&(m.senderAgent===agent.id||m.handoff.toAgent===agent.id));
  const relatedTaskIds=new Set<string>();
  for(const m of agentMessages){
   if(m.taskId)relatedTaskIds.add(m.taskId);
@@ -259,17 +265,17 @@ export function AgentProfileView({
     <h2>{agent.name}{agent.nickname?<span className="rw-fg-nickname"> „{agent.nickname}“</span>:null}</h2>
    </div>
    <div className="rw-fg-profile-top-actions">
-    {canDevelop&&<button type="button" className="rw-button subtle" onClick={onOpenAvatarPicker}><Sparkles size={14}/>Avatar auswählen</button>}
+    {canDevelop&&<button type="button" className="rw-button subtle" onClick={onOpenAvatarPicker}><Sparkles size={14}/>Avatar wechseln</button>}
     {canDevelop&&<button type="button" className="rw-button subtle" onClick={onEdit}><Wrench size={14}/>Profil bearbeiten</button>}
     <button type="button" className="rw-icon" onClick={onClose} aria-label="Profil schließen"><X size={18}/></button>
    </div>
   </header>
 
-  {/* 1. IDENTITÄT */}
+  {/* 1. IDENTITÄT & GROSSES CHARAKTERPORTRAIT */}
   <div className="rw-fg-profile-hero">
    <div className="rw-fg-profile-portrait">
     <AgentAvatar agent={agent} size="xl" statusDot={statusDot}/>
-    {canDevelop&&<button type="button" className="rw-link rw-fg-change-avatar" onClick={onOpenAvatarPicker}>Avatar wechseln</button>}
+    {canDevelop&&<button type="button" className="rw-link rw-fg-change-avatar" onClick={onOpenAvatarPicker}>Portrait ändern</button>}
    </div>
    <div className="rw-fg-profile-identity">
     <div className="rw-fg-identity-badges">
@@ -277,17 +283,18 @@ export function AgentProfileView({
      {preset&&<span className="rw-badge">Charakter: {preset.name} ({preset.kind==='human'?'Mensch':'Tier'})</span>}
      <span className={`rw-fg-exec-pill ${execStatus.state}`}>{execStatus.label}</span>
     </div>
-    <h3>Identität & Rolle</h3>
+    <h3>Identität, Rolle & Charakter</h3>
     <dl className="rw-fg-dl">
      <div><dt>Name</dt><dd>{agent.name}{agent.nickname?` (Spitzname: ${agent.nickname})`:''}</dd></div>
-     <div><dt>Fachbereich</dt><dd>{agentRoleLabels[agent.role]??agent.role}</dd></div>
-     <div><dt>Avatar-Preset</dt><dd>{preset?`${preset.name} (${preset.id})`:`Individuelles Kürzel (${agent.avatar||agent.name.slice(0,2).toUpperCase()})`}</dd></div>
-     <div><dt>Kurzbeschreibung</dt><dd>{agent.purpose||preset?.defaultPurpose||'Noch keine Kurzbeschreibung hinterlegt.'}</dd></div>
-     <div><dt>Persönlichkeit & Stil</dt><dd>{agent.personality||preset?.defaultPersonality||'Sachlich, präzise und teamorientiert.'}</dd></div>
+     <div><dt>Rolle / Fachbereich</dt><dd>{agentRoleLabels[agent.role]??agent.role}</dd></div>
+     <div><dt>Avatar-Portrait</dt><dd>{preset?`${preset.name} (${preset.id}.png)`:`Individuelles Kürzel (${agent.avatar||agent.name.slice(0,2).toUpperCase()})`}</dd></div>
+     <div><dt>Beschreibung & Auftrag</dt><dd>{agent.purpose||preset?.defaultPurpose||'Noch keine Kurzbeschreibung hinterlegt.'}</dd></div>
+     <div><dt>Kommunikationsstil & Persönlichkeit</dt><dd>{agent.personality||preset?.defaultPersonality||preset?.traits||'Sachlich, präzise und teamorientiert.'}</dd></div>
     </dl>
     <div className="rw-fg-profile-quick-actions">
-     <button type="button" className="rw-button lime" onClick={onAddressInChat}><MessageSquare size={15}/>Im Projektraum adressieren</button>
+     <button type="button" className="rw-button lime" onClick={onAddressInChat}><MessageSquare size={15}/>Zum Chat mit {agent.name}</button>
      {canDevelop&&perms.writeMessages&&<button type="button" className="rw-button subtle" onClick={onActAsAgent}><UserCheck size={15}/>Beitrag für {agent.name} verfassen</button>}
+     {canDevelop&&<button type="button" className="rw-button subtle" onClick={onEdit}><Wrench size={15}/>Eigenschaften anpassen</button>}
     </div>
    </div>
   </div>
@@ -295,18 +302,18 @@ export function AgentProfileView({
   <div className="rw-fg-profile-sections">
    {/* 2. TECHNISCHE KONFIGURATION */}
    <article className="rw-fg-section-card">
-    <div className="rw-fg-section-head"><Cpu size={16}/><h3>Technische Konfiguration</h3></div>
+    <div className="rw-fg-section-head"><Cpu size={16}/><h3>Modell, Fachgebiete & Projektkontext</h3></div>
     <dl className="rw-fg-dl">
      <div>
-      <dt>Ausgewähltes Modell</dt>
+      <dt>Ausgewähltes KI-Modell</dt>
       <dd><code>{agent.model}</code></dd>
      </div>
      <div>
-      <dt>Modellzugang (Ist-Stand)</dt>
+      <dt>Tatsächlicher Modellzugang</dt>
       <dd>
        {execStatus.modelAvailable
         ?<span className="rw-fg-ok">Verfügbar über verbundenen Rechner{assignedDevice?` (${assignedDevice.name})`:''}</span>
-        :<span className="rw-fg-warn">Kein verbundener Runner für <code>{agent.model}</code> aktiv – Profil dient zur Planung & manuellen Koordination</span>}
+        :<span className="rw-fg-warn">Kein verbundener Runner für <code>{agent.model}</code> aktiv – dient zur Planung & manuellen Koordination</span>}
       </dd>
      </div>
      <div>
@@ -314,21 +321,21 @@ export function AgentProfileView({
       <dd>{assignedDevice?`${assignedDevice.name} (${assignedDevice.online?'Online':'Offline'})`:agent.modelDevice?`Gerät ${agent.modelDevice} (nicht verbunden)`:'Automatisch (erster freigegebener Projekt-Runner)'}</dd>
      </div>
      <div>
-      <dt>Projektzuordnung</dt>
+      <dt>Projektkontext</dt>
       <dd>{room.project.title} (<code>{room.project.id}</code>)</dd>
      </div>
      <div>
-      <dt>Arbeitsauftrag & Verantwortung</dt>
+      <dt>Verantwortungsbereich</dt>
       <dd>{agent.responsibility||agent.purpose||'Unterstützt das Projektteam innerhalb der freigegebenen Projektgrenzen.'}</dd>
      </div>
      <div>
-      <dt>Wissensbereiche</dt>
+      <dt>Fachgebiete & Wissen</dt>
       <dd>{agent.knowledgeScope||'Projektgespräch, Aufgaben, Entscheidungen und verknüpftes Repository.'}</dd>
      </div>
     </dl>
 
     <div className="rw-fg-subsection">
-     <strong>Kontextquellen</strong>
+     <strong>Freigegebene Kontextquellen</strong>
      <div className="rw-fg-tag-row">
       {(agent.contextSources?.length?agent.contextSources:(['messages','tasks','decisions'] as const)).map(src=>(
        <span key={src} className="rw-cap-pill">{agentContextSourceLabels[src]??src}</span>
@@ -342,7 +349,7 @@ export function AgentProfileView({
       {(agent.capabilities??[]).map(cap=>(
        <span key={cap} className="rw-cap-pill">{agentCapabilityLabels[cap]??cap}</span>
       ))}
-      <span className="rw-cap-pill muted" title="Noch nicht unterstützt">Kein autonomer Merge/Deploy (gesperrt)</span>
+      <span className="rw-cap-pill muted" title="Nicht unterstützt">Kein autonomer Merge/Deploy (gesperrt)</span>
      </div>
     </div>
    </article>
@@ -351,7 +358,7 @@ export function AgentProfileView({
    <article className="rw-fg-section-card">
     <div className="rw-fg-section-head"><Shield size={16}/><h3>Berechtigungen (serverseitig geprüft)</h3></div>
     <p className="rw-fg-security-note">
-     <Lock size={13}/> Avatar, Name und Persönlichkeit verleihen niemals Rechte. Jede Aktion wird auf dem Server gegen diese Berechtigungen und die menschliche Projektrolle geprüft.
+     <Lock size={13}/> Avatar und Persönlichkeit vergeben niemals automatisch Rechte oder überschreiben die fachliche Konfiguration.
     </p>
     <ul className="rw-fg-perm-list">
      {(Object.keys(agentPermissionLabels) as (keyof RoomAgentPermissions)[]).map(key=>{
@@ -364,15 +371,15 @@ export function AgentProfileView({
     </ul>
    </article>
 
-   {/* 4. AKTIVITÄT */}
+   {/* 4. AKTIVITÄT & ARBEITSSTATUS */}
    <article className="rw-fg-section-card rw-fg-section-wide">
-    <div className="rw-fg-section-head"><Layers size={16}/><h3>Aktivität, Aufgaben & Übergaben</h3></div>
+    <div className="rw-fg-section-head"><Layers size={16}/><h3>Arbeitsstatus, Aufgaben & Übergaben</h3></div>
     <div className="rw-fg-activity-grid">
      <div>
-      <h4>Ausführungsstatus</h4>
+      <h4>Tatsächlicher Arbeitsstatus</h4>
       <p className="rw-fg-status-box">
        <strong>{execStatus.label}</strong>
-       <small>Es wird keine Hintergrund-KI-Ausführung vorgetäuscht. Echte Läufe erscheinen nur bei laufendem Runner-Job.</small>
+       <small>Es werden keine KI-Unterhaltungen oder Ausführungen vorgetäuscht. Echte Läufe erscheinen nur bei aktivem Runner-Job.</small>
       </p>
       <h4>Zugeordnete Aufgaben ({assignedTasks.length})</h4>
       {!assignedTasks.length
