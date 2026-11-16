@@ -13,6 +13,24 @@ Etappen und Entscheide: [PLAN.md](PLAN.md). Iststand mit Nachweisen: [STATUS.jso
 - Historische Dokumente und Nachweise: `docs/archive/`.
 - Studio-Projekte: „Klimafinder“ ist das Testprojekt für alle Etappen (siehe PLAN.md).
 
+## Reihenfolge ab 16.11.2026
+
+Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, schreibt sich unter „In Arbeit“ ein
+(z. B. „Claude Code – Aufräumen“ oder „Codex – Messenger-Feinschliff“).
+
+**In Arbeit:** –
+
+1. [ ] Aufräumen: Probeprojekt (TEST-UX-Reste) entfernen, Klimafinder frisch starten (Owner-Ja nötig, nicht umkehrbar).
+2. [ ] GitHub-Prüfung stabil: restliche feste Test-Ports (44xxx) durch vom System vergebene Ports ersetzen.
+3. [ ] Messenger-Feinschliff: letzte Nachricht und Ungelesen-Zähler in der Chatliste; „Wartet auf dich“ nur mit
+   Dingen zum Handeln; Projektname im Chat-Kopf.
+4. [ ] Agent antwortet (Codex mit der Anmeldung des Besitzers) mit Live-Arbeitskarte.
+5. [ ] Freigabekarten und Studio-Werkzeuge für Agenten.
+6. [ ] Agent ↔ Agent als mitlesbarer Chat mit Rundenlimit und Stopp.
+7. [ ] Hermes Agent als zweiter Motor prüfen (abgeschottet, ein Prozess pro Person, ohne Shell).
+
+Bereits live am 16.11.2026: Messenger R3 (`ac65a05`), ChatGPT-Anmeldung pro Person (`3c6ee6c`), Chats als Startseite (`cdb7bd5`).
+
 ## Neustart 29.10.2026 abends
 
 Auf Owner-Wunsch („war bis jetzt eh alles nur ein Test“) wurden in Studio alle Projekte mit Aufgaben,

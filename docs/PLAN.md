@@ -15,7 +15,7 @@ Tagesarbeit und Abhaken: [WORKLIST.md](WORKLIST.md). Belegter Iststand: [STATUS.
 
 | Thema | Entscheid |
 |---|---|
-| KI-Abo | ChatGPT-Workspace (Business) mit zwei Standard-Sitzen für Marco und Markus. Ersetzt den Entscheid „Claude Team“ vom 30.10.; Claude vorerst nicht. |
+| KI-Abo | ChatGPT-Workspace (Business) mit zwei Standard-Sitzen für Marco und Markus. Ersetzt den Entscheid „Claude Team“ vom 30.10.; Claude vorerst nicht. Gilt für den KI-Zugang **in** Studio; Entwicklungs-Agenten (Claude Code oder ChatGPT/Codex) siehe [WORKFLOW.md](WORKFLOW.md). |
 | Handy | **Alles** muss am Handy gehen: Arbeit anstossen, anschauen und freigeben, mit Markus reden, Projekt einrichten. |
 | Ziel Anfang Februar 2027 | Marco und Markus arbeiten **täglich** mit Studio an echten Projekten. |
 | Rollen | Markus baut aktiv mit. Marco testet, entscheidet und gibt frei (2–5 Std./Woche). |
@@ -33,6 +33,8 @@ Tagesarbeit und Abhaken: [WORKLIST.md](WORKLIST.md). Belegter Iststand: [STATUS.
    Für jeden Zugang festhalten, wer ihn nutzt und was er darf. Root über einen Chat-Bot ist ein grosses Risiko
    (übernommenes Telegram-Konto oder eingeschleuste Anweisungen = ganzer Server); einschränken oder begründen.
 5. [ ] Rolle von Hermes klären: Was tut Hermes heute tatsächlich? Danach behalten (Betrieb/Überwachung) oder abschalten.
+   Entscheid 16.11.2026: Hermes führt nur fertige Livegang-Aufträge aus und ist kein Agent für Studio-Chats
+   ([WORKFLOW.md](WORKFLOW.md)). Offen bleibt der Root-Zugang über Telegram (Punkt 4).
 6. [ ] Fehler „hunderte gleiche Aufgaben“ untersuchen. Bekannt: entstanden über den Studio-Connector in ChatGPT am Handy.
    In Datenbank-Backups und Protokollen auf dem VPS Zeitpunkt, Version und Auslöser finden, bevor der Connector erweitert wird.
 
