@@ -60,7 +60,7 @@ export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;sta
 export type Resource={team?:boolean;device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;readiness?:WorkshopReadiness;publish:boolean}[]};
 export type ContextPreview={text:string;hash:string;messageIds:string[];task:string|null};
 export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect'|'files'|'activity';
-export type RoomPage='rooms'|'projects'|'conversations'|'team'|'account'|'guide';
+export type RoomPage='rooms'|'projects'|'conversations'|'team'|'account'|'guide'|'agents';
 export type RoomRoute={room:string;tab:RoomTab;task:string;page:RoomPage};
 // The five project areas stay inside each project, independently of the global navigation. Former "Ergebnisse" live under Aufgaben → Erledigt.
 export const tabs:{id:RoomTab;label:string}[]=[{id:'overview',label:'Übersicht'},{id:'tasks',label:'Aufgaben'},{id:'talk',label:'Gespräch'},{id:'knowledge',label:'Wissen'},{id:'connect',label:'Einstellungen'}];
@@ -70,7 +70,7 @@ export function readRoomRoute(search=location.search):RoomRoute{
  const legacyTab:Record<string,RoomTab>={tasks:'tasks',docs:'knowledge',chat:'talk',development:'connect',settings:'connect',setup:'connect',models:'connect'};
  const tab=(tabs.some(t=>t.id===explicit)||explicit==='files'||explicit==='activity')?explicit as RoomTab:legacyTab[old??'']??'talk';
  const requested=p.get('page');
- const page:RoomPage=requested==='team'||requested==='projects'||requested==='conversations'||requested==='account'||requested==='guide'?requested:old==='team'?'team':'rooms';
+ const page:RoomPage=requested==='team'||requested==='projects'||requested==='conversations'||requested==='account'||requested==='guide'||requested==='agents'?requested:old==='team'?'team':'rooms';
  return {room,tab,task:room?p.get('task')??'':'',page};
 }
 /** Re-authentication restores only known internal room state, never an external redirect. */

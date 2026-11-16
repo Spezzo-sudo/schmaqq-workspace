@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {readRoomRoute,roomResumeURL} from '../studio/room-model.ts';
 
 test('global Studio sections have distinct bookmarkable routes',()=>{
- for(const page of ['rooms','projects','conversations','team','account','guide']){
+ for(const page of ['rooms','projects','conversations','team','account','guide','agents']){
   const query=page==='rooms'?'':'?page='+page;
   const route=readRoomRoute(query);
   assert.equal(route.page,page);

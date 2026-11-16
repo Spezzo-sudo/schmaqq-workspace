@@ -317,3 +317,14 @@
 .r3-shell .r3-inspector .rw-fg-profile-quick-actions .rw-button{flex:1 1 150px;justify-content:center}
 
 .r3-shell .r3-inspector .rw-fg-profile-portrait .rw-fg-change-avatar{color:var(--schmaqq-ink)!important;text-decoration-color:var(--schmaqq-coral)}
+/* One project tool bar (replaces three header icons plus a second select). */
+.r3-toolbar{display:grid;gap:8px}
+.r3-toolbar-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.r3-toolbar-tabs button,.r3-toolbar-sub button{min-height:40px;padding:0 4px;border-radius:10px;border:1px solid var(--schmaqq-rule-strong,#cfc9bd);background:transparent;font:600 13px/1.1 var(--schmaqq-sans,inherit);color:var(--schmaqq-ink,#12152a);cursor:pointer}
+.r3-toolbar-tabs button.on{background:var(--schmaqq-ink,#12152a);border-color:var(--schmaqq-ink,#12152a);color:var(--schmaqq-paper,#f2efe8)}
+.r3-toolbar-sub{display:flex;gap:6px;flex-wrap:wrap}
+.r3-toolbar-sub button{min-height:36px;padding:0 12px;border-radius:999px;font-size:12px}
+.r3-toolbar-sub button.on{background:var(--rw-lime,#d6ff4f);border-color:var(--schmaqq-ink,#12152a)}
+@media (max-width:760px){.r3-toolbar-tabs button{min-height:44px;font-size:14px}.r3-toolbar-sub button{min-height:40px}}
+.r3-all-chats{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--schmaqq-rule-strong,#cfc9bd);background:transparent;font:700 13px/1 var(--schmaqq-sans,inherit);color:var(--schmaqq-ink,#12152a);cursor:pointer;justify-self:start}
+.r3-all-chats:hover{background:var(--rw-lime,#d6ff4f)}

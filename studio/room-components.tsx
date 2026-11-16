@@ -20,7 +20,7 @@ const ALL_CONTEXT_SOURCES:RoomAgentContextSource[]=['messages','tasks','decision
 const CONTEXT_SOURCE_KEYS:RoomAgentContextSource[]=['messages','tasks','decisions','repository','runs'];
 const ALL_ROLES:RoomAgentRole[]=['coordinator','advisor','frontend','reviewer','operations','strategy','debugger','researcher','infrastructure','security','support','knowledge','developer'];
 
-export function Conversation({room,resources=[],userId,search,refresh,onTask,onConvert,projectNavigation,tools,detail,detailTitle,detailKey='talk',detailNavigation,onCloseDetail,onFiles}:{room:RoomState;resources?:Resource[];userId:string;search:string;refresh:()=>Promise<void>;onTask:(id:string)=>void;onConvert:(kind:'task'|'decision',source:RoomMessage)=>void;projectNavigation?:ReactNode;tools?:ReactNode;detail?:ReactNode;detailTitle?:string;detailKey?:string;detailNavigation?:ReactNode;onCloseDetail?:()=>void;onFiles?:()=>void}){
+export function Conversation({room,resources=[],userId,search,refresh,onTask,onConvert,projectNavigation,tools,detail,detailTitle,detailKey='talk',detailNavigation,onCloseDetail,onFiles,onBack}:{onBack?:()=>void;room:RoomState;resources?:Resource[];userId:string;search:string;refresh:()=>Promise<void>;onTask:(id:string)=>void;onConvert:(kind:'task'|'decision',source:RoomMessage)=>void;projectNavigation?:ReactNode;tools?:ReactNode;detail?:ReactNode;detailTitle?:string;detailKey?:string;detailNavigation?:ReactNode;onCloseDetail?:()=>void;onFiles?:()=>void}){
  const [filter,setFilter]=useState<MessengerFilter>(()=>readMessengerFilter(location.search,room));
  const draftKey=messengerDraftKey(userId,room.project.id,filter),initialTarget=messengerComposerTarget(filter);
  const [text,setText]=useState(()=>storedDraft(draftKey)),[reply,setReply]=useState<RoomMessage|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[older,setOlder]=useState<RoomMessage[]>([]),[more,setMore]=useState(room.more);
@@ -313,7 +313,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
    </aside>
    <div className="rw-messenger-main" inert={hasDetail&&overlay?true:undefined}>
     <header className="rw-messenger-header">
-     <button type="button" className="r3-icon-button r3-chat-back" aria-label="Zur Gesprächsliste" onClick={showConversationList}><ChevronLeft size={22}/></button>
+     <button type="button" className="r3-icon-button r3-chat-back" aria-label={onBack?'Zu allen Chats':'Zur Gesprächsliste'} onClick={onBack??showConversationList}><ChevronLeft size={22}/></button>
      {filter.kind==='agent'?(()=>{const a=activeAgents.find(a=>a.id===filter.id);return a?<button className="rw-avatar-btn" aria-label={`Profil von ${a.name} öffnen`} onClick={()=>openProfile(a.id)}><AgentAvatar agent={a} size="sm"/></button>:null;})():<span className="rw-avatar channel">{filter.kind==='handoffs'?<Bot size={19}/>:filter.kind==='member'?initials(activeMembers.find(m=>m.id===filter.id)?.name??'?'):<MessageSquare size={19}/>}</span>}
      <div className="r3-chat-heading"><strong title={activeFilterTitle}>{filter.kind==='all'?'Projektteam':filter.kind==='agent'?activeAgents.find(a=>a.id===filter.id)?.name:filter.kind==='member'?activeMembers.find(m=>m.id===filter.id)?.name:activeFilterTitle}</strong><small><span className="r3-shared-dot"/>Projektweit sichtbar · {filter.kind==='agent'?'adressierter Austausch':filter.kind==='member'?'adressierte Beiträge':'gemeinsamer Arbeitsraum'}</small></div>
      {tools}
