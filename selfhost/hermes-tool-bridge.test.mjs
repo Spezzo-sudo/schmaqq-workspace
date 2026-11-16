@@ -260,3 +260,15 @@ test('end to end with mock model: worker bridge -> python adapter -> proposal ->
  const after=await f.room(project);
  assert.equal(after.tasks.length,1);assert.equal(after.tasks[0].id,accepted.data.task);
 });
+
+test('job prompt: tool guidance matches the grant (no blanket "no actions" when task.propose is granted)',async()=>{
+ const {jobPrompt}=await import('./hermes-agent-worker.mjs');
+ const job={profile:{name:'Mara',role:'frontend'},context:'',prompt:'Schlag mir eine Aufgabe vor.'};
+ const none=jobPrompt(job,[]),both=jobPrompt(job,['project.read_context','task.propose']),read=jobPrompt(job,['project.read_context']);
+ assert.match(none,/Nur antworten\. Keine Aktionen/);
+ assert.doesNotMatch(none,/studio_task_propose/);
+ assert.doesNotMatch(both,/Nur antworten/);
+ assert.match(both,/rufe genau einmal studio_task_propose auf/);
+ assert.match(both,/studio_project_read_context/);
+ assert.doesNotMatch(read,/studio_task_propose auf/);
+});

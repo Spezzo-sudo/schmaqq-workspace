@@ -7,7 +7,7 @@ import {
 import {
  agentRoleLabels,agentCapabilityLabels,agentContextSourceLabels,agentPermissionLabels,
  agentEffectivePermissions,agentExecutionStatus,time,
- type RoomAgent,type RoomAgentPermissions,type RoomState,type Resource
+ type RoomAgent,type RoomAgentPermissions,type RoomState,type Resource,type HermesAvailability
 } from './room-model';
 
 export function AgentAvatar({
@@ -229,7 +229,8 @@ export function AgentProfileView({
  onAddressInChat,
  onActAsAgent,
  onOpenTask,
- onClose
+ onClose,
+ hermes=null
 }:{
  agent:RoomAgent;
  room:RoomState;
@@ -241,10 +242,11 @@ export function AgentProfileView({
  onActAsAgent:()=>void;
  onOpenTask:(taskId:string)=>void;
  onClose:()=>void;
+ hermes?:HermesAvailability|null;
 }){
  const preset=findAvatarPreset(agent.avatarPresetId);
  const perms:RoomAgentPermissions=agentEffectivePermissions(agent);
- const execStatus=agentExecutionStatus(agent,room,resources);
+ const execStatus=agentExecutionStatus(agent,room,resources,hermes);
  const assignedDevice=agent.modelDevice?resources.find(r=>r.device===agent.modelDevice):null;
 
  const agentMessages=room.messages.filter(m=>m.senderAgent===agent.id||m.recipient===agent.id||m.handoff?.toAgent===agent.id);
@@ -311,7 +313,9 @@ export function AgentProfileView({
      <div>
       <dt>Tatsächlicher Modellzugang</dt>
       <dd>
-       {execStatus.modelAvailable
+       {execStatus.via==='hermes'
+        ?<span className="rw-fg-ok">Hermes-Pilot – nur auf ausdrücklichen Auftrag</span>
+        :execStatus.modelAvailable
         ?<span className="rw-fg-ok">Verfügbar über verbundenen Rechner{assignedDevice?` (${assignedDevice.name})`:''}</span>
         :<span className="rw-fg-warn">Kein verbundener Runner für <code>{agent.model}</code> aktiv – dient zur Planung & manuellen Koordination</span>}
       </dd>

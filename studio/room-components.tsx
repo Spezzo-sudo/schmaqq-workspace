@@ -354,7 +354,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
      </div>}
      {!!listedMembers.length&&<div className="rw-messenger-group"><div className="rw-messenger-group-head"><span>Menschen</span></div>{listedMembers.map(m=>{const latest=lastFor({kind:'member',id:m.id});return <button key={m.id} className={'rw-contact-row'+(filter.kind==='member'&&filter.id===m.id?' active':'')} onClick={()=>selectFilter({kind:'member',id:m.id})}><span className="rw-avatar">{initials(m.name)}</span><span className="rw-contact-meta"><strong>{m.name}{m.id===userId?' (Du)':''}</strong><small>{latest?.body??memberRoleSummary(m)}</small></span>{latest&&<time>{time(latest.created)}</time>}{unreadBadge('member:'+m.id)}</button>;})}</div>}
      {!!listedAgents.length&&<div className="rw-messenger-group"><div className="rw-messenger-group-head"><span>KI-Team</span></div>{listedAgents.map(a=>{
-      const selected=filter.kind==='agent'&&filter.id===a.id||profileAgentId===a.id,exec=agentExecutionStatus(a,room,resources),latest=lastFor({kind:'agent',id:a.id});
+      const selected=filter.kind==='agent'&&filter.id===a.id||profileAgentId===a.id,exec=agentExecutionStatus(a,room,resources,{configured:hermesConfigured,runs:hermesRuns}),latest=lastFor({kind:'agent',id:a.id});
       return <div key={a.id} className={'rw-contact-card'+(selected?' active':'')}><div className="rw-contact-row rw-agent-contact-row"><button type="button" className="rw-avatar-btn" aria-label={`Profil von ${a.name} öffnen`} title={`Profil von ${a.name} öffnen`} onClick={()=>openProfile(a.id)}><AgentAvatar agent={a} size="sm" statusDot={exec.state==='running'?'running':exec.state==='ready'?'ready':'idle'}/></button><button type="button" className="rw-contact-meta-btn" onClick={()=>selectFilter({kind:'agent',id:a.id})}><span className="rw-contact-meta"><strong>{a.name}</strong><small>{latest?.body??agentRoleLabels[a.role]??a.role}</small></span></button>{latest&&<time>{time(latest.created)}</time>}{unreadBadge('agent:'+a.id)}</div></div>;
      })}</div>}
      {railMode==='chats'&&<button className="r3-directory-link" onClick={()=>setRailMode('contacts')}><Users size={16}/>{listedAgents.length?'Alle Kontakte':'KI-Team und weitere Kontakte'}<ArrowRight size={14}/></button>}
@@ -535,6 +535,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
      agent={profileAgent}
      room={room}
      resources={resources}
+     hermes={{configured:hermesConfigured,runs:hermesRuns}}
      canDevelop={canDevelop}
      onEdit={()=>{setEditingAgent(profileAgent);setProfileAgentId(null);}}
      onOpenAvatarPicker={()=>setAvatarPickerOpen(true)}

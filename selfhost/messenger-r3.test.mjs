@@ -70,6 +70,19 @@ test('R3: a shared model must not make unrelated personas appear to be working',
  assert.equal(agentExecutionStatus(agent,[{...run,agentId:'mara'}],[]).state,'running');
 });
 
+test('R5: Hermes pilot shows ready-on-request and only a run for this exact agent as working',()=>{
+ const agent={id:'mara',model:'fixture-model',capabilities:[]};
+ const hermesRun={id:'h1',agent:'mara',status:'running',model:'fixture-model'};
+ assert.equal(agentExecutionStatus(agent,[],[],null).state,'idle');
+ assert.equal(agentExecutionStatus(agent,[],[],{configured:false,runs:[]}).state,'idle');
+ const ready=agentExecutionStatus(agent,[],[],{configured:true,runs:[]});
+ assert.deepEqual([ready.state,ready.via,ready.label],['ready','hermes','Bereit über Hermes · auf Auftrag']);
+ assert.equal(agentExecutionStatus(agent,[],[],{configured:true,runs:[{...hermesRun,agent:'other'}]}).state,'ready');
+ assert.equal(agentExecutionStatus(agent,[],[],{configured:true,runs:[{...hermesRun,status:'completed'}]}).state,'ready');
+ const busy=agentExecutionStatus(agent,[],[],{configured:true,runs:[hermesRun]});
+ assert.deepEqual([busy.state,busy.via],['running','hermes']);
+});
+
 async function fixture(t){
  const directory=mkdtempSync(path.join(os.tmpdir(),'schmaqq-r3-'));
  const options={seedProjects:true,filename:path.join(directory,'r3.sqlite'),origin:'http://127.0.0.1:44911',previewOrigin:'http://127.0.0.1:44912',resetMailer:null};

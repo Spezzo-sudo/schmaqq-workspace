@@ -10,12 +10,12 @@ Diesen Schritt nur über den autorisierten Root-Operator auf `srv1365337`, nur n
 
 | Datei | Erwarteter SHA-256 |
 |---|---|
-| `operator-install-worker.sh` | `4f2091f8bc93d103137deb3bdca644f28ef9d7d036593e3c4b4189ba6ad0ccfd` |
+| `operator-install-worker.sh` | `980accf337a9cf0f2f1cae67b1240ba4b1ee5e3174b16aed9cb3e24f04a79f2b` |
 | `agent-worker@.service` | `10e89f2b74dfe11af6cf7d7bbdd39f413c6ea2dd8dc29dea9ce031b742a67b5b` |
-| `hermes-agent-worker.mjs` | `8022e25d5f2ba1937e7a10fbdeea9e852b09ca6420b201e3867c8096ce8c7964` |
+| `hermes-agent-worker.mjs` | `f937c8b29212332c8a25fea58ec2f84cff4d37361b5060052dc59285aedc3e63` |
 | `hermes-pilot-infer.py` | `e583c86c7494607a21ea199a90ec37e02c0cc097741b2100e41e9c19b98f148b` |
 
-**R1-Werkzeug-Gateway (Upgrade):** Das Skript ersetzt bereits installierte Worker-Dateien nur, wenn sie exakt der vorher geprüften No-Tools-Fassung (`fdb0c1e0…`, `dc93e96c…`) entsprechen (bzw. der R1-Erstfassung `2c5dcc09…`, die auf dem Pilot am `--check` scheiterte) und beide Worker-Units inaktiv sind. Danach muss `--check` als Sandbox-Benutzer `HERMES_ZERO_TOOLSET=PASS` und `HERMES_STUDIO_TOOLSET=PASS` ausgeben, sonst STOP.
+**R1-Werkzeug-Gateway (Upgrade):** Das Skript ersetzt bereits installierte Worker-Dateien nur, wenn sie exakt der vorher geprüften No-Tools-Fassung (`fdb0c1e0…`, `dc93e96c…`) entsprechen (bzw. den auf dem Pilot installierten R1-Erstfassungen `8022e25d…`/`2c5dcc09…`) und beide Worker-Units inaktiv sind. Danach muss `--check` als Sandbox-Benutzer `HERMES_ZERO_TOOLSET=PASS` und `HERMES_STUDIO_TOOLSET=PASS` ausgeben, sonst STOP.
 
 **Hermes Tool Search:** Die installierte Hermes-Runtime (`v2026.8.19-310`, Paket 0.20.5) verpackt registrierte Nicht-Core-Tools standardmäßig hinter `tool_search`/`tool_describe`/`tool_call`. Der Adapter setzt Tool Search deshalb nur im eigenen kurzlebigen Prozess auf den dokumentierten Pass-Through-Modus `off`; `--check` beweist danach, dass exakt die zwei Studio-Tools exponiert werden. Verifiziert am 16.11.2026 als `schmaqq-hermes-a` gegen die echte Runtime.
 

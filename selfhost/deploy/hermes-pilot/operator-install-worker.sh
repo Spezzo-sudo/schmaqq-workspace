@@ -4,12 +4,14 @@ umask 077
 readonly STAGE=/root/schmaqq-hermes-agent-stage
 readonly APP=/opt/schmaqq-hermes-pilot/worker
 readonly UNIT_DEST=/etc/systemd/system/schmaqq-hermes-agent@.service
-readonly CODE_SHA=8022e25d5f2ba1937e7a10fbdeea9e852b09ca6420b201e3867c8096ce8c7964
+readonly CODE_SHA=f937c8b29212332c8a25fea58ec2f84cff4d37361b5060052dc59285aedc3e63
 readonly PY_SHA=e583c86c7494607a21ea199a90ec37e02c0cc097741b2100e41e9c19b98f148b
 # R1 tool gateway upgrade: only the previously reviewed no-tools release may be replaced, and only while both workers are inactive.
 readonly PREV_CODE_SHA=fdb0c1e0ae86005af2ef3459c6f700c0845675b241de823ac778ad032e6d6aa9
 readonly PREV_PY_SHA=dc93e96c154f2d8f47cea93c3d6dec58a9343e25acc852afceb075db307bafcb
 # R1 first adapter build: installed on the pilot but failed --check (Hermes Tool Search bridge tools). Replaceable only.
+# R1 first worker build (installed on the pilot, prompt said "no actions" despite tools). Replaceable only.
+readonly PREV_R1_CODE_SHA=8022e25d5f2ba1937e7a10fbdeea9e852b09ca6420b201e3867c8096ce8c7964
 readonly PREV_R1_PY_SHA=2c5dcc098462e6b612394362a8d95c50758a475fd32c459ef64b36ac78314018
 readonly UNIT_SHA=10e89f2b74dfe11af6cf7d7bbdd39f413c6ea2dd8dc29dea9ce031b742a67b5b
 
@@ -46,7 +48,7 @@ done
 for unit in schmaqq-hermes-agent@a.service schmaqq-hermes-agent@b.service; do
  if systemctl is-active --quiet "$unit"; then echo "STOP: stop $unit before replacing worker files." >&2; exit 1; fi
 done
-for spec in "$APP/hermes-agent-worker.mjs:$CODE_SHA:$PREV_CODE_SHA:$PREV_CODE_SHA" "$APP/hermes-pilot-infer.py:$PY_SHA:$PREV_PY_SHA:$PREV_R1_PY_SHA" "$UNIT_DEST:$UNIT_SHA:$UNIT_SHA:$UNIT_SHA"; do
+for spec in "$APP/hermes-agent-worker.mjs:$CODE_SHA:$PREV_CODE_SHA:$PREV_R1_CODE_SHA" "$APP/hermes-pilot-infer.py:$PY_SHA:$PREV_PY_SHA:$PREV_R1_PY_SHA" "$UNIT_DEST:$UNIT_SHA:$UNIT_SHA:$UNIT_SHA"; do
  IFS=: read -r local_file expected previous previous_r1 <<<"$spec"
  if [[ -e "$local_file" ]] && ! hash_matches "$expected" "$local_file" && ! hash_matches "$previous" "$local_file" && ! hash_matches "$previous_r1" "$local_file"; then
   echo "STOP: conflicting installed pilot file: $local_file" >&2; exit 1
