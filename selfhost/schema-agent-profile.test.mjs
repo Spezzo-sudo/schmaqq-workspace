@@ -39,7 +39,7 @@ test('pinned agent schema extension equals what the agent code creates',t=>{
  }finally{db.close();}
 });
 
-test('agents switched off leave the database as it was; switched on, the release preflight accepts the extension',t=>{
+test('agents switched off create no agent tables; switched on, the release preflight accepts the extension',t=>{
  const off=inspectSchema(fixture(t,{agents:false}));
  assert.equal(off.status,'PASS',JSON.stringify(off));assert.equal(off.agentExtension,'absent');
  const on=inspectSchema(fixture(t));

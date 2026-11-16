@@ -135,3 +135,35 @@
 /* ---- Contacts: the team as a small company ----------------------------------------------------------- */
 .r5-department>.rw-messenger-group-head{padding-left:26px;position:relative}
 .r5-department>.rw-messenger-group-head::before{content:"";position:absolute;left:14px;top:50%;width:8px;height:1px;background:var(--schmaqq-rule-strong)}
+
+/* ==== One list, one highlight ============================================================================
+   Inside a project the side list holds only conversations: the group chat, the team (lead first), the people.
+   The open conversation is the only filled row. Rank is a small crown, never a second colour. */
+.r5-chat-list{padding-top:10px}
+.r5-chat-list .rw-contact-row,.r5-chat-list .rw-contact-card{border-radius:14px}
+.r5-chat-list .rw-contact-card{margin:0;background:transparent;box-shadow:none;border:0}
+.r5-chat-list .rw-contact-row.active,.r5-chat-list .rw-contact-card.active>.rw-contact-row{background:var(--schmaqq-ink);color:var(--schmaqq-paper-light)}
+.r5-chat-list .rw-messenger-group-head{padding:16px 14px 6px}
+.r5-crown{flex:none;margin-left:6px;vertical-align:-2px;color:#8a6a00}
+.rw-contact-card.active .r5-crown,.rw-contact-row.active .r5-crown{color:var(--schmaqq-acid)}
+.r5-hire{display:flex;align-items:center;gap:8px;width:calc(100% - 20px);margin:6px 10px 0;min-height:42px;padding:0 12px;border:1px dashed var(--schmaqq-rule-strong);border-radius:12px;background:transparent;color:var(--schmaqq-muted);font:600 13px/1 var(--schmaqq-sans);cursor:pointer}
+.r5-hire:hover{color:var(--schmaqq-ink);border-color:var(--schmaqq-ink)}
+/* Project name: the heading of the list, never cut while there is room, wraps instead of hiding. */
+.r5-project-title select{width:100%;white-space:normal;text-overflow:ellipsis;font-size:20px}
+/* "@" suggestions above the composer */
+.r5-mentions{display:flex;flex-wrap:wrap;gap:6px;padding:0 4px 8px}
+.r5-mentions>button{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:3px 12px 3px 4px;border:1px solid var(--schmaqq-rule);border-radius:999px;background:var(--schmaqq-paper-light);color:var(--schmaqq-ink);font:600 13px/1 var(--schmaqq-sans);cursor:pointer}
+.r5-mentions>button:hover{border-color:var(--schmaqq-ink)}
+.r5-mentions .rw-fg-avatar{width:26px;height:26px}
+.ch-row-top .r5-crown{margin-left:0}
+
+/* ---- Formatted agent answers and shortened cards ------------------------------------------------------ */
+.r3-messenger .r5-rich{font-size:15px;line-height:1.55;color:var(--schmaqq-ink);overflow-wrap:anywhere}
+.r3-messenger .r5-rich>*{margin:0}
+.r3-messenger .r5-rich>*+*{margin-top:8px}
+.r3-messenger .r5-rich ul,.r3-messenger .r5-rich ol{padding-left:20px;display:grid;gap:3px}
+.r3-messenger .r5-rich-heading{font-weight:700}
+.r3-messenger .r5-rich code{padding:1px 5px;border-radius:5px;background:#1112250f;font:13px/1.4 var(--schmaqq-mono)}
+.r3-messenger .r5-rich pre{padding:10px 12px;border-radius:10px;background:#1112250f;font:12.5px/1.5 var(--schmaqq-mono);overflow-x:auto;white-space:pre}
+.r3-messenger .r5-proposal-body.clamped{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.r3-messenger .r5-more{justify-self:start;padding:2px 0;border:0;background:transparent;color:var(--schmaqq-muted);font:600 12px/1.2 var(--schmaqq-sans);text-decoration:underline;cursor:pointer}

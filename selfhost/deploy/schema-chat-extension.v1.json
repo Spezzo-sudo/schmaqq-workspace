@@ -1,0 +1,64 @@
+{
+  "format": 1,
+  "profile": "chat-private-extension",
+  "sourceModules": [
+    "selfhost/chat-scope.mjs"
+  ],
+  "note": "Schema of private one-to-one chats (created when the Studio server starts). Accepted only complete and exact; compared against the code by schema-chat-profile.test.mjs.",
+  "objects": [
+    {
+      "type": "index",
+      "name": "chat_private_scope",
+      "table": "chat_private",
+      "sqlHash": "5664155e839ebe033e599bb2ae782048faf3ba89334b80d3fc39670b3fca879a"
+    },
+    {
+      "type": "table",
+      "name": "chat_private",
+      "table": "chat_private",
+      "sqlHash": "f56aa96cf864b13eac183aa63b4a258f6d3c4fa7b580519a3bf07435158e4650"
+    }
+  ],
+  "tables": {
+    "chat_private": {
+      "columns": [
+        {
+          "name": "message",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "project",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "kind",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "member",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "peer",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": []
+    }
+  }
+}

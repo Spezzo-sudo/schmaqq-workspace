@@ -4,8 +4,10 @@ import { digest, token, transaction } from './store.mjs';
 import { can, requirePermission } from './project-roles.mjs';
 import { agentsFor, buildRoomContext, listRoomTasks, insertRoomTask } from './room-http.mjs';
 import { agentRunStore, ensureAgentRunSchema } from './agent-run-store.mjs';
+import { ensureChatSchema, inheritScope, privateScope } from './chat-scope.mjs';
 
-// Agent runs: a person asks one of their agents, a worker bound to that person produces the answer.
+// Agent runs: a person asks an agent of the project, and the worker bound to THAT person produces the
+// answer. Agents belong to the project; whoever asks pays with their own AI access, for the whole run.
 // The worker protocol (claim, heartbeat, tool, finish) says nothing about the engine behind it.
 
 const fail = (status, message) => Object.assign(new Error(message), { status });
@@ -76,6 +78,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
   // Agents are switched on by binding a worker to a person. Until then nothing is stored and nothing runs.
   const enabled = registered.length > 0;
   if (enabled) ensureAgentRunSchema(db);
+  ensureChatSchema(db);
   const store = agentRunStore(db);
   const lastContact = new Map(); // owner -> time the worker last asked for work
   const waiting = new Map(); // owner -> wake-up of a worker that is waiting for work
@@ -146,9 +149,8 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
     }
     requirePermission(db, member, request.project, 'view');
     const agent = activeAgent(request.project, request.agent);
-    const usable = agent && agent.createdBy === member.id
-      && agent.permissions?.readProject !== false && agent.permissions?.writeMessages !== false;
-    if (!usable) throw fail(403, 'Dieser Agent wurde nicht von dir freigegeben.');
+    const usable = agent && agent.permissions?.readProject !== false && agent.permissions?.writeMessages !== false;
+    if (!usable) throw fail(403, 'Dieser Agent kann im Projekt gerade nicht antworten.');
 
     const source = db.prepare('SELECT * FROM messages WHERE id=? AND channel=? AND author=?')
       .get(request.message, request.project, member.id);
@@ -208,16 +210,27 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
     return mayPlan ? { mode: 'studio-tools-r1', allowed: [...STUDIO_TOOLS] } : { mode: 'no-tools', allowed: [] };
   }
 
-  /** The earlier exchange between this person and this agent, oldest first. Project messages only. */
+  /**
+   * What was said before in the same conversation, oldest first: the private chat of this person with
+   * this agent, or the group chat when the agent was addressed there.
+   */
   function dialogue(run, source) {
+    const scope = privateScope(db, source.id);
+    const where = scope ? "s.kind='agent' AND s.member=? AND s.peer=?" : 's.message IS NULL';
     const rows = db.prepare(`
-      SELECT m.body, m.author, json_extract(x.value,'$.senderAgent') AS senderAgent
-      FROM messages m JOIN workspace_meta x ON x.key='room:v1:message:'||m.id
-      WHERE m.channel=? AND m.rowid<?
-        AND (json_extract(x.value,'$.senderAgent')=? OR (m.author=? AND json_extract(x.value,'$.recipient')=?))
+      SELECT m.body, n.name, json_extract(x.value,'$.senderAgent') AS senderAgent
+      FROM messages m JOIN members n ON n.id=m.author
+      LEFT JOIN chat_private s ON s.message=m.id
+      LEFT JOIN workspace_meta x ON x.key='room:v1:message:'||m.id
+      WHERE m.channel=? AND m.rowid<? AND ${where}
       ORDER BY m.rowid DESC LIMIT ?`)
-      .all(run.project, source.sequence, run.agent, run.owner, run.agent, HISTORY_MESSAGES);
-    return rows.reverse().map(row => ({ from: row.senderAgent ? 'agent' : 'person', body: row.body.slice(0, 600) }));
+      .all(run.project, source.sequence, ...(scope ? [scope.member, scope.peer] : []), HISTORY_MESSAGES);
+    const agents = new Map(agentsFor(db, run.project).map(a => [a.id, a.name]));
+    return rows.reverse().map(row => ({
+      from: row.senderAgent === run.agent ? 'agent' : 'person',
+      name: row.senderAgent ? agents.get(row.senderAgent) ?? 'Agent' : row.name,
+      body: row.body.slice(0, 600)
+    }));
   }
 
   function claim(owner, now) {
@@ -231,7 +244,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
       const member = memberRow(owner), agent = activeAgent(run.project, run.agent);
       const source = db.prepare('SELECT rowid AS sequence, * FROM messages WHERE id=? AND channel=? AND author=?')
         .get(run.source_message, run.project, owner);
-      const stillAllowed = member && source && agent && agent.createdBy === owner
+      const stillAllowed = member && source && agent
         && can(db, member, run.project, 'view') && agent.permissions?.readProject !== false;
       if (!stillAllowed) {
         store.updateRun(run.id, { status: 'failed', error_code: 'protocol-error', updated: now, finished: now });
@@ -249,6 +262,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
         prompt: source.body, replyTo: source.id,
         context: buildRoomContext(db, run.project).text,
         history: dialogue(run, source),
+        place: privateScope(db, source.id) ? 'direct' : 'group',
         profile: {
           name: agent.name, role: agent.role, purpose: agent.purpose,
           personality: agent.personality, responsibility: agent.responsibility
@@ -300,7 +314,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
     }
 
     const member = memberRow(owner), agent = activeAgent(run.project, run.agent);
-    const stillAllowed = member && agent && agent.createdBy === owner
+    const stillAllowed = member && agent
       && can(db, member, run.project, 'view') && agent.permissions?.readProject !== false;
     if (!stillAllowed) throw fail(403, 'Agent oder Projektberechtigung wurde widerrufen.');
 
@@ -341,7 +355,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
     if (success && !request.output) throw fail(400, 'Echte Modellantwort fehlt.');
 
     const member = memberRow(owner), agent = activeAgent(run.project, run.agent);
-    const mayAnswer = member && agent && agent.createdBy === owner
+    const mayAnswer = member && agent
       && can(db, member, run.project, 'view') && agent.permissions?.writeMessages !== false;
     if (success && !mayAnswer) throw fail(403, 'Agent oder Projektberechtigung wurde widerrufen.');
 
@@ -357,6 +371,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
     if (success) {
       messageId = randomUUID();
       db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(messageId, run.project, owner, request.output, now);
+      inheritScope(db, run.source_message, messageId); // the answer lands where the question was asked
       if (published) store.updateProposal(published.id, { status: 'pending', message: messageId, updated: now });
       const meta = {
         kind: 'agent', origin: 'verified-run', senderAgent: run.agent, model: run.model,
@@ -395,7 +410,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
     }
 
     const agent = activeAgent(p.project, p.agent);
-    if (!agent || agent.createdBy !== member.id || agent.permissions?.manageTasks !== true) {
+    if (!agent || agent.permissions?.manageTasks !== true) {
       throw fail(403, 'Der Agent darf keine Aufgaben mehr vorschlagen. Vorschlag nicht übernommen.');
     }
     const projectMeta = db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:project:' + p.project);

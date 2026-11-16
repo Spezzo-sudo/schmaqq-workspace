@@ -54,10 +54,12 @@ const proposalStatus={pending:'Wartet auf dich',accepted:'Aufgabe angelegt',reje
 
 /** A proposal is never a task until the person who asked accepts it. */
 export function ProposalCard({proposal,busy,onDecide,onOpenTask}:{proposal:AgentTaskProposal;busy:boolean;onDecide:(decision:'accept'|'reject')=>void;onOpenTask:(task:string)=>void}){
+ const [open,setOpen]=useState(false),long=proposal.description.length>170||proposal.description.split('\n').length>3;
  return <div className={'r5-proposal-card '+proposal.status} role="group" aria-label={'Aufgabenvorschlag: '+proposal.title}>
   <div className="r5-proposal-head"><ListChecks size={15} aria-hidden="true"/><span>Aufgabenvorschlag</span><span className={'r5-proposal-status '+proposal.status}>{proposalStatus[proposal.status]}</span></div>
   <p className="r5-proposal-title">{proposal.title}</p>
-  {proposal.description&&<p className="r5-proposal-body">{proposal.description}</p>}
+  {proposal.description&&<p className={'r5-proposal-body'+(long&&!open?' clamped':'')}>{proposal.description}</p>}
+  {long&&<button type="button" className="r5-more" aria-expanded={open} onClick={()=>setOpen(!open)}>{open?'weniger':'mehr'}</button>}
   {proposal.canDecide&&<div className="r5-proposal-actions">
    <button type="button" className="accept" disabled={busy} onClick={()=>onDecide('accept')}><Check size={15} aria-hidden="true"/>Als Aufgabe anlegen</button>
    <button type="button" disabled={busy} onClick={()=>onDecide('reject')}><X size={15} aria-hidden="true"/>Ablehnen</button>

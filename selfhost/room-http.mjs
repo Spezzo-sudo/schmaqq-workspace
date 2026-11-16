@@ -4,6 +4,7 @@ import {transaction} from './store.mjs';
 import {aiAccess} from './ai-routes.mjs';
 import {taskView,taskContract,storeMetadata,teamEvent} from './team-model.mjs';
 import {visibleProposal} from './agent-run-store.mjs';
+import {ensureChatSchema,markAgentChat,markDirectChat,privateScope,mayRead,readable,conversation,scopeLabel} from './chat-scope.mjs';
 
 // R25 room orchestration. The current installation is one private team.
 // Reuse existing records; no implicit schema migration or provider access.
@@ -18,7 +19,7 @@ const putMeta=(db,k,value)=>db.prepare('INSERT INTO workspace_meta(key,value) VA
 const roomMeta=(db,project)=>readMeta(db,key('project',project))??{revision:0,repository:null};
 // Read positions belong to conversations, not members.seen (which tracks presence).
 // First view after rollout establishes a single project baseline; later new messages count even in unopened contact views.
-const chatView=z.string().regex(/^(?:all|handoffs|(?:member|agent):[\w-]{1,100})$/);
+const chatView=z.string().regex(/^(?:all|(?:member|agent):[\w-]{1,100})$/);
 const readKey=(project,member,view)=>key('read',project+':'+member+':'+view);
 function checkChatView(db,project,view){
  const [kind,target]=view.split(':');
@@ -31,13 +32,11 @@ function checkChatView(db,project,view){
   if(!agent||agent.active===false)throw fail(400,'Dieser Agent ist im Projekt nicht aktiv.');
  }
 }
-function matchesChatView(row,view){
- const kind=view.split(':')[0],target=view.slice(kind.length+1),meta=row.metadata??{};
- if(kind==='all')return true;
- if(kind==='member')return row.author===target||meta.recipient===target;
- if(kind==='agent')return meta.senderAgent===target||meta.recipient===target||meta.handoff?.toAgent===target;
- if(kind==='handoffs')return Boolean(meta.handoff||meta.senderAgent||meta.recipientKind==='agent'||meta.kind==='ai-shared'||meta.kind==='agent-handoff');
- return false;
+/** Name of the conversation a message belongs to, as this viewer's app calls it: all | agent:<id> | member:<id>. */
+function viewOf(db,messageId,viewer){
+ const scope=privateScope(db,messageId);
+ if(!scope)return 'all';
+ return scope.kind==='agent'?'agent:'+scope.peer:'member:'+(scope.member===viewer?scope.peer:scope.member);
 }
 function unreadFor(db,project,member,view){
  let marker=readMeta(db,readKey(project,member,view));
@@ -52,19 +51,10 @@ function unreadFor(db,project,member,view){
    marker=readMeta(db,baselineKey);
   }
  }
- const type=view.split(':')[0],target=view.slice(type.length+1);
- // Build SQL solely from fixed fragments. Cursor follows SQLite insertion order, including time ties.
- const where={
-  all:'1=1',
-  handoffs:"(json_extract(x.value,'$.handoff.toAgent') IS NOT NULL OR json_extract(x.value,'$.senderAgent') IS NOT NULL OR json_extract(x.value,'$.recipientKind')='agent' OR json_extract(x.value,'$.kind') IN ('ai-shared','agent-handoff'))",
-  member:"(m.author=? OR json_extract(x.value,'$.recipient')=?)",
-  agent:"(json_extract(x.value,'$.senderAgent')=? OR json_extract(x.value,'$.recipient')=? OR json_extract(x.value,'$.handoff.toAgent')=?)"
- }[type];
+ const where=conversation(view,member);
  if(!where)return 0;
- const parameters=[project,member,marker.sequence??0];
- if(type==='member')parameters.push(target,target);
- if(type==='agent')parameters.push(target,target,target);
- const count=db.prepare("SELECT count(*) AS n FROM messages m LEFT JOIN workspace_meta x ON x.key='room:v1:message:'||m.id WHERE m.channel=? AND m.author!=? AND m.rowid>? AND "+where).get(...parameters).n;
+ // New for me: what others wrote, and what an agent answered (stored under the name of the person who asked).
+ const count=db.prepare("SELECT count(*) AS n FROM messages m LEFT JOIN chat_private s ON s.message=m.id LEFT JOIN workspace_meta x ON x.key='room:v1:message:'||m.id WHERE m.channel=? AND (m.author!=? OR json_extract(x.value,'$.origin')='verified-run') AND m.rowid>? AND "+where.sql).get(project,member,marker.sequence??0,...where.params).n;
  return Math.min(99,count);
 }
 // Task proposal card of an agent. Only the verified run message carries the id; status comes from the server record.
@@ -74,7 +64,7 @@ function proposalCard(db,proposalId,message,viewer){
  return {id:p.id,title:p.title,description:p.description,kind:p.kind,status:p.status,task:p.task??null,agent:p.agent,owner:p.owner,canDecide:p.status==='pending'&&p.owner===viewer.id&&can(db,viewer,p.project,'develop')};
 }
 function requireProject(db,project){const row=db.prepare('SELECT * FROM projects WHERE id=?').get(project);if(!row)throw fail(404,'Dieser Projektraum existiert nicht.');return row;}
-function requireSource(db,project,source){if(!source)return null;const row=db.prepare('SELECT * FROM messages WHERE id=? AND channel=?').get(source,project);if(!row)throw fail(400,'Die Nachricht gehört nicht zu diesem Raum.');return row;}
+function requireSource(db,project,source,viewer){if(!source)return null;const row=db.prepare('SELECT * FROM messages WHERE id=? AND channel=?').get(source,project);if(!row||(viewer&&!mayRead(db,row.id,viewer)))throw fail(400,'Die Nachricht gehört nicht zu diesem Raum.');return row;}
 function safeURL(value,repository=false){
  let url;try{url=new URL(value);}catch{throw fail(400,'Bitte eine vollständige HTTPS-Adresse angeben.');}
  if(url.protocol!=='https:'||url.username||url.password||url.href.length>2000)throw fail(400,'Nur HTTPS-Links ohne Zugangsdaten sind erlaubt.');
@@ -101,7 +91,9 @@ export function agentsFor(db,project){return db.prepare("SELECT value FROM works
 
 export function buildRoomContext(db,project,taskId){
  const p=requireProject(db,project);
- const messages=db.prepare('SELECT m.body,m.id,n.name FROM messages m JOIN members n ON n.id=m.author WHERE m.channel=? ORDER BY m.created DESC,m.id DESC LIMIT 12').all(project).reverse();
+ ensureChatSchema(db);
+ // Only the group chat is shared project context. Private chats never reach another person's agent run.
+ const messages=db.prepare('SELECT m.body,m.id,n.name FROM messages m JOIN members n ON n.id=m.author LEFT JOIN chat_private s ON s.message=m.id WHERE m.channel=? AND s.message IS NULL ORDER BY m.created DESC,m.id DESC LIMIT 12').all(project).reverse();
  const notes=notesFor(db,project).slice(0,8);
  const agents=agentsFor(db,project).filter(a=>a.active);
  const task=taskId?db.prepare('SELECT * FROM tasks WHERE id=? AND project=?').get(taskId,project):null;
@@ -151,7 +143,7 @@ export function listRoomTasks(db,project,{query='',includeDone=false}={}){
  */
 export function insertRoomTask(db,member,{project,title,description='',kind='general',criteria='',source:sourceId,mine=false},at){
  // Source: a message of this project, or of the team-wide #Allgemein (everyone reads it).
- const source=sourceId&&db.prepare("SELECT * FROM messages WHERE id=? AND channel='general'").get(sourceId)||requireSource(db,project,sourceId);
+ const source=sourceId&&db.prepare("SELECT * FROM messages WHERE id=? AND channel='general'").get(sourceId)||requireSource(db,project,sourceId,member.id);
  const converted=source?readMeta(db,key('source-task',source.id)):null;
  if(converted)return {task:converted.task,reused:true};
  const task=randomUUID();db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(task,project,title,description||source?.body||'',mine?'doing':'todo','Normal',mine?member.id:null,at);
@@ -174,23 +166,23 @@ function projectLeadFor(db,project,member,at){
   model:earlier?.model??'gpt-5.6-sol',modelDevice:null,
   capabilities:['context-read','chat','task-plan','task-delegate'],contextSources:['messages','tasks','decisions'],knowledgeScope:'',
   permissions:{readProject:true,writeMessages:true,manageTasks:true,editCode:false,prepareReviews:false,delegateAgents:true},
-  active:true,createdBy:member.id,updatedBy:member.id,created:at,updated:at
+  active:true,lead:true,createdBy:member.id,updatedBy:member.id,created:at,updated:at
  };
 }
 /**
- * Projects from before the lead existed get him when they are next opened. He belongs to the person who
- * opened the project if that person may still develop in it, otherwise to the viewer who may.
+ * A project without a lead gets one when it is next opened: the agent with the lead's default face is
+ * promoted, otherwise a new lead is created. Agents belong to the project, so nobody's access is bound.
  */
 function ensureProjectLead(db,project,viewer,at){
- if(agentsFor(db,project).some(a=>a.active!==false&&a.avatarPresetId===LEAD_PRESET))return;
- if(roomMeta(db,project).archived||agentsFor(db,project).length>=20)return;
- const founderId=roomMeta(db,project).createdBy;
- const founder=founderId?db.prepare('SELECT * FROM members WHERE id=?').get(founderId):null;
- const owner=founder&&!isRemoved(db,founder.id)&&can(db,founder,project,'develop')?founder:can(db,viewer,project,'develop')?viewer:null;
- if(!owner)return;
+ const agents=agentsFor(db,project);
+ if(agents.some(a=>a.active!==false&&a.lead===true))return;
+ if(roomMeta(db,project).archived)return;
  transaction(db,()=>{
+  const heir=agents.find(a=>a.active!==false&&a.avatarPresetId===LEAD_PRESET);
+  if(heir){putMeta(db,key('agent',project+':'+heir.id),{...heir,lead:true});return;}
+  if(agents.length>=20)return;
   const lead=randomUUID();
-  putMeta(db,key('agent',project+':'+lead),{...projectLeadFor(db,project,owner,at),id:lead});
+  putMeta(db,key('agent',project+':'+lead),{...projectLeadFor(db,project,viewer,at),id:lead,createdBy:roomMeta(db,project).createdBy??viewer.id});
  });
 }
 const avatarPresetIds=z.enum(['leitwolf','herr-grau','mara','frau-kern','otto','nova','dachs','fuchs','baer','rabe','schaefer','eule']);
@@ -207,7 +199,7 @@ const agentPermissionsSchema=z.object({
 });
 const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('create'),id,title,description:z.string().trim().max(12000).default('')}),
- z.object({action:z.literal('message'),id,project:id,body,replyTo:id.optional(),topicTask:id.optional(),recipient:id.optional(),senderAgent:id.optional(),handoff:z.object({toAgent:id,summary:z.string().trim().min(1).max(600),status:z.enum(['delegated','in_progress','completed','requested','stopped']).default('delegated')}).optional()}),
+ z.object({action:z.literal('message'),id,project:id,body,replyTo:id.optional(),topicTask:id.optional(),recipient:id.optional(),direct:z.boolean().optional(),senderAgent:id.optional(),handoff:z.object({toAgent:id,summary:z.string().trim().min(1).max(600),status:z.enum(['delegated','in_progress','completed','requested','stopped']).default('delegated')}).optional()}),
  z.object({action:z.literal('read'),project:id,view:chatView,messageId:id.optional()}),
  z.object({
   action:z.literal('agent'),
@@ -243,6 +235,7 @@ import {requirePermission,startRoles,can,rolesOf} from './project-roles.mjs';
 import {isRemoved} from './team-access.mjs';
 import {hiddenPractice,practiceOwner} from './practice.mjs';
 export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
+ ensureChatSchema(db);
  return async function roomRoute({route,method,req,url,send}){
   if(!['/api/rooms','/api/room','/api/room/context','/api/room/tasks'].includes(route))return false;
   const member=user(req);
@@ -254,7 +247,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     send({rooms:archived});return true;
    }
    if(route==='/api/rooms'){
-    send({rooms:db.prepare("SELECT p.*,(SELECT count(*) FROM tasks t WHERE t.project=p.id AND t.status!='done') AS openTasks,(SELECT max(created) FROM messages m WHERE m.channel=p.id) AS lastMessage FROM projects p WHERE NOT EXISTS (SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:project:'||p.id AND json_extract(m.value,'$.archived')=1) ORDER BY COALESCE((SELECT max(created) FROM messages WHERE channel=p.id),p.created) DESC,p.id").all().filter(r=>!hiddenPractice(db,r.id,member.id)&&can(db,member,r.id,'view')).map(r=>({...r,practice:!!practiceOwner(db,r.id),lastExcerpt:db.prepare('SELECT body FROM messages WHERE channel=? ORDER BY rowid DESC LIMIT 1').get(r.id)?.body?.slice(0,160)??'',unread:unreadFor(db,r.id,member.id,'all')}))});return true;
+    send({rooms:db.prepare("SELECT p.*,(SELECT count(*) FROM tasks t WHERE t.project=p.id AND t.status!='done') AS openTasks,(SELECT max(created) FROM messages m WHERE m.channel=p.id AND NOT EXISTS(SELECT 1 FROM chat_private s WHERE s.message=m.id)) AS lastMessage FROM projects p WHERE NOT EXISTS (SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:project:'||p.id AND json_extract(m.value,'$.archived')=1) ORDER BY COALESCE((SELECT max(created) FROM messages WHERE channel=p.id),p.created) DESC,p.id").all().filter(r=>!hiddenPractice(db,r.id,member.id)&&can(db,member,r.id,'view')).map(r=>({...r,practice:!!practiceOwner(db,r.id),lastExcerpt:db.prepare('SELECT body FROM messages m WHERE channel=? AND NOT EXISTS(SELECT 1 FROM chat_private s WHERE s.message=m.id) ORDER BY rowid DESC LIMIT 1').get(r.id)?.body?.slice(0,160)??'',unread:unreadFor(db,r.id,member.id,'all')}))});return true;
    }
    const project=parse(id,url.searchParams.get('project'));const p=requireProject(db,project);
    if(hiddenPractice(db,project,member.id))throw fail(404,'Projekt fehlt.');
@@ -263,10 +256,15 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
    if(route==='/api/room/context'){const task=url.searchParams.get('task');send(buildRoomContext(db,project,task?parse(id,task):undefined));return true;}
    if(route==='/api/room/tasks'){send(listRoomTasks(db,project,{query:parse(z.string().max(160),url.searchParams.get('q')??''),includeDone:url.searchParams.get('done')==='1'}));return true;}
    const before=url.searchParams.get('before');
-   const beforeMessage=before?db.prepare('SELECT rowid AS sequence FROM messages WHERE id=? AND channel=?').get(parse(id,before),project):null;
-   if(before&&!beforeMessage)throw fail(400,'Die ältere Nachricht gehört nicht zu diesem Raum.');
-   const messageRows=beforeMessage?db.prepare('SELECT rowid AS sequence,* FROM messages WHERE channel=? AND rowid<? ORDER BY rowid DESC LIMIT 101').all(project,beforeMessage.sequence):db.prepare('SELECT rowid AS sequence,* FROM messages WHERE channel=? ORDER BY rowid DESC LIMIT 101').all(project);
-   const more=messageRows.length>100;const messages=messageRows.slice(0,100).reverse().map(m=>{const meta=readMeta(db,key('message',m.id))??{};const sourceTask=readMeta(db,key('source-task',m.id))?.task??null;return {...m,...meta,proposal:undefined,proposalCard:proposalCard(db,meta.proposal,m,member),topicTask:meta.topicTask??sourceTask,taskId:sourceTask??meta.topicTask??null};});
+   const beforeMessage=before?db.prepare('SELECT rowid AS sequence,id FROM messages WHERE id=? AND channel=?').get(parse(id,before),project):null;
+   if(before&&(!beforeMessage||!mayRead(db,beforeMessage.id,member.id)))throw fail(400,'Die ältere Nachricht gehört nicht zu diesem Raum.');
+   const mine=readable(member.id);
+   const messageRows=db.prepare('SELECT m.rowid AS sequence,m.*,s.kind AS scope_kind,s.member AS scope_member,s.peer AS scope_peer FROM messages m LEFT JOIN chat_private s ON s.message=m.id WHERE m.channel=? AND '+mine.sql+(beforeMessage?' AND m.rowid<?':'')+' ORDER BY m.rowid DESC LIMIT 101').all(project,...mine.params,...(beforeMessage?[beforeMessage.sequence]:[]));
+   const more=messageRows.length>100;
+   const messages=messageRows.slice(0,100).reverse().map(({scope_kind,scope_member,scope_peer,...m})=>{
+    const meta=readMeta(db,key('message',m.id))??{},sourceTask=readMeta(db,key('source-task',m.id))?.task??null;
+    return {...m,...meta,scope:scopeLabel({scope_kind,scope_member,scope_peer},member.id),proposal:undefined,proposalCard:proposalCard(db,meta.proposal,m,member),topicTask:meta.topicTask??sourceTask,taskId:sourceTask??meta.topicTask??null};
+   });
    const runs=db.prepare("SELECT j.id,j.owner,j.device,j.project,j.status,j.created,j.action,j.result,d.name AS deviceName FROM jobs j JOIN devices d ON d.id=j.device WHERE j.project=? AND EXISTS(SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:run:'||j.id) AND (j.owner=? OR d.owner=?) ORDER BY j.created DESC,j.id DESC LIMIT 30").all(project,member.id,member.id).map(j=>{
     const meta=readMeta(db,key('run',j.id));let result;try{result=JSON.parse(j.result??'null');}catch{result=null;}
     return {...j,result:undefined,output:typeof result?.output==='string'?result.output.slice(0,24000):null,error:typeof result?.error==='string'?result.error.slice(0,1000):null,model:meta.model,task:meta.task,sharedMessage:meta.sharedMessage??null};
@@ -274,7 +272,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
    const members=db.prepare('SELECT id,name,role,seen FROM members ORDER BY name').all().filter(m=>!isRemoved(db,m.id)&&can(db,m,project,'view')).map(m=>({...m,removed:false,projectRoles:rolesOf(db,m,project)}));
    ensureProjectLead(db,project,member,now());
    const agents=agentsFor(db,project);
-   const views=['all','handoffs',...members.map(m=>'member:'+m.id),...agents.filter(a=>a.active!==false).map(a=>'agent:'+a.id)];
+   const views=['all',...members.filter(m=>m.id!==member.id).map(m=>'member:'+m.id),...agents.filter(a=>a.active!==false).map(a=>'agent:'+a.id)];
    const unread=Object.fromEntries(views.map(view=>[view,unreadFor(db,project,member.id,view)]));
    send({project:p,meta:roomMeta(db,project),messages,more,notes:notesFor(db,project),links:linksFor(db,project),tasks:db.prepare('SELECT * FROM tasks WHERE project=? ORDER BY created DESC,id').all(project),members,agents,runs,unread});return true;
   }
@@ -295,9 +293,8 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
    if(value.action==='read'){
     checkChatView(db,value.project,value.view);
     const message=value.messageId?db.prepare('SELECT rowid AS sequence,* FROM messages WHERE id=? AND channel=?').get(value.messageId,value.project):null;
-    if(value.messageId&&!message)throw fail(400,'Die Nachricht gehört nicht zu diesem Raum.');
-    const row=message?{...message,metadata:readMeta(db,key('message',message.id))??{}}:null;
-    if(row&&!matchesChatView(row,value.view))throw fail(400,'Die Lesemarkierung gehört nicht zu diesem Gespräch.');
+    if(value.messageId&&(!message||!mayRead(db,message.id,member.id)))throw fail(400,'Die Nachricht gehört nicht zu diesem Raum.');
+    if(message&&viewOf(db,message.id,member.id)!==value.view)throw fail(400,'Die Lesemarkierung gehört nicht zu diesem Gespräch.');
     const next={sequence:message?.sequence??0},location=readKey(value.project,member.id,value.view);
     const previous=readMeta(db,location);
     if(!previous||(previous.sequence??0)<next.sequence)putMeta(db,location,next);
@@ -319,10 +316,8 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     const agentId=value.agentId??randomUUID(),agentKey=key('agent',value.project+':'+agentId);
     const existing=readMeta(db,agentKey);
     if(!existing&&agentsFor(db,value.project).length>=20)throw fail(409,'In diesem Projekt sind bereits 20 KI-Teammitglieder eingerichtet.');
-    // The lead is a fixed part of every project: he stays, keeps his face and exists once.
-    const wantsLeadFace=(value.avatarPresetId!==undefined?value.avatarPresetId:existing?.avatarPresetId)===LEAD_PRESET;
-    if(existing?.avatarPresetId===LEAD_PRESET&&existing.active!==false&&(!value.active||!wantsLeadFace))throw fail(409,'Jedes Projekt braucht seinen Guru. Herr Grau bleibt im Projekt und behält sein Gesicht.');
-    if(wantsLeadFace&&value.active&&agentsFor(db,value.project).some(a=>a.id!==agentId&&a.active!==false&&a.avatarPresetId===LEAD_PRESET))throw fail(409,'Herr Grau gibt es in jedem Projekt nur einmal.');
+    // The lead is a fixed part of every project. Name, face, character and model are free; leaving is not.
+    if(existing?.lead===true&&existing.active!==false&&!value.active)throw fail(409,'Jedes Projekt braucht seine Projektleitung. Du kannst sie bearbeiten, aber nicht entfernen.');
     if(value.modelDevice&&!db.prepare('SELECT id FROM devices WHERE id=? AND revoked=0').get(value.modelDevice))throw fail(400,'Der gewählte Modellzugang ist nicht registriert oder wurde widerrufen.');
     // Permissions are strictly separate from avatar, personality, and role labels.
     // Only when permissions are omitted (legacy callers) do we derive defaults.
@@ -368,6 +363,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
      knowledgeScope:value.knowledgeScope??existing?.knowledgeScope??'',
      permissions,
      active:value.active,
+     ...(existing?.lead===true?{lead:true}:{}),
      createdBy:existing?.createdBy??member.id,
      updatedBy:member.id,
      created:existing?.created??now(),
@@ -378,9 +374,16 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     return remember(db,member,value,{ok:true,agent:agentId,agentId});
    }
    if(value.action==='message'){
-    requireSource(db,value.project,value.replyTo);
+    requireSource(db,value.project,value.replyTo,member.id);
     if(value.topicTask&&!db.prepare('SELECT id FROM tasks WHERE id=? AND project=?').get(value.topicTask,value.project))throw fail(400,'Die gewählte Aufgabe gehört nicht zu diesem Projekt.');
     let recipientKind=null;
+    if(value.direct&&(!value.recipient||value.senderAgent||value.handoff||value.recipient===member.id))throw fail(400,'Ein Einzelchat braucht genau ein Gegenüber.');
+    // In the group chat "@Name" addresses an agent; the message stays in the group.
+    if(!value.recipient&&!value.senderAgent&&!value.handoff){
+     const text=value.body.toLowerCase();
+     const mentioned=agentsFor(db,value.project).filter(a=>a.active!==false&&text.includes('@'+a.name.toLowerCase())).sort((a,b)=>b.name.length-a.name.length)[0];
+     if(mentioned)value.recipient=mentioned.id;
+    }
     if(value.recipient){
      const targetMember=db.prepare('SELECT id,role FROM members WHERE id=?').get(value.recipient);
      const targetAgent=readMeta(db,key('agent',value.project+':'+value.recipient));
@@ -420,15 +423,19 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
      ...(senderAgent?{senderAgent}:{}),
      ...(handoff?{handoff}:{})
     });
-    teamEvent(db,{actor:member.id,project:value.project,task:value.topicTask??null,kind:'message',body:handoff?'Agenten-Übergabe im Projektgespräch':'Neue Nachricht im Projektgespräch'});
-    return remember(db,member,value,{ok:true,message:value.id});
+    if(value.direct&&recipientKind==='agent')markAgentChat(db,value.id,value.project,member.id,value.recipient);
+    else if(value.direct)markDirectChat(db,value.id,value.project,member.id,value.recipient);
+    // A private chat leaves no trace in the shared project activity.
+    else teamEvent(db,{actor:member.id,project:value.project,task:value.topicTask??null,kind:'message',body:handoff?'Agenten-Übergabe im Projektgespräch':'Neue Nachricht im Projektgespräch'});
+    // "ask" names the agent this message is addressed to, so the app can request the answer.
+    return remember(db,member,value,{ok:true,message:value.id,ask:recipientKind==='agent'&&!senderAgent&&!handoff?value.recipient:null});
    }
    if(value.action==='task'){
     const created=insertRoomTask(db,member,value,now());
     return remember(db,member,value,{ok:true,task:created.task,...(created.reused?{reused:true}:{})});
    }
    if(value.action==='note'){
-    const source=requireSource(db,value.project,value.source);
+    const source=requireSource(db,value.project,value.source,member.id);
     const note=randomUUID();db.prepare('INSERT INTO documents VALUES(?,?,?,?,1,?)').run(note,value.title,value.body,member.id,now());
     putMeta(db,key('note',note),{project:value.project,kind:value.kind,source:source?.id??null});
     return remember(db,member,value,{ok:true,note});

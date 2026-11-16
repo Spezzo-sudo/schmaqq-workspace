@@ -61,7 +61,7 @@ test('agent queue: explicit project-scoped request, idempotent claim, signed com
  const request={project,agent,message};
  assert.equal((await f.post('/api/agent-runs',request)).status,401,'Cookie is mandatory');
  assert.equal((await f.post('/api/agent-runs',request,{cookie:alice.cookie,originHeader:'https://evil.invalid'})).status,403,'Origin check required');
- assert.equal((await f.post('/api/agent-runs',request,{cookie:bob.cookie})).status,403,'Agent belongs to another person');
+ assert.equal((await f.post('/api/agent-runs',request,{cookie:bob.cookie})).status,400,'Nobody can make an agent answer another person\'s message');
  const started=await f.post('/api/agent-runs',request,{cookie:alice.cookie});
  assert.equal(started.status,202);assert.equal(started.data.status,'queued');
  const again=await f.post('/api/agent-runs',request,{cookie:alice.cookie});
@@ -163,7 +163,8 @@ test('agent queue: the worker receives the earlier exchange with this agent',asy
  await f.post('/api/room',{action:'message',id:next,project,recipient:agent,body:'Und was schlägst du vor?'},{cookie:alice.cookie});
  await f.post('/api/agent-runs',{project,agent,message:next},{cookie:alice.cookie});
  const followUp=(await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job;
- assert.deepEqual(followUp.history,[{from:'person',body:'Prüfe bitte den mobilen Messenger.'},{from:'agent',body:'Die Liste ist zu eng.'}]);
+ assert.deepEqual(followUp.history,[{from:'person',name:'Alice',body:'Prüfe bitte den mobilen Messenger.'},{from:'agent',name:'Mara',body:'Die Liste ist zu eng.'},{from:'person',name:'Alice',body:'Nachricht an alle, nicht an den Agenten.'}],'addressed in the group chat, the agent hears the group chat');
+ assert.equal(followUp.place,'group');
  assert.equal(followUp.prompt,'Und was schlägst du vor?');
 });
 
@@ -213,38 +214,51 @@ test('agent queue: a failed or stopped request can be tried again for the same m
  assert.equal((await f.post('/api/agent-runs',{...request,retry:true},{cookie:alice.cookie})).data.reused,true,'An answered message is not answered twice');
 });
 
-test('project lead: every new project starts with its lead, owned by the person who opened it',async t=>{
- const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets;
+test('project lead: every new project starts with one; whoever asks pays with their own access',async t=>{
+ const f=await fixture(t),[alice,bob]=f.members,[aWorker,bWorker]=f.secrets;
  const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Neues Projekt',description:''},{cookie:alice.cookie})).data.project;
  const agents=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.agents;
  assert.equal(agents.length,1);
  const lead=agents[0];
- assert.deepEqual([lead.name,lead.avatarPresetId,lead.role,lead.createdBy,lead.active],['Herr Grau','herr-grau','coordinator',alice.id,true]);
- assert.deepEqual(lead.permissions,{readProject:true,writeMessages:true,manageTasks:true,editCode:false,prepareReviews:false,delegateAgents:true});
+ assert.deepEqual([lead.name,lead.avatarPresetId,lead.role,lead.lead,lead.active],['Herr Grau','herr-grau','coordinator',true,true]);
+ // Bob is in the project and asks the same lead: his worker answers, not Alice's.
  const message=randomUUID();
- await f.post('/api/room',{action:'message',id:message,project,recipient:lead.id,body:'Womit fangen wir an?'},{cookie:alice.cookie});
- assert.equal((await f.post('/api/agent-runs',{project,agent:lead.id,message},{cookie:bob.cookie})).status,403,'Nobody else can spend the owner\'s AI access');
- assert.equal((await f.post('/api/agent-runs',{project,agent:lead.id,message},{cookie:alice.cookie})).status,202);
- const job=(await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job;
- assert.equal(job.profile.name,'Herr Grau');assert.equal(job.toolPolicy.mode,'studio-tools-r1');
+ const sent=await f.post('/api/room',{action:'message',id:message,project,recipient:lead.id,direct:true,body:'Womit fangen wir an?'},{cookie:bob.cookie});
+ assert.deepEqual([sent.status,sent.data.ask],[200,lead.id]);
+ assert.equal((await f.post('/api/agent-runs',{project,agent:lead.id,message},{cookie:alice.cookie})).status,400,'Alice cannot trigger an answer to Bob\'s message');
+ assert.equal((await f.post('/api/agent-runs',{project,agent:lead.id,message},{cookie:bob.cookie})).status,202);
+ assert.equal((await f.post('/api/agent-worker/claim',{},{token:aWorker.token})).data.job,null,'Alice\'s access is not spent');
+ const job=(await f.post('/api/agent-worker/claim',{},{token:bWorker.token})).data.job;
+ assert.deepEqual([job.owner,job.profile.name,job.place],[bob.id,'Herr Grau','direct']);
+ const done=await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'Mit der Startseite.'},{token:bWorker.token});
+ const forBob=(await f.get('/api/room?project='+project,{cookie:bob.cookie})).data.messages;
+ assert.equal(forBob.find(m=>m.id===done.data.message).scope,'agent:'+lead.id);
+ const forAlice=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.messages;
+ assert.equal(forAlice.length,0,'Bob\'s private chat with the lead stays private, question and answer');
 });
 
-test('project lead: he stays, keeps his face, exists once, and older projects get him when opened',async t=>{
- const f=await fixture(t),[alice,bob]=f.members;
+test('project lead: fully editable but never removed; an older project promotes its Herr Grau or gets a new lead',async t=>{
+ const f=await fixture(t),[alice]=f.members;
  const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Firma',description:''},{cookie:alice.cookie})).data.project;
- const room=async(member=alice)=>(await f.get('/api/room?project='+project,{cookie:member.cookie})).data;
+ const room=async()=>(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data;
  const lead=(await room()).agents[0];
- const save=(extra,member=alice)=>f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Herr Grau',role:'coordinator',model:'x',...extra},{cookie:member.cookie});
- assert.equal((await save({agentId:lead.id,avatarPresetId:'herr-grau',active:false})).status,409,'cannot be removed');
- assert.equal((await save({agentId:lead.id,avatarPresetId:'mara'})).status,409,'keeps his face');
- assert.equal((await save({avatarPresetId:'herr-grau'})).status,409,'exists once');
- assert.equal((await save({agentId:lead.id,avatarPresetId:'herr-grau',purpose:'Neu beschrieben'})).status,200,'may still be edited');
+ const save=extra=>f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Herr Grau',role:'coordinator',model:'x',...extra},{cookie:alice.cookie});
+ assert.equal((await save({agentId:lead.id,active:false})).status,409,'cannot be removed');
+ assert.equal((await save({agentId:lead.id,name:'Frau Boss',avatarPresetId:'nova',model:'anderes-modell',personality:'Direkt'})).status,200,'name, face, model and character are free');
+ const edited=(await room()).agents.find(a=>a.id===lead.id);
+ assert.deepEqual([edited.name,edited.avatarPresetId,edited.model,edited.lead],['Frau Boss','nova','anderes-modell',true]);
+ assert.equal((await save({avatarPresetId:'herr-grau'})).status,200,'the face alone makes nobody a lead');
  for(const role of ['creative','hr','allrounder'])assert.equal((await save({name:'Neu '+role,role,avatarPresetId:'nova'})).status,200,role);
- assert.equal((await room()).agents.filter(a=>a.avatarPresetId==='herr-grau'&&a.active).length,1);
- // A project from before the lead existed: remove him directly in storage, then open the project again.
- f.app.db.prepare("DELETE FROM workspace_meta WHERE key=?").run('room:v1:agent:'+project+':'+lead.id);
- const restored=(await room(bob)).agents.find(a=>a.avatarPresetId==='herr-grau');
- assert.ok(restored&&restored.active);
- assert.equal(restored.createdBy,alice.id,'belongs to the person who opened the project, not to whoever looks first');
- assert.equal((await room()).agents.filter(a=>a.avatarPresetId==='herr-grau').length,1,'opening again adds no second one');
+ assert.equal((await room()).agents.filter(a=>a.lead).length,1);
+ // Older project: no lead flag anywhere. The agent with the default face is promoted.
+ const strip=()=>{for(const row of f.app.db.prepare("SELECT key,value FROM workspace_meta WHERE key LIKE ?").all('room:v1:agent:'+project+':%')){const a=JSON.parse(row.value);delete a.lead;f.app.db.prepare('UPDATE workspace_meta SET value=? WHERE key=?').run(JSON.stringify(a),row.key);}};
+ strip();
+ const promoted=(await room()).agents.filter(a=>a.lead);
+ assert.deepEqual(promoted.map(a=>a.avatarPresetId),['herr-grau']);
+ // No such agent either: a new lead is created.
+ strip();
+ f.app.db.prepare("DELETE FROM workspace_meta WHERE key=?").run('room:v1:agent:'+project+':'+promoted[0].id);
+ const created=(await room()).agents.filter(a=>a.lead);
+ assert.equal(created.length,1);assert.equal(created[0].name,'Herr Grau');
+ assert.equal((await room()).agents.filter(a=>a.lead).length,1,'opening again adds no second one');
 });

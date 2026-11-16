@@ -61,25 +61,34 @@ test('R4: unread counts follow per-chat read positions, not polling or member pr
 
  const agent=(await post({action:'agent',id:'r4-agent',project,name:'Mara',role:'frontend',avatar:'MA',model:'gpt-5-codex',purpose:'Test'},owner.cookie));
  assert.equal(agent.status,200);const agentId=agent.data.agentId;
- assert.equal((await send('r4-agent-1','Hallo Mara',{recipient:agentId})).status,200);
- assert.equal((await get('/api/room?project='+project,other.cookie)).data.unread['agent:'+agentId],1,'a never-opened agent chat inherits the project baseline');
- // A member-view and an agent-view are two projections of the same *project-visible* messages.
- assert.equal((await mark('agent:'+agentId,'r4-agent-1')).status,200);
- assert.equal((await mark('member:'+owner.id,'r4-agent-1')).status,200);
- assert.equal((await send('r4-agent-2','Mara, bitte prüfen',{recipient:agentId})).status,200);
+ // The owner's chat with an agent is private: the other member neither counts nor sees it.
+ assert.equal((await send('r4-agent-1','Hallo Mara',{recipient:agentId,direct:true})).status,200);
  state=await get('/api/room?project='+project,other.cookie);
- assert.equal(state.data.unread['agent:'+agentId],1);
- assert.equal(state.data.unread['member:'+owner.id],1);
- assert.equal(state.data.unread.all,2);
- assert.equal((await mark('agent:'+agentId,'r4-agent-2')).status,200);
- assert.equal((await get('/api/room?project='+project,other.cookie)).data.unread['agent:'+agentId],0);
+ assert.equal(state.data.unread['agent:'+agentId],0);assert.equal(state.data.unread.all,0);
+ assert.ok(!state.data.messages.some(m=>m.id==='r4-agent-1'),'a private chat is not delivered to others');
+ assert.equal((await get('/api/rooms',other.cookie)).data.rooms.find(r=>r.id===project).lastExcerpt,'Bitte prüfen','private text never shows in the project preview');
+ assert.equal((await get('/api/room?project='+project,owner.cookie)).data.messages.find(m=>m.id==='r4-agent-1').scope,'agent:'+agentId);
+ assert.equal((await mark('agent:'+agentId,'r4-agent-1')).status,400,'nobody marks a message they cannot read');
+ // Addressing an agent in the group chat stays in the group.
+ assert.equal((await send('r4-group-1','@Mara bitte prüfen')).status,200);
+ state=await get('/api/room?project='+project,other.cookie);
+ const mention=state.data.messages.find(m=>m.id==='r4-group-1');
+ assert.deepEqual([mention.scope,mention.recipient,state.data.unread.all],['group',agentId,1]);
+ // A direct message between two people counts only in that chat.
+ assert.equal((await send('r4-dm-1','Nur für dich',{recipient:other.id,direct:true})).status,200);
+ assert.equal((await send('r4-dm-2','Noch etwas',{recipient:other.id,direct:true})).status,200);
+ state=await get('/api/room?project='+project,other.cookie);
+ assert.equal(state.data.unread['member:'+owner.id],2);assert.equal(state.data.unread.all,1);
+ assert.equal(state.data.messages.find(m=>m.id==='r4-dm-1').scope,'member:'+owner.id);
+ assert.equal((await mark('member:'+owner.id,'r4-dm-2')).status,200);
+ assert.equal((await get('/api/room?project='+project,other.cookie)).data.unread['member:'+owner.id],0);
  // An older receipt may not move the read cursor backwards.
- assert.equal((await mark('agent:'+agentId,'r4-agent-1')).status,200);
- assert.equal((await get('/api/room?project='+project,other.cookie)).data.unread['agent:'+agentId],0);
+ assert.equal((await mark('member:'+owner.id,'r4-dm-1')).status,200);
+ assert.equal((await get('/api/room?project='+project,other.cookie)).data.unread['member:'+owner.id],0);
 
- assert.equal((await mark('agent:unknown','r4-agent-2')).status,400);
- assert.equal((await mark('agent:'+agentId,'r4-second')).status,400);
+ assert.equal((await mark('agent:unknown','r4-dm-2')).status,400);
+ assert.equal((await mark('all','r4-dm-2')).status,400,'a receipt must name the conversation the message is in');
  assert.equal((await post({action:'read',project:'not-authorized',view:'all'},other.cookie)).status,404,'unknown or inaccessible projects are not disclosed');
- const stored=app.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:read:'+project+':'+other.id+':agent:'+agentId);
- assert.equal(JSON.parse(stored.value).sequence,app.db.prepare('SELECT rowid AS n FROM messages WHERE id=?').get('r4-agent-2').n);
+ const stored=app.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:read:'+project+':'+other.id+':member:'+owner.id);
+ assert.equal(JSON.parse(stored.value).sequence,app.db.prepare('SELECT rowid AS n FROM messages WHERE id=?').get('r4-dm-2').n);
 });

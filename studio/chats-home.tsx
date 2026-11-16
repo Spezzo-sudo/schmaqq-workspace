@@ -30,7 +30,7 @@ export function useAllAgents(rooms:Room[]){
    const list:AgentEntry[]=[];
    for(const item of results){if(!item)continue;
     for(const agent of (item.state.agents??[]).filter(a=>a.active!==false)){
-     const mine=item.state.messages.filter(m=>m.senderAgent===agent.id||m.recipient===agent.id||m.handoff?.toAgent===agent.id).sort((a,b)=>(b.sequence??b.created)-(a.sequence??a.created))[0];
+     const mine=item.state.messages.filter(m=>m.scope==='agent:'+agent.id).sort((a,b)=>(b.sequence??b.created)-(a.sequence??a.created))[0];
      list.push({agent,project:item.r,last:mine?.created??null,preview:mine?mine.body:agent.purpose||agentRoleLabels[agent.role],unread:item.state.unread?.['agent:'+agent.id]??0});
     }}
    setEntries(list);setLoaded(true);
@@ -109,9 +109,9 @@ export function ChatsHome({rooms,waiting,greeting,onOpen,onGeneral,onCreateProje
      <span className="ch-row-text"><span className="ch-row-top"><strong>Gruppenchat</strong><time>{when(r.lastMessage)}</time></span>
       <span className="ch-row-sub">{r.lastExcerpt||'Noch keine Nachricht'}</span></span>{!!r.unread&&<span className="ch-unread" aria-label={r.unread+' ungelesene Nachrichten'}>{r.unread}{r.unread===99?'+':''}</span>}
     </button></li>}
-    {agents.map(e=>{const run=working.get(r.id+':'+e.agent.id),lead=isProjectLead(e.agent);return <li key={e.agent.id}><button className={'ch-row'+(lead?' ch-lead':'')} onClick={()=>onOpen(r.id,'agent:'+e.agent.id)}>
+    {agents.map(e=>{const run=working.get(r.id+':'+e.agent.id),lead=isProjectLead(e.agent);return <li key={e.agent.id}><button className="ch-row" onClick={()=>onOpen(r.id,'agent:'+e.agent.id)}>
      <AgentAvatar agent={e.agent} size="md"/>
-     <span className="ch-row-text"><span className="ch-row-top"><strong>{e.agent.name}</strong>{lead&&<em className="ch-lead-tag"><Crown size={11} aria-hidden/>Guru</em>}<time>{when(e.last)}</time></span>
+     <span className="ch-row-text"><span className="ch-row-top"><strong>{e.agent.name}</strong>{lead&&<Crown className="r5-crown" size={15} aria-label="Projektleitung"/>}<time>{when(e.last)}</time></span>
       <span className="ch-row-sub">{run?<span className="ch-working"><span className="r5-dots" aria-hidden><i/><i/><i/></span>{agentLiveActivity(run)} …</span>:e.preview}</span></span>{!!e.unread&&<span className="ch-unread" aria-label={e.unread+' ungelesene Agentennachrichten'}>{e.unread}{e.unread===99?'+':''}</span>}
     </button></li>;})}
    </ul>

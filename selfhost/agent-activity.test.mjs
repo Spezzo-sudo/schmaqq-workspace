@@ -43,9 +43,9 @@ test('live activity: names what the agent is doing from the steps it has really 
  assert.equal(agentLiveActivity({status:'running',steps:[{tool:'project.read_context',at:1}]}),'Überlegt mit dem Projektstand');
  assert.equal(agentLiveActivity({status:'running',steps:[{tool:'project.read_context',at:1},{tool:'task.propose',at:2}]}),'Schreibt die Antwort zum Vorschlag');
  assert.equal(agentLiveActivity({status:'cancelling',steps:[]}),'Wird gestoppt');
- const agents=[{id:'a',avatarPresetId:'mara',active:true},{id:'b',avatarPresetId:'herr-grau',active:false},{id:'c',avatarPresetId:'herr-grau',active:true}];
+ const agents=[{id:'a',avatarPresetId:'herr-grau',active:true},{id:'b',lead:true,active:false},{id:'c',lead:true,avatarPresetId:'nova',active:true}];
  assert.equal(isProjectLead(agents[0]),false);
- assert.equal(projectLead(agents).id,'c','Only an active lead counts');
+ assert.equal(projectLead(agents).id,'c','The flag makes the lead, not the face; only an active one counts');
  assert.equal(projectLead([]),null);
 });
 
@@ -57,4 +57,10 @@ test('team structure: every role belongs to exactly one department',async()=>{
  assert.equal(agentDepartment({role:'security'}).label,'Sicherheit & Prüfung');
  assert.equal(agentDepartment({role:'hr'}).label,'Personal');
  assert.equal(agentDepartment({role:'creative'}).label,'Kreation');
+});
+
+test('agent answers: light formatting is parsed from plain text into blocks',async()=>{
+ const {richBlocks}=await import('../studio/rich-text.tsx').catch(()=>({richBlocks:null}));
+ if(!richBlocks)return; // JSX files are type-checked and built by the frontend toolchain
+ assert.deepEqual(richBlocks('Kurz.\n\n- eins\n- zwei\n\n1. erst\n2. dann').map(b=>[b.kind,b.lines.length]),[['p',1],['ul',2],['ol',2]]);
 });

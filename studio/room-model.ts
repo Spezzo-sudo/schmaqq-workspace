@@ -51,9 +51,11 @@ export type RoomAgent={
  updatedBy?:string;
  created:number;
  updated:number;
+ /** Server-set: the one project lead. */
+ lead?:boolean;
 };
 export type AgentHandoff={fromAgent?:string;toAgent:string;task?:string|null;summary:string;status:'delegated'|'in_progress'|'completed'|'requested'|'stopped'};
-export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;sequence?:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;senderAgent?:string|null;handoff?:AgentHandoff|null;proposalCard?:AgentTaskProposal|null};
+export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;sequence?:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;scope?:string;senderAgent?:string|null;handoff?:AgentHandoff|null;proposalCard?:AgentTaskProposal|null};
 /** Hermes task proposal shown in the chat. Server decides `canDecide`; a proposal is never a task until accepted. */
 export type AgentTaskProposal={id:string;title:string;description:string;kind:'general'|'code';status:'pending'|'accepted'|'rejected';task:string|null;agent:string;owner:string;canDecide:boolean};
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
@@ -226,10 +228,10 @@ export const agentDepartments:{id:string;label:string;roles:RoomAgentRole[]}[]=[
  {id:'allround',label:'Allrounder',roles:['allrounder']}
 ];
 export const agentDepartment=(agent:Pick<RoomAgent,'role'>)=>agentDepartments.find(d=>d.roles.includes(agent.role))??agentDepartments.at(-1)!;
-/** Every project has one lead who speaks for the team: always the same character. */
+/** Every project has exactly one lead who speaks for the team. Face, name and model are free; Herr Grau is the default. */
 export const PROJECT_LEAD_PRESET='herr-grau';
-export const isProjectLead=(agent:Pick<RoomAgent,'avatarPresetId'>|null|undefined)=>agent?.avatarPresetId===PROJECT_LEAD_PRESET;
-export const projectLead=<T extends Pick<RoomAgent,'avatarPresetId'|'active'>>(agents:T[]|undefined)=>(agents??[]).find(a=>a.active!==false&&isProjectLead(a))??null;
+export const isProjectLead=(agent:{lead?:boolean}|null|undefined)=>agent?.lead===true;
+export const projectLead=<T extends {lead?:boolean;active?:boolean}>(agents:T[]|undefined)=>(agents??[]).find(a=>a.active!==false&&isProjectLead(a))??null;
 
 /** The one line a person reads about a run. No engine names, no technical codes. */
 export function agentRunSummary(run:HermesAgentRun,agentName:string,now:number,online=true):{tone:'waiting'|'working'|'done'|'failed'|'stopped';text:string;canStop:boolean;canRetry:boolean}{
@@ -294,7 +296,6 @@ export function memberRoleSummary(member:RoomMember):string{
 
 export type MessengerFilter=
  |{kind:'all'}
- |{kind:'handoffs'}
  |{kind:'member';id:string}
  |{kind:'agent';id:string}
  |{kind:'topic';taskId:string};
@@ -303,10 +304,11 @@ export function filterMessengerMessages(messages:RoomMessage[],filter:MessengerF
  const q=search.trim().toLowerCase();
  return messages.filter(m=>{
   if(q&&!m.body.toLowerCase().includes(q))return false;
-  if(filter.kind==='all')return true;
-  if(filter.kind==='handoffs')return Boolean(m.handoff||m.kind==='agent-handoff'||m.senderAgent||m.recipientKind==='agent'||m.kind==='ai-shared');
-  if(filter.kind==='member')return m.author===filter.id||m.recipient===filter.id;
-  if(filter.kind==='agent')return m.senderAgent===filter.id||m.recipient===filter.id||m.handoff?.toAgent===filter.id;
+  // The server names the conversation of every message it delivers: group | agent:<id> | member:<id>.
+  const scope=m.scope??'group';
+  if(filter.kind==='all')return scope==='group';
+  if(filter.kind==='member')return scope==='member:'+filter.id;
+  if(filter.kind==='agent')return scope==='agent:'+filter.id;
   if(filter.kind==='topic')return m.taskId===filter.taskId||m.topicTask===filter.taskId;
   return true;
  });

@@ -312,9 +312,10 @@ test('project messenger & Field Guild R2 profiles: configurable agent profiles, 
 
  // Verify pure filter helpers on the returned messages
  assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'all'}).length,2);
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'handoffs'}).length,1);
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'member',id:markus.id}).length,1);
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'agent',id:revAgentId}).length,1);
+ // Both messages were written in the group chat (addressed, not private), so the one-to-one chats stay empty.
+ assert.deepEqual(roomState.data.messages.map(m=>m.scope),['group','group']);
+ assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'member',id:markus.id}).length,0);
+ assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'agent',id:revAgentId}).length,0);
  assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'topic',taskId}).length,2);
  assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'all'},'Viewport-Prüfung').length,0);
  assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'all'},'mobilen Abstände').length,1);

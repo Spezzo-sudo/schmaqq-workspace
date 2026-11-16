@@ -8,6 +8,7 @@ const defaultBaseline = fileURLToPath(new URL('./schema-baseline.v0.json', impor
 const authExtensionFile = fileURLToPath(new URL('./schema-auth-extension.v0.json', import.meta.url));
 const pluginExtensionFile = fileURLToPath(new URL('./schema-plugin-extension.v1.json', import.meta.url));
 const agentExtensionFile = fileURLToPath(new URL('./schema-agent-extension.v1.json', import.meta.url));
+const chatExtensionFile = fileURLToPath(new URL('./schema-chat-extension.v1.json', import.meta.url));
 const sqlHash = sql => createHash('sha256').update((sql ?? '').replace(/\s+/g, ' ').trim()).digest('hex');
 
 /**
@@ -60,13 +61,15 @@ export function resolveExpectedSchema(base, actual) {
   }
   const plugin=pluginExtension(expected,actual);
   const agent=agentExtension(expected,actual);
+  const chat=chatExtension(expected,actual);
   return {
     expected,
-    tables:{...base.tables,...(complete?optional.tables:{}),...(plugin.complete?plugin.tables:{}),...(agent.complete?agent.tables:{})},
+    tables:{...base.tables,...(complete?optional.tables:{}),...(plugin.complete?plugin.tables:{}),...(agent.complete?agent.tables:{}),...(chat.complete?chat.tables:{})},
     profile,
     completeAuthExtension:complete,
     pluginExtension:plugin.state,
-    agentExtension:agent.state
+    agentExtension:agent.state,
+    chatExtension:chat.state
   };
 }
 
@@ -88,6 +91,14 @@ function pluginExtension(expected,actual){
  */
 function agentExtension(expected,actual){
   return pinnedExtension(agentExtensionFile,'agent-run-extension',/^agent_[a-z_]+$/,expected,actual);
+}
+
+/**
+ * Private one-to-one chats (chat_*): which project messages belong to a private conversation.
+ * Created when the Studio server starts; pinned from the code by schema-chat-profile.test.mjs.
+ */
+function chatExtension(expected,actual){
+  return pinnedExtension(chatExtensionFile,'chat-private-extension',/^chat_[a-z_]+$/,expected,actual);
 }
 
 function pinnedExtension(file,profile,namePattern,expected,actual){
@@ -164,6 +175,7 @@ export function inspectSchema(filename, baselineFile = defaultBaseline) {
       schemaProfile: resolved.profile,
       pluginExtension: resolved.pluginExtension,
       agentExtension: resolved.agentExtension,
+      chatExtension: resolved.chatExtension,
       userVersion: version,
       expectedVersion: baseline.userVersion,
       integrity: integrity.length === 1 && integrity[0].integrity_check === 'ok' ? 'ok' : 'failed',

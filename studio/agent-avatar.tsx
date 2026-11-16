@@ -227,7 +227,6 @@ export function AgentProfileView({
  onEdit,
  onOpenAvatarPicker,
  onAddressInChat,
- onActAsAgent,
  onOpenTask,
  onClose,
  hermes=null
@@ -239,7 +238,6 @@ export function AgentProfileView({
  onEdit:()=>void;
  onOpenAvatarPicker:()=>void;
  onAddressInChat:()=>void;
- onActAsAgent:()=>void;
  onOpenTask:(taskId:string)=>void;
  onClose:()=>void;
  hermes?:HermesAvailability|null;
@@ -295,7 +293,6 @@ export function AgentProfileView({
     </dl>
     <div className="rw-fg-profile-quick-actions">
      <button type="button" className="rw-button lime" onClick={onAddressInChat}><MessageSquare size={15}/>Zum Chat mit {agent.name}</button>
-     {canDevelop&&perms.writeMessages&&<button type="button" className="rw-button subtle" onClick={onActAsAgent}><UserCheck size={15}/>Beitrag für {agent.name} verfassen</button>}
      {canDevelop&&<button type="button" className="rw-button subtle" onClick={onEdit}><Wrench size={15}/>Eigenschaften anpassen</button>}
     </div>
    </div>

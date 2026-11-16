@@ -12,7 +12,7 @@ import {readRoomRoute,roomResumeURL,agentExecutionStatus} from '../studio/room-m
 const room={members:[{id:'alice',name:'Alice'},{id:'removed',removed:true}],agents:[{id:'mara',active:true},{id:'archived',active:false}],tasks:[{id:'task-1'}]};
 
 test('R3: conversation URLs validate both syntax and current project membership',()=>{
- for(const filter of [{kind:'all'},{kind:'handoffs'},{kind:'member',id:'alice'},{kind:'agent',id:'mara'},{kind:'topic',taskId:'task-1'}]){
+ for(const filter of [{kind:'all'},{kind:'member',id:'alice'},{kind:'agent',id:'mara'},{kind:'topic',taskId:'task-1'}]){
   assert.deepEqual(readMessengerFilter('?chat='+encodeURIComponent(messengerFilterKey(filter)),room),filter);
  }
  for(const value of ['member:removed','agent:archived','agent:foreign','topic:foreign','https://example.invalid','agent:../../secrets','member:alice:extra']){
@@ -24,14 +24,14 @@ test('R3: composer view transitions reset recipient and task together',()=>{
  assert.deepEqual(messengerComposerTarget({kind:'agent',id:'mara'}),{recipient:'mara',topicTask:''});
  assert.deepEqual(messengerComposerTarget({kind:'member',id:'alice'}),{recipient:'alice',topicTask:''});
  assert.deepEqual(messengerComposerTarget({kind:'topic',taskId:'task-1'}),{recipient:'',topicTask:'task-1'});
- for(const kind of ['all','handoffs'])assert.deepEqual(messengerComposerTarget({kind}),{recipient:'',topicTask:''});
+ for(const kind of ['all'])assert.deepEqual(messengerComposerTarget({kind}),{recipient:'',topicTask:''});
 });
 
 test('R3: drafts are separate by user, project and conversation view; existing group drafts survive',()=>{
  assert.equal(messengerDraftKey('u1','p1',{kind:'all'}),'room-chat:u1:p1');
  const keys=new Set();
- for(const user of ['u1','u2'])for(const project of ['p1','p2'])for(const filter of [{kind:'all'},{kind:'handoffs'},{kind:'agent',id:'mara'},{kind:'member',id:'alice'},{kind:'topic',taskId:'task-1'}])keys.add(messengerDraftKey(user,project,filter));
- assert.equal(keys.size,20);
+ for(const user of ['u1','u2'])for(const project of ['p1','p2'])for(const filter of [{kind:'all'},{kind:'agent',id:'mara'},{kind:'member',id:'alice'},{kind:'topic',taskId:'task-1'}])keys.add(messengerDraftKey(user,project,filter));
+ assert.equal(keys.size,16);
 });
 
 test('R3: bookmark and login restoration preserve inspector and addressed view safely',()=>{
