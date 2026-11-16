@@ -130,6 +130,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
    route.page==='projects'?<div className="rw-page team-page studio-projects-page">
     <div className="team-section-head"><h1>Projekte</h1><button className="rw-button lime" onClick={()=>setModal({kind:'room'})}><Plus size={17}/>Neues Projekt</button></div>
         <section aria-label="Deine Projekte">{rooms.map(r=><button className="team-work-card" key={r.id} onClick={()=>openChat(r.id,'all')}><span><strong>{r.title}{r.practice&&<em className="studio-practice-tag">Übung</em>}</strong><small>{r.openTasks?r.openTasks===1?'1 offene Aufgabe':r.openTasks+' offene Aufgaben':'Keine offenen Aufgaben'}</small></span><ChevronRight size={17}/></button>)}{!rooms.length&&<p className="rw-muted">Noch kein Projekt. Lege euer erstes Projekt an.</p>}</section>
+    <ArchivedProjects onRestored={()=>void refresh()}/>
     <GeneralKnowledge/>
    </div>:
    route.page==='conversations'?<div className="rw-page team-page studio-conversations-page">
@@ -156,7 +157,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
        {tab==='files'&&!route.task&&<ProjectFiles key={room.project.id} room={room} userId={user.userId} onTask={id=>navigate({task:id})} onTasks={()=>navigate({tab:'tasks'})} onSetup={()=>navigate({tab:'connect'})}/>}
        {tab==='knowledge'&&<><TeamKnowledge room={room} search="" refresh={refresh} onNew={kind=>setModal({kind})} onSource={source=>{navigate({tab:'talk'});requestAnimationFrame(()=>document.getElementById('message-'+source)?.scrollIntoView({block:'center'}));}}/><ProjectBriefing room={room} tasks={projectTasks}/></>}
        {tab==='activity'&&<><p className="r3-panel-intro">Echte Aufträge mit deinem freigegebenen Modellzugang. Ein Agentenprofil allein startet keinen Modelllauf.</p><RoomAssistant room={room} resources={resources} userId={user.userId} onClose={()=>navigate({tab:'talk'})} onRefresh={refresh} onConnect={()=>navigate({tab:'connect'})}/><details className="r3-usage-note"><summary>Verbrauch und Kontingente</summary><p>Der aktuelle Runner liefert keine belastbaren Tokenzahlen, Kontextfenster-Auslastung oder verbleibenden Abo-Kontingente. Studio zeigt deshalb keine geschätzten Prozentwerte. Den tatsächlich mitgesendeten Projektkontext kannst du oben prüfen.</p></details></>}
-       {tab==='connect'&&<ProjectSettings room={room} resources={resources} userId={user.userId} refresh={refresh} onRepository={()=>setModal({kind:'repository'})}/>}
+       {tab==='connect'&&<ProjectSettings room={room} resources={resources} userId={user.userId} refresh={refresh} onRepository={()=>setModal({kind:'repository'})} onArchived={()=>{goPage('rooms');void refresh();}}/>}
       </>}
      />
     </div>
@@ -174,7 +175,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
  </div>;
 }
 
-function ProjectSettings({room,resources,userId,refresh,onRepository}:{room:RoomState;resources:Resource[];userId:string;refresh:()=>Promise<void>;onRepository:()=>void}){
+function ProjectSettings({room,resources,userId,refresh,onRepository,onArchived}:{room:RoomState;resources:Resource[];userId:string;refresh:()=>Promise<void>;onRepository:()=>void;onArchived:()=>void}){
  const access=useProjectAccess(room.project.id,userId);
  const [readiness,setReadiness]=useState<Readiness|null>(null),[checking,setChecking]=useState(false);
  const readinessPanel=useRef<HTMLDivElement|null>(null),runnerPanel=useRef<HTMLDivElement|null>(null),setupPanel=useRef<HTMLDivElement|null>(null);
@@ -187,12 +188,19 @@ function ProjectSettings({room,resources,userId,refresh,onRepository}:{room:Room
  async function showReadiness(){setChecking(true);setError('');try{const data=await roomRequest<{readiness?:Readiness}>('/api/development');setReadiness(data.readiness??emptyReadiness);await refresh();focusPanel(readinessPanel);}catch(e){setError((e as Error).message);}finally{setChecking(false);}}
  const [showSetup,setShowSetup]=useState(false),[showRunner,setShowRunner]=useState(false),[error,setError]=useState(''),[repoName,setRepoName]=useState(''),[creating,setCreating]=useState(false);const repoAttempt=useRef({name:'',id:''});
  async function createRepo(e:React.FormEvent){e.preventDefault();if(repoAttempt.current.name!==repoName)repoAttempt.current={name:repoName,id:crypto.randomUUID()};setCreating(true);setError('');try{await roomRequest('/api/github-project',{project:room.project.id,revision:room.meta.revision,name:repoName,id:repoAttempt.current.id});await refresh();}catch(e){setError((e as Error).message);}finally{setCreating(false);}}
+ async function archive(){
+  if(!window.confirm(`„${room.project.title}“ archivieren? Es verschwindet für alle aus den Listen und lässt sich unter Projekte → Archiviert wiederherstellen.`))return;
+  try{await roomRequest('/api/team',{action:'project',project:room.project.id,revision:room.meta.revision,title:room.project.title,description:room.project.description,archived:true,base:room.meta.base??'main',workflow:room.meta.workflow??'pull-request'});onArchived();}catch(e){setError((e as Error).message);}
+ }
  async function update(e:React.FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);try{await roomRequest('/api/team',{action:'project',project:room.project.id,revision:room.meta.revision,title:f.get('title'),description:f.get('description'),archived:false,base:f.get('base'),workflow:f.get('workflow')});await refresh();setError('');}catch(e){setError((e as Error).message);}}
  return <section className="rw-connections team-settings"><h2>Projekt</h2>{error&&<p className="rw-error" role="alert">{error}</p>}
   {/* Everyday settings first; Werkstatt, GitHub and the technical rules sit under "Für Entwickler". */}
   {access.admin?<form className="team-form" key={room.meta.revision} onSubmit={update}><label>Name<input name="title" required defaultValue={room.project.title} maxLength={160}/></label><label>Worum geht es?<textarea name="description" defaultValue={room.project.description} maxLength={12000} placeholder="Ein, zwei Sätze zum Ziel."/></label><input type="hidden" name="base" value={room.meta.base??'main'}/><input type="hidden" name="workflow" value={room.meta.workflow??'pull-request'}/><button className="rw-button lime">Speichern</button></form>:<div className="studio-readonly"><p><strong>{room.project.title}</strong></p><p>{room.project.description||'Noch kein Ziel beschrieben.'}</p><small className="rw-muted">Name und Ziel ändert der Projekt-Admin.</small></div>}
   <h2>Einrichtung</h2><ProjectReady room={room} resources={resources} members={room.members} userId={userId} onRepository={onRepository} onRefresh={refresh}/>
   <ProjectRoles project={room.project.id}/>
+  {access.admin&&<section className="studio-archive" aria-labelledby="studio-archive-title"><h2 id="studio-archive-title">Projekt archivieren</h2>
+   <p>Das Projekt verschwindet für alle aus Chats, Projekten und „Wartet auf dich“. Nichts wird gelöscht; unter Projekte → Archiviert kannst du es wiederherstellen.</p>
+   <button className="rw-button" onClick={()=>void archive()}>Projekt archivieren</button></section>}
   <details className="team-secondary team-developer"><summary>Für Entwickler</summary>
   {access.admin&&<form className="team-form" key={'dev'+room.meta.revision} onSubmit={update}><input type="hidden" name="title" value={room.project.title}/><input type="hidden" name="description" value={room.project.description}/><label>Hauptbranch<input name="base" required defaultValue={room.meta.base??'main'} maxLength={100}/></label><label>Wie freigegebene Änderungen übernommen werden<select name="workflow" defaultValue={room.meta.workflow??'pull-request'}><option value="pull-request">Über GitHub (Pull Request)</option>{!room.meta.repository&&<option value="direct">Direkt durch die Werkstatt</option>}</select></label><button className="rw-button">Speichern</button></form>}
   <section className="studio-dev-pc"><h3>Eigener PC (optional)</h3><p>Studio arbeitet in der Werkstatt des Projekts. Einen eigenen PC brauchst du nur, wenn du lieber lokal arbeitest.</p><button ref={runnerToggle} className="rw-button" aria-expanded={showRunner} onClick={()=>{if(showRunner)closeRunner();else openRunner();}}>{showRunner?'Schliessen':'Eigenen PC verbinden'}</button>{resources.some(r=>r.owner===userId)&&<Executors project={room.project.id} embedded onSetup={openSetup}/>}{showRunner&&<div ref={runnerPanel} tabIndex={-1}><RunnerConnect project={room.project.id} projects={[room.project]} onRegistered={refresh} onClose={closeRunner}/></div>} {showSetup&&<><div ref={setupPanel} tabIndex={-1}><ProjectConnect key={setupDevice} project={room.project.id} projectTitle={room.project.title} initialDevice={setupDevice} resources={resources} userId={userId} onDone={refresh}/></div></>}{checking&&<p role="status">Einrichtungsstand wird geladen …</p>}</section></details></section>;
@@ -233,4 +241,20 @@ function ProjectToolbar({tab,onTab}:{tab:string;onTab:(tab:RoomTab)=>void}){
   <div className="r3-toolbar-tabs" role="tablist" aria-label="Projektwerkzeuge">{toolTabs.map(t=>{const on=t.id==='overview'?info:tab===t.id;return <button key={t.id} role="tab" aria-selected={on} className={on?'on':''} onClick={()=>onTab(t.id)}>{t.label}</button>;})}</div>
   {info&&<div className="r3-toolbar-sub" role="group" aria-label="Info">{infoTabs.map(t=><button key={t.id} aria-pressed={tab===t.id} className={tab===t.id?'on':''} onClick={()=>onTab(t.id)}>{t.label}</button>)}</div>}
  </div>;
+}
+
+/** Archived projects for their admins, with a way back. Loaded only when opened. */
+function ArchivedProjects({onRestored}:{onRestored:()=>void}){
+ const [list,setList]=useState<{id:string;title:string;revision:number}[]|null>(null),[error,setError]=useState('');
+ const load=()=>roomRequest<{rooms:{id:string;title:string;revision:number}[]}>('/api/rooms?archived=1').then(r=>setList(r.rooms)).catch(e=>setError((e as Error).message));
+ async function restore(p:{id:string;title:string}){
+  try{const r=await roomRequest<RoomState>('/api/room?project='+encodeURIComponent(p.id));
+   await roomRequest('/api/team',{action:'project',project:p.id,revision:r.meta.revision,title:r.project.title,description:r.project.description,archived:false,base:r.meta.base??'main',workflow:r.meta.workflow??'pull-request'});
+   await load();onRestored();}catch(e){setError((e as Error).message);}
+ }
+ return <details className="team-secondary studio-archived" onToggle={e=>{if((e.currentTarget as HTMLDetailsElement).open&&!list)void load();}}><summary>Archiviert</summary>
+  {error&&<p className="rw-error" role="alert">{error}</p>}
+  {list===null?<p className="rw-muted">Wird geladen …</p>:!list.length?<p className="rw-muted">Keine archivierten Projekte, die du wiederherstellen darfst.</p>:
+   list.map(p=><div key={p.id} className="team-work-card"><span><strong>{p.title}</strong><small>Archiviert</small></span><button className="rw-button" onClick={()=>void restore(p)}>Wiederherstellen</button></div>)}
+ </details>;
 }
