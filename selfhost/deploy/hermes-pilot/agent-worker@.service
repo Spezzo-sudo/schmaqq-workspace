@@ -17,6 +17,9 @@ Environment=HERMES_HOME=/var/lib/schmaqq-hermes-%i
 Environment=HERMES_MANAGED_DIR=/etc/schmaqq-hermes-pilot/managed-empty
 Environment=PYTHONPATH=/opt/hermes-agent/venv/lib/python3.11/site-packages:/opt/hermes-agent
 Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=HERMES_SAFE_MODE=1
+Environment=HERMES_IGNORE_USER_CONFIG=1
+Environment=HERMES_IGNORE_RULES=1
 ExecStartPre=/opt/schmaqq-hermes-pilot/runtime/python-3.11.15/bin/python3.11 /opt/schmaqq-hermes-pilot/worker/hermes-pilot-infer.py --check
 ExecStart=/opt/schmaqq-studio/runtime/node/bin/node /opt/schmaqq-hermes-pilot/worker/hermes-agent-worker.mjs /etc/schmaqq-hermes-pilot/worker-%i.json
 Restart=on-failure
