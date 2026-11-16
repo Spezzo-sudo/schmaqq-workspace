@@ -1,4 +1,31 @@
 {
+  "messenger_r4_20261116": {
+    "state": "feature_branch_pending_owner_mobile_qa",
+    "branch": "feat/studio-mobile-messenger-r4-20261116",
+    "base_branch": "main",
+    "implemented": [
+      "Group chat header names the actual project; the shared project-wide visibility of addressed messages remains explicit",
+      "Actual message excerpts and unread badges in global project/agent list and each project contact/channel list",
+      "Separate per-member/chat read receipts and installation-wide initial baseline in existing SQLite workspace_meta, not members.seen (presence); no new tables",
+      "Actionable task-only Wartet auf dich; compact task/overview cards retaining full original details behind tap",
+      "Project settings organized into accessible sections for profile, setup, team rights, technical workshop and reversible archive"
+    ],
+    "verification": {
+      "regression": "selfhost/messenger-r4.test.mjs (two real HTTP accounts, SQLite, auth, cross-chat read cursors, equal timestamp, new project unread)",
+      "ci": "GitHub Actions status and result are tracked on PR #85, not duplicated as an unverified permanent claim",
+      "browser": "R3 reference screenshots exist in docs/evidence/messenger-r3; R4 has not yet been independently clicked on a real 390px phone or a desktop browser"
+    },
+    "limits": [
+      "Agent profiles and handoffs are not autonomous model executions; live work cards and agent-to-agent execution are future steps",
+      "No separately hosted persistent full-stack staging backend or R4 preview is proven",
+      "Project addresses are visible to authorized project members, not private DMs",
+      "Production, main and the VPS remain unchanged by this feature branch"
+    ],
+    "production_changed": false,
+    "main_changed": false,
+    "schema_migration": false,
+    "model_calls": false
+  },
   "messenger_r3_20261115": {
     "state": "implemented_on_feature_branch_verified_not_production_deployed",
     "branch": "feat/studio-messenger-r3-20261115",
