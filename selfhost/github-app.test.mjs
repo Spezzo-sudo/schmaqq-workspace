@@ -75,8 +75,9 @@ test('GitHub App: owner creates and installs it; redirects are single-use and br
  await new Promise(r=>github.server.listen(0,'127.0.0.1',r));
  const api='http://127.0.0.1:'+github.server.address().port,origin='http://127.0.0.1:44352';
  const filename=path.join(dir,'db.sqlite'),credentialsFile=path.join(dir,'github-app.private.json');
- let app;
- const request=(route,data,cookie,from=origin)=>fetch(origin+route,{method:data?'POST':'GET',headers:{...(data?{Origin:from,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:data?JSON.stringify(data):undefined,redirect:'manual'});
+ let app,host='';
+ // Requests go to the port the system assigned; the Origin header keeps the configured origin.
+ const request=(route,data,cookie,from=origin)=>fetch(host+route,{method:data?'POST':'GET',headers:{...(data?{Origin:from,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:data?JSON.stringify(data):undefined,redirect:'manual'});
  const bindingOf=r=>r.headers.get('set-cookie').split(';')[0];
  try{
   // The server opens the store; the app module is created on that same database handle.
@@ -84,7 +85,8 @@ test('GitHub App: owner creates and installs it; redirects are single-use and br
   const proxy=new Proxy({},{get:(_,k)=>holder.app[k]});
   app=createStudioServer({seedProjects:true,filename,origin,previewOrigin:'http://127.0.0.1:44353',githubApp:proxy});
   holder.app=createGithubApp({db:app.db,origin,credentialsFile,api,web:'https://github.example'});
-  await new Promise(r=>app.server.listen(44352,'127.0.0.1',r));
+  // A free port from the system: a fixed port inside the ephemeral range collided now and then with parallel tests.
+  await new Promise((r,j)=>{app.server.once('error',j);app.server.listen(0,'127.0.0.1',r);});host='http://127.0.0.1:'+app.server.address().port;
 
   const cookies=[];for(const name of ['owner','member']){const r=await request('/api/auth/register',{invite:createInvite(app.db,name+'@fixture.invalid'),name,password:'fixture-password-1234'});cookies.push(r.headers.get('set-cookie').split(';')[0]);}
   app.db.prepare("UPDATE members SET role='owner' WHERE email='owner@fixture.invalid'").run();
@@ -162,7 +164,7 @@ test('GitHub App: owner creates and installs it; redirects are single-use and br
   assert.deepEqual(await (await request('/api/github-app/access?project=other',null,member)).json(),{repository:'Spezzo-sudo/other',base:'main',configured:true,access:false,protected:null});
   assert.equal((await request('/api/github-app/access?project=../x',null,member)).status,400);
  }finally{
-  app?.server.close();app?.previewServer?.close();app?.db?.close();github.server.close();rmSync(dir,{recursive:true,force:true});
+  app?.server.closeAllConnections?.();app?.server.close();app?.previewServer?.close();app?.db?.close();github.server.closeAllConnections?.();github.server.close();rmSync(dir,{recursive:true,force:true});
  }
 });
 
@@ -170,8 +172,8 @@ test('GitHub App routes report not available in demo mode',async()=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'studio-github-app-demo-')),origin='http://127.0.0.1:44354';
  const app=createStudioServer({demoMode:true,filename:path.join(dir,'db.sqlite'),origin,previewOrigin:'http://127.0.0.1:44355'});
  try{
-  await new Promise(r=>app.server.listen(44354,'127.0.0.1',r));
-  const r=await fetch(origin+'/api/github-app/create',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:'{}'});
+  await new Promise((r,j)=>{app.server.once('error',j);app.server.listen(0,'127.0.0.1',r);});
+  const r=await fetch('http://127.0.0.1:'+app.server.address().port+'/api/github-app/create',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:'{}'});
   assert.ok(r.status===401||r.status===409);
- }finally{app.server.close();app.db.close();rmSync(dir,{recursive:true,force:true});}
+ }finally{app.server.closeAllConnections?.();app.server.close();app.db.close();rmSync(dir,{recursive:true,force:true});}
 });

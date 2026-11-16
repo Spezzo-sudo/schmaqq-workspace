@@ -1301,5 +1301,13 @@
     "verification": "studio:verify unter Node 24: 346 Tests, 343 PASS, 0 FAIL, 3 Skips; selfhost/codex-account.test.mjs 9/9. Browser (lokale Demo, Testdaten): Konto-Seite 390 px und 1440 px in den Zuständen nicht verbunden, wartet, Code angezeigt, verbunden; zweites Konto sieht nichts davon; keine Querverschiebung, keine JS-Fehler.",
     "limits": "Codex-Binary in dieser Sitzung nicht ausführbar (Freigabe abgelehnt): echte Device-Code-Ausgabe, Codex-Proxy-Verhalten und Sandbox-Verhalten auf dem VPS ungeprüft; Abnahme erst auf dem Server. Device Code Login muss im ChatGPT-Workspace erlaubt sein. Eine Anmeldung blockiert den Worker bis zu 15 Minuten (ein Auftrag gleichzeitig). Agenten antworten noch nicht (Stufe 1b).",
     "production_changed": false
+  },
+  "studio_chats_home_20261116": {
+    "state": "implemented_on_branch_verified_not_deployed",
+    "branch": "claude/studio-chats-home",
+    "implemented": "Startseite ist die Chatliste (Team-Chat, Projektgruppen, Agenten aller Projekte; Suche; Filter Alle/Gruppen/Agenten; Karte „Wartet auf dich“ mit eigenen Aufgaben und Neuigkeiten; Knopf Neu → Projekt oder Agent). Navigation Chats · Agenten · Projekte · Konto (Desktop-Seitenleiste und Handy). Neue Seite Agenten (alle Agenten nach Projekt, Anstellen in der Projektgruppe). Gruppe/Agent öffnet direkt den Chat; Zurück führt am Handy zur Chatliste; im Projekt Knopf „Alle Chats“. Eine Werkzeugleiste pro Projekt (Aufgaben, Dateien, Wissen, Info mit Übersicht/KI & Kontext/Einstellungen) statt drei Symbolen plus Auswahlfeld. Team & Einladungen im Konto, allgemeines Gespräch als Chat „Team“. Kein automatischer Sprung mehr ins letzte Projekt.",
+    "verification": "studio:verify unter Node 24: 346 Tests, 343 PASS, 0 FAIL, 3 Skips. Browser (lokale Demo, Testdaten, Node-Playwright): 390 px und 1440 px Startseite, Wartet-auf-dich, Agentenchat, Werkzeugleiste mit Info-Unterbereichen, Agentenseite, Konto, Gruppe öffnen, Zurück, Browser-Zurück, Neu → Agent anstellen; keine Querverschiebung, keine JS-Fehler. tests/studio-messenger-r3.browser.py an neue Navigation angepasst, hier nicht ausgeführt (Python-Playwright fehlt).",
+    "limits": "Desktop zeigt im Projekt links weiterhin die Projektliste statt aller Chats. Nachrichten noch nicht verschlankt. Agent-zu-Agent-Chats und „Agent antwortet“ folgen (Stufe 1b/3). Alte Testeinträge nicht archiviert (Datenpflege durch Owner).",
+    "production_changed": false
   }
 }
