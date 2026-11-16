@@ -5,7 +5,7 @@ import {agentRoleLabels,roomRequest,type Room,type RoomAgent,type RoomState} fro
 import './chats-home.css';
 
 export type WaitingItem={id:string;title:string;detail:string;open:()=>void};
-type AgentEntry={agent:RoomAgent;project:Room;last:number|null;preview:string};
+type AgentEntry={agent:RoomAgent;project:Room;last:number|null;preview:string;unread:number};
 type Filter='all'|'groups'|'agents';
 
 const when=(t:number|null|undefined)=>{
@@ -19,10 +19,10 @@ const initials=(title:string)=>title.replace(/[^\p{L}\p{N} ]/gu,' ').trim().spli
 const tones=['#2f6f5e','#7a4fd0','#9a6a12','#3c5bb5','#b4452f','#4b6b00'];
 const tone=(id:string)=>tones[[...id].reduce((a,c)=>a+c.charCodeAt(0),0)%tones.length];
 
-/** Agents of every project, loaded once per project list (not on every poll). */
+/** Re-check agent conversations only when project messages or read state changed. */
 export function useAllAgents(rooms:Room[]){
  const [entries,setEntries]=useState<AgentEntry[]>([]),[loaded,setLoaded]=useState(false);
- const ids=rooms.map(r=>r.id).join(',');
+ const ids=rooms.map(r=>[r.id,r.lastMessage??0,r.lastExcerpt??'',r.unread??0].join(':')).join('|');
  useEffect(()=>{
   let cancelled=false;
   void Promise.all(rooms.map(r=>roomRequest<RoomState>('/api/room?project='+encodeURIComponent(r.id)).then(state=>({r,state})).catch(()=>null))).then(results=>{
@@ -31,7 +31,7 @@ export function useAllAgents(rooms:Room[]){
    for(const item of results){if(!item)continue;
     for(const agent of (item.state.agents??[]).filter(a=>a.active!==false)){
      const mine=item.state.messages.filter(m=>m.senderAgent===agent.id||m.recipient===agent.id||m.handoff?.toAgent===agent.id).sort((a,b)=>(b.sequence??b.created)-(a.sequence??a.created))[0];
-     list.push({agent,project:item.r,last:mine?.created??null,preview:mine?mine.body:agent.purpose||agentRoleLabels[agent.role]});
+     list.push({agent,project:item.r,last:mine?.created??null,preview:mine?mine.body:agent.purpose||agentRoleLabels[agent.role],unread:item.state.unread?.['agent:'+agent.id]??0});
     }}
    setEntries(list);setLoaded(true);
   });
@@ -61,7 +61,7 @@ export function ChatsHome({rooms,waiting,greeting,onOpen,onGeneral,onCreateProje
    <button className="ch-row" onClick={()=>onOpen(e.project.id,'agent:'+e.agent.id)}>
     <AgentAvatar agent={e.agent} size="md"/>
     <span className="ch-row-text"><span className="ch-row-top"><strong>{e.agent.name}</strong><time>{when(e.last)}</time></span>
-     <span className="ch-row-sub">{e.preview} · {e.project.title}</span></span>
+     <span className="ch-row-sub">{e.preview} · {e.project.title}</span></span>{!!e.unread&&<span className="ch-unread" aria-label={e.unread+' ungelesene Agentennachrichten'}>{e.unread}{e.unread===99?'+':''}</span>}
    </button>}));
   const all=filter==='groups'?groups:filter==='agents'?agents:[...groups,...agents];
   return all.sort((a,b)=>(b.last??0)-(a.last??0));
