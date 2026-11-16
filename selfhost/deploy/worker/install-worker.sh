@@ -63,6 +63,27 @@ if [ ! -d "$LIB/releases/$SHA" ]; then
 fi
 ln -sfn "$LIB/releases/$SHA" "$LIB/current.next" && mv -T "$LIB/current.next" "$LIB/current"
 
+# 3b. Codex for each member's own ChatGPT sign-in: a pinned copy owned by root, verified against the
+#     npm registry's sha512. Never the system's /usr/bin/codex. Sign-ins live per member under $DATA/codex
+#     and are mounted by the launcher one at a time; jobs never see this folder.
+CODEX_VERSION=0.169.0
+CODEX_INTEGRITY='sha512-o05NyAOCDygSPRo1yinzxvkRSdmsZyBD9E7mbpmjRanSfM8lypqWtQgEo4XfNkwhuCR2aFu8mlGOsQGFXVbVww=='
+if [ "$(uname -m)" = x86_64 ] && [ ! -x "$LIB/codex-$CODEX_VERSION/codex" ]; then
+  T=$(mktemp -d)
+  curl -fsSL --max-time 300 -o "$T/codex.tgz" "https://registry.npmjs.org/@openai/codex/-/codex-$CODEX_VERSION-linux-x64.tgz"
+  GOT="sha512-$(openssl dgst -sha512 -binary "$T/codex.tgz" | base64 -w0)"
+  [ "$GOT" = "$CODEX_INTEGRITY" ] || { rm -rf "$T"; echo "Codex download does not match the pinned checksum; refusing." >&2; exit 1; }
+  mkdir "$T/x"; tar --no-same-owner -xzf "$T/codex.tgz" -C "$T/x"
+  BIN=$(find "$T/x" -type f -name codex -path '*x86_64*' | head -1)
+  [ -n "$BIN" ] || { rm -rf "$T"; echo "Codex binary not found in the package." >&2; exit 1; }
+  install -d -m 755 "$LIB/codex-$CODEX_VERSION.tmp"; install -m 755 -o root -g root "$BIN" "$LIB/codex-$CODEX_VERSION.tmp/codex"
+  rm -rf "$LIB/codex-$CODEX_VERSION"; mv "$LIB/codex-$CODEX_VERSION.tmp" "$LIB/codex-$CODEX_VERSION"; rm -rf "$T"
+fi
+if [ -x "$LIB/codex-$CODEX_VERSION/codex" ]; then
+  ln -sfn "$LIB/codex-$CODEX_VERSION" "$LIB/codex.next" && mv -T "$LIB/codex.next" "$LIB/codex"
+else echo "Codex not installed (architecture $(uname -m)); ChatGPT sign-in stays unavailable."; fi
+install -d -o root -g root -m 700 "$DATA/codex"
+
 # 4. Service unit plus a one-shot probe unit with exactly the same sandbox lines.
 install -m 644 "$RELEASE/selfhost/deploy/worker/schmaqq-studio-worker.service" "$UNITS/schmaqq-studio-worker.service"
 sed -e "s|^ExecStart=.*|ExecStart=$LIB/node/bin/node $LIB/current/selfhost/deploy/worker/probe-sandbox.mjs|" \

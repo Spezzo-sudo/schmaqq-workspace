@@ -2,5 +2,5 @@
 // developer checkout; runner-package.test.mjs verifies its import closure.
 export const runnerSourceFiles=Object.freeze([
  'runner','local-ai','process','files','codex-run','pilot-runner',
- 'source-revision','project-setup','github-import','managed-projects','job-client','project-plan'
+ 'source-revision','project-setup','github-import','managed-projects','job-client','codex-account','project-plan'
 ].map(name=>'selfhost/'+name+'.mjs'));

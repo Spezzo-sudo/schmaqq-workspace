@@ -40,13 +40,22 @@ export function launcherServe(launcher,argv,cwd,{port,ttlSeconds=1800,timeout=12
  });
 }
 export function launcherCommand(launcher,argv,cwd,{timeout=600000,signal,onOutput,network}={}){
+ return launcherStream(launcher,'/run',{dir:cwd,argv,timeoutMs:timeout,...(network?{network}:{})},{timeout,signal,onOutput});
+}
+/** ChatGPT sign-in of one member on the server worker: fixed Codex commands in that member's own folder.
+ * `member` must be the Studio job's owner; the launcher derives the folder from it and mounts nothing else. */
+export function launcherCodex(launcher,{member,mode},{signal,onOutput}={}){
+ const timeout=mode==='login'?900000:30000;
+ return launcherStream(launcher,'/codex',{member,mode},{timeout,signal,onOutput});
+}
+function launcherStream(launcher,pathname,body,{timeout,signal,onOutput}){
  const {target,key}=launcherTarget(launcher);
  signal?.throwIfAborted();
  return new Promise((resolve,reject)=>{
   let output='',buffer='',exit=null,settled=false;
   const finish=(fn,value)=>{if(!settled){settled=true;clearTimeout(timer);signal?.removeEventListener('abort',abort);fn(value);}};
   // The agent setting keeps the local launcher out of any configured HTTP proxy.
-  const req=http.request({hostname:target.hostname,port:target.port,path:'/run',method:'POST',agent:new http.Agent(),headers:{'Content-Type':'application/json',Authorization:'Bearer '+key}},res=>{
+  const req=http.request({hostname:target.hostname,port:target.port,path:pathname,method:'POST',agent:new http.Agent(),headers:{'Content-Type':'application/json',Authorization:'Bearer '+key}},res=>{
    if(res.statusCode!==200){let text='';res.on('data',d=>text+=d);res.on('end',()=>finish(reject,new Error('Job-Starter lehnt ab ('+res.statusCode+'): '+text.slice(0,200))));return;}
    res.setEncoding('utf8');
    res.on('data',chunk=>{buffer+=chunk;let i;while((i=buffer.indexOf('\n'))>=0){const line=buffer.slice(0,i);buffer=buffer.slice(i+1);let event;try{event=JSON.parse(line);}catch{continue;}
@@ -54,13 +63,13 @@ export function launcherCommand(launcher,argv,cwd,{timeout=600000,signal,onOutpu
    res.on('end',()=>{
     if(signal?.aborted)return;
     if(exit?.code===0)finish(resolve,output.trim());
-    else finish(reject,new Error((exit?`Befehl fehlgeschlagen (${exit.code}). `:'Verbindung zum Job-Starter abgebrochen. ')+output));
+    else finish(reject,Object.assign(new Error((exit?`Befehl fehlgeschlagen (${exit.code}). `:'Verbindung zum Job-Starter abgebrochen. ')+output),{exitCode:exit?.code??null}));
    });
   });
   const abort=()=>{req.destroy();const e=new Error('Auftrag abgebrochen. Bereits geschriebene Änderungen bleiben in der Arbeitskopie.');e.name='AbortError';finish(reject,e);};
   const timer=setTimeout(()=>{req.destroy();finish(reject,new Error('Zeitlimit erreicht. '+output));},timeout+5000);
   signal?.addEventListener('abort',abort,{once:true});
   req.on('error',e=>finish(reject,new Error('Job-Starter nicht erreichbar: '+e.message)));
-  req.end(JSON.stringify({dir:cwd,argv,timeoutMs:timeout,...(network?{network}:{})}));
+  req.end(JSON.stringify(body));
  });
 }

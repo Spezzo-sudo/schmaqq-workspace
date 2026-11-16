@@ -11,7 +11,7 @@ import http from 'node:http';
 import net from 'node:net';
 import {spawn} from 'node:child_process';
 import {randomBytes,timingSafeEqual} from 'node:crypto';
-import {readFileSync,realpathSync,existsSync,statSync} from 'node:fs';
+import {readFileSync,realpathSync,existsSync,statSync,mkdirSync,rmSync,lstatSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {findPrograms} from '../../project-plan.mjs';
@@ -20,6 +20,18 @@ export const JOB_USER='schmaqq-job',JOB_GROUP='schmaqq-jobs';
 const NODE_DIR='/usr/local/lib/schmaqq-worker/node/bin';
 const PROXY='http://127.0.0.60:3128';
 const fail=(status,message)=>Object.assign(new Error(message),{status});
+/** Codex (ChatGPT sign-in) per member: one private folder each. The launcher picks the folder from the
+ * member id the worker passes (taken by Studio from the job's owner, never from user input), binds exactly
+ * that folder into the unit and nothing else. The binary is the worker's own pinned copy, not /usr/bin/codex. */
+export const CODEX_ROOT='/var/lib/schmaqq-worker/codex',CODEX_BIN='/usr/local/lib/schmaqq-worker/codex/codex';
+export const codexModes=Object.freeze({login:{args:['login','--device-auth'],timeoutMs:900000},status:{args:['login','status'],timeoutMs:30000}});
+export function codexHome(root,member){
+ if(typeof member!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(member))throw fail(400,'invalid member');
+ const home=path.join(root,member);
+ if(path.dirname(home)!==root)throw fail(400,'invalid member');
+ if(existsSync(home)&&!lstatSync(home).isDirectory())throw fail(409,'member folder is not a directory');
+ return home;
+}
 
 /** The copy must be a direct child of the worktrees root (after resolving links). */
 export function checkJobDirectory(root,dir){
@@ -48,7 +60,7 @@ export const LIVE_HOST='127.0.0.70',LIVE_SOURCE='127.0.0.71';
  * With `serve`, the unit keeps running (no --wait) as a live preview on LIVE_HOST:port.
  * network 'private' (tests, builds): an own network namespace with only its own loopback,
  * so test servers on 127.0.0.1 work while Studio, the proxy and the internet stay unreachable. */
-export function jobUnitArgs({unit,dir,argv,timeoutMs,serve,network='proxy'}){
+export function jobUnitArgs({unit,dir,argv,timeoutMs,serve,network='proxy',codexHome:home}){
  const seconds=Math.max(1,Math.min(Math.ceil(timeoutMs/1000),3600));
  const isolated=network==='private'&&!serve;
  const net=isolated?['PrivateNetwork=yes']:['IPAddressDeny=any',serve?`IPAddressAllow=127.0.0.60/32 ${LIVE_SOURCE}/32`:'IPAddressAllow=127.0.0.60/32'];
@@ -61,14 +73,14 @@ export function jobUnitArgs({unit,dir,argv,timeoutMs,serve,network='proxy'}){
   // Everything below /var/lib (including all worker data) and /etc/schmaqq-worker is replaced by empty
   // read-only tmpfs; then only this one copy is bound back in, writable.
   'TemporaryFileSystem=/opt:ro /srv:ro /var/lib:ro /var/backups:ro /mnt:ro /media:ro /run:ro /etc/schmaqq-worker:ro',
-  `BindPaths=${dir}`,`ReadWritePaths=${dir}`,
+  `BindPaths=${home??dir}`,`ReadWritePaths=${home??dir}`,
   'RestrictAddressFamilies=AF_INET AF_INET6',...net,
   'MemoryMax=2G','MemorySwapMax=0','CPUQuota=150%','TasksMax=256',`RuntimeMaxSec=${seconds}`
  ];
  const proxy=isolated?['NO_PROXY=*']:[`HTTPS_PROXY=${PROXY}`,`HTTP_PROXY=${PROXY}`,`https_proxy=${PROXY}`,`http_proxy=${PROXY}`,'NODE_USE_ENV_PROXY=1'];
  const env=[`HOME=/tmp`,`PATH=${NODE_DIR}:/usr/bin:/bin`,'NODE_ENV=production',...proxy,'npm_config_cache=/tmp/.npm',
-  ...(serve?[`HOST=${LIVE_HOST}`,`PORT=${serve.port}`,`NO_PROXY=${LIVE_HOST}`]:[])];
- return [...(serve?['--quiet','--collect']:['--wait','--pipe','--quiet','--collect']),`--unit=${unit}`,...p.flatMap(x=>['-p',x]),...env.flatMap(x=>['-E',x]),`--working-directory=${dir}`,'--',...argv];
+  ...(serve?[`HOST=${LIVE_HOST}`,`PORT=${serve.port}`,`NO_PROXY=${LIVE_HOST}`]:[]),...(home?[`CODEX_HOME=${home}`]:[])];
+ return [...(serve?['--quiet','--collect']:['--wait','--pipe','--quiet','--collect']),`--unit=${unit}`,...p.flatMap(x=>['-p',x]),...env.flatMap(x=>['-E',x]),`--working-directory=${home??dir}`,'--',...argv];
 }
 const waitForPort=(port,ms,alive)=>new Promise(resolve=>{
  const until=Date.now()+ms;
@@ -89,7 +101,9 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
  logs=unit=>new Promise(r=>{let out='';const c=spawn('journalctl',['-u',unit,'-n','15','-o','cat','--no-pager'],{stdio:['ignore','pipe','ignore']});c.stdout.on('data',d=>out+=d);c.on('close',()=>r(out.slice(-2000)));c.on('error',()=>r(''));}),
  // All live preview units, also those started before a launcher restart (it keeps no state on disk).
  stopAllLive=()=>new Promise(r=>{const c=spawn('systemctl',['stop','schmaqq-live-*.service'],{stdio:'ignore'});c.on('close',()=>r());c.on('error',()=>r());}),
- waitPort=waitForPort,readyMs=90000,maxBody=200000,log=m=>console.error(m)}={}){
+ waitPort=waitForPort,readyMs=90000,maxBody=200000,log=m=>console.error(m),
+ codexRoot=CODEX_ROOT,codexBin=CODEX_BIN,exists=existsSync,
+ makeHome=home=>mkdirSync(home,{recursive:false,mode:0o770}),removeHome=home=>rmSync(home,{recursive:true,force:true})}={}){
  if(typeof key!=='string'||key.length<32)throw new Error('Launcher key missing.');
  const expected=Buffer.from(key);
  let busy=false,live=null;
@@ -110,7 +124,7 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
   try{
    const given=Buffer.from(String(req.headers.authorization??'').replace(/^Bearer /,''));
    if(given.length!==expected.length||!timingSafeEqual(given,expected))throw fail(401,'unauthorized');
-   if(req.method!=='POST'||!['/run','/serve','/stop-serve','/programs'].includes(req.url))throw fail(404,'not found');
+   if(req.method!=='POST'||!['/run','/serve','/stop-serve','/programs','/codex'].includes(req.url))throw fail(404,'not found');
    let size=0;const parts=[];for await(const part of req){size+=part.length;if(size>maxBody)throw fail(413,'too large');parts.push(part);}
    let body;try{body=JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'invalid json');}
    if(req.url==='/programs'){
@@ -125,16 +139,36 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
     try{reply(200,await serve(dir,argv,body.port,ttl));}catch(e){if(e.output!==undefined){reply(e.status,{error:e.message,output:e.output});return;}throw e;}
     return;
    }
-   const dir=checkJobDirectory(root,body.dir),argv=checkArgv(body.argv);
-   const timeoutMs=Number.isInteger(body.timeoutMs)?Math.min(Math.max(body.timeoutMs,1000),3600000):600000;
-   if(body.network!==undefined&&!['proxy','private'].includes(body.network))throw fail(400,'invalid network');
-   // The worker runs one job at a time; refusing parallel requests keeps that true here.
+   let dir,argv,timeoutMs,network,home;
+   if(req.url==='/codex'){
+    // Only these fixed commands, only the member's own folder. Never a job copy, never another member.
+    home=codexHome(codexRoot,body.member);
+    if(body.mode==='logout'){
+     if(busy)throw fail(409,'another job is running');
+     removeHome(home);
+     res.writeHead(200,{'Content-Type':'application/x-ndjson'});res.end(JSON.stringify({type:'exit',code:0})+'\n');return;
+    }
+    const mode=Object.hasOwn(codexModes,body.mode)?codexModes[body.mode]:null;
+    if(!mode)throw fail(400,'invalid codex mode');
+    if(!exists(codexBin))throw fail(503,'codex is not installed on this worker');
+    if(busy)throw fail(409,'another job is running');
+    if(!exists(home))makeHome(home);
+    argv=[codexBin,...mode.args];timeoutMs=mode.timeoutMs;network='proxy';
+   }else{
+    dir=checkJobDirectory(root,body.dir);argv=checkArgv(body.argv);
+    timeoutMs=Number.isInteger(body.timeoutMs)?Math.min(Math.max(body.timeoutMs,1000),3600000):600000;
+    if(body.network!==undefined&&!['proxy','private'].includes(body.network))throw fail(400,'invalid network');
+    network=body.network;
+   }
+   // The worker runs one job at a time; refusing parallel requests keeps that true here. This also means
+   // no other job unit (same job user) runs while a member's sign-in folder is mounted.
    if(busy)throw fail(409,'another job is running');
    busy=true;
    const unit='schmaqq-job-'+randomBytes(8).toString('hex');
-   try{await prepare(dir);}catch(e){busy=false;throw fail(500,'could not prepare copy');}
+   try{await prepare(home??dir);}catch(e){busy=false;throw fail(500,'could not prepare copy');}
+   dir=home??dir;
    res.writeHead(200,{'Content-Type':'application/x-ndjson'});
-   const child=run('systemd-run',jobUnitArgs({unit,dir,argv,timeoutMs,network:body.network}));
+   const child=run('systemd-run',jobUnitArgs({unit,dir,argv,timeoutMs,network,...(home?{codexHome:home}:{})}));
    const send=obj=>{if(!res.writableEnded)res.write(JSON.stringify(obj)+'\n');};
    child.stdout.on('data',d=>send({type:'output',text:String(d)}));child.stderr.on('data',d=>send({type:'output',text:String(d)}));
    let finished=false;

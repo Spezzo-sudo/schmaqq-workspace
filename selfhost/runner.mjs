@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 import {aiCapabilities,runLocalAi} from './local-ai.mjs';
 import {command} from './process.mjs';
-import {launcherCommand,launcherServe,launcherPrograms} from './job-client.mjs';
+import {launcherCommand,launcherServe,launcherPrograms,launcherCodex} from './job-client.mjs';
+import {deviceLoginPrompt,codexAccountModes} from './codex-account.mjs';
 import {projectDirectory,findPrograms,requiredPrograms,outputDirectories,outputDirectoryOf,outputFolderMessage,gitAddMessage} from './project-plan.mjs';
 import {allowedFile,readSource,readSourceSection,saveSource,createSource} from './files.mjs';
 import {runCodex} from './codex-run.mjs';
@@ -87,9 +88,36 @@ export class LocalRunner{
   const after=await sourceRevision(dir,this.control);
   if(!after.revision||before.revision!==after.revision)throw new Error('Die Vorbereitung hat Quelldateien verändert oder nicht deklarierte Dateien erzeugt. Generierte Ordner in der Projektkonfiguration prüfen; vor Tests und Veröffentlichung stoppen.');
  }
+ /** Connect, check or remove the job owner's own ChatGPT sign-in on the server worker. The member is the
+  * job's owner as set by Studio; the launcher derives the folder from it. Raw Codex output is never
+  * forwarded: only the sign-in link and code (for the owner's eyes) and the final state. */
+ async codexAccount(job,control){
+  if(this.config.kind!=='server'||!this.config.launcher)throw new Error('Das ChatGPT-Konto wird nur auf dem Server-Worker verbunden.');
+  const mode=job.payload?.mode;
+  if(!codexAccountModes.includes(mode))throw new Error('Unbekannter Schritt für das ChatGPT-Konto.');
+  let seen='',shown=false;
+  const onOutput=text=>{
+   if(mode!=='login'||shown)return;
+   seen=(seen+text).slice(-8000);const prompt=deviceLoginPrompt(seen);
+   if(prompt){shown=true;control.onEvent?.({type:'session',text:JSON.stringify(prompt)});control.onEvent?.({type:'status',text:'Link öffnen, mit deinem ChatGPT-Konto anmelden und den Code eingeben.'});}
+  };
+  try{await launcherCodex(this.config.launcher,{member:job.owner,mode},{signal:control.signal,onOutput});}
+  catch(e){
+   if(e.name==='AbortError')throw e;
+   if(mode==='status'&&Number.isInteger(e.exitCode))return {connected:false};
+   if(/codex is not installed/.test(e.message))throw new Error('Codex ist auf dem Server-Worker noch nicht installiert.');
+   if(mode==='login'&&!shown)throw new Error('Die Anmeldung per Code konnte nicht starten. Im ChatGPT-Workspace muss „Device Code Login“ erlaubt sein.');
+   throw new Error(mode==='login'?'Anmeldung nicht abgeschlossen (abgebrochen oder Code abgelaufen). Bitte erneut verbinden.':'Schritt fehlgeschlagen. Bitte erneut versuchen.');
+  }
+  return {connected:mode!=='logout'};
+ }
  async run(job,control={}){
   this.control=control;this.gitEnv=githubGitEnv(job.github,this.config.kind);control.signal?.throwIfAborted();control.onEvent?.({type:'status',text:'Runner hat den Auftrag übernommen.'});
   if(job.action==='local-ai')return runLocalAi(this.config,job,control.signal);
+  if(job.action==='codex-account')return this.codexAccount(job,control);
+  // On the server, Codex would otherwise run inside the worker process with its device token in reach.
+  // It runs there only through the launcher with the member's own sign-in (see codexAccount).
+  if(job.action==='codex'&&this.config.launcher)throw new Error('Codex-Codeaufträge laufen auf dem Server-Worker erst über die getrennte ChatGPT-Anmeldung pro Person.');
   if(job.action==='connect-project')return connectManagedProject(this,job);
   if(job.action==='deploy-key'){
    if(this.config.kind!=='server'||!this.config.launcher)throw new Error('Deploy-Keys gibt es nur auf dem Server-Worker. Dein PC nutzt deinen eigenen GitHub-Zugang.');
