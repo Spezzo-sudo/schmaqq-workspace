@@ -11,7 +11,7 @@ Gemeint ist hier die Entwicklung von Studio selbst. Das Zusammenführen von Aufg
 |---|---|---|
 | **Marco (Owner)** | entscheidet, was gebaut wird; testet live am Handy; gibt „merge“ bzw. ein ausdrückliches „Ja“ zum Zusammenführen und „JA LIVE <kurz>“ | muss keine Technik prüfen |
 | **Entwicklungs-Agent** – Claude Code **oder** ChatGPT/Codex | plant, baut auf eigenem Branch, prüft lokal (Tests, Handy und Desktop im Browser), öffnet den Pull Request, führt nach Marcos „merge“ und grüner Prüfung zusammen, schreibt den Auftrag für Hermes | kein Livegang, kein Eingriff auf dem VPS, kein Zusammenführen ohne „merge“ |
-| **Hermes** | führt fertige Aufträge auf dem VPS aus (Vorlage in OPERATIONS.md) und meldet den ZUSAMMENFASSUNG-Block | entscheidet nichts, improvisiert nicht, beantwortet keine Studio-Chats als Agent |
+| **Betriebs-Hermes** (die bestehende Hermes-Agent-Instanz mit Root-Zugang, über Telegram) | führt fertige Aufträge auf dem VPS aus (Vorlage in OPERATIONS.md) und meldet den ZUSAMMENFASSUNG-Block | entscheidet nichts, improvisiert nicht, ist **nie** der Motor für Studio-Agenten |
 | **Markus** | zweiter Tester mit eigenem Konto; prüft, dass Konten getrennt bleiben; kann Pull Requests prüfen | – |
 | **GitHub-Prüfung** | ein Lauf pro Pull Request nach `main` | kein zweiter Lauf auf `main`, keine Tests auf dem VPS |
 
@@ -54,9 +54,12 @@ Was davon tatsächlich läuft, steht in STATUS.json.
 1. Eine Person schreibt einem Agenten oder lässt einen Agenten einen anderen fragen.
 2. **Rechte:** Ein Agent gehört der Person, die ihn anlegt. Andere brauchen dessen Freigabe, damit kein fremdes Kontingent verbraucht wird.
 3. **Warteschlange pro Agent:** ein Auftrag nach dem anderen, jederzeit abbrechbar.
-4. **Motor** mit der ChatGPT-Anmeldung des Besitzers, abgeschottet auf dem Server-Worker. Zuerst Codex direkt;
-   Hermes Agent später als zweiter Motor, nur als eigener abgeschotteter Prozess pro Person, ohne Shell –
-   **nie** der Hermes, der den VPS betreibt.
+4. **Motor: Hermes Agent, eine eigene Instanz pro Person** (nicht pro Agent, nicht pro Projekt), mit der eigenen
+   ChatGPT-Anmeldung dieser Person, abgeschottet auf dem VPS: eigener Prozess, nur der eigene Ordner, keine Shell,
+   kein Root, Speichergrenze, Start bei Bedarf und Stopp nach Ruhezeit. Die Agenten einer Person teilen sich deren
+   Instanz; Rolle, Anweisungen, Projektkontext und Agenten-Gedächtnis kommen bei jedem Auftrag aus Studio.
+   **Nie** der Betriebs-Hermes. Erst nach bestandenem Hermes-Test; scheitert er, ist Codex direkt der Ersatz
+   (die ChatGPT-Anmeldung pro Person dafür ist live).
 5. **Live-Arbeitskarte** im Chat (arbeitet seit …, Schritte aufklappbar, Abbrechen).
 6. **Werkzeuge nur über Studio** (Nachrichten, Aufgaben, Übergaben). Was etwas verändert, braucht eine Freigabekarte.
 7. **Ergebnis als Nachricht** des Agenten, gekennzeichnet als echter Modelllauf.

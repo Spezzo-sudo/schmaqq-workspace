@@ -24,10 +24,12 @@ Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, sch
 2. [ ] GitHub-Prüfung stabil: restliche feste Test-Ports (44xxx) durch vom System vergebene Ports ersetzen.
 3. [ ] Messenger-Feinschliff: letzte Nachricht und Ungelesen-Zähler in der Chatliste; „Wartet auf dich“ nur mit
    Dingen zum Handeln; Projektname im Chat-Kopf.
-4. [ ] Agent antwortet (Codex mit der Anmeldung des Besitzers) mit Live-Arbeitskarte.
-5. [ ] Freigabekarten und Studio-Werkzeuge für Agenten.
-6. [ ] Agent ↔ Agent als mitlesbarer Chat mit Rundenlimit und Stopp.
-7. [ ] Hermes Agent als zweiter Motor prüfen (abgeschottet, ein Prozess pro Person, ohne Shell).
+4. [ ] Hermes-Test: eine abgeschottete Hermes-Agent-Instanz pro Person (eigener Ordner, keine Shell, kein Root,
+   Speichergrenze, Start bei Bedarf), Anmeldung mit dem eigenen ChatGPT-Konto über Studio, Studio-Werkzeuge per MCP,
+   RAM gemessen. Ergebnis entscheidet den Motor; Ersatz ist Codex direkt.
+5. [ ] Agent antwortet über diesen Motor, mit Live-Arbeitskarte.
+6. [ ] Freigabekarten und Studio-Werkzeuge für Agenten.
+7. [ ] Agent ↔ Agent als mitlesbarer Chat mit Rundenlimit und Stopp.
 
 Bereits live am 16.11.2026: Messenger R3 (`ac65a05`), ChatGPT-Anmeldung pro Person (`3c6ee6c`), Chats als Startseite (`cdb7bd5`).
 

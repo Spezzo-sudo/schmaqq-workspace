@@ -33,7 +33,8 @@ Tagesarbeit und Abhaken: [WORKLIST.md](WORKLIST.md). Belegter Iststand: [STATUS.
    Für jeden Zugang festhalten, wer ihn nutzt und was er darf. Root über einen Chat-Bot ist ein grosses Risiko
    (übernommenes Telegram-Konto oder eingeschleuste Anweisungen = ganzer Server); einschränken oder begründen.
 5. [ ] Rolle von Hermes klären: Was tut Hermes heute tatsächlich? Danach behalten (Betrieb/Überwachung) oder abschalten.
-   Entscheid 16.11.2026: Hermes führt nur fertige Livegang-Aufträge aus und ist kein Agent für Studio-Chats
+   Entscheid 16.11.2026: Der Betriebs-Hermes führt nur fertige Livegang-Aufträge aus und ist nie Motor für
+   Studio-Agenten. Als Motor ist Hermes Agent mit einer eigenen, abgeschotteten Instanz pro Person vorgesehen
    ([WORKFLOW.md](WORKFLOW.md)). Offen bleibt der Root-Zugang über Telegram (Punkt 4).
 6. [ ] Fehler „hunderte gleiche Aufgaben“ untersuchen. Bekannt: entstanden über den Studio-Connector in ChatGPT am Handy.
    In Datenbank-Backups und Protokollen auf dem VPS Zeitpunkt, Version und Auslöser finden, bevor der Connector erweitert wird.
