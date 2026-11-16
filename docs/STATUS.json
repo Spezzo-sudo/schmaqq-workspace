@@ -1,4 +1,33 @@
 {
+  "conversations_planning_20261117": {
+    "state": "feature_branch_pending_owner_review",
+    "branch": "feat/guru-plans-20261117 (contains feat/conversations-team-20261117 and feat/agent-messenger-foundation-20261116)",
+    "implemented": [
+      "One group chat per project plus private one-to-one chats (chat_private, pinned schema extension); private messages are delivered, counted, quoted, exported and signalled only to their two participants and never enter another person's agent context",
+      "'@Name' in the group chat addresses an agent; question and answer stay in the group",
+      "Agents belong to the project; whoever asks gets the answer on their own AI access",
+      "The project lead is a flag on the agent: fully editable, never removed, can always plan",
+      "One side list (group chat, team, people) with a single highlight; formatted agent answers; folded long texts",
+      "Live signals over /api/live (no content), regular refresh stays as a safety net and relaxes only while heartbeats arrive",
+      "Planning: the lead turns a goal into two to six tasks with a checkable result and an owner in one run; accepting creates exactly those tasks once",
+      "Tools are one list in Studio; worker and adapter take descriptions per run",
+      "Only usable models are offered (STUDIO_AGENT_MODELS); an unusable profile model falls back to the default; a provider refusal is a failed run, never a posted answer"
+    ],
+    "verification": {
+      "regression": "npm run studio:verify under Node 24.22.0",
+      "pilot": "Installed on the isolated pilot. Real requests at 390 px: '@Mara' in the group chat answered as a formatted list after 10 s; the lead produced a three-task plan card in one run of 22 s",
+      "live_signals": "Two local browser windows: a new message appears in the second after 0.4 to 1.2 s"
+    },
+    "limits": [
+      "The server workshop does not program by itself: coding runs exist only for a personal PC runner and are deliberately blocked on the server worker until they run under the member's own sign-in through the launcher. Agents therefore plan and advise; they do not change code yet",
+      "The pilot's quick tunnel holds the live connection back; behind the production proxy it is unverified",
+      "Message search left the side list and is not back elsewhere yet",
+      "Agents are off in production until a worker is bound there",
+      "No real Android keyboard test"
+    ],
+    "production_changed": false,
+    "main_changed": false
+  },
   "agent_messenger_foundation_20261116": {
     "state": "feature_branch_pending_owner_review",
     "branch": "feat/agent-messenger-foundation-20261116",
