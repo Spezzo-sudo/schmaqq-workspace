@@ -3,7 +3,7 @@
 Ziel: Marco und Markus entwickeln gemeinsam digitale Services, mit eigenen Konten,
 eigenen Arbeitskopien und gegenseitigem Review. Designreferenz ist SCHMAQQ.
 
-Vor Arbeit lesen: `docs/PLAN.md`, `docs/WORKLIST.md`, `docs/STATUS.json`, dann nur relevante Source.
+Vor Arbeit lesen: `docs/WORKFLOW.md` (Rollen und Ablauf), `docs/PLAN.md`, `docs/WORKLIST.md`, `docs/STATUS.json`, dann nur relevante Source.
 Offizieller Stand ist `main`. Historische Dokumente liegen in `docs/archive/` und sind kein Auftrag.
 Dieses Repository ist die eigenständige Anwendung `Spezzo-sudo/schmaqq-workspace`.
 Alle Befehle laufen im Repository-Root. Der frühere NetzKontor-Übergabe-Snapshot
@@ -40,8 +40,8 @@ Keine fremden Aufträge auf private Runner erweitern, keine externe Selbstregist
   sind getrennte Berechtigungen. Keine fremden Codex-Clients oder Auth-Caches nutzen.
 - `.studio/`, Runnerprofile, Datenbanken, Einladungs-/Gerätetokens, private ENV und
   Modell-Auth gehören niemals nach GitHub oder in Chat-Übergaben.
-- Kein automatisches Deployment, kein Merge und keine Production-/Provider-Mutation.
-  Hermes führt einen gesondert freigegebenen Betriebsschritt aus; der vorbereitete
-  Auftrag steht in `docs/archive/HERMES_HANDOFF.md` (historisch; Rolle von Hermes wird laut PLAN.md neu geklärt).
+- Kein automatisches Deployment und keine Production-/Provider-Mutation. Zusammenführen nach `main` nur nach
+  ausdrücklichem „merge“ des Owners und grüner GitHub-Prüfung (`docs/WORKFLOW.md`).
+  Livegang nur nach „JA LIVE <kurz>“; Hermes führt den Auftrag nach `docs/OPERATIONS.md` aus.
 - GitHub-/Cloud-Sicherung ist kein laufender Studio-Server. Offline-PCs führen keine
   Runnerjobs aus. Keine Live-Integration behaupten, solange sie nicht nachgewiesen ist.

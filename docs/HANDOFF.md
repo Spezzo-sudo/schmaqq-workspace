@@ -1,6 +1,7 @@
 # Übergabe – Stand 08.11.2026 (nach Livegang 9f21c9c) (für Marco, ChatGPT/Codex, Claude)
 
-Lies zuerst diese Datei, dann `docs/PLAN.md` (Etappen), `docs/OPERATIONS.md` (Livegang) und `docs/SECURITY.md`.
+Aktueller Ablauf und Rollen (ab 16.11.2026): `docs/WORKFLOW.md`; Reihenfolge: `docs/WORKLIST.md`. Diese Übergabe ist der Stand vom 08.11.
+Lies danach diese Datei, dann `docs/PLAN.md` (Etappen), `docs/OPERATIONS.md` (Livegang) und `docs/SECURITY.md`.
 Arbeitsweise: Änderungen nur per Branch und Pull Request nach `main`; zusammenführen nur nach
 Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes.
 
