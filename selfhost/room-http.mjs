@@ -15,6 +15,47 @@ const key=(type,value)=>`room:v1:${type}:${value}`;
 const readMeta=(db,k)=>{const row=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get(k);return row?JSON.parse(row.value):null;};
 const putMeta=(db,k,value)=>db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(k,JSON.stringify(value));
 const roomMeta=(db,project)=>readMeta(db,key('project',project))??{revision:0,repository:null};
+// Read positions belong to conversations, not members.seen (which tracks presence).
+// A missing receipt intentionally means 0 unread: existing history is not labelled new on rollout.
+const chatView=z.string().regex(/^(?:all|handoffs|(?:member|agent):[\\w-]{1,100})$/);
+const readKey=(project,member,view)=>key('read',project+':'+member+':'+view);
+function checkChatView(db,project,view){
+ const [kind,target]=view.split(':');
+ if(kind==='member'){
+  const person=db.prepare('SELECT id FROM members WHERE id=?').get(target);
+  if(!person||isRemoved(db,target)||!can(db,person,project,'view'))throw fail(400,'Dieser Kontakt gehört nicht zum Projekt.');
+ }
+ if(kind==='agent'){
+  const agent=readMeta(db,key('agent',project+':'+target));
+  if(!agent||agent.active===false)throw fail(400,'Dieser Agent ist im Projekt nicht aktiv.');
+ }
+}
+function matchesChatView(row,view){
+ const kind=view.split(':')[0],target=view.slice(kind.length+1),meta=row.metadata??{};
+ if(kind==='all')return true;
+ if(kind==='member')return row.author===target||meta.recipient===target;
+ if(kind==='agent')return meta.senderAgent===target||meta.recipient===target||meta.handoff?.toAgent===target;
+ if(kind==='handoffs')return Boolean(meta.handoff||meta.senderAgent||meta.recipientKind==='agent'||meta.kind==='ai-shared'||meta.kind==='agent-handoff');
+ return false;
+}
+function unreadFor(db,project,member,view){
+ const marker=readMeta(db,readKey(project,member,view));
+ if(!marker)return 0;
+ const type=view.split(':')[0],target=view.slice(type.length+1);
+ // Build SQL solely from fixed fragments. Cursor matches the message ordering (created,id).
+ const where={
+  all:'1=1',
+  handoffs:"(json_extract(x.value,'$.handoff.toAgent') IS NOT NULL OR json_extract(x.value,'$.senderAgent') IS NOT NULL OR json_extract(x.value,'$.recipientKind')='agent' OR json_extract(x.value,'$.kind') IN ('ai-shared','agent-handoff'))",
+  member:"(m.author=? OR json_extract(x.value,'$.recipient')=?)",
+  agent:"(json_extract(x.value,'$.senderAgent')=? OR json_extract(x.value,'$.recipient')=? OR json_extract(x.value,'$.handoff.toAgent')=?)"
+ }[type];
+ if(!where)return 0;
+ const parameters=[project,member,marker.created??0,marker.created??0,marker.id??''];
+ if(type==='member')parameters.push(target,target);
+ if(type==='agent')parameters.push(target,target,target);
+ const count=db.prepare("SELECT count(*) AS n FROM messages m LEFT JOIN workspace_meta x ON x.key='room:v1:message:'||m.id WHERE m.channel=? AND m.author!=? AND (m.created>? OR (m.created=? AND m.id>?)) AND "+where).get(...parameters).n;
+ return Math.min(99,count);
+}
 function requireProject(db,project){const row=db.prepare('SELECT * FROM projects WHERE id=?').get(project);if(!row)throw fail(404,'Dieser Projektraum existiert nicht.');return row;}
 function requireSource(db,project,source){if(!source)return null;const row=db.prepare('SELECT * FROM messages WHERE id=? AND channel=?').get(source,project);if(!row)throw fail(400,'Die Nachricht gehört nicht zu diesem Raum.');return row;}
 function safeURL(value,repository=false){
@@ -102,6 +143,7 @@ const agentPermissionsSchema=z.object({
 const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('create'),id,title,description:z.string().trim().max(12000).default('')}),
  z.object({action:z.literal('message'),id,project:id,body,replyTo:id.optional(),topicTask:id.optional(),recipient:id.optional(),senderAgent:id.optional(),handoff:z.object({toAgent:id,summary:z.string().trim().min(1).max(600),status:z.enum(['delegated','in_progress','completed','requested','stopped']).default('delegated')}).optional()}),
+ z.object({action:z.literal('read'),project:id,view:chatView,messageId:id.optional()}),
  z.object({
   action:z.literal('agent'),
   id,
@@ -147,7 +189,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     send({rooms:archived});return true;
    }
    if(route==='/api/rooms'){
-    send({rooms:db.prepare("SELECT p.*,(SELECT count(*) FROM tasks t WHERE t.project=p.id AND t.status!='done') AS openTasks,(SELECT max(created) FROM messages m WHERE m.channel=p.id) AS lastMessage FROM projects p WHERE NOT EXISTS (SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:project:'||p.id AND json_extract(m.value,'$.archived')=1) ORDER BY COALESCE((SELECT max(created) FROM messages WHERE channel=p.id),p.created) DESC,p.id").all().filter(r=>!hiddenPractice(db,r.id,member.id)&&can(db,member,r.id,'view')).map(r=>({...r,practice:!!practiceOwner(db,r.id)}))});return true;
+    send({rooms:db.prepare("SELECT p.*,(SELECT count(*) FROM tasks t WHERE t.project=p.id AND t.status!='done') AS openTasks,(SELECT max(created) FROM messages m WHERE m.channel=p.id) AS lastMessage FROM projects p WHERE NOT EXISTS (SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:project:'||p.id AND json_extract(m.value,'$.archived')=1) ORDER BY COALESCE((SELECT max(created) FROM messages WHERE channel=p.id),p.created) DESC,p.id").all().filter(r=>!hiddenPractice(db,r.id,member.id)&&can(db,member,r.id,'view')).map(r=>({...r,practice:!!practiceOwner(db,r.id),lastExcerpt:db.prepare('SELECT body FROM messages WHERE channel=? ORDER BY created DESC,id DESC LIMIT 1').get(r.id)?.body?.slice(0,160)??'',unread:unreadFor(db,r.id,member.id,'all')}))});return true;
    }
    const project=parse(id,url.searchParams.get('project'));const p=requireProject(db,project);
    if(hiddenPractice(db,project,member.id))throw fail(404,'Projekt fehlt.');
@@ -165,11 +207,14 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     return {...j,result:undefined,output:typeof result?.output==='string'?result.output.slice(0,24000):null,error:typeof result?.error==='string'?result.error.slice(0,1000):null,model:meta.model,task:meta.task,sharedMessage:meta.sharedMessage??null};
    });
    const members=db.prepare('SELECT id,name,role,seen FROM members ORDER BY name').all().filter(m=>!isRemoved(db,m.id)&&can(db,m,project,'view')).map(m=>({...m,removed:false,projectRoles:rolesOf(db,m,project)}));
-   send({project:p,meta:roomMeta(db,project),messages,more,notes:notesFor(db,project),links:linksFor(db,project),tasks:db.prepare('SELECT * FROM tasks WHERE project=? ORDER BY created DESC,id').all(project),members,agents:agentsFor(db,project),runs});return true;
+   const agents=agentsFor(db,project);
+   const views=['all','handoffs',...members.map(m=>'member:'+m.id),...agents.filter(a=>a.active!==false).map(a=>'agent:'+a.id)];
+   const unread=Object.fromEntries(views.map(view=>[view,unreadFor(db,project,member.id,view)]));
+   send({project:p,meta:roomMeta(db,project),messages,more,notes:notesFor(db,project),links:linksFor(db,project),tasks:db.prepare('SELECT * FROM tasks WHERE project=? ORDER BY created DESC,id').all(project),members,agents,runs,unread});return true;
   }
   if(method!=='POST'||route!=='/api/room')throw fail(405,'Methode nicht erlaubt.');
   const value=parse(actions,await readJSON(req,24000));
-  if(value.project)requirePermission(db,member,value.project,value.action==='message'&&!value.senderAgent&&!value.handoff?'view':value.action==='repository'?'admin':'develop');
+  if(value.project)requirePermission(db,member,value.project,value.action==='read'||value.action==='message'&&!value.senderAgent&&!value.handoff?'view':value.action==='repository'?'admin':'develop');
   const result=transaction(db,()=>{
    if(value.action==='create'){
     const previous=replay(db,member,value);if(previous)return previous;
@@ -180,6 +225,16 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     return remember(db,member,value,{ok:true,project});
    }
    requireProject(db,value.project);
+   if(value.action==='read'){
+    checkChatView(db,value.project,value.view);
+    const message=value.messageId?requireSource(db,value.project,value.messageId):null;
+    const row=message?{...message,metadata:readMeta(db,key('message',message.id))??{}}:null;
+    if(row&&!matchesChatView(row,value.view))throw fail(400,'Die Lesemarkierung gehört nicht zu diesem Gespräch.');
+    const next={created:message?.created??0,id:message?.id??''},location=readKey(value.project,member.id,value.view);
+    const previous=readMeta(db,location);
+    if(!previous||previous.created<next.created||previous.created===next.created&&previous.id<next.id)putMeta(db,location,next);
+    return {ok:true};
+   }
    if(value.action==='repository'){
     const current=roomMeta(db,value.project);if(current.revision!==value.revision)throw fail(409,'Die Code-Verknüpfung wurde inzwischen geändert. Bitte neu laden.');
     if(current.teamShared!==true){
