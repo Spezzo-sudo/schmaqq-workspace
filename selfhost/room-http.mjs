@@ -234,7 +234,7 @@ const actions=z.discriminatedUnion('action',[
 import {requirePermission,startRoles,can,rolesOf} from './project-roles.mjs';
 import {isRemoved} from './team-access.mjs';
 import {hiddenPractice,practiceOwner} from './practice.mjs';
-export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
+export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null}){
  ensureChatSchema(db);
  return async function roomRoute({route,method,req,url,send}){
   if(!['/api/rooms','/api/room','/api/room/context','/api/room/tasks'].includes(route))return false;
@@ -468,6 +468,13 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
    }
    throw fail(400,'Unbekannte Raumaktion.');
   });
-  send(result);return true;
+  send(result);
+  // Tell the other browsers at once. A private chat signals only its two participants; reading signals nobody.
+  const project=value.project??result.project;
+  if(live&&project&&value.action!=='read'){
+   const only=value.action==='message'&&value.direct?[member.id,...(db.prepare('SELECT id FROM members WHERE id=?').get(value.recipient)?[value.recipient]:[])]:null;
+   live.publish({type:'room',project,only});
+  }
+  return true;
  };
 }

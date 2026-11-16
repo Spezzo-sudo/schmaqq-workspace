@@ -27,6 +27,7 @@ import {createResetMailer, createPasswordRecovery} from './password-recovery.mjs
 import {createWorkspaceHttpRoute} from './workspace-http.mjs';
 import {createRoomRoute} from './room-http.mjs';
 import {createAgentRunRoute} from './agent-run-http.mjs';
+import {createLiveEvents} from './live-events.mjs';
 import {createTeamRoute} from './team-http.mjs';
 import {createPracticeRoute} from './practice.mjs';
 import {createGithubWorkflow,githubMemberTokens} from './github-workflow.mjs';
@@ -75,7 +76,12 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  const authHttpRoute=createAuthHttpRoute({
   db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now,loginLimiter,passwordRecovery
  });
- const roomRoute=createRoomRoute({db,user,readJSON,parse});
+ // Live signals reach only people who may see the project they are about.
+ const live=createLiveEvents({canSee:(memberId,project)=>{
+  const member=db.prepare('SELECT * FROM members WHERE id=?').get(memberId);
+  try{return Boolean(member&&can(db,member,project,'view'));}catch{return false;}
+ }});
+ const roomRoute=createRoomRoute({db,user,readJSON,parse,live});
  // Opt-in only: an operator-owned mode-0600 file binds each Hermes service identity to exactly one Studio member.
  let configuredHermesWorkers=hermesWorkers??[];
  if(hermesWorkersFile){
@@ -83,7 +89,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
   if(!st.isFile()||(st.mode&0o077)!==0)throw new Error('Hermes-Worker-Konfiguration muss eine private Datei (0600) sein.');
   configuredHermesWorkers=JSON.parse(readFileSync(hermesWorkersFile,'utf8'));
  }
- const agentRunRoute=createAgentRunRoute({db,user,readJSON,parse,workers:configuredHermesWorkers});
+ const agentRunRoute=createAgentRunRoute({db,user,readJSON,parse,workers:configuredHermesWorkers,live});
  const teamRoute=createTeamRoute({db,user,readJSON,parse});
  const practiceRoute=createPracticeRoute({db,user,readJSON,parse});
  const githubWorkflow=createGithubWorkflow({db,tokens:demoMode?{}:githubMemberTokens(process.env.STUDIO_GITHUB_MEMBER_TOKENS),app:studioGithubApp});
@@ -118,6 +124,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    const url=new URL(req.url,origin),route=url.pathname,method=req.method;
    if(route==='/api/studio'&&method==='GET'){send({mode:demoMode?'demo':'private'});return;}
    if(route==='/healthz'){send({ok:true});return;}
+   if(route==='/api/live'&&method==='GET'){live.subscribe(user(req).id,req,res);return;}
    if(plugin&&await plugin.route({req,res,url,send}))return;
    if(method==='POST'&&!route.startsWith('/api/runner/')){if(req.headers.origin!==origin)throw fail(403,'Ungültiger Ursprung.');if(!req.headers['content-type']?.includes('application/json'))throw fail(415,'JSON erforderlich.');}
    if(await oidcRoute({route,method,req,res,url,send}))return;
@@ -487,7 +494,8 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
   const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.json':'application/json','.woff2':'font/woff2','.ico':'image/x-icon','.webmanifest':'application/manifest+json','.xml':'application/xml','.txt':'text/plain; charset=utf-8'}[path.extname(name)]??'application/octet-stream';
   res.writeHead(200,{'Content-Type':mime,...(match&&staticId===match[1]?{'Set-Cookie':[cookieOf('schmaqq_static',staticId),cookieOf('schmaqq_live','',0)]}:{})});res.end(Buffer.from(files[name],'base64'));
  });
- return {server,previewServer,db};
+ server.on('close',()=>live.close());
+ return {server,previewServer,db,live};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const {server,previewServer,db}=createStudioServer();

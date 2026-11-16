@@ -73,7 +73,7 @@ function validWorkers(workers) {
   return workers.map(w => ({ owner: w.owner, secret: w.token }));
 }
 
-export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] }) {
+export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], live = null }) {
   const registered = validWorkers(workers);
   // Agents are switched on by binding a worker to a person. Until then nothing is stored and nothing runs.
   const enabled = registered.length > 0;
@@ -82,6 +82,11 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
   const store = agentRunStore(db);
   const lastContact = new Map(); // owner -> time the worker last asked for work
   const waiting = new Map(); // owner -> wake-up of a worker that is waiting for work
+
+  // Only the person who asked sees their runs; an answer in the group chat is news for everyone.
+  const runMoved = (owner, project) => live?.publish({ type: 'runs', project, only: [owner] });
+  const answerPosted = (owner, project, source) =>
+    live?.publish({ type: 'room', project, only: privateScope(db, source) ? [owner] : null });
 
   const hasWorker = memberId => registered.some(w => w.owner === memberId);
   const workerOnline = (memberId, now) => now - (lastContact.get(memberId) ?? 0) < WORKER_ONLINE_MS;
@@ -440,11 +445,13 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
         job = claim(owner, Date.now());
       }
       send({ job });
+      if (job) runMoved(owner, job.project);
       return;
     }
     if (action === 'tool') {
       const request = parse(toolCall, await readJSON(req, 6000));
       send(transaction(db, () => runTool(owner, request, Date.now())));
+      runMoved(owner, store.run(request.run).project);
       return;
     }
     if (action === 'heartbeat') {
@@ -456,7 +463,11 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
       return;
     }
     const request = parse(finishRun, await readJSON(req, 6000));
-    send(transaction(db, () => finish(owner, request, Date.now())));
+    const outcome = transaction(db, () => finish(owner, request, Date.now()));
+    send(outcome);
+    const run = store.run(request.run);
+    runMoved(owner, run.project);
+    if (outcome.message) answerPosted(owner, run.project, run.source_message);
   }
 
   async function memberRoute(route, { method, req, url, send }) {
@@ -480,16 +491,23 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
     if (method !== 'POST') throw fail(405, 'Methode nicht erlaubt.');
     if (route === '/api/agent-proposals/decide') {
       const body = parse(decideProposal, await readJSON(req, 1024));
-      send(transaction(db, () => decide(member, body, now)));
+      const outcome = transaction(db, () => decide(member, body, now));
+      send(outcome);
+      const decided = store.proposal(body.proposal);
+      if (outcome.task) live?.publish({ type: 'room', project: decided.project }); // a new task concerns everyone
+      else answerPosted(member.id, decided.project, decided.source_message);
       return;
     }
     if (route === '/api/agent-runs/cancel') {
       const body = parse(runCancel, await readJSON(req, 1024));
       send(cancelRun(member, body.run, now));
+      runMoved(member.id, store.run(body.run).project);
       return;
     }
-    const outcome = createRun(member, parse(runCreate, await readJSON(req, 2048)), now);
+    const request = parse(runCreate, await readJSON(req, 2048));
+    const outcome = createRun(member, request, now);
     send(outcome, 202);
+    runMoved(member.id, request.project);
     if (!outcome.reused) waiting.get(member.id)?.(); // hand the request to a waiting worker right away
   }
 

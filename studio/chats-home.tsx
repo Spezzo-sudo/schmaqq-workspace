@@ -2,6 +2,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {Bot,ChevronDown,ChevronRight,Crown,MessageSquare,Plus,Search,Users} from 'lucide-react';
 import {AgentAvatar} from './agent-avatar';
 import {agentLiveActivity,agentRoleLabels,agentRunActive,isProjectLead,roomRequest,type HermesAgentRun,type Room,type RoomAgent,type RoomState} from './room-model';
+import {onLiveSignal} from './live';
 import './chats-home.css';
 
 export type WaitingItem={id:string;title:string;detail:string;open:()=>void};
@@ -59,7 +60,8 @@ function useWorkingAgents(){
    if(mounted)timer=setTimeout(poll,active?2000:8000);
   };
   void poll();
-  return()=>{mounted=false;clearTimeout(timer);};
+  const stop=onLiveSignal(signal=>{if(signal.type==='runs'){clearTimeout(timer);void poll();}});
+  return()=>{mounted=false;clearTimeout(timer);stop();};
  },[]);
  return working;
 }

@@ -1,3 +1,4 @@
+import {liveConnected,onLiveSignal} from './live';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {ArrowRight,BookOpen,Bot,CircleHelp,ChevronRight,Copy,Folder,Hash,Home,LayoutGrid,ListChecks,LogOut,MessageSquare,MessagesSquare,Plus,Search,Settings,UserRound,Users,FolderOpen,PanelRight} from 'lucide-react';
 import {taskSummary} from './task-next-step';
@@ -57,7 +58,12 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
    setRooms(r.rooms);setResources(a.resources);setTeam(t);setMembers(w.members);if(selected===activeRoom.current)setRoom(p);setConnected(true);setError('');
   }catch(e){setError((e as Error).message);setConnected(false);}
  },[]);
- useEffect(()=>{let running=false;const tick=async()=>{if(running||document.hidden)return;running=true;try{await refresh();}finally{running=false;}};void tick();const timer=setInterval(tick,5000);return()=>clearInterval(timer);},[refresh]);
+ useEffect(()=>{let running=false;const tick=async()=>{if(running||document.hidden)return;running=true;try{await refresh();}finally{running=false;}};void tick();
+  // With the live connection open, changes arrive as signals; the regular refresh is only a safety net.
+  let last=Date.now(),soon:ReturnType<typeof setTimeout>|undefined;
+  const timer=setInterval(()=>{if(Date.now()-last>=(liveConnected()?20000:5000)){last=Date.now();void tick();}},1000);
+  const stop=onLiveSignal(signal=>{if(signal.type!=='room')return;clearTimeout(soon);soon=setTimeout(()=>{last=Date.now();void tick();},120);});
+  return()=>{clearInterval(timer);clearTimeout(soon);stop();};},[refresh]);
  useEffect(()=>{setRoom(null);setSearch('');void refresh();},[route.room,refresh]);
  // First visit opens the last permitted project, not another management dashboard. Explicit links always win.
  useEffect(()=>{if(route.room&&rooms.some(r=>r.id===route.room)){try{localStorage.setItem('studio:last-project:'+user.userId,route.room);}catch{}}},[route.room,rooms,user.userId]);

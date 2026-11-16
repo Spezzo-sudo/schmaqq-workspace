@@ -12,6 +12,7 @@ import {AgentAvatar,AvatarConfigurator,AgentProfileView} from './agent-avatar';
 import {MessengerInspector} from './messenger-detail';
 import {AgentRunLine,AgentWorkingBubble,ProposalCard} from './agent-activity';
 import {RichText} from './rich-text';
+import {liveConnected,onLiveSignal} from './live';
 import {messengerComposerTarget,messengerDraftKey,messengerFilterKey,readMessengerFilter} from './messenger-state';
 
 export type Modal={kind:'room'|'task'|'note'|'decision'|'link'|'repository';source?:RoomMessage;linkKind?:'chatgpt'|'github'|'result'|'reference'};
@@ -56,10 +57,12 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
   const poll=async()=>{
    let working=false;
    if(!document.hidden){try{working=await reloadAgentRuns.current();}catch{/* Normal login and offline errors are handled by the parent workspace. */}}
-   if(mounted)timer=setTimeout(poll,working?1200:5000);
+   if(mounted)timer=setTimeout(poll,liveConnected()?(working?6000:20000):working?1200:5000);
   };
   void poll();
-  return()=>{mounted=false;clearTimeout(timer);};
+  // Every step of one of my agent runs in this project arrives as a signal.
+  const stop=onLiveSignal(signal=>{if(signal.type==='runs'&&signal.project===room.project.id)void reloadAgentRuns.current().catch(()=>{});});
+  return()=>{mounted=false;clearTimeout(timer);stop();};
  },[room.project.id]);
  async function requestAgentRun(messageId:string,agentId:string,retry=false){
   setHermesBusy(true);setError('');
@@ -511,7 +514,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
      <form className="rw-composer" onSubmit={e=>{e.preventDefault();void send();}}>
       <button type="button" className="r3-compose-plus r3-icon-button" aria-label="Nachrichtenoptionen" aria-expanded={composerOptions} aria-controls="r3-compose-options" onClick={()=>setComposerOptions(!composerOptions)}><Plus size={20}/></button>
       <label className="rw-sr" htmlFor="rw-message">Nachricht an den Projektraum</label>
-      <textarea ref={composerInput} id="rw-message" rows={1} enterKeyHint="send" value={text} maxLength={4000} disabled={busy} onChange={e=>{setText(e.target.value);saveDraft(draftKey,e.target.value);}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void send();}}} placeholder={recipient?'Nachricht an '+targetName+' …':'Nachricht an alle · @Name spricht einen Agenten an'}/>
+      <textarea ref={composerInput} id="rw-message" rows={1} enterKeyHint="send" value={text} maxLength={4000} disabled={busy} onChange={e=>{setText(e.target.value);saveDraft(draftKey,e.target.value);}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void send();}}} placeholder={recipient?'Nachricht an '+targetName+' …':'Nachricht an alle …'}/>
       <button className="rw-send" disabled={busy||!text.trim()} aria-label="Nachricht senden"><Send size={18}/></button>
      </form>
     </div>
