@@ -18,7 +18,7 @@ Etappen und Entscheide: [PLAN.md](PLAN.md). Iststand mit Nachweisen: [STATUS.jso
 Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, schreibt sich unter „In Arbeit“ ein
 (z. B. „Claude Code – Aufräumen“ oder „Codex – Messenger-Feinschliff“).
 
-**In Arbeit:** –
+**In Arbeit:** ChatGPT/Codex – Messenger R4 und mobile UX (Issue #84, `feat/studio-mobile-messenger-r4-20261116`). Vor Owner-Abnahme kein Merge und kein Livegang.
 
 1. [ ] Aufräumen: Probeprojekt (TEST-UX-Reste) entfernen, Klimafinder frisch starten (Owner-Ja nötig, nicht umkehrbar).
 2. [ ] GitHub-Prüfung stabil: restliche feste Test-Ports (44xxx) durch vom System vergebene Ports ersetzen.
