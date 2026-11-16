@@ -39,6 +39,8 @@ test('R4: unread counts follow per-chat read positions, not polling or member pr
  const mark=async(view,messageId)=>post({action:'read',project,view,...(messageId?{messageId}:{})},other.cookie);
  assert.equal((await mark('all','r4-first')).status,200);
  assert.equal((await send('r4-second','Bitte prüfen')).status,200);
+ // Same-millisecond messages still have a strict SQLite insertion order.
+ app.db.prepare('UPDATE messages SET created=(SELECT created FROM messages WHERE id=?) WHERE id=?').run('r4-first','r4-second');
  // GET /api/room and /api/rooms update members.seen but MUST NOT mark any message read.
  await get('/api/rooms',other.cookie);await get('/api/room?project='+project,other.cookie);
  state=await get('/api/room?project='+project,other.cookie);
