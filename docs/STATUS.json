@@ -11,14 +11,17 @@
       "Worker requests that passed a reverse proxy or tunnel are refused, not only non-loopback ones; /api/agent-worker/* is the engine-neutral path and /api/hermes-worker/* stays as alias for the installed pilot worker",
       "The worker writes the redacted tail of the engine's error output to its service journal when a run fails and retries the final report on network errors",
       "Messenger: calm bubbles, a work line per request (waiting, working with seconds, steps, stop, retry), a working bubble, a clearer approval card and a working mark in the chat overview; a message to your own agent requests the answer by itself",
-      "Reachability of a person's AI access is shown (ready / not reachable) instead of always 'ready'"
+      "Reachability of a person's AI access is shown (ready / not reachable) instead of always 'ready'",
+      "Live activity: while an agent works the chat names what it is doing right now (work line with steps, pill at the end of the chat, chat head, lists)",
+      "Project lead: every new project starts with Herr Grau as its lead, owned by the person who opens it; pinned and set apart in the lists; existing projects offer to add him",
+      "The project name appears once, as a heading; the group chat is called 'Gruppenchat'"
     ],
     "verification": {
       "regression": "npm run studio:verify under Node 24.22.0; new tests in agent-run-http.test.mjs, agent-activity.test.mjs, schema-agent-profile.test.mjs",
-      "browser": "Chromium 1440x900 and 390x844 against an isolated local database with a scripted stand-in worker: accept proposal, live arrival of an answer, stop, retry; no horizontal overflow, no console errors"
+      "browser": "Chromium 1440x900 and 390x844 against an isolated local database with a scripted stand-in worker: accept proposal, live arrival of an answer, stop, retry; no horizontal overflow, no console errors",
+      "pilot": "Installed on the isolated pilot (backend :14439, worker a) on 2026-11-16: earlier runs and proposals taken over, schema preflight PASS with agentExtension complete; one real request through the pilot link at 390 px: picked up in under a second, live activity shown, proposal card after 15 s, no console errors"
     },
     "limits": [
-      "Not run against the installed engine: the pilot backend and worker still run the previous version",
       "Answers still arrive as a whole, not word by word; the engine's one-shot interface offers no stream",
       "The adapter still pins engine internals (tool search off, own toolset); the start check stops the worker if an engine update breaks this, and Studio then shows the access as not reachable",
       "operator-install-worker.sh hashes are not updated: installing the new worker needs a separate operator step",
@@ -28,7 +31,7 @@
     "production_changed": false,
     "main_changed": false,
     "schema_migration": "optional extension, created only where agent workers are configured",
-    "model_calls": false
+    "model_calls": "one real request on the pilot with the owner's own account"
   },
   "hermes_tool_gateway_r1_20261116": {
     "state": "feature_branch_pending_owner_review",
