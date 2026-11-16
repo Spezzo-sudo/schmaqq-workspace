@@ -81,8 +81,27 @@ def handler_for(rpc, name):
     return handler
 
 
+def disable_tool_search():
+    """Pin Hermes Tool Search off in this short-lived process only.
+
+    Hermes builds after v2026.8.19 (installed pilot: v2026.8.19-310) hide non-core registered tools behind
+    tool_search/tool_describe/tool_call bridge tools ("auto" by default). Those bridges are not Studio tools,
+    so the session would expose a different surface than granted. "off" is Hermes' documented pass-through
+    mode; model_tools reads tools.tool_search.load_config at call time. The exposure check proves the result.
+    """
+    try:
+        import tools.tool_search as tool_search
+    except ImportError:
+        return  # Hermes without Tool Search: nothing to disable.
+    off = tool_search.ToolSearchConfig.from_raw({"enabled": "off"})
+    if off.enabled != "off":
+        raise RuntimeError("Hermes tool search cannot be disabled.")
+    tool_search.load_config = lambda: off
+
+
 def register_studio_tools(allowed, rpc):
     """Register only the granted Studio tools into a toolset owned by this short-lived process."""
+    disable_tool_search()
     from tools.registry import registry
     from toolsets import TOOLSETS, resolve_toolset, validate_toolset
 

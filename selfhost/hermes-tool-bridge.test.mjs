@@ -172,14 +172,32 @@ def resolve_toolset(name):
     t = TOOLSETS.get(name)
     return sorted(set(t["tools"]) | set(registry.get_tool_names_for_toolset(name))) if t else []
 `,
+ 'tools/tool_search.py':`
+# Mirrors Hermes > v2026.8.19: non-core tools are deferred behind bridge tools unless tool search is "off".
+BRIDGE_TOOL_NAMES = ("tool_search", "tool_describe", "tool_call")
+class ToolSearchConfig:
+    def __init__(self, enabled):
+        self.enabled = enabled
+    @classmethod
+    def from_raw(cls, raw):
+        value = str((raw or {}).get("enabled", "auto")).lower() if isinstance(raw, dict) else "auto"
+        return cls(value if value in ("auto", "on", "off") else "auto")
+def load_config():
+    return ToolSearchConfig.from_raw(None)
+`,
  'model_tools.py':`
 from tools.registry import registry
 from toolsets import resolve_toolset
+CORE = {"terminal"}
 def get_tool_definitions(enabled_toolsets=None, disabled_toolsets=None, quiet_mode=False):
     names = set()
     for ts in enabled_toolsets or []:
         names.update(resolve_toolset(ts))
-    return [{"type": "function", "function": {**registry.get_entry(n).schema, "name": n}} for n in sorted(names)]
+    defs = [{"type": "function", "function": {**registry.get_entry(n).schema, "name": n}} for n in sorted(names)]
+    from tools.tool_search import BRIDGE_TOOL_NAMES, load_config as _load_ts_config
+    if _load_ts_config().enabled != "off" and any(n not in CORE for n in names):
+        defs = [d for d in defs if d["function"]["name"] in CORE] + [{"type": "function", "function": {"name": n}} for n in BRIDGE_TOOL_NAMES]
+    return defs
 `,
  'hermes_cli/__init__.py':'',
  'hermes_cli/oneshot.py':`
@@ -213,6 +231,9 @@ test('python adapter: --check proves zero toolset and exactly two Studio tools o
  assert.equal(check.stdout.trim(),'HERMES_ZERO_TOOLSET=PASS\nHERMES_STUDIO_TOOLSET=PASS',check.stderr);
  const unsafe=spawnSync('python3',[adapter,'--check'],{env:{...env,HERMES_SAFE_MODE:'0'},cwd:dir,encoding:'utf8'});
  assert.equal(unsafe.status,3);
+ // Without the adapter's Tool Search pin, the stubbed Hermes surface is tool_search/tool_describe/tool_call, not the grant.
+ const probe=spawnSync('python3',['-c','import sys;sys.argv=["x"];from model_tools import get_tool_definitions;from tools.registry import registry;registry.register("studio_task_propose","schmaqq_studio_tools_r1",{},None);import toolsets;toolsets.TOOLSETS["schmaqq_studio_tools_r1"]={"tools":["studio_task_propose"]};print(",".join(t["function"]["name"] for t in get_tool_definitions(enabled_toolsets=["schmaqq_studio_tools_r1"])))'],{env,cwd:dir,encoding:'utf8'});
+ assert.equal(probe.stdout.trim(),'tool_search,tool_describe,tool_call',probe.stderr);
  const badGrant=spawnSync('python3',[adapter],{env,cwd:dir,encoding:'utf8',input:JSON.stringify({model:'m',prompt:'p',tools:['terminal']})});
  assert.equal(badGrant.status,3,'adapter refuses unknown tool grants');
 });

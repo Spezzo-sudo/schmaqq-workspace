@@ -10,12 +10,14 @@ Diesen Schritt nur über den autorisierten Root-Operator auf `srv1365337`, nur n
 
 | Datei | Erwarteter SHA-256 |
 |---|---|
-| `operator-install-worker.sh` | `32a1b8a6decddfc91da4acfc5626e0b94cb696869176f822efb9b099469f29c4` |
+| `operator-install-worker.sh` | `4f2091f8bc93d103137deb3bdca644f28ef9d7d036593e3c4b4189ba6ad0ccfd` |
 | `agent-worker@.service` | `10e89f2b74dfe11af6cf7d7bbdd39f413c6ea2dd8dc29dea9ce031b742a67b5b` |
 | `hermes-agent-worker.mjs` | `8022e25d5f2ba1937e7a10fbdeea9e852b09ca6420b201e3867c8096ce8c7964` |
-| `hermes-pilot-infer.py` | `2c5dcc098462e6b612394362a8d95c50758a475fd32c459ef64b36ac78314018` |
+| `hermes-pilot-infer.py` | `e583c86c7494607a21ea199a90ec37e02c0cc097741b2100e41e9c19b98f148b` |
 
-**R1-Werkzeug-Gateway (Upgrade):** Das Skript ersetzt bereits installierte Worker-Dateien nur, wenn sie exakt der vorher geprüften No-Tools-Fassung (`fdb0c1e0…`, `dc93e96c…`) entsprechen und beide Worker-Units inaktiv sind. Danach muss `--check` als Sandbox-Benutzer `HERMES_ZERO_TOOLSET=PASS` und `HERMES_STUDIO_TOOLSET=PASS` ausgeben, sonst STOP.
+**R1-Werkzeug-Gateway (Upgrade):** Das Skript ersetzt bereits installierte Worker-Dateien nur, wenn sie exakt der vorher geprüften No-Tools-Fassung (`fdb0c1e0…`, `dc93e96c…`) entsprechen (bzw. der R1-Erstfassung `2c5dcc09…`, die auf dem Pilot am `--check` scheiterte) und beide Worker-Units inaktiv sind. Danach muss `--check` als Sandbox-Benutzer `HERMES_ZERO_TOOLSET=PASS` und `HERMES_STUDIO_TOOLSET=PASS` ausgeben, sonst STOP.
+
+**Hermes Tool Search:** Die installierte Hermes-Runtime (`v2026.8.19-310`, Paket 0.20.5) verpackt registrierte Nicht-Core-Tools standardmäßig hinter `tool_search`/`tool_describe`/`tool_call`. Der Adapter setzt Tool Search deshalb nur im eigenen kurzlebigen Prozess auf den dokumentierten Pass-Through-Modus `off`; `--check` beweist danach, dass exakt die zwei Studio-Tools exponiert werden. Verifiziert am 16.11.2026 als `schmaqq-hermes-a` gegen die echte Runtime.
 
 **Wichtig:** `/home/dc-remote/studio-hermes-queue-20261116` enthält ausschliesslich eine Entwicklungsarbeitskopie. Root darf dort **keinen Code unmittelbar ausführen**. Zuerst Dateien nach `/root` kopieren und **danach** dort die Hashes unabhängig prüfen. STOP bei jeder Abweichung.
 
