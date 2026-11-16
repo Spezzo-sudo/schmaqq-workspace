@@ -50,7 +50,7 @@ export type RoomAgent={
  updated:number;
 };
 export type AgentHandoff={fromAgent?:string;toAgent:string;task?:string|null;summary:string;status:'delegated'|'in_progress'|'completed'|'requested'|'stopped'};
-export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;senderAgent?:string|null;handoff?:AgentHandoff|null};
+export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;sequence?:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;senderAgent?:string|null;handoff?:AgentHandoff|null};
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
 export type RoomRun={id:string;agentId?:string|null;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;updated?:number;task:string|null};
