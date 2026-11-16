@@ -379,3 +379,12 @@
  .r3-shell .r4-task-item{padding:10px 12px}
  .r3-shell .r4-settings .team-form input,.r3-shell .r4-settings .team-form textarea,.r3-shell .r4-settings .team-form select{font-size:16px}
 }
+
+/* Hermes R1: explicit human-triggered agent run; never indicate synthetic AI output. */
+.r3-messenger .r5-hermes-action{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid #151b2514;font-size:11px}
+.r3-messenger .r5-hermes-action button{display:inline-flex;gap:6px;align-items:center;border:1px solid #8ba16675;background:#f4f8e9;color:#27431e;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:650;cursor:pointer}
+.r3-messenger .r5-hermes-action button:hover{background:#e9f3d5}
+.r3-messenger .r5-hermes-action button:disabled{opacity:.55;cursor:wait}
+.r3-messenger .r5-hermes-status{display:inline-flex;align-items:center;gap:6px;color:var(--schmaqq-ink);font-weight:600;min-width:0;overflow-wrap:anywhere}
+.r3-messenger .r5-hermes-status.muted{color:var(--schmaqq-muted);font-weight:450}
+@media(max-width:650px){.r3-messenger .r5-hermes-action{font-size:10px}.r3-messenger .r5-hermes-action button{max-width:100%;justify-content:center}}

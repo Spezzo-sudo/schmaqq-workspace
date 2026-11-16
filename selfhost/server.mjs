@@ -9,7 +9,7 @@ import {createPluginHttpRoutes} from './studio-plugin-http.mjs';
 import {createOidcRoutes} from './oidc.mjs';
 import {createConnectionRoutes} from './connections.mjs';
 import {collaborationRoute} from './collaboration.mjs';
-import { readFileSync,writeFileSync,existsSync,statSync } from 'node:fs';
+import { readFileSync,writeFileSync,existsSync,statSync,lstatSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
@@ -26,6 +26,7 @@ import {createLoginLimiter} from './login-rate-limit.mjs';
 import {createResetMailer, createPasswordRecovery} from './password-recovery.mjs';
 import {createWorkspaceHttpRoute} from './workspace-http.mjs';
 import {createRoomRoute} from './room-http.mjs';
+import {createAgentRunRoute} from './agent-run-http.mjs';
 import {createTeamRoute} from './team-http.mjs';
 import {createPracticeRoute} from './practice.mjs';
 import {createGithubWorkflow,githubMemberTokens} from './github-workflow.mjs';
@@ -44,7 +45,7 @@ const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
 function parse(schema,data){const r=schema.safeParse(data);if(!r.success)throw fail(400,'Bitte Eingaben prüfen.');return r.data;}
-export function createStudioServer({oidcProvider,githubProvider,pullRequestReader,githubApp, demoMode=false,seedProjects=demoMode,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now,pluginClients=JSON.parse(process.env.STUDIO_PLUGIN_CLIENTS??'[]'),pluginDynamicClients=process.env.STUDIO_PLUGIN_DYNAMIC_CLIENTS==='1',pluginFetchMetadata,pluginClientHosts=process.env.STUDIO_PLUGIN_CLIENT_HOSTS?process.env.STUDIO_PLUGIN_CLIENT_HOSTS.split(','):undefined,liveHost=process.env.STUDIO_LIVE_HOST??'127.0.0.70',liveSource=process.env.STUDIO_LIVE_SOURCE??'127.0.0.71'}={}){
+export function createStudioServer({oidcProvider,githubProvider,pullRequestReader,githubApp, demoMode=false,seedProjects=demoMode,sessionCookie='studio_session',filename=path.join(dataDir,'studio.sqlite'),origin=process.env.STUDIO_ORIGIN??'http://127.0.0.1:4310',previewOrigin=process.env.STUDIO_PREVIEW_ORIGIN??'http://127.0.0.1:4311',staticDir=path.join(root,'studio-dist'),trustedProxyIps=process.env.STUDIO_TRUSTED_PROXY_IPS??'',resetMailer=undefined,recoveryNow=Date.now,pluginClients=JSON.parse(process.env.STUDIO_PLUGIN_CLIENTS??'[]'),pluginDynamicClients=process.env.STUDIO_PLUGIN_DYNAMIC_CLIENTS==='1',pluginFetchMetadata,pluginClientHosts=process.env.STUDIO_PLUGIN_CLIENT_HOSTS?process.env.STUDIO_PLUGIN_CLIENT_HOSTS.split(','):undefined,liveHost=process.env.STUDIO_LIVE_HOST??'127.0.0.70',liveSource=process.env.STUDIO_LIVE_SOURCE??'127.0.0.71',hermesWorkersFile=process.env.STUDIO_HERMES_WORKERS_FILE??'',hermesWorkers=undefined}={}){
  if(!/^[a-z_]{1,60}$/.test(sessionCookie))throw new Error('Ungültiger Sitzungsname.');
  if(!Array.isArray(pluginClients)||pluginClients.length>20)throw new Error('Ungueltige Plugin-Clientliste.');
  if(new URL(origin).origin===new URL(previewOrigin).origin)throw new Error('Studio und Vorschau benötigen unterschiedliche Origins.');
@@ -75,6 +76,14 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
   db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now,loginLimiter,passwordRecovery
  });
  const roomRoute=createRoomRoute({db,user,readJSON,parse});
+ // Opt-in only: an operator-owned mode-0600 file binds each Hermes service identity to exactly one Studio member.
+ let configuredHermesWorkers=hermesWorkers??[];
+ if(hermesWorkersFile){
+  const st=lstatSync(hermesWorkersFile);
+  if(!st.isFile()||(st.mode&0o077)!==0)throw new Error('Hermes-Worker-Konfiguration muss eine private Datei (0600) sein.');
+  configuredHermesWorkers=JSON.parse(readFileSync(hermesWorkersFile,'utf8'));
+ }
+ const agentRunRoute=createAgentRunRoute({db,user,readJSON,parse,workers:configuredHermesWorkers});
  const teamRoute=createTeamRoute({db,user,readJSON,parse});
  const practiceRoute=createPracticeRoute({db,user,readJSON,parse});
  const githubWorkflow=createGithubWorkflow({db,tokens:demoMode?{}:githubMemberTokens(process.env.STUDIO_GITHUB_MEMBER_TOKENS),app:studioGithubApp});
@@ -198,6 +207,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(await aiRoute({route,method,req,db,user,device,send,readJSON,parse}))return;
    if(await codexAccountRoute({route,method,req,db,user,send,readJSON,parse}))return;
    if(await authHttpRoute({route,method,req,res,send}))return;
+   if(await agentRunRoute({route,method,req,res,url,send}))return;
    if(await roomRoute({route,method,req,res,url,send}))return;
    if(route==='/api/runner/poll'&&method==='POST'){
     const d=device(req);db.prepare('UPDATE devices SET seen=? WHERE id=?').run(now(),d.id);

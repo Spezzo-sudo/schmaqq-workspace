@@ -4,7 +4,7 @@ import {
  roomRequest,operationId,time,initials,storedDraft,saveDraft,taskTitleFrom,
  agentRoleLabels,agentCapabilityLabels,agentContextSourceLabels,agentPermissionLabels,
  agentEffectivePermissions,agentExecutionStatus,memberRoleSummary,filterMessengerMessages,
- type RoomState,type RoomMember,type RoomMessage,type RoomAgent,type RoomAgentRole,
+ type RoomState,type RoomMember,type RoomMessage,type RoomAgent,type RoomAgentRole,type HermesAgentRun,
  type RoomAgentCapability,type RoomAgentContextSource,type RoomAgentPermissions,type Resource,type MessengerFilter
 } from './room-model';
 import {FIELD_GUILD_R2_PRESETS,findAvatarPreset,type AvatarPreset} from './avatar-catalog';
@@ -29,12 +29,38 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
  const [editingAgent,setEditingAgent]=useState<Partial<RoomAgent>|null>(null),[profileAgentId,setProfileAgentId]=useState<string|null>(null),[avatarPickerOpen,setAvatarPickerOpen]=useState(false),[composerOptions,setComposerOptions]=useState(false);
  const [mobilePanel,setMobilePanel]=useState<'chat'|'contacts'>(()=>window.matchMedia('(max-width:760px)').matches&&!new URLSearchParams(location.search).has('chat')?'contacts':'chat');
  const [overlay,setOverlay]=useState(()=>window.matchMedia('(max-width:1199px)').matches);
+ const [hermesConfigured,setHermesConfigured]=useState(false),[hermesRuns,setHermesRuns]=useState<HermesAgentRun[]>([]),[hermesBusy,setHermesBusy]=useState(false);
  const currentDraft=useRef(draftKey);currentDraft.current=draftKey;
  const profileReturn=useRef<'chat'|'contacts'>('chat'),composerInput=useRef<HTMLTextAreaElement|null>(null);
  useEffect(()=>{const media=window.matchMedia('(max-width:1199px)'),change=()=>setOverlay(media.matches);media.addEventListener('change',change);return()=>media.removeEventListener('change',change);},[]);
  useEffect(()=>{const input=composerInput.current;if(input){input.style.height='auto';input.style.height=Math.min(input.scrollHeight,132)+'px';}},[text]);
  const attempt=useRef({fingerprint:'',id:''});const end=useRef<HTMLDivElement|null>(null);const first=useRef(true);
  const stream=useRef<HTMLDivElement|null>(null),followLatest=useRef(true);
+ useEffect(()=>{
+  let mounted=true;
+  const poll=async()=>{
+   if(document.hidden)return;
+   try{const state=await roomRequest<{configured:boolean;runs:HermesAgentRun[]}>('/api/agent-runs?project='+encodeURIComponent(room.project.id));
+    if(mounted){setHermesConfigured(state.configured);setHermesRuns(state.runs);}
+   }catch{/* Normal login and offline errors are handled by the parent workspace. */}
+  };
+  void poll();const interval=setInterval(poll,5000);
+  return()=>{mounted=false;clearInterval(interval);};
+ },[room.project.id]);
+ async function requestAgentRun(messageId:string,agentId:string){
+  if(hermesBusy)return;setHermesBusy(true);setError('');
+  try{await roomRequest('/api/agent-runs',{project:room.project.id,agent:agentId,message:messageId});
+   const current=await roomRequest<{configured:boolean;runs:HermesAgentRun[]}>('/api/agent-runs?project='+encodeURIComponent(room.project.id));
+   setHermesRuns(current.runs);setHermesConfigured(current.configured);
+  }catch(e){setError((e as Error).message);}finally{setHermesBusy(false);}
+ }
+ async function cancelAgentRun(runId:string){
+  if(hermesBusy)return;setHermesBusy(true);setError('');
+  try{await roomRequest('/api/agent-runs/cancel',{run:runId});
+   const current=await roomRequest<{configured:boolean;runs:HermesAgentRun[]}>('/api/agent-runs?project='+encodeURIComponent(room.project.id));
+   setHermesRuns(current.runs);
+  }catch(e){setError((e as Error).message);}finally{setHermesBusy(false);}
+ }
 
  const activeMembers=room.members.filter(m=>!m.removed);
  const activeAgents=(room.agents??[]).filter(a=>a.active!==false);
@@ -357,6 +383,9 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
       const isAgentMsg=Boolean(sAgent||message.kind==='ai-shared'||message.kind==='agent'||message.kind==='agent-handoff');
       const isVerifiedRun=message.origin==='verified-run'||message.kind==='ai-shared';
       const isOwn=message.author===userId&&!isAgentMsg;
+      const hermesRun=hermesRuns.find(r=>r.message===message.id);
+      const canAskHermes=message.origin==='human'&&message.author===userId&&Boolean(targetAgent&&targetAgent.createdBy===userId&&agentEffectivePermissions(targetAgent).readProject&&agentEffectivePermissions(targetAgent).writeMessages);
+      const hermesRunLabel=hermesRun?({queued:'In Warteschlange',running:'Agent arbeitet',cancelling:'Wird gestoppt',completed:'Antwort im Chat',failed:'Agentenlauf fehlgeschlagen',cancelled:'Abgebrochen'}[hermesRun.status]):'';
 
       return <article className={'rw-message'+(isOwn?' r3-own':'')+(isAgentMsg?' ai':'')+(message.handoff?' handoff':'')} aria-label={isOwn?'Deine Nachricht':undefined} key={message.id} id={'message-'+message.id}>
        {sAgent
@@ -407,6 +436,11 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
         </div>}
 
         <p>{message.body}</p>
+        {canAskHermes&&<div className="r5-hermes-action" role="group" aria-label={'KI-Auftrag für '+targetAgent?.name}>
+         {hermesRun?<><span className="r5-hermes-status"><Bot size={14}/>{hermesRunLabel}</span>{['queued','running'].includes(hermesRun.status)&&<button type="button" disabled={hermesBusy} onClick={()=>void cancelAgentRun(hermesRun.id)}>Stoppen</button>}</>
+          :hermesConfigured?<button type="button" disabled={hermesBusy} onClick={()=>void requestAgentRun(message.id,targetAgent!.id)}><Bot size={14}/>Agent ausdrücklich beauftragen</button>
+          :<span className="r5-hermes-status muted"><Bot size={14}/>KI-Motor noch nicht persönlich verbunden · Nachricht bleibt im Chat</span>}
+        </div>}
         {isAgentMsg&&<details className="r3-message-provenance"><summary>Herkunft</summary><small className="rw-muted">
          {isVerifiedRun
           ?'Verifizierter Modelllauf – Entscheidungen und Freigaben bleiben beim Team'

@@ -61,11 +61,13 @@ test('GitHub account connection: session binding, PKCE, replay, isolation, error
 
 test('unconfigured GitHub connection stays unavailable and never implies repository access',async()=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'studio-connections-disabled-')),origin='http://127.0.0.1:44344';
- const app=createStudioServer({seedProjects:true,filename:path.join(dir,'db.sqlite'),origin,previewOrigin:'http://127.0.0.1:44345',githubProvider:null});await new Promise(r=>app.server.listen(44344,'127.0.0.1',r));
- const post=(route,data,cookie)=>fetch(origin+route,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body:JSON.stringify(data)});
+ const app=createStudioServer({seedProjects:true,filename:path.join(dir,'db.sqlite'),origin,previewOrigin:'http://127.0.0.1:44345',githubProvider:null});await new Promise(r=>app.server.listen(0,'127.0.0.1',r));
+ // Test transport gets an OS-assigned port; the logical Studio origin remains the deliberate CSRF fixture.
+ const host='http://127.0.0.1:'+app.server.address().port;
+ const post=(route,data,cookie)=>fetch(host+route,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body:JSON.stringify(data)});
  try{
   const r=await post('/api/auth/register',{invite:createInvite(app.db,'disabled@fixture.invalid'),name:'Fixture',password:'fixture-password-1234'});const cookie=r.headers.get('set-cookie').split(';')[0];
-  const status=await (await fetch(origin+'/api/connections',{headers:{Cookie:cookie}})).json();assert.equal(status.github.enabled,false);assert.equal(status.github.repositoryAccess,false);
+  const status=await (await fetch(host+'/api/connections',{headers:{Cookie:cookie}})).json();assert.equal(status.github.enabled,false);assert.equal(status.github.repositoryAccess,false);
   assert.equal((await post('/api/connections/github/start',{},cookie)).status,409);
  }finally{await new Promise(r=>app.server.close(r));app.db.close();assert.ok(dir.startsWith(path.join(os.tmpdir(),'studio-connections-disabled-')));rmSync(dir,{recursive:true,force:true});}
 });

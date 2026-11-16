@@ -54,6 +54,7 @@ export type RoomMessage={id:string;channel:string;author:string;body:string;crea
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
 export type RoomRun={id:string;agentId?:string|null;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;updated?:number;task:string|null};
+export type HermesAgentRun={id:string;owner:string;project:string;agent:string;message:string;model:string;status:'queued'|'running'|'cancelling'|'completed'|'failed'|'cancelled';created:number;updated:number;completedMessage:string|null;errorCode:string|null};
 export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[];unread?:Record<string,number>};
 /** Server-computed: ready only after a passed trial run on the shared main state. */
 export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;state:'ok'|'running'|'failed';at:number;error?:string}|null};

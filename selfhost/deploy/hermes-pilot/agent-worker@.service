@@ -1,0 +1,54 @@
+[Unit]
+Description=SCHMAQQ Studio Hermes pilot worker %i - explicit human tasks only
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/schmaqq-hermes-pilot/worker/hermes-agent-worker.mjs
+ConditionPathExists=/etc/schmaqq-hermes-pilot/worker-%i.json
+
+[Service]
+Type=simple
+User=schmaqq-hermes-%i
+Group=schmaqq-hermes-%i
+WorkingDirectory=/var/lib/schmaqq-hermes-%i
+StateDirectory=schmaqq-hermes-%i
+StateDirectoryMode=0700
+Environment=HOME=/var/lib/schmaqq-hermes-%i
+Environment=HERMES_HOME=/var/lib/schmaqq-hermes-%i
+Environment=HERMES_MANAGED_DIR=/etc/schmaqq-hermes-pilot/managed-empty
+Environment=PYTHONPATH=/opt/hermes-agent/venv/lib/python3.11/site-packages:/opt/hermes-agent
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStartPre=/opt/schmaqq-hermes-pilot/runtime/python-3.11.15/bin/python3.11 /opt/schmaqq-hermes-pilot/worker/hermes-pilot-infer.py --check
+ExecStart=/opt/schmaqq-studio/runtime/node/bin/node /opt/schmaqq-hermes-pilot/worker/hermes-agent-worker.mjs /etc/schmaqq-hermes-pilot/worker-%i.json
+Restart=on-failure
+RestartSec=10s
+TimeoutStartSec=45s
+TimeoutStopSec=20s
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectProc=invisible
+ProtectControlGroups=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectClock=yes
+ProtectHostname=yes
+LockPersonality=yes
+RestrictNamespaces=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+MemoryMax=512M
+TasksMax=64
+CPUQuota=125%
+
+[Install]
+WantedBy=multi-user.target
