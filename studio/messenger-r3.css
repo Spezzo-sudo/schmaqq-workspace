@@ -387,4 +387,14 @@
 .r3-messenger .r5-hermes-action button:disabled{opacity:.55;cursor:wait}
 .r3-messenger .r5-hermes-status{display:inline-flex;align-items:center;gap:6px;color:var(--schmaqq-ink);font-weight:600;min-width:0;overflow-wrap:anywhere}
 .r3-messenger .r5-hermes-status.muted{color:var(--schmaqq-muted);font-weight:450}
+.r3-messenger .r5-proposal-card{display:grid;gap:6px;margin-top:10px;padding:10px;border:1px solid #11122522;border-left:3px solid var(--schmaqq-coral);border-radius:9px;background:var(--schmaqq-paper-light);font-size:12px;min-width:0}
+.r3-messenger .r5-proposal-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.r3-messenger .r5-proposal-status{margin-left:auto;font-size:10px;font-weight:650;border-radius:999px;padding:2px 8px;background:#151b250d}
+.r3-messenger .r5-proposal-status.accepted{background:#e9f3d5;color:#27431e}
+.r3-messenger .r5-proposal-title{margin:0;font-weight:650;overflow-wrap:anywhere}
+.r3-messenger .r5-proposal-body{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;opacity:.85}
+.r3-messenger .r5-proposal-actions{display:flex;flex-wrap:wrap;gap:8px}
+.r3-messenger .r5-proposal-actions button{min-height:36px;border:1px solid #11122533;background:#fff;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:650;cursor:pointer}
+.r3-messenger .r5-proposal-actions button.accept{border-color:#8ba16675;background:#f4f8e9;color:#27431e}
+.r3-messenger .r5-proposal-actions button:disabled{opacity:.55;cursor:wait}
 @media(max-width:650px){.r3-messenger .r5-hermes-action{font-size:10px}.r3-messenger .r5-hermes-action button{max-width:100%;justify-content:center}}

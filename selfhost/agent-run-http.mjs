@@ -1,15 +1,25 @@
-import {randomUUID,timingSafeEqual} from 'node:crypto';
+import {randomUUID,timingSafeEqual,createHash} from 'node:crypto';
 import {z} from 'zod';
 import {digest,token,transaction} from './store.mjs';
 import {can,requirePermission} from './project-roles.mjs';
-import {agentsFor,buildRoomContext} from './room-http.mjs';
+import {agentsFor,buildRoomContext,listRoomTasks,insertRoomTask} from './room-http.mjs';
 
 const fail=(status,message)=>Object.assign(new Error(message),{status});
 const id=z.string().regex(/^[A-Za-z0-9_-]{1,100}$/);
 const runCreate=z.object({project:id,agent:id,message:id}).strict();
 const workRun=z.object({run:id,lease:z.string().regex(/^[a-zA-Z0-9_-]{43}$/)}).strict();
 const finishRun=workRun.extend({status:z.enum(['completed','failed','cancelled']),output:z.string().trim().max(4000).optional(),errorCode:z.enum(['provider-unavailable','quota-exceeded','timeout','crash','cancelled','protocol-error']).optional()}).strict();
-const prefix='hermes:v1:run:';
+const prefix='hermes:v1:run:',proposalPrefix='hermes:v1:proposal:';
+// R1 Studio tool bridge: the only tools a Hermes run can ever receive. Project is bound to the run, never a model argument.
+const STUDIO_TOOLS=Object.freeze(['project.read_context','task.propose']);
+const TOOL_LIMITS=Object.freeze({'project.read_context':3,'task.propose':1});
+const toolArgs={
+ 'project.read_context':z.object({}).strict(),
+ 'task.propose':z.object({title:z.string().trim().min(1).max(160),description:z.string().trim().max(2000).default(''),kind:z.enum(['general','code']).default('general')}).strict()
+};
+const toolCall=workRun.extend({callId:z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),tool:z.enum(STUDIO_TOOLS),args:z.record(z.string(),z.unknown()).default({})}).strict();
+const decideProposal=z.object({proposal:id,decision:z.enum(['accept','reject'])}).strict();
+const fingerprint=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const readMeta=(db,key)=>{const record=db.prepare('SELECT value FROM workspace_meta WHERE key=?').get(key);return record?JSON.parse(record.value):{};};
 function secureMatch(a,b){
  const x=Buffer.from(digest(a)),y=Buffer.from(digest(b));
@@ -52,8 +62,67 @@ export function createAgentRunRoute({db,user,readJSON,parse,workers=[]}){
  }
  function ownerRun(runId,owner){const run=findRun(runId);if(!run||run.owner!==owner)throw fail(404,'Dieser Agentenlauf gehört nicht zu deinem Konto.');return run;}
  function currentAgent(run){return agentsFor(db,run.project).find(a=>a.id===run.agent&&a.active!==false);}
+ const putProposal=p=>db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(proposalPrefix+p.id,JSON.stringify(p));
+ const findProposal=id=>{const item=readMeta(db,proposalPrefix+id);return item.id===id?item:null;};
+ const proposalsOf=run=>db.prepare("SELECT value FROM workspace_meta WHERE key LIKE 'hermes:v1:proposal:%' AND json_extract(value,'$.run')=? ORDER BY json_extract(value,'$.created'),key LIMIT 10").all(run).map(row=>JSON.parse(row.value));
+ // Tools are granted per run at claim time and only to agents explicitly allowed to plan tasks.
+ function policyFor(member,agent,project){
+  return agent.permissions?.manageTasks===true&&can(db,member,project,'develop')?{mode:'studio-tools-r1',allowed:[...STUDIO_TOOLS]}:{mode:'no-tools',allowed:[]};
+ }
+ /** One audited, lease-bound tool call. The model never chooses account, project or agent. */
+ function runTool(owner,request,now){
+  const run=ownerRun(request.run,owner);
+  if(!run.lease_hash||!secureMatch(run.lease_hash,digest(request.lease)))throw fail(403,'Die Ausführungsberechtigung ist abgelaufen.');
+  if(run.status!=='running')throw fail(409,'Dieser Agentenlauf ist nicht mehr aktiv.');
+  const calls=Array.isArray(run.tool_calls)?run.tool_calls:[];
+  const args=parse(toolArgs[request.tool],request.args);
+  const print=fingerprint({tool:request.tool,args});
+  const previous=calls.find(c=>c.callId===request.callId);
+  if(previous){
+   if(previous.fingerprint!==print)throw fail(409,'Diese Werkzeugkennung wurde bereits anders verwendet.');
+   if(previous.tool==='task.propose')return {ok:true,result:{proposal:previous.proposal,status:'awaiting-approval',reused:true}};
+  }
+  if(!Array.isArray(run.tool_policy)||!run.tool_policy.includes(request.tool))throw fail(403,'Dieses Werkzeug ist für diesen Agentenlauf nicht freigegeben.');
+  if(!previous&&calls.filter(c=>c.tool===request.tool).length>=TOOL_LIMITS[request.tool])throw fail(429,'Werkzeuglimit für diesen Agentenlauf erreicht.');
+  const member=db.prepare('SELECT * FROM members WHERE id=?').get(owner),agent=currentAgent(run);
+  if(!member||!agent||agent.createdBy!==owner||!can(db,member,run.project,'view')||agent.permissions?.readProject===false)throw fail(403,'Agent oder Projektberechtigung wurde widerrufen.');
+  let result,proposal=null;
+  if(request.tool==='project.read_context'){
+   const context=buildRoomContext(db,run.project);
+   const open=listRoomTasks(db,run.project).tasks.slice(0,20).map(t=>({title:t.title,status:t.status}));
+   result={trust:'untrusted-project-data',context:context.text,openTasks:open};
+  }else{
+   if(agent.permissions?.manageTasks!==true||!can(db,member,run.project,'develop'))throw fail(403,'Aufgabenvorschläge sind für diesen Agenten oder dein Konto nicht mehr freigegeben.');
+   proposal=previous?.proposal??randomUUID();
+   if(!previous)putProposal({id:proposal,run:run.id,owner,project:run.project,agent:run.agent,source_message:run.source_message,title:args.title,description:args.description,kind:args.kind,status:'draft',message:null,task:null,created:now,updated:now});
+   result={proposal,status:'awaiting-approval',note:'Nur ein Vorschlag. Erst die beauftragende Person entscheidet im Chat.'};
+  }
+  if(!previous)putRun({...run,heartbeat:now,updated:now,tool_calls:[...calls,{callId:request.callId,tool:request.tool,fingerprint:print,at:now,...(proposal?{proposal}:{})}]});
+  return {ok:true,result};
+ }
+ /** Accept or reject a pending proposal. Only the commissioning person; acceptance uses the room task path once. */
+ function decide(member,request,now){
+  const p=findProposal(request.proposal);
+  if(!p||p.status==='draft'||p.status==='discarded')throw fail(404,'Dieser Aufgabenvorschlag existiert nicht.');
+  if(p.owner!==member.id)throw fail(403,'Nur die Person, die den Agenten beauftragt hat, entscheidet über diesen Vorschlag.');
+  requirePermission(db,member,p.project,'develop');
+  const wanted=request.decision==='accept'?'accepted':'rejected';
+  if(p.status!=='pending'){
+   if(p.status===wanted)return {ok:true,status:p.status,task:p.task??null,reused:true};
+   throw fail(409,'Über diesen Vorschlag wurde bereits anders entschieden.');
+  }
+  if(wanted==='rejected'){putProposal({...p,status:'rejected',decidedBy:member.id,decided:now,updated:now});return {ok:true,status:'rejected',task:null};}
+  const agent=agentsFor(db,p.project).find(a=>a.id===p.agent&&a.active!==false);
+  if(!agent||agent.createdBy!==member.id||agent.permissions?.manageTasks!==true)throw fail(403,'Der Agent darf keine Aufgaben mehr vorschlagen. Vorschlag nicht übernommen.');
+  if(readMeta(db,'room:v1:project:'+p.project).archived)throw fail(409,'Das Projekt ist archiviert.');
+  if(!db.prepare('SELECT id FROM messages WHERE id=? AND channel=?').get(p.message,p.project))throw fail(409,'Die Vorschlagsnachricht fehlt.');
+  const created=insertRoomTask(db,member,{project:p.project,title:p.title,description:p.description,kind:p.kind,source:p.message},now);
+  db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO NOTHING').run('hermes:v1:task-origin:'+created.task,JSON.stringify({proposal:p.id,run:p.run,agent:p.agent,approvedBy:member.id,at:now}));
+  putProposal({...p,status:'accepted',task:created.task,decidedBy:member.id,decided:now,updated:now});
+  return {ok:true,status:'accepted',task:created.task};
+ }
  async function route({route,method,req,url,send}){
-  if(!['/api/agent-runs','/api/agent-runs/cancel','/api/hermes-worker/claim','/api/hermes-worker/heartbeat','/api/hermes-worker/finish'].includes(route))return false;
+  if(!['/api/agent-runs','/api/agent-runs/cancel','/api/agent-proposals/decide','/api/hermes-worker/claim','/api/hermes-worker/heartbeat','/api/hermes-worker/tool','/api/hermes-worker/finish'].includes(route))return false;
   const now=Date.now();
   if(route.startsWith('/api/hermes-worker/')){
    const owner=authenticate(req);
@@ -73,13 +142,18 @@ export function createAgentRunRoute({db,user,readJSON,parse,workers=[]}){
      }
      const context=buildRoomContext(db,run.project);
      const lease=token();
-     putRun({...run,status:'running',lease_hash:digest(lease),claimed:now,heartbeat:now,updated:now});
+     const toolPolicy=policyFor(member,agent,run.project);
+     putRun({...run,status:'running',lease_hash:digest(lease),claimed:now,heartbeat:now,updated:now,tool_policy:toolPolicy.allowed,tool_calls:[]});
      return {run:run.id,lease,owner,project:run.project,agent:run.agent,model:run.model,prompt:source.body,
       replyTo:source.id,context:context.text,
       profile:{name:agent.name,role:agent.role,purpose:agent.purpose,personality:agent.personality,responsibility:agent.responsibility},
-      toolPolicy:{mode:'no-tools',allowed:[]}};
+      toolPolicy};
     });
     send({job:result});return true;
+   }
+   if(route==='/api/hermes-worker/tool'){
+    const request=parse(toolCall,await readJSON(req,6000));
+    send(transaction(db,()=>runTool(owner,request,now)));return true;
    }
    const request=parse(route==='/api/hermes-worker/finish'?finishRun:workRun,await readJSON(req,6000));
    const run=ownerRun(request.run,owner);
@@ -99,10 +173,16 @@ export function createAgentRunRoute({db,user,readJSON,parse,workers=[]}){
     if(success&&(!member||!agent||agent.createdBy!==owner||!can(db,member,run.project,'view')||agent.permissions?.writeMessages===false))throw fail(403,'Agent oder Projektberechtigung wurde widerrufen.');
     const status=cancellation?'cancelled':success?'completed':'failed';
     let messageId=null;
+    // Drafts become visible only with a successful, still authorised run; any other end discards them.
+    const drafts=proposalsOf(fresh.id).filter(p=>p.status==='draft');
+    const publishable=success&&can(db,member,fresh.project,'develop')&&agent.permissions?.manageTasks===true;
+    const proposal=publishable?drafts[0]??null:null;
+    for(const p of drafts)if(p!==proposal)putProposal({...p,status:'discarded',updated:now});
     if(success){
      messageId=randomUUID();
      db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(messageId,fresh.project,owner,request.output,now);
-     const meta={kind:'agent',origin:'verified-run',senderAgent:fresh.agent,model:fresh.model,replyTo:fresh.source_message,recipient:owner,recipientKind:'member',runId:fresh.id};
+     if(proposal)putProposal({...proposal,status:'pending',message:messageId,updated:now});
+     const meta={kind:'agent',origin:'verified-run',senderAgent:fresh.agent,model:fresh.model,replyTo:fresh.source_message,recipient:owner,recipientKind:'member',runId:fresh.id,...(proposal?{proposal:proposal.id}:{})};
      db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?)').run('room:v1:message:'+messageId,JSON.stringify(meta));
     }
     putRun({...fresh,status,updated:now,lease_hash:null,completed_message:messageId,error_code:status==='failed'?(request.errorCode??'crash'):status==='cancelled'?'cancelled':null});
@@ -118,6 +198,10 @@ export function createAgentRunRoute({db,user,readJSON,parse,workers=[]}){
    send({configured:allowed(member.id),runs:ownedRuns(member.id,project).slice(0,40).map(summary)});return true;
   }
   if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
+  if(route==='/api/agent-proposals/decide'){
+   const body=parse(decideProposal,await readJSON(req,1024));
+   send(transaction(db,()=>decide(member,body,now)));return true;
+  }
   if(route==='/api/agent-runs/cancel'){
    const body=parse(z.object({run:id}).strict(),await readJSON(req,1024));
    const run=ownerRun(body.run,member.id);

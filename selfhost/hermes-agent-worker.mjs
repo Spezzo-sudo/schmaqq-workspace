@@ -1,5 +1,6 @@
 import {readFileSync,statSync} from 'node:fs';
 import {spawn,spawnSync} from 'node:child_process';
+import {randomBytes} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 
 const here=fileURLToPath(new URL('.',import.meta.url));
@@ -9,6 +10,14 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const MAX_MS=180000;
 const MAX_STDOUT=6000;
 const allowedModels=/^[a-zA-Z0-9_.-]{1,100}$/;
+const STUDIO_TOOLS=['project.read_context','task.propose'];
+const MAX_TOOL_CALLS=6,MAX_TOOL_LINE=16384;
+/** Only two exact policies are accepted; anything else refuses inference. */
+export function toolGrant(policy){
+ if(policy?.mode==='no-tools'&&Array.isArray(policy.allowed)&&policy.allowed.length===0)return [];
+ if(policy?.mode==='studio-tools-r1'&&Array.isArray(policy.allowed)&&policy.allowed.length>0&&new Set(policy.allowed).size===policy.allowed.length&&policy.allowed.every(t=>STUDIO_TOOLS.includes(t)))return [...policy.allowed];
+ throw Error('Unsafe job tool policy.');
+}
 function environment(){
  const home=process.env.HERMES_HOME;
  if(!home||!home.startsWith('/var/lib/schmaqq-hermes-'))throw Error('Separate Hermes home is required.');
@@ -36,10 +45,15 @@ async function post(cfg,endpoint,body){
  if(!reply.ok)throw Error('Hermes backend returned HTTP '+reply.status);
  return reply.json();
 }
-function jobPrompt(job){
+async function callTool(cfg,body){
+ const reply=await fetch(cfg.backend+'/api/hermes-worker/tool',{method:'POST',signal:AbortSignal.timeout(12000),headers:{Origin:cfg.origin,'Content-Type':'application/json',Authorization:'Bearer '+cfg.token},body:JSON.stringify(body)});
+ let data={};try{data=await reply.json();}catch{/* Non-JSON reply is treated as a refusal. */}
+ return {status:reply.status,data};
+}
+export function jobPrompt(job,tools=[]){
  const profile=job.profile??{};
  const lines=[
-  'SCHMAQQ Studio: Benutzerautorisierte Assistenz, ohne Werkzeuge.',
+  tools.length?'SCHMAQQ Studio: Benutzerautorisierte Assistenz mit genau diesen Studio-Werkzeugen: '+tools.map(t=>({'project.read_context':'studio_project_read_context','task.propose':'studio_task_propose'})[t]).join(', ')+'. Ein Aufgabenvorschlag erzeugt keine Aufgabe; nur die beauftragende Person entscheidet im Chat.':'SCHMAQQ Studio: Benutzerautorisierte Assistenz, ohne Werkzeuge.',
   'Du bist '+String(profile.name??'Agent').slice(0,80)+', Rolle: '+String(profile.role??'advisor').slice(0,80)+'.',
   'Aufgabe: '+String(profile.purpose??'').slice(0,600),
   'Charakter: '+String(profile.personality??'').slice(0,600),
@@ -51,19 +65,20 @@ function jobPrompt(job){
  ];
  return lines.join('\n\n').slice(0,18000);
 }
-async function execute(cfg,job,env){
- if(job?.toolPolicy?.mode!=='no-tools'||!Array.isArray(job.toolPolicy.allowed)||job.toolPolicy.allowed.length)throw Error('Unsafe job tool policy.');
+export async function execute(cfg,job,env,{runtime=python,script=bridge,maxMs=MAX_MS,heartbeatMs=4000}={}){
+ const tools=toolGrant(job?.toolPolicy);
  if(!allowedModels.test(job.model))throw Error('Invalid model id.');
- const child=spawn(python,[bridge],{env,cwd:env.HERMES_HOME,stdio:['pipe','pipe','ignore']});
- let output='',exceeded=false,cancelled=false,timedOut=false,heartbeatPending=false;
+ const child=spawn(runtime,[script],{env,cwd:env.HERMES_HOME,stdio:['pipe','pipe','ignore',...(tools.length?['pipe']:[])]});
+ let output='',exceeded=false,cancelled=false,timedOut=false,heartbeatPending=false,protocolError=false;
+ if(tools.length)bridgeTools(cfg,job,tools,child,{cancel:()=>{cancelled=true;child.kill('SIGTERM');},violate:()=>{protocolError=true;child.kill('SIGTERM');}});
  child.stdout.setEncoding('utf8');
  child.stdout.on('data',chunk=>{
   output+=chunk;
   if(output.length>MAX_STDOUT&&!exceeded){exceeded=true;child.kill('SIGTERM');}
  });
  child.stdin.on('error',()=>{});
- child.stdin.end(JSON.stringify({model:job.model,prompt:jobPrompt(job)}));
- const timer=setTimeout(()=>{timedOut=true;child.kill('SIGTERM');},MAX_MS);
+ child.stdin.end(JSON.stringify({model:job.model,prompt:jobPrompt(job,tools),...(tools.length?{tools}:{})}));
+ const timer=setTimeout(()=>{timedOut=true;child.kill('SIGTERM');},maxMs);
  const heartbeat=setInterval(async()=>{
   if(heartbeatPending)return;
   heartbeatPending=true;
@@ -71,21 +86,58 @@ async function execute(cfg,job,env){
    if(state.cancel){cancelled=true;child.kill('SIGTERM');}
   }catch{/* A failed heartbeat will cause a bounded, fail-closed server timeout. */}
   finally{heartbeatPending=false;}
- },4000);
+ },heartbeatMs);
  let code;
  try{code=await new Promise(resolve=>{child.once('error',()=>resolve(-1));child.once('close',n=>resolve(n??-1));});}
  finally{clearTimeout(timer);clearInterval(heartbeat);}
- const status=cancelled?'cancelled':code===0&&!exceeded&&!timedOut&&output.trim()?'completed':'failed';
- const errorCode=cancelled?'cancelled':timedOut?'timeout':exceeded?'protocol-error':code===0?'protocol-error':'provider-unavailable';
+ const status=cancelled?'cancelled':code===0&&!exceeded&&!timedOut&&!protocolError&&output.trim()?'completed':'failed';
+ const errorCode=cancelled?'cancelled':timedOut?'timeout':exceeded||protocolError?'protocol-error':code===0?'protocol-error':'provider-unavailable';
  try{await post(cfg,'/api/hermes-worker/finish',{run:job.run,lease:job.lease,status,...(status==='completed'?{output:output.trim().slice(0,4000)}:{errorCode})});}
  catch{/* Server lease or connection may have expired. No duplicate publishing. */}
  return status;
+}
+/**
+ * Tool bridge on the child's fd 3. The child (model process) never holds the Studio token.
+ * Each call gets a stable callId so a network retry can never create a second proposal.
+ */
+function bridgeTools(cfg,job,tools,child,{cancel,violate}){
+ const channel=child.stdio[3];
+ let buffer='',calls=0,queue=Promise.resolve(),closed=false;
+ channel.setEncoding('utf8');
+ channel.on('error',()=>{closed=true;});
+ const reply=message=>{if(!closed&&!channel.destroyed)channel.write(JSON.stringify(message)+'\n');};
+ async function handle(line){
+  let request;
+  try{request=JSON.parse(line);}catch{violate();return;}
+  if(!request||!Number.isInteger(request.id)||typeof request.tool!=='string'||!request.args||typeof request.args!=='object'||Array.isArray(request.args)){violate();return;}
+  if(++calls>MAX_TOOL_CALLS){violate();return;}
+  if(!tools.includes(request.tool)){reply({id:request.id,ok:false,error:'Werkzeug nicht freigegeben.'});return;}
+  const body={run:job.run,lease:job.lease,callId:randomBytes(18).toString('base64url'),tool:request.tool,args:request.args};
+  for(let attempt=0;attempt<3;attempt++){
+   try{
+    const {status,data}=await callTool(cfg,body);
+    if(status===200&&data.ok){reply({id:request.id,ok:true,result:data.result});return;}
+    if(status===409&&/nicht mehr aktiv/.test(String(data.error??''))){cancel();return;}
+    reply({id:request.id,ok:false,error:String(data.error??'Werkzeug abgelehnt.').slice(0,300)});return;
+   }catch{/* Network failure: retry with the same callId (idempotent on the server). */}
+  }
+  reply({id:request.id,ok:false,error:'Studio vorübergehend nicht erreichbar.'});
+ }
+ channel.on('data',chunk=>{
+  buffer+=chunk;
+  if(buffer.length>MAX_TOOL_LINE){buffer='';violate();return;}
+  let index;
+  while((index=buffer.indexOf('\n'))>=0){
+   const line=buffer.slice(0,index);buffer=buffer.slice(index+1);
+   queue=queue.then(()=>handle(line));
+  }
+ });
 }
 export async function start(){
  if(process.argv.length!==3)throw Error('One private service config file required.');
  const cfg=readPrivateConfig(process.argv[2]),env=environment();
  const check=spawnSync(python,[bridge,'--check'],{cwd:env.HERMES_HOME,env,encoding:'utf8',timeout:30000});
- if(check.status!==0||check.stdout.trim()!=='HERMES_ZERO_TOOLSET=PASS')throw Error('Hermes tool policy check failed; refusing inference.');
+ if(check.status!==0||check.stdout.trim()!=='HERMES_ZERO_TOOLSET=PASS\nHERMES_STUDIO_TOOLSET=PASS')throw Error('Hermes tool policy check failed; refusing inference.');
  process.stdout.write('SCHMAQQ Hermes isolated worker ready (no jobs started).\n');
  while(true){
   try{const data=await post(cfg,'/api/hermes-worker/claim',{});

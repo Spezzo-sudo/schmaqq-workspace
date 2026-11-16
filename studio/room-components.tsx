@@ -54,6 +54,11 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
    setHermesRuns(current.runs);setHermesConfigured(current.configured);
   }catch(e){setError((e as Error).message);}finally{setHermesBusy(false);}
  }
+ async function decideProposal(proposal:string,decision:'accept'|'reject'){
+  if(hermesBusy)return;setHermesBusy(true);setError('');
+  try{await roomRequest('/api/agent-proposals/decide',{proposal,decision});await refresh();}
+  catch(e){setError((e as Error).message);}finally{setHermesBusy(false);}
+ }
  async function cancelAgentRun(runId:string){
   if(hermesBusy)return;setHermesBusy(true);setError('');
   try{await roomRequest('/api/agent-runs/cancel',{run:runId});
@@ -436,6 +441,17 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
         </div>}
 
         <p>{message.body}</p>
+        {message.proposalCard&&<div className="r5-proposal-card" role="group" aria-label={'Aufgabenvorschlag: '+message.proposalCard.title}>
+         <div className="r5-proposal-head"><CheckCheck size={14}/><strong>Aufgabenvorschlag</strong><span className={'r5-proposal-status '+message.proposalCard.status}>{{pending:'Wartet auf Freigabe',accepted:'Als Aufgabe angelegt',rejected:'Abgelehnt'}[message.proposalCard.status]}</span></div>
+         <p className="r5-proposal-title">{message.proposalCard.title}</p>
+         {message.proposalCard.description&&<p className="r5-proposal-body">{message.proposalCard.description}</p>}
+         {message.proposalCard.canDecide&&<div className="r5-proposal-actions">
+          <button type="button" className="accept" disabled={hermesBusy} onClick={()=>void decideProposal(message.proposalCard!.id,'accept')}>Als Aufgabe anlegen</button>
+          <button type="button" disabled={hermesBusy} onClick={()=>void decideProposal(message.proposalCard!.id,'reject')}>Ablehnen</button>
+         </div>}
+         {message.proposalCard.status==='pending'&&!message.proposalCard.canDecide&&<small className="rw-muted">Nur die beauftragende Person entscheidet.</small>}
+         {message.proposalCard.task&&<button type="button" className="rw-link" onClick={()=>onTask(message.proposalCard!.task!)}>Aufgabe öffnen</button>}
+        </div>}
         {canAskHermes&&<div className="r5-hermes-action" role="group" aria-label={'KI-Auftrag für '+targetAgent?.name}>
          {hermesRun?<><span className="r5-hermes-status"><Bot size={14}/>{hermesRunLabel}</span>{['queued','running'].includes(hermesRun.status)&&<button type="button" disabled={hermesBusy} onClick={()=>void cancelAgentRun(hermesRun.id)}>Stoppen</button>}</>
           :hermesConfigured?<button type="button" disabled={hermesBusy} onClick={()=>void requestAgentRun(message.id,targetAgent!.id)}><Bot size={14}/>Agent ausdrücklich beauftragen</button>

@@ -66,6 +66,13 @@ function unreadFor(db,project,member,view){
  const count=db.prepare("SELECT count(*) AS n FROM messages m LEFT JOIN workspace_meta x ON x.key='room:v1:message:'||m.id WHERE m.channel=? AND m.author!=? AND m.rowid>? AND "+where).get(...parameters).n;
  return Math.min(99,count);
 }
+// Hermes task proposal card. Only the verified run message carries the id; status comes from the server record.
+function proposalCard(db,proposalId,message,viewer){
+ if(typeof proposalId!=='string')return null;
+ const p=readMeta(db,'hermes:v1:proposal:'+proposalId);
+ if(!p||p.message!==message.id||p.project!==message.channel||p.status==='draft'||p.status==='discarded')return null;
+ return {id:p.id,title:p.title,description:p.description,kind:p.kind,status:p.status,task:p.task??null,agent:p.agent,owner:p.owner,canDecide:p.status==='pending'&&p.owner===viewer.id&&can(db,viewer,p.project,'develop')};
+}
 function requireProject(db,project){const row=db.prepare('SELECT * FROM projects WHERE id=?').get(project);if(!row)throw fail(404,'Dieser Projektraum existiert nicht.');return row;}
 function requireSource(db,project,source){if(!source)return null;const row=db.prepare('SELECT * FROM messages WHERE id=? AND channel=?').get(source,project);if(!row)throw fail(400,'Die Nachricht gehört nicht zu diesem Raum.');return row;}
 function safeURL(value,repository=false){
@@ -136,6 +143,22 @@ export function listRoomTasks(db,project,{query='',includeDone=false}={}){
  const matches=rows.filter(t=>!q||t.title.toLowerCase().includes(q));
  return {tasks:matches.slice(0,50).map(t=>({id:t.id,title:t.title,status:t.status,kind:taskContract(db,t).kind,assignee:t.assigneeName??null,created:t.created})),
   total:matches.length,complete:matches.length<=50&&rows.length<500};
+}
+
+/**
+ * The one Studio task path. Callers must have checked 'develop' and run inside a transaction.
+ * A source message is converted at most once (source-task), so retries never create duplicates.
+ */
+export function insertRoomTask(db,member,{project,title,description='',kind='general',criteria='',source:sourceId,mine=false},at){
+ // Source: a message of this project, or of the team-wide #Allgemein (everyone reads it).
+ const source=sourceId&&db.prepare("SELECT * FROM messages WHERE id=? AND channel='general'").get(sourceId)||requireSource(db,project,sourceId);
+ const converted=source?readMeta(db,key('source-task',source.id)):null;
+ if(converted)return {task:converted.task,reused:true};
+ const task=randomUUID();db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(task,project,title,description||source?.body||'',mine?'doing':'todo','Normal',mine?member.id:null,at);
+ storeMetadata(db,'team:v1:task:'+task,{kind,criteria,requiresReview:true,blocked:'',cancelled:false,revision:0});
+ if(source){putMeta(db,key('source-task',source.id),{task});putMeta(db,key('task-source',task),{message:source.id,project});}
+ db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(randomUUID(),member.id,'Aufgabe aus Raum: '+title,at);
+ return {task,reused:false};
 }
 
 const avatarPresetIds=z.enum(['leitwolf','herr-grau','mara','frau-kern','otto','nova','dachs','fuchs','baer','rabe','schaefer','eule']);
@@ -211,7 +234,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
    const beforeMessage=before?db.prepare('SELECT rowid AS sequence FROM messages WHERE id=? AND channel=?').get(parse(id,before),project):null;
    if(before&&!beforeMessage)throw fail(400,'Die ältere Nachricht gehört nicht zu diesem Raum.');
    const messageRows=beforeMessage?db.prepare('SELECT rowid AS sequence,* FROM messages WHERE channel=? AND rowid<? ORDER BY rowid DESC LIMIT 101').all(project,beforeMessage.sequence):db.prepare('SELECT rowid AS sequence,* FROM messages WHERE channel=? ORDER BY rowid DESC LIMIT 101').all(project);
-   const more=messageRows.length>100;const messages=messageRows.slice(0,100).reverse().map(m=>{const meta=readMeta(db,key('message',m.id))??{};const sourceTask=readMeta(db,key('source-task',m.id))?.task??null;return {...m,...meta,topicTask:meta.topicTask??sourceTask,taskId:sourceTask??meta.topicTask??null};});
+   const more=messageRows.length>100;const messages=messageRows.slice(0,100).reverse().map(m=>{const meta=readMeta(db,key('message',m.id))??{};const sourceTask=readMeta(db,key('source-task',m.id))?.task??null;return {...m,...meta,proposal:undefined,proposalCard:proposalCard(db,meta.proposal,m,member),topicTask:meta.topicTask??sourceTask,taskId:sourceTask??meta.topicTask??null};});
    const runs=db.prepare("SELECT j.id,j.owner,j.device,j.project,j.status,j.created,j.action,j.result,d.name AS deviceName FROM jobs j JOIN devices d ON d.id=j.device WHERE j.project=? AND EXISTS(SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:run:'||j.id) AND (j.owner=? OR d.owner=?) ORDER BY j.created DESC,j.id DESC LIMIT 30").all(project,member.id,member.id).map(j=>{
     const meta=readMeta(db,key('run',j.id));let result;try{result=JSON.parse(j.result??'null');}catch{result=null;}
     return {...j,result:undefined,output:typeof result?.output==='string'?result.output.slice(0,24000):null,error:typeof result?.error==='string'?result.error.slice(0,1000):null,model:meta.model,task:meta.task,sharedMessage:meta.sharedMessage??null};
@@ -363,15 +386,8 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     return remember(db,member,value,{ok:true,message:value.id});
    }
    if(value.action==='task'){
-    // Source: a message of this project, or of the team-wide #Allgemein (everyone reads it).
-    const source=value.source&&db.prepare("SELECT * FROM messages WHERE id=? AND channel='general'").get(value.source)||requireSource(db,value.project,value.source);
-    const converted=source?readMeta(db,key('source-task',source.id)):null;
-    if(converted)return remember(db,member,value,{ok:true,task:converted.task,reused:true});
-    const task=randomUUID();db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(task,value.project,value.title,value.description||source?.body||'',value.mine?'doing':'todo','Normal',value.mine?member.id:null,now());
-    storeMetadata(db,'team:v1:task:'+task,{kind:value.kind,criteria:value.criteria,requiresReview:true,blocked:'',cancelled:false,revision:0});
-    if(source){putMeta(db,key('source-task',source.id),{task});putMeta(db,key('task-source',task),{message:source.id,project:value.project});}
-    db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(randomUUID(),member.id,'Aufgabe aus Raum: '+value.title,now());
-    return remember(db,member,value,{ok:true,task});
+    const created=insertRoomTask(db,member,value,now());
+    return remember(db,member,value,{ok:true,task:created.task,...(created.reused?{reused:true}:{})});
    }
    if(value.action==='note'){
     const source=requireSource(db,value.project,value.source);

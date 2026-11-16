@@ -1,4 +1,29 @@
 {
+  "hermes_tool_gateway_r1_20261116": {
+    "state": "feature_branch_pending_owner_review",
+    "branch": "ccr-272a6789-oo61vk",
+    "base_branch": "feat/hermes-agent-queue-20261116",
+    "implemented": [
+      "Two Studio tools only (project.read_context, task.propose), granted per run at claim time solely to agents with manageTasks whose owner may develop; all other agents stay no-tools",
+      "Lease-bound /api/hermes-worker/tool: project/agent/owner bound to the run, strict zod args, per-run limits, callId idempotency, audit in the run record",
+      "Proposals stay drafts until a successful still-authorised finish; cancel/fail/timeout/revocation never publish a card",
+      "Chat proposal card; only the commissioning person with develop decides; acceptance uses the existing room task path once (source-task dedupe)",
+      "Worker passes tool calls over fd 3; the model process never holds the Studio token; Python adapter registers the toolset via the Hermes v0.20.5 registry and --check requires exactly two exposed tools"
+    ],
+    "verification": {
+      "regression": "selfhost/hermes-tool-bridge.test.mjs (isolated SQLite, two accounts, mock model through real worker and python adapter against a Hermes v0.20.5 API stub)",
+      "browser": "390px Chromium check of pending and accepted card on an isolated test database",
+      "hermes_api": "Checked against Hermes Agent source tag v2026.8.19 (pyproject 0.20.5); not executed against the installed pilot runtime"
+    },
+    "limits": [
+      "operator-install-worker.sh hashes intentionally not updated: re-staging needs separate operator review and the --check on the real pilot runtime",
+      "No real model call made; first live tool run needs owner approval"
+    ],
+    "production_changed": false,
+    "main_changed": false,
+    "schema_migration": false,
+    "model_calls": false
+  },
   "messenger_r4_20261116": {
     "state": "feature_branch_pending_owner_mobile_qa",
     "branch": "feat/studio-mobile-messenger-r4-20261116",
