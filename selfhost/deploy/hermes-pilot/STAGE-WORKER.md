@@ -10,10 +10,12 @@ Diesen Schritt nur über den autorisierten Root-Operator auf `srv1365337`, nur n
 
 | Datei | Erwarteter SHA-256 |
 |---|---|
-| `operator-install-worker.sh` | `2371ddd07f846a5e787b560cc0bd7f49761a610cb4703cba49354fe32c432b85` |
+| `operator-install-worker.sh` | `32a1b8a6decddfc91da4acfc5626e0b94cb696869176f822efb9b099469f29c4` |
 | `agent-worker@.service` | `10e89f2b74dfe11af6cf7d7bbdd39f413c6ea2dd8dc29dea9ce031b742a67b5b` |
-| `hermes-agent-worker.mjs` | `fdb0c1e0ae86005af2ef3459c6f700c0845675b241de823ac778ad032e6d6aa9` |
-| `hermes-pilot-infer.py` | `dc93e96c154f2d8f47cea93c3d6dec58a9343e25acc852afceb075db307bafcb` |
+| `hermes-agent-worker.mjs` | `8022e25d5f2ba1937e7a10fbdeea9e852b09ca6420b201e3867c8096ce8c7964` |
+| `hermes-pilot-infer.py` | `2c5dcc098462e6b612394362a8d95c50758a475fd32c459ef64b36ac78314018` |
+
+**R1-Werkzeug-Gateway (Upgrade):** Das Skript ersetzt bereits installierte Worker-Dateien nur, wenn sie exakt der vorher geprüften No-Tools-Fassung (`fdb0c1e0…`, `dc93e96c…`) entsprechen und beide Worker-Units inaktiv sind. Danach muss `--check` als Sandbox-Benutzer `HERMES_ZERO_TOOLSET=PASS` und `HERMES_STUDIO_TOOLSET=PASS` ausgeben, sonst STOP.
 
 **Wichtig:** `/home/dc-remote/studio-hermes-queue-20261116` enthält ausschliesslich eine Entwicklungsarbeitskopie. Root darf dort **keinen Code unmittelbar ausführen**. Zuerst Dateien nach `/root` kopieren und **danach** dort die Hashes unabhängig prüfen. STOP bei jeder Abweichung.
 
