@@ -1,5 +1,5 @@
 import type {Task} from '../app/workspace-model';
-export type Room={id:string;title:string;description:string;color:string;stage:string;openTasks?:number;lastMessage?:number;practice?:boolean};
+export type Room={id:string;title:string;description:string;color:string;stage:string;openTasks?:number;lastMessage?:number;lastExcerpt?:string;unread?:number;practice?:boolean};
 export type RoomMember={id:string;name:string;role:string;seen:number;removed?:number|boolean;invitedBy?:string|null;projectRoles?:string[]};
 export type RoomAgentRole=
  |'coordinator'
@@ -54,7 +54,7 @@ export type RoomMessage={id:string;channel:string;author:string;body:string;crea
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
 export type RoomRun={id:string;agentId?:string|null;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;updated?:number;task:string|null};
-export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[]};
+export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[];unread?:Record<string,number>};
 /** Server-computed: ready only after a passed trial run on the shared main state. */
 export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;state:'ok'|'running'|'failed';at:number;error?:string}|null};
 export type Resource={team?:boolean;device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;readiness?:WorkshopReadiness;publish:boolean}[]};
