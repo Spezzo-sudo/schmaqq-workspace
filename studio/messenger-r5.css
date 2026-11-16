@@ -131,3 +131,7 @@
 .ch-row.ch-lead .rw-fg-avatar{box-shadow:0 0 0 2px var(--schmaqq-acid,#d9ff6b)}
 .ch-row-top .ch-lead-tag{flex:none;margin-left:0}
 @media(prefers-reduced-motion:reduce){.r3-messenger .r5-run-steps>ol>li.current::before{animation:none}}
+
+/* ---- Contacts: the team as a small company ----------------------------------------------------------- */
+.r5-department>.rw-messenger-group-head{padding-left:26px;position:relative}
+.r5-department>.rw-messenger-group-head::before{content:"";position:absolute;left:14px;top:50%;width:8px;height:1px;background:var(--schmaqq-rule-strong)}

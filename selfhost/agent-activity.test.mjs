@@ -48,3 +48,13 @@ test('live activity: names what the agent is doing from the steps it has really 
  assert.equal(projectLead(agents).id,'c','Only an active lead counts');
  assert.equal(projectLead([]),null);
 });
+
+test('team structure: every role belongs to exactly one department',async()=>{
+ const {agentDepartments,agentDepartment,agentRoleLabels}=await import('../studio/room-model.ts');
+ const roles=agentDepartments.flatMap(d=>d.roles);
+ assert.equal(new Set(roles).size,roles.length);
+ assert.deepEqual([...roles].sort(),Object.keys(agentRoleLabels).sort());
+ assert.equal(agentDepartment({role:'security'}).label,'Sicherheit & Prüfung');
+ assert.equal(agentDepartment({role:'hr'}).label,'Personal');
+ assert.equal(agentDepartment({role:'creative'}).label,'Kreation');
+});

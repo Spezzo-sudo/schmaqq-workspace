@@ -161,12 +161,13 @@ export function insertRoomTask(db,member,{project,title,description='',kind='gen
  return {task,reused:false};
 }
 
+const LEAD_PRESET='herr-grau';
 // Every project starts with its lead: always the same character, first contact and voice of the team.
 // It belongs to the person who opens the project and answers with that person's own AI access.
 function projectLeadFor(db,project,member,at){
  const earlier=db.prepare("SELECT json_extract(value,'$.model') AS model FROM workspace_meta WHERE key LIKE 'room:v1:agent:%' AND json_extract(value,'$.createdBy')=? ORDER BY json_extract(value,'$.updated') DESC LIMIT 1").get(member.id);
  return {
-  id:null,project,name:'Herr Grau',nickname:'',role:'coordinator',avatar:'HG',avatarPresetId:'herr-grau',avatarPackId:'field-guild-r2',
+  id:null,project,name:'Herr Grau',nickname:'',role:'coordinator',avatar:'HG',avatarPresetId:LEAD_PRESET,avatarPackId:'field-guild-r2',
   purpose:'Führt das Projekt, behält den Überblick und spricht für das Team.',
   personality:'Trockener Humor, eigenwillig, analytisch und gelegentlich leicht ironisch – benennt Schwachstellen frühzeitig.',
   responsibility:'Erste Anlaufstelle im Projekt: ordnet ein, schlägt nächste Schritte vor und hält Aufgaben zusammen.',
@@ -176,8 +177,24 @@ function projectLeadFor(db,project,member,at){
   active:true,createdBy:member.id,updatedBy:member.id,created:at,updated:at
  };
 }
+/**
+ * Projects from before the lead existed get him when they are next opened. He belongs to the person who
+ * opened the project if that person may still develop in it, otherwise to the viewer who may.
+ */
+function ensureProjectLead(db,project,viewer,at){
+ if(agentsFor(db,project).some(a=>a.active!==false&&a.avatarPresetId===LEAD_PRESET))return;
+ if(roomMeta(db,project).archived||agentsFor(db,project).length>=20)return;
+ const founderId=roomMeta(db,project).createdBy;
+ const founder=founderId?db.prepare('SELECT * FROM members WHERE id=?').get(founderId):null;
+ const owner=founder&&!isRemoved(db,founder.id)&&can(db,founder,project,'develop')?founder:can(db,viewer,project,'develop')?viewer:null;
+ if(!owner)return;
+ transaction(db,()=>{
+  const lead=randomUUID();
+  putMeta(db,key('agent',project+':'+lead),{...projectLeadFor(db,project,owner,at),id:lead});
+ });
+}
 const avatarPresetIds=z.enum(['leitwolf','herr-grau','mara','frau-kern','otto','nova','dachs','fuchs','baer','rabe','schaefer','eule']);
-const agentRoles=z.enum(['coordinator','advisor','frontend','developer','reviewer','operations','strategy','researcher','debugger','infrastructure','security','support','knowledge']);
+const agentRoles=z.enum(['coordinator','advisor','frontend','developer','reviewer','operations','strategy','researcher','debugger','infrastructure','security','support','knowledge','creative','hr','allrounder']);
 const agentCapabilities=z.enum(['chat','task-plan','task-delegate','code-work','review-support','context-read','code-worktree','review-check']);
 const agentContextSources=z.enum(['messages','tasks','decisions','notes','repository','runs']);
 const agentPermissionsSchema=z.object({
@@ -255,6 +272,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     return {...j,result:undefined,output:typeof result?.output==='string'?result.output.slice(0,24000):null,error:typeof result?.error==='string'?result.error.slice(0,1000):null,model:meta.model,task:meta.task,sharedMessage:meta.sharedMessage??null};
    });
    const members=db.prepare('SELECT id,name,role,seen FROM members ORDER BY name').all().filter(m=>!isRemoved(db,m.id)&&can(db,m,project,'view')).map(m=>({...m,removed:false,projectRoles:rolesOf(db,m,project)}));
+   ensureProjectLead(db,project,member,now());
    const agents=agentsFor(db,project);
    const views=['all','handoffs',...members.map(m=>'member:'+m.id),...agents.filter(a=>a.active!==false).map(a=>'agent:'+a.id)];
    const unread=Object.fromEntries(views.map(view=>[view,unreadFor(db,project,member.id,view)]));
@@ -301,6 +319,10 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     const agentId=value.agentId??randomUUID(),agentKey=key('agent',value.project+':'+agentId);
     const existing=readMeta(db,agentKey);
     if(!existing&&agentsFor(db,value.project).length>=20)throw fail(409,'In diesem Projekt sind bereits 20 KI-Teammitglieder eingerichtet.');
+    // The lead is a fixed part of every project: he stays, keeps his face and exists once.
+    const wantsLeadFace=(value.avatarPresetId!==undefined?value.avatarPresetId:existing?.avatarPresetId)===LEAD_PRESET;
+    if(existing?.avatarPresetId===LEAD_PRESET&&existing.active!==false&&(!value.active||!wantsLeadFace))throw fail(409,'Jedes Projekt braucht seinen Guru. Herr Grau bleibt im Projekt und behält sein Gesicht.');
+    if(wantsLeadFace&&value.active&&agentsFor(db,value.project).some(a=>a.id!==agentId&&a.active!==false&&a.avatarPresetId===LEAD_PRESET))throw fail(409,'Herr Grau gibt es in jedem Projekt nur einmal.');
     if(value.modelDevice&&!db.prepare('SELECT id FROM devices WHERE id=? AND revoked=0').get(value.modelDevice))throw fail(400,'Der gewählte Modellzugang ist nicht registriert oder wurde widerrufen.');
     // Permissions are strictly separate from avatar, personality, and role labels.
     // Only when permissions are omitted (legacy callers) do we derive defaults.

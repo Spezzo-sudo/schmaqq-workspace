@@ -3,7 +3,7 @@ import {ArrowRight,Bot,CheckCheck,Crown,ExternalLink,Hash,Link2,MessageSquare,Mo
 import {
  roomRequest,operationId,time,initials,storedDraft,saveDraft,taskTitleFrom,
  agentRoleLabels,agentCapabilityLabels,agentContextSourceLabels,agentPermissionLabels,
- agentEffectivePermissions,agentExecutionStatus,agentLiveActivity,agentRunActive,isProjectLead,PROJECT_LEAD_PRESET,memberRoleSummary,filterMessengerMessages,
+ agentDepartments,agentDepartment,agentEffectivePermissions,agentExecutionStatus,agentLiveActivity,agentRunActive,isProjectLead,PROJECT_LEAD_PRESET,memberRoleSummary,filterMessengerMessages,
  type RoomState,type RoomMember,type RoomMessage,type RoomAgent,type RoomAgentRole,type HermesAgentRun,
  type RoomAgentCapability,type RoomAgentContextSource,type RoomAgentPermissions,type Resource,type MessengerFilter
 } from './room-model';
@@ -19,7 +19,7 @@ const DEFAULT_MODELS=['gpt-5-codex','gpt-4.1','o3','claude-sonnet-4','lokales-mo
 const ALL_CAPABILITIES:RoomAgentCapability[]=['chat','task-plan','task-delegate','code-work','review-support'];
 const ALL_CONTEXT_SOURCES:RoomAgentContextSource[]=['messages','tasks','decisions','repository','Test-Runs' as never].filter(x=>['messages','tasks','decisions','repository','runs'].includes(x)) as RoomAgentContextSource[];
 const CONTEXT_SOURCE_KEYS:RoomAgentContextSource[]=['messages','tasks','decisions','repository','runs'];
-const ALL_ROLES:RoomAgentRole[]=['coordinator','advisor','frontend','reviewer','operations','strategy','debugger','researcher','infrastructure','security','support','knowledge','developer'];
+const ALL_ROLES:RoomAgentRole[]=agentDepartments.flatMap(d=>d.roles);
 
 export function Conversation({room,resources=[],userId,search,refresh,onTask,onConvert,projectNavigation,tools,detail,detailTitle,detailKey='talk',detailNavigation,onCloseDetail,onFiles,onBack}:{onBack?:()=>void;room:RoomState;resources?:Resource[];userId:string;search:string;refresh:()=>Promise<void>;onTask:(id:string)=>void;onConvert:(kind:'task'|'decision',source:RoomMessage)=>void;projectNavigation?:ReactNode;tools?:ReactNode;detail?:ReactNode;detailTitle?:string;detailKey?:string;detailNavigation?:ReactNode;onCloseDetail?:()=>void;onFiles?:()=>void}){
  const [filter,setFilter]=useState<MessengerFilter>(()=>readMessengerFilter(location.search,room));
@@ -394,7 +394,9 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
       <button className={'rw-contact-row'+(filter.kind==='handoffs'?' active':'')} onClick={()=>selectFilter({kind:'handoffs'})}><span className="rw-avatar agent"><Bot size={18}/></span><span className="rw-contact-meta"><strong>Agenten & Übergaben</strong><small>{handoffCount?handoffCount+' Beiträge':'Aufträge und Abstimmung im Team'}</small></span>{unreadBadge('handoffs')}</button>
      </div>}
      {!!listedMembers.length&&<div className="rw-messenger-group"><div className="rw-messenger-group-head"><span>Menschen</span></div>{listedMembers.map(m=>{const latest=lastFor({kind:'member',id:m.id});return <button key={m.id} className={'rw-contact-row'+(filter.kind==='member'&&filter.id===m.id?' active':'')} onClick={()=>selectFilter({kind:'member',id:m.id})}><span className="rw-avatar">{initials(m.name)}</span><span className="rw-contact-meta"><strong>{m.name}{m.id===userId?' (Du)':''}</strong><small>{latest?.body??memberRoleSummary(m)}</small></span>{latest&&<time>{time(latest.created)}</time>}{unreadBadge('member:'+m.id)}</button>;})}</div>}
-     {!!listedAgents.length&&<div className="rw-messenger-group"><div className="rw-messenger-group-head"><span>KI-Team</span></div>{listedAgents.map(agentRow)}</div>}
+     {railMode==='chats'&&!!listedAgents.length&&<div className="rw-messenger-group"><div className="rw-messenger-group-head"><span>KI-Team</span></div>{listedAgents.map(agentRow)}</div>}
+     {railMode==='contacts'&&leadAgent&&matchesContact(leadAgent.name+' Guru Führung')&&<div className="rw-messenger-group"><div className="rw-messenger-group-head"><span>Führung</span></div>{agentRow(leadAgent)}</div>}
+     {railMode==='contacts'&&agentDepartments.map(d=>{const team=listedAgents.filter(a=>!isProjectLead(a)&&agentDepartment(a).id===d.id);return team.length?<div key={d.id} className="rw-messenger-group r5-department"><div className="rw-messenger-group-head"><span>{d.label}</span></div>{team.map(agentRow)}</div>:null;})}
      {railMode==='chats'&&<button className="r3-directory-link" onClick={()=>setRailMode('contacts')}><Users size={16}/>{listedAgents.length?'Alle Kontakte':'KI-Team und weitere Kontakte'}<ArrowRight size={14}/></button>}
      {railMode==='contacts'&&!listedMembers.length&&!listedAgents.length&&<p className="rw-messenger-empty">Keine passenden Kontakte.</p>}
      {!!room.tasks.length&&<details className="r3-topic-directory"><summary>Themen & Aufgaben <span>{room.tasks.length}</span></summary>{room.tasks.slice(0,30).map(t=><div key={t.id} className="rw-topic-row"><button className={'rw-contact-row'+(filter.kind==='topic'&&filter.taskId===t.id?' active':'')} onClick={()=>selectFilter({kind:'topic',taskId:t.id})}><Hash size={15}/><span className="rw-contact-meta"><strong>{t.title}</strong></span></button><button className="rw-icon" aria-label={'Aufgabe öffnen: '+t.title} onClick={()=>onTask(t.id)}><ArrowRight size={15}/></button></div>)}</details>}
@@ -614,7 +616,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
        <label>Optionaler Spitzname<input name="nickname" maxLength={40} value={editingAgent.nickname??''} onChange={e=>setEditingAgent({...editingAgent,nickname:e.target.value})} placeholder="z. B. Der Berater"/></label>
        <label>Rolle / Fachbereich
         <select name="role" value={editingAgent.role??'coordinator'} onChange={e=>setEditingAgent({...editingAgent,role:e.target.value as RoomAgentRole})}>
-         {ALL_ROLES.map(r=><option key={r} value={r}>{agentRoleLabels[r]}</option>)}
+         {agentDepartments.map(d=><optgroup key={d.id} label={d.label}>{d.roles.map(r=><option key={r} value={r}>{agentRoleLabels[r]}</option>)}</optgroup>)}
         </select>
        </label>
        <label>Ausgewähltes KI-Modell
@@ -685,7 +687,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
      </details>
 
      <footer className="rw-agent-form-actions">
-      {editingAgent.id&&<button type="button" className="rw-button subtle" disabled={busy} onClick={()=>void removeAgent(editingAgent as RoomAgent)}>Aus Projekt entfernen</button>}
+      {editingAgent.id&&!isProjectLead(editingAgent)&&<button type="button" className="rw-button subtle" disabled={busy} onClick={()=>void removeAgent(editingAgent as RoomAgent)}>Aus Projekt entfernen</button>}
       <button type="button" className="rw-button subtle" disabled={busy} onClick={()=>setEditingAgent(null)}>Abbrechen</button>
       <button type="submit" className="rw-button lime" disabled={busy}>{busy?'Wird gespeichert …':'Agentenprofil speichern'}</button>
      </footer>

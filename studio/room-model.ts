@@ -14,7 +14,10 @@ export type RoomAgentRole=
  |'infrastructure'
  |'security'
  |'support'
- |'knowledge';
+ |'knowledge'
+ |'creative'
+ |'hr'
+ |'allrounder';
 export type RoomAgentCapability='chat'|'task-plan'|'task-delegate'|'code-work'|'review-support'|'context-read';
 export type RoomAgentContextSource='messages'|'tasks'|'decisions'|'notes'|'repository'|'runs';
 export type RoomAgentPermissions={
@@ -129,7 +132,10 @@ export const agentRoleLabels:Record<RoomAgentRole,string>={
  infrastructure:'Infrastruktur / Systeme',
  security:'Security',
  support:'Support',
- knowledge:'Wissen / Dokumentation'
+ knowledge:'Wissen / Dokumentation',
+ creative:'Kreation',
+ hr:'Personal (HR)',
+ allrounder:'Allrounder'
 };
 
 export const agentCapabilityLabels:Record<RoomAgentCapability,string>={
@@ -208,6 +214,18 @@ export function agentLiveActivity(run:Pick<HermesAgentRun,'status'|'steps'>):str
  if(last==='project.read_context')return 'Überlegt mit dem Projektstand';
  return 'Liest deine Nachricht';
 }
+/** The team is built like a small company: the lead on top, then departments the owner fills as needed. */
+export const agentDepartments:{id:string;label:string;roles:RoomAgentRole[]}[]=[
+ {id:'build',label:'Entwicklung',roles:['developer','frontend','debugger','infrastructure']},
+ {id:'safety',label:'Sicherheit & Prüfung',roles:['security','reviewer']},
+ {id:'research',label:'Forschung & Wissen',roles:['researcher','knowledge']},
+ {id:'creative',label:'Kreation',roles:['creative']},
+ {id:'advice',label:'Beratung & Strategie',roles:['advisor','strategy']},
+ {id:'doing',label:'Macher & Betrieb',roles:['operations','support','coordinator']},
+ {id:'people',label:'Personal',roles:['hr']},
+ {id:'allround',label:'Allrounder',roles:['allrounder']}
+];
+export const agentDepartment=(agent:Pick<RoomAgent,'role'>)=>agentDepartments.find(d=>d.roles.includes(agent.role))??agentDepartments.at(-1)!;
 /** Every project has one lead who speaks for the team: always the same character. */
 export const PROJECT_LEAD_PRESET='herr-grau';
 export const isProjectLead=(agent:Pick<RoomAgent,'avatarPresetId'>|null|undefined)=>agent?.avatarPresetId===PROJECT_LEAD_PRESET;

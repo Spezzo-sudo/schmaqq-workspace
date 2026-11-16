@@ -228,3 +228,23 @@ test('project lead: every new project starts with its lead, owned by the person 
  const job=(await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job;
  assert.equal(job.profile.name,'Herr Grau');assert.equal(job.toolPolicy.mode,'studio-tools-r1');
 });
+
+test('project lead: he stays, keeps his face, exists once, and older projects get him when opened',async t=>{
+ const f=await fixture(t),[alice,bob]=f.members;
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Firma',description:''},{cookie:alice.cookie})).data.project;
+ const room=async(member=alice)=>(await f.get('/api/room?project='+project,{cookie:member.cookie})).data;
+ const lead=(await room()).agents[0];
+ const save=(extra,member=alice)=>f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Herr Grau',role:'coordinator',model:'x',...extra},{cookie:member.cookie});
+ assert.equal((await save({agentId:lead.id,avatarPresetId:'herr-grau',active:false})).status,409,'cannot be removed');
+ assert.equal((await save({agentId:lead.id,avatarPresetId:'mara'})).status,409,'keeps his face');
+ assert.equal((await save({avatarPresetId:'herr-grau'})).status,409,'exists once');
+ assert.equal((await save({agentId:lead.id,avatarPresetId:'herr-grau',purpose:'Neu beschrieben'})).status,200,'may still be edited');
+ for(const role of ['creative','hr','allrounder'])assert.equal((await save({name:'Neu '+role,role,avatarPresetId:'nova'})).status,200,role);
+ assert.equal((await room()).agents.filter(a=>a.avatarPresetId==='herr-grau'&&a.active).length,1);
+ // A project from before the lead existed: remove him directly in storage, then open the project again.
+ f.app.db.prepare("DELETE FROM workspace_meta WHERE key=?").run('room:v1:agent:'+project+':'+lead.id);
+ const restored=(await room(bob)).agents.find(a=>a.avatarPresetId==='herr-grau');
+ assert.ok(restored&&restored.active);
+ assert.equal(restored.createdBy,alice.id,'belongs to the person who opened the project, not to whoever looks first');
+ assert.equal((await room()).agents.filter(a=>a.avatarPresetId==='herr-grau').length,1,'opening again adds no second one');
+});
