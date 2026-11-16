@@ -57,7 +57,8 @@ export type RoomAgent={
 export type AgentHandoff={fromAgent?:string;toAgent:string;task?:string|null;summary:string;status:'delegated'|'in_progress'|'completed'|'requested'|'stopped'};
 export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;sequence?:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;scope?:string;senderAgent?:string|null;handoff?:AgentHandoff|null;proposalCard?:AgentTaskProposal|null};
 /** Hermes task proposal shown in the chat. Server decides `canDecide`; a proposal is never a task until accepted. */
-export type AgentTaskProposal={id:string;title:string;description:string;kind:'general'|'code';status:'pending'|'accepted'|'rejected';task:string|null;agent:string;owner:string;canDecide:boolean};
+export type AgentPlan={tasks:{title:string;done_when:string;kind:'general'|'code';who:string}[];hire:{role:string;why:string}[]};
+export type AgentTaskProposal={id:string;title:string;description:string;kind:'general'|'code'|'plan';status:'pending'|'accepted'|'rejected';task:string|null;tasks?:string[];plan?:AgentPlan;agent:string;owner:string;canDecide:boolean};
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
 export type RoomRun={id:string;agentId?:string|null;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;updated?:number;task:string|null};
@@ -193,7 +194,7 @@ export function agentEffectivePermissions(agent?:Partial<RoomAgent>|null):RoomAg
 /** The viewer's own AI access: configured = a worker is bound to this person, online = it asked for work recently. */
 export type HermesAvailability={configured:boolean;online?:boolean;runs:HermesAgentRun[]};
 export const agentRunActive=(run:Pick<HermesAgentRun,'status'>)=>run.status==='queued'||run.status==='running'||run.status==='cancelling';
-const agentStepLabels:Record<string,string>={'project.read_context':'Projektstand gelesen','task.propose':'Aufgabe vorgeschlagen'};
+const agentStepLabels:Record<string,string>={'project.read_context':'Projektstand gelesen','task.propose':'Aufgabe vorgeschlagen','plan.propose':'Plan vorgeschlagen'};
 export const agentStepLabel=(tool:string)=>agentStepLabels[tool]??'Arbeitsschritt';
 export function workDuration(ms:number){
  const seconds=Math.max(1,Math.round(ms/1000));
@@ -213,6 +214,7 @@ export function agentLiveActivity(run:Pick<HermesAgentRun,'status'|'steps'>):str
  if(run.status==='cancelling')return 'Wird gestoppt';
  const last=run.steps?.at(-1)?.tool;
  if(last==='task.propose')return 'Schreibt die Antwort zum Vorschlag';
+ if(last==='plan.propose')return 'Schreibt die Antwort zum Plan';
  if(last==='project.read_context')return 'Überlegt mit dem Projektstand';
  return 'Liest deine Nachricht';
 }

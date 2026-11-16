@@ -61,6 +61,11 @@ function unreadFor(db,project,member,view){
 function proposalCard(db,proposalId,message,viewer){
  const p=visibleProposal(db,proposalId);
  if(!p||p.message!==message.id||p.project!==message.channel)return null;
+ if(p.kind==='plan'){
+  // A plan: the goal, its few tasks with who should do them, and at most two suggested roles.
+  const plan=JSON.parse(p.description),tasks=p.task?JSON.parse(p.task):[];
+  return {id:p.id,title:p.title,description:'',kind:'plan',status:p.status,task:tasks[0]??null,tasks,plan,agent:p.agent,owner:p.owner,canDecide:p.status==='pending'&&p.owner===viewer.id&&can(db,viewer,p.project,'develop')};
+ }
  return {id:p.id,title:p.title,description:p.description,kind:p.kind,status:p.status,task:p.task??null,agent:p.agent,owner:p.owner,canDecide:p.status==='pending'&&p.owner===viewer.id&&can(db,viewer,p.project,'develop')};
 }
 function requireProject(db,project){const row=db.prepare('SELECT * FROM projects WHERE id=?').get(project);if(!row)throw fail(404,'Dieser Projektraum existiert nicht.');return row;}

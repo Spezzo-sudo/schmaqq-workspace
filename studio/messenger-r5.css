@@ -167,3 +167,15 @@
 .r3-messenger .r5-rich pre{padding:10px 12px;border-radius:10px;background:#1112250f;font:12.5px/1.5 var(--schmaqq-mono);overflow-x:auto;white-space:pre}
 .r3-messenger .r5-proposal-body.clamped{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .r3-messenger .r5-more{justify-self:start;padding:2px 0;border:0;background:transparent;color:var(--schmaqq-muted);font:600 12px/1.2 var(--schmaqq-sans);text-decoration:underline;cursor:pointer}
+
+/* ---- Plan card: goal, few tasks, who does them ---------------------------------------------------------- */
+.r3-messenger .r5-plan-tasks{list-style:none;margin:2px 0 0;padding:0;display:grid;gap:8px}
+.r3-messenger .r5-plan-tasks>li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:10px}
+.r3-messenger .r5-plan-number{width:22px;height:22px;border-radius:50%;background:var(--schmaqq-ink);color:var(--schmaqq-acid);display:grid;place-items:center;font:700 12px/1 var(--schmaqq-sans)}
+.r3-messenger .r5-plan-text{display:grid;gap:2px;min-width:0}
+.r3-messenger .r5-plan-text>strong{font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.r3-messenger .r5-plan-text>small{font-size:12px;line-height:1.45;color:var(--schmaqq-muted);overflow-wrap:anywhere}
+.r3-messenger .r5-plan-who{max-width:110px;padding:3px 9px;border-radius:999px;background:#1112250d;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r3-messenger .r5-plan-hire{margin-top:4px;padding:9px 11px;border-radius:10px;background:#ff6f5914;font-size:12px;line-height:1.45}
+.r3-messenger .r5-plan-hire>span{font-weight:700}
+.r3-messenger .r5-plan-hire>p{margin:2px 0 0}

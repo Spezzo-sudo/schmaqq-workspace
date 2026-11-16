@@ -67,7 +67,15 @@ test('tool bridge: only agents allowed to plan tasks receive the two Studio tool
 test('tool bridge: message -> tool call -> proposal card -> approval -> exactly one Studio task',async t=>{
  const f=await fixture(t),[alice,bob]=f.members;
  const {project,job,message}=await f.setup();
- assert.deepEqual(job.toolPolicy,{mode:'studio-tools-r1',allowed:['project.read_context','task.propose']});
+ assert.equal(job.toolPolicy.mode,'studio-tools-r2');
+ assert.deepEqual(job.toolPolicy.allowed,['project.read_context','task.propose'],'planning is for the lead only');
+ assert.deepEqual(job.toolPolicy.tools.map(t=>[t.id,t.name]),[['project.read_context','studio_project_read_context'],['task.propose','studio_task_propose']]);
+ // The worker accepts exactly what Studio describes, and nothing malformed.
+ assert.deepEqual(toolGrant(job.toolPolicy).map(t=>t.id),['project.read_context','task.propose']);
+ assert.deepEqual(toolGrant({mode:'studio-tools-r1',allowed:['task.propose']}).map(t=>t.name),['studio_task_propose'],'the first Studio version still works');
+ const broken=change=>({...job.toolPolicy,tools:job.toolPolicy.tools.map((t,i)=>i?t:{...t,...change})});
+ for(const change of [{name:'terminal'},{name:'studio_task_propose'},{id:'other.tool'},{description:''},{parameters:{type:'array'}}])assert.throws(()=>toolGrant(broken(change)),/Unsafe/,JSON.stringify(change));
+ assert.throws(()=>toolGrant({...job.toolPolicy,tools:[]}),/Unsafe/);
  const context=await f.tool(job,'project.read_context',{});
  assert.equal(context.status,200);
  assert.equal(context.data.result.trust,'untrusted-project-data');

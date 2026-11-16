@@ -52,8 +52,34 @@ export function AgentWorkingBubble({run,agent}:{run:HermesAgentRun;agent:RoomAge
 
 const proposalStatus={pending:'Wartet auf dich',accepted:'Aufgabe angelegt',rejected:'Abgelehnt'};
 
+/** A plan of the lead: the goal, a few tasks with who does them, and at most two suggested roles. */
+function PlanCard({proposal,busy,onDecide,onOpenTask}:{proposal:AgentTaskProposal;busy:boolean;onDecide:(decision:'accept'|'reject')=>void;onOpenTask:(task:string)=>void}){
+ const plan=proposal.plan!,count=plan.tasks.length;
+ const status={pending:'Wartet auf dich',accepted:count+' Aufgaben angelegt',rejected:'Abgelehnt'}[proposal.status];
+ return <div className={'r5-proposal-card r5-plan '+proposal.status} role="group" aria-label={'Plan: '+proposal.title}>
+  <div className="r5-proposal-head"><ListChecks size={15} aria-hidden="true"/><span>Plan</span><span className={'r5-proposal-status '+proposal.status}>{status}</span></div>
+  <p className="r5-proposal-title">{proposal.title}</p>
+  <ol className="r5-plan-tasks">{plan.tasks.map((task,index)=><li key={index}>
+   <span className="r5-plan-number" aria-hidden="true">{index+1}</span>
+   <span className="r5-plan-text"><strong>{task.title}</strong>{task.done_when&&<small>Fertig, wenn: {task.done_when}</small>}</span>
+   {task.who&&<span className="r5-plan-who">{task.who}</span>}
+  </li>)}</ol>
+  {!!plan.hire.length&&<div className="r5-plan-hire"><span>Fehlt im Team:</span>{plan.hire.map((role,index)=><p key={index}><strong>{role.role}</strong> – {role.why}</p>)}</div>}
+  {proposal.canDecide&&<div className="r5-proposal-actions">
+   <button type="button" className="accept" disabled={busy} onClick={()=>onDecide('accept')}><Check size={15} aria-hidden="true"/>Plan annehmen · {count} Aufgaben</button>
+   <button type="button" disabled={busy} onClick={()=>onDecide('reject')}><X size={15} aria-hidden="true"/>Ablehnen</button>
+  </div>}
+  {proposal.status==='pending'&&!proposal.canDecide&&<small className="rw-muted">Nur die Person, die gefragt hat, entscheidet.</small>}
+  {proposal.task&&<button type="button" className="r5-proposal-open" onClick={()=>onOpenTask(proposal.task!)}>Erste Aufgabe öffnen<ChevronRight size={14} aria-hidden="true"/></button>}
+ </div>;
+}
+
 /** A proposal is never a task until the person who asked accepts it. */
-export function ProposalCard({proposal,busy,onDecide,onOpenTask}:{proposal:AgentTaskProposal;busy:boolean;onDecide:(decision:'accept'|'reject')=>void;onOpenTask:(task:string)=>void}){
+export function ProposalCard(props:{proposal:AgentTaskProposal;busy:boolean;onDecide:(decision:'accept'|'reject')=>void;onOpenTask:(task:string)=>void}){
+ return props.proposal.kind==='plan'&&props.proposal.plan?<PlanCard {...props}/>:<TaskProposalCard {...props}/>;
+}
+
+function TaskProposalCard({proposal,busy,onDecide,onOpenTask}:{proposal:AgentTaskProposal;busy:boolean;onDecide:(decision:'accept'|'reject')=>void;onOpenTask:(task:string)=>void}){
  const [open,setOpen]=useState(false),long=proposal.description.length>170||proposal.description.split('\n').length>3;
  return <div className={'r5-proposal-card '+proposal.status} role="group" aria-label={'Aufgabenvorschlag: '+proposal.title}>
   <div className="r5-proposal-head"><ListChecks size={15} aria-hidden="true"/><span>Aufgabenvorschlag</span><span className={'r5-proposal-status '+proposal.status}>{proposalStatus[proposal.status]}</span></div>

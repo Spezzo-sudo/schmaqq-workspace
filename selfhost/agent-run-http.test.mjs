@@ -262,3 +262,42 @@ test('project lead: fully editable but never removed; an older project promotes 
  assert.equal(created.length,1);assert.equal(created[0].name,'Herr Grau');
  assert.equal((await room()).agents.filter(a=>a.lead).length,1,'opening again adds no second one');
 });
+
+test('planning: the lead proposes a few tasks in one run; accepting the plan creates exactly those, once',async t=>{
+ const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Plan',description:''},{cookie:alice.cookie})).data.project;
+ const room=async(member=alice)=>(await f.get('/api/room?project='+project,{cookie:member.cookie})).data;
+ const lead=(await room()).agents[0];
+ const mara=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Mara',role:'frontend',avatarPresetId:'mara',model:'x',permissions:{readProject:true,writeMessages:true,manageTasks:true,editCode:false,prepareReviews:false,delegateAgents:false}},{cookie:alice.cookie})).data.agentId;
+ const ask=async(agent,body)=>{const message=randomUUID();await f.post('/api/room',{action:'message',id:message,project,recipient:agent,direct:true,body},{cookie:alice.cookie});await f.post('/api/agent-runs',{project,agent,message},{cookie:alice.cookie});return (await f.post('/api/agent-worker/claim',{},w)).data.job;};
+ const call=(job,tool,args)=>f.post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool,args},w);
+ const plan={goal:'Startseite verständlicher machen',tasks:[
+  {title:'Überschrift kürzen',done_when:'Die Überschrift passt bei 390 px in zwei Zeilen.',kind:'code',who:'Mara'},
+  {title:'Nutzen in drei Punkten festlegen',done_when:'Drei Sätze stehen im Wissen.',kind:'general',who:'Mensch'}],
+  hire:[{role:'Texter',why:'Niemand im Team schreibt Werbetexte.'}]};
+ // An ordinary agent may propose a task but not a plan.
+ const other=await ask(mara,'Mach einen Plan.');
+ assert.ok(!other.toolPolicy.allowed.includes('plan.propose'));
+ assert.equal((await call(other,'plan.propose',plan)).status,403);
+ await f.post('/api/agent-worker/finish',{run:other.run,lease:other.lease,status:'completed',output:'Das plant Herr Grau.'},w);
+ const job=await ask(lead.id,'Ich will die Startseite verständlicher machen. Mach einen Plan.');
+ assert.ok(job.toolPolicy.allowed.includes('plan.propose'));
+ assert.deepEqual(job.team.map(m=>[m.name,m.lead]),[['Herr Grau',true],['Mara',false]],'the lead knows who is in the team');
+ assert.equal((await call(job,'plan.propose',{...plan,tasks:plan.tasks.slice(0,1)})).status,400,'a plan has at least two tasks');
+ assert.equal((await call(job,'plan.propose',{...plan,tasks:Array(7).fill(plan.tasks[0])})).status,400,'and at most six');
+ assert.equal((await call(job,'plan.propose',plan)).status,200);
+ assert.equal((await call(job,'plan.propose',plan)).status,429,'one plan per run');
+ assert.equal((await room()).tasks.length,0,'proposing creates nothing');
+ const done=await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'Erst die Punkte, dann die Überschrift.'},w);
+ const card=(await room()).messages.find(m=>m.id===done.data.message).proposalCard;
+ assert.deepEqual([card.kind,card.title,card.status,card.plan.tasks.length,card.plan.hire[0].role],['plan','Startseite verständlicher machen','pending',2,'Texter']);
+ assert.equal((await f.post('/api/agent-proposals/decide',{proposal:card.id,decision:'accept'},{cookie:bob.cookie})).status,403);
+ const [a,b]=await Promise.all([1,2].map(()=>f.post('/api/agent-proposals/decide',{proposal:card.id,decision:'accept'},{cookie:alice.cookie})));
+ assert.deepEqual(a.data.tasks,b.data.tasks,'a double tap creates the tasks once');
+ const state=await room(bob);
+ assert.deepEqual(state.tasks.map(t=>t.title).sort(),['Nutzen in drei Punkten festlegen','Überschrift kürzen'],'the tasks belong to the project, whoever asked');
+ const accepted=(await room()).messages.find(m=>m.id===done.data.message).proposalCard;
+ assert.deepEqual([accepted.status,accepted.tasks.length],['accepted',2]);
+ const hint=f.app.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:task-agent:'+state.tasks.find(t=>t.title==='Überschrift kürzen').id);
+ assert.equal(JSON.parse(hint.value).agent,mara,'who the lead had in mind is kept with the task');
+});

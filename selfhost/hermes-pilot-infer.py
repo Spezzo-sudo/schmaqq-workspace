@@ -7,6 +7,7 @@ rejected by Hermes (valid_tool_names); the Studio backend re-checks every call i
 """
 import json
 import os
+import re
 import sys
 
 # Model-facing names (OpenAI function names allow no dots) -> Studio tool ids.
@@ -71,8 +72,48 @@ class Rpc:
         return json.dumps({"error": str(reply.get("error") or "Werkzeug abgelehnt.")[:300]}, ensure_ascii=False)
 
 
-def handler_for(rpc, name):
-    studio = STUDIO_TOOLS[name]
+TOOL_NAME = re.compile(r"^studio_[a-z_]{3,48}$")
+TOOL_ID = re.compile(r"^[a-z]+\.[a-z_]{2,40}$")
+MAX_TOOLS = 8
+
+
+def granted_tools(tools):
+    """Normalise the grant to {model name: (studio id, schema)}.
+
+    Studio sends each tool with its description and parameters, so a new Studio tool needs no new
+    adapter. The first Studio version sent ids only; those map to the two built-in descriptions.
+    Studio checks every call again, whatever is registered here.
+    """
+    if not isinstance(tools, list) or len(tools) > MAX_TOOLS:
+        raise RuntimeError("Studio tool grant invalid.")
+    granted = {}
+    for tool in tools:
+        if isinstance(tool, str):
+            name = next((n for n, studio in STUDIO_TOOLS.items() if studio == tool), None)
+            if not name:
+                raise RuntimeError("Studio tool grant invalid.")
+            studio, schema = tool, SCHEMAS[name]
+        elif isinstance(tool, dict):
+            name, studio = tool.get("name"), tool.get("id")
+            description, parameters = tool.get("description"), tool.get("parameters")
+            well_formed = (
+                isinstance(name, str) and TOOL_NAME.match(name)
+                and isinstance(studio, str) and TOOL_ID.match(studio)
+                and isinstance(description, str) and 0 < len(description) <= 600
+                and isinstance(parameters, dict) and parameters.get("type") == "object"
+            )
+            if not well_formed:
+                raise RuntimeError("Studio tool grant invalid.")
+            schema = {"name": name, "description": description, "parameters": parameters}
+        else:
+            raise RuntimeError("Studio tool grant invalid.")
+        if name in granted or studio in [s for s, _ in granted.values()]:
+            raise RuntimeError("Studio tool grant invalid.")
+        granted[name] = (studio, schema)
+    return granted
+
+
+def handler_for(rpc, studio):
 
     def handler(args, **_kwargs):
         clean = args if isinstance(args, dict) else {}
@@ -99,20 +140,22 @@ def disable_tool_search():
     tool_search.load_config = lambda: off
 
 
-def register_studio_tools(allowed, rpc):
+def register_studio_tools(tools, rpc):
     """Register only the granted Studio tools into a toolset owned by this short-lived process."""
     disable_tool_search()
     from tools.registry import registry
     from toolsets import TOOLSETS, resolve_toolset, validate_toolset
 
-    names = sorted(n for n, studio in STUDIO_TOOLS.items() if studio in allowed)
-    if not names or len(names) != len(set(allowed)):
+    granted = granted_tools(tools)
+    names = sorted(granted)
+    if not names:
         raise RuntimeError("Studio tool grant invalid.")
     if STUDIO_TOOLSET in TOOLSETS or any(registry.get_entry(n) for n in names):
         raise RuntimeError("Studio toolset collision.")
     for n in names:
-        registry.register(name=n, toolset=STUDIO_TOOLSET, schema=SCHEMAS[n], handler=handler_for(rpc, n))
-    TOOLSETS[STUDIO_TOOLSET] = {"description": "SCHMAQQ Studio R1 tools", "tools": list(names), "includes": []}
+        studio, schema = granted[n]
+        registry.register(name=n, toolset=STUDIO_TOOLSET, schema=schema, handler=handler_for(rpc, studio))
+    TOOLSETS[STUDIO_TOOLSET] = {"description": "SCHMAQQ Studio tools", "tools": list(names), "includes": []}
     if not validate_toolset(STUDIO_TOOLSET) or sorted(resolve_toolset(STUDIO_TOOLSET)) != names:
         raise RuntimeError("Studio toolset mismatch.")
     from model_tools import get_tool_definitions
@@ -154,8 +197,8 @@ def main():
         return 0
     if len(sys.argv) != 1:
         return 3
-    raw = sys.stdin.buffer.read(24001)
-    if len(raw) > 24000:
+    raw = sys.stdin.buffer.read(40001)
+    if len(raw) > 40000:
         print("Hermes job exceeds the allowed size.", file=sys.stderr)
         return 3
     try:
@@ -172,7 +215,9 @@ def main():
     if not isinstance(prompt, str) or not prompt.strip() or len(prompt) > 20000:
         print("Hermes prompt is invalid.", file=sys.stderr)
         return 3
-    if not isinstance(tools, list) or any(t not in STUDIO_TOOLS.values() for t in tools):
+    try:
+        granted_tools(tools)
+    except RuntimeError:
         print("Hermes tool grant is invalid.", file=sys.stderr)
         return 3
     try:
