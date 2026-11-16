@@ -43,7 +43,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
  const connectedModels=[...new Set(resources.filter(r=>r.online).flatMap(r=>[...r.models,...(r.codex==='chatgpt'?['gpt-5-codex']:[])]))];
  const modelOptions=[...new Set([...connectedModels,...DEFAULT_MODELS])];
 
- const messages=[...new Map([...older,...room.messages].map(m=>[m.id,m])).values()].sort((a,b)=>a.created-b.created||a.id.localeCompare(b.id));
+ const messages=[...new Map([...older,...room.messages].map(m=>[m.id,m])).values()].sort((a,b)=>(a.sequence??a.created)-(b.sequence??b.created)||a.id.localeCompare(b.id));
  useEffect(()=>{if(!messages.length)return;if(first.current||followLatest.current){first.current=false;requestAnimationFrame(()=>{if(stream.current)stream.current.scrollTop=stream.current.scrollHeight;});}},[messages.at(-1)?.id,messengerFilterKey(filter)]);
 
  const writableAgents=activeAgents.filter(a=>agentEffectivePermissions(a).writeMessages);
