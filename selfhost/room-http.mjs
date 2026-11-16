@@ -50,10 +50,10 @@ function unreadFor(db,project,member,view){
   agent:"(json_extract(x.value,'$.senderAgent')=? OR json_extract(x.value,'$.recipient')=? OR json_extract(x.value,'$.handoff.toAgent')=?)"
  }[type];
  if(!where)return 0;
- const parameters=[project,member,marker.created??0,marker.created??0,marker.id??''];
+ const parameters=[project,member,marker.sequence??0];
  if(type==='member')parameters.push(target,target);
  if(type==='agent')parameters.push(target,target,target);
- const count=db.prepare("SELECT count(*) AS n FROM messages m LEFT JOIN workspace_meta x ON x.key='room:v1:message:'||m.id WHERE m.channel=? AND m.author!=? AND (m.created>? OR (m.created=? AND m.id>?)) AND "+where).get(...parameters).n;
+ const count=db.prepare("SELECT count(*) AS n FROM messages m LEFT JOIN workspace_meta x ON x.key='room:v1:message:'||m.id WHERE m.channel=? AND m.author!=? AND m.rowid>? AND "+where).get(...parameters).n;
  return Math.min(99,count);
 }
 function requireProject(db,project){const row=db.prepare('SELECT * FROM projects WHERE id=?').get(project);if(!row)throw fail(404,'Dieser Projektraum existiert nicht.');return row;}
@@ -189,7 +189,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     send({rooms:archived});return true;
    }
    if(route==='/api/rooms'){
-    send({rooms:db.prepare("SELECT p.*,(SELECT count(*) FROM tasks t WHERE t.project=p.id AND t.status!='done') AS openTasks,(SELECT max(created) FROM messages m WHERE m.channel=p.id) AS lastMessage FROM projects p WHERE NOT EXISTS (SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:project:'||p.id AND json_extract(m.value,'$.archived')=1) ORDER BY COALESCE((SELECT max(created) FROM messages WHERE channel=p.id),p.created) DESC,p.id").all().filter(r=>!hiddenPractice(db,r.id,member.id)&&can(db,member,r.id,'view')).map(r=>({...r,practice:!!practiceOwner(db,r.id),lastExcerpt:db.prepare('SELECT body FROM messages WHERE channel=? ORDER BY created DESC,id DESC LIMIT 1').get(r.id)?.body?.slice(0,160)??'',unread:unreadFor(db,r.id,member.id,'all')}))});return true;
+    send({rooms:db.prepare("SELECT p.*,(SELECT count(*) FROM tasks t WHERE t.project=p.id AND t.status!='done') AS openTasks,(SELECT max(created) FROM messages m WHERE m.channel=p.id) AS lastMessage FROM projects p WHERE NOT EXISTS (SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:project:'||p.id AND json_extract(m.value,'$.archived')=1) ORDER BY COALESCE((SELECT max(created) FROM messages WHERE channel=p.id),p.created) DESC,p.id").all().filter(r=>!hiddenPractice(db,r.id,member.id)&&can(db,member,r.id,'view')).map(r=>({...r,practice:!!practiceOwner(db,r.id),lastExcerpt:db.prepare('SELECT body FROM messages WHERE channel=? ORDER BY rowid DESC LIMIT 1').get(r.id)?.body?.slice(0,160)??'',unread:unreadFor(db,r.id,member.id,'all')}))});return true;
    }
    const project=parse(id,url.searchParams.get('project'));const p=requireProject(db,project);
    if(hiddenPractice(db,project,member.id))throw fail(404,'Projekt fehlt.');
@@ -198,9 +198,9 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
    if(route==='/api/room/context'){const task=url.searchParams.get('task');send(buildRoomContext(db,project,task?parse(id,task):undefined));return true;}
    if(route==='/api/room/tasks'){send(listRoomTasks(db,project,{query:parse(z.string().max(160),url.searchParams.get('q')??''),includeDone:url.searchParams.get('done')==='1'}));return true;}
    const before=url.searchParams.get('before');
-   const beforeMessage=before?db.prepare('SELECT created,id FROM messages WHERE id=? AND channel=?').get(parse(id,before),project):null;
+   const beforeMessage=before?db.prepare('SELECT rowid AS sequence FROM messages WHERE id=? AND channel=?').get(parse(id,before),project):null;
    if(before&&!beforeMessage)throw fail(400,'Die ältere Nachricht gehört nicht zu diesem Raum.');
-   const messageRows=beforeMessage?db.prepare('SELECT * FROM messages WHERE channel=? AND (created<? OR (created=? AND id<?)) ORDER BY created DESC,id DESC LIMIT 101').all(project,beforeMessage.created,beforeMessage.created,beforeMessage.id):db.prepare('SELECT * FROM messages WHERE channel=? ORDER BY created DESC,id DESC LIMIT 101').all(project);
+   const messageRows=beforeMessage?db.prepare('SELECT rowid AS sequence,* FROM messages WHERE channel=? AND rowid<? ORDER BY rowid DESC LIMIT 101').all(project,beforeMessage.sequence):db.prepare('SELECT rowid AS sequence,* FROM messages WHERE channel=? ORDER BY rowid DESC LIMIT 101').all(project);
    const more=messageRows.length>100;const messages=messageRows.slice(0,100).reverse().map(m=>{const meta=readMeta(db,key('message',m.id))??{};const sourceTask=readMeta(db,key('source-task',m.id))?.task??null;return {...m,...meta,topicTask:meta.topicTask??sourceTask,taskId:sourceTask??meta.topicTask??null};});
    const runs=db.prepare("SELECT j.id,j.owner,j.device,j.project,j.status,j.created,j.action,j.result,d.name AS deviceName FROM jobs j JOIN devices d ON d.id=j.device WHERE j.project=? AND EXISTS(SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:run:'||j.id) AND (j.owner=? OR d.owner=?) ORDER BY j.created DESC,j.id DESC LIMIT 30").all(project,member.id,member.id).map(j=>{
     const meta=readMeta(db,key('run',j.id));let result;try{result=JSON.parse(j.result??'null');}catch{result=null;}
@@ -227,12 +227,13 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
    requireProject(db,value.project);
    if(value.action==='read'){
     checkChatView(db,value.project,value.view);
-    const message=value.messageId?requireSource(db,value.project,value.messageId):null;
+    const message=value.messageId?db.prepare('SELECT rowid AS sequence,* FROM messages WHERE id=? AND channel=?').get(value.messageId,value.project):null;
+    if(value.messageId&&!message)throw fail(400,'Die Nachricht gehört nicht zu diesem Raum.');
     const row=message?{...message,metadata:readMeta(db,key('message',message.id))??{}}:null;
     if(row&&!matchesChatView(row,value.view))throw fail(400,'Die Lesemarkierung gehört nicht zu diesem Gespräch.');
-    const next={created:message?.created??0,id:message?.id??''},location=readKey(value.project,member.id,value.view);
+    const next={sequence:message?.sequence??0},location=readKey(value.project,member.id,value.view);
     const previous=readMeta(db,location);
-    if(!previous||previous.created<next.created||previous.created===next.created&&previous.id<next.id)putMeta(db,location,next);
+    if(!previous||(previous.sequence??0)<next.sequence)putMeta(db,location,next);
     return {ok:true};
    }
    if(value.action==='repository'){
