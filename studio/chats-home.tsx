@@ -55,13 +55,13 @@ export function ChatsHome({rooms,waiting,greeting,onOpen,onGeneral,onCreateProje
    <button className="ch-row" onClick={()=>onOpen(r.id,'all')}>
     <span className="ch-group-mark" style={{background:tone(r.id)}} aria-hidden>{initials(r.title)}</span>
     <span className="ch-row-text"><span className="ch-row-top"><strong>{r.title}</strong>{r.practice&&<em className="ch-tag">Übung</em>}<time>{when(r.lastMessage)}</time></span>
-     <span className="ch-row-sub">{r.openTasks?(r.openTasks===1?'1 Aufgabe offen':r.openTasks+' Aufgaben offen'):r.lastMessage?'Projektgruppe':'Noch keine Nachricht'}</span></span>
+     <span className="ch-row-sub">{r.lastExcerpt||'Noch keine Nachricht'}{r.openTasks?\x60 · \x24{r.openTasks} offen\x60:''}</span></span>{!!r.unread&&<span className="ch-unread" aria-label={\x60\x24{r.unread} ungelesene Nachrichten\x60}>{r.unread}{r.unread===99?'+':''}</span>}
    </button>}));
   const agents:Row[]=entries.filter(e=>!q||e.agent.name.toLowerCase().includes(q)||e.project.title.toLowerCase().includes(q)).map(e=>({key:'a:'+e.project.id+':'+e.agent.id,kind:'agent',last:e.last,render:()=>
    <button className="ch-row" onClick={()=>onOpen(e.project.id,'agent:'+e.agent.id)}>
     <AgentAvatar agent={e.agent} size="md"/>
     <span className="ch-row-text"><span className="ch-row-top"><strong>{e.agent.name}</strong><time>{when(e.last)}</time></span>
-     <span className="ch-row-sub">{agentRoleLabels[e.agent.role]} · {e.project.title}</span></span>
+     <span className="ch-row-sub">{e.preview} · {e.project.title}</span></span>
    </button>}));
   const all=filter==='groups'?groups:filter==='agents'?agents:[...groups,...agents];
   return all.sort((a,b)=>(b.last??0)-(a.last??0));
