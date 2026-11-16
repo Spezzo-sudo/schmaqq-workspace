@@ -11,6 +11,16 @@ import {LocalRunner} from './runner.mjs';
 import {command} from './process.mjs';
 
 async function port(){const s=net.createServer();await new Promise(done=>s.listen(0,'127.0.0.1',done));const p=s.address().port;await new Promise(done=>s.close(done));return p;}
+async function waitForPort(portNumber,timeoutMs){
+ const until=Date.now()+timeoutMs;
+ while(true){
+  const open=await new Promise(resolve=>{const socket=net.connect({host:'127.0.0.1',port:portNumber});socket.once('connect',()=>{socket.destroy();resolve(true);});socket.once('error',()=>{socket.destroy();resolve(false);});});
+  if(open)return;
+  if(Date.now()>until)throw new Error('git daemon did not start listening on '+portNumber);
+  await new Promise(done=>setTimeout(done,100));
+ }
+}
+
 test('local Git transport fixture: a fresh GitHub-form import reaches inspect and prepare; failures preserve profiles',async()=>{
  const tmp=mkdtempSync(path.join(os.tmpdir(),'schmaqq-import-git-'));
  let daemon,server,runner;
@@ -37,7 +47,8 @@ test('local Git transport fixture: a fresh GitHub-form import reaches inspect an
   await command(['git','push','origin','main'],seed);
   const gitPort=await port();
   daemon=spawn('git',['daemon','--listen=127.0.0.1','--port='+gitPort,'--base-path='+dir,'--export-all'],{stdio:'ignore'});
-  await new Promise(done=>setTimeout(done,250));
+  // Wait until the daemon really listens; a fixed short pause was too short on slow CI runners.
+  await waitForPort(gitPort,15000);
   assert.equal(daemon.exitCode,null);
   process.env.GIT_CONFIG_COUNT='1';
   process.env.GIT_CONFIG_KEY_0='url.git://127.0.0.1:'+gitPort+'/pilot.git.insteadOf';
