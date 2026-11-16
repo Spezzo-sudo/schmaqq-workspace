@@ -17,7 +17,8 @@ import {messengerComposerTarget,messengerDraftKey,messengerFilterKey,readMesseng
 
 export type Modal={kind:'room'|'task'|'note'|'decision'|'link'|'repository';source?:RoomMessage;linkKind?:'chatgpt'|'github'|'result'|'reference'};
 
-const DEFAULT_MODELS=['gpt-5-codex','gpt-4.1','o3','claude-sonnet-4','lokales-modell'];
+// Shown only while the server has not said which models an agent can really use.
+const DEFAULT_MODELS=['gpt-5.6-sol'];
 const ALL_CAPABILITIES:RoomAgentCapability[]=['chat','task-plan','task-delegate','code-work','review-support'];
 const ALL_CONTEXT_SOURCES:RoomAgentContextSource[]=['messages','tasks','decisions','repository','Test-Runs' as never].filter(x=>['messages','tasks','decisions','repository','runs'].includes(x)) as RoomAgentContextSource[];
 const CONTEXT_SOURCE_KEYS:RoomAgentContextSource[]=['messages','tasks','decisions','repository','runs'];
@@ -32,7 +33,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
  const [editingAgent,setEditingAgent]=useState<Partial<RoomAgent>|null>(null),[profileAgentId,setProfileAgentId]=useState<string|null>(null),[avatarPickerOpen,setAvatarPickerOpen]=useState(false),[composerOptions,setComposerOptions]=useState(false);
  const [mobilePanel,setMobilePanel]=useState<'chat'|'contacts'>(()=>window.matchMedia('(max-width:760px)').matches&&!new URLSearchParams(location.search).has('chat')?'contacts':'chat');
  const [overlay,setOverlay]=useState(()=>window.matchMedia('(max-width:1199px)').matches);
- const [hermesConfigured,setHermesConfigured]=useState(false),[hermesOnline,setHermesOnline]=useState(true),[hermesRuns,setHermesRuns]=useState<HermesAgentRun[]>([]),[hermesBusy,setHermesBusy]=useState(false);
+ const [hermesConfigured,setHermesConfigured]=useState(false),[hermesOnline,setHermesOnline]=useState(true),[agentModels,setAgentModels]=useState<string[]>([]),[hermesRuns,setHermesRuns]=useState<HermesAgentRun[]>([]),[hermesBusy,setHermesBusy]=useState(false);
  const currentDraft=useRef(draftKey);currentDraft.current=draftKey;
  const profileReturn=useRef<'chat'|'contacts'>('chat'),composerInput=useRef<HTMLTextAreaElement|null>(null);
  useEffect(()=>{const media=window.matchMedia('(max-width:1199px)'),change=()=>setOverlay(media.matches);media.addEventListener('change',change);return()=>media.removeEventListener('change',change);},[]);
@@ -43,7 +44,8 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
  const workingRuns=useRef(new Set<string>());
  // Agent runs: look often while one is working, rarely otherwise. A finished run brings its answer in at once.
  async function loadAgentRuns(){
-  const state=await roomRequest<{configured:boolean;online?:boolean;runs:HermesAgentRun[]}>('/api/agent-runs?project='+encodeURIComponent(room.project.id));
+  const state=await roomRequest<{configured:boolean;online?:boolean;models?:string[];runs:HermesAgentRun[]}>('/api/agent-runs?project='+encodeURIComponent(room.project.id));
+  if(state.models?.length)setAgentModels(previous=>previous.join()===state.models!.join()?previous:state.models!);
   setHermesConfigured(state.configured);setHermesOnline(state.online!==false);setHermesRuns(state.runs);
   const working=new Set(state.runs.filter(agentRunActive).map(r=>r.id));
   const finished=[...workingRuns.current].some(id=>!working.has(id));
@@ -87,7 +89,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
  const me=activeMembers.find(m=>m.id===userId);
  const canDevelop=Boolean(me&&(me.role==='owner'||!me.projectRoles?.length||me.projectRoles.includes('admin')||me.projectRoles.includes('developer')));
  const connectedModels=[...new Set(resources.filter(r=>r.online).flatMap(r=>[...r.models,...(r.codex==='chatgpt'?['gpt-5-codex']:[])]))];
- const modelOptions=[...new Set([...connectedModels,...DEFAULT_MODELS])];
+ const modelOptions=agentModels.length?agentModels:[...new Set([...connectedModels,...DEFAULT_MODELS])];
 
  const messages=[...new Map([...older,...room.messages].map(m=>[m.id,m])).values()].sort((a,b)=>(a.sequence??a.created)-(b.sequence??b.created)||a.id.localeCompare(b.id));
  useEffect(()=>{if(!messages.length)return;if(first.current||followLatest.current){first.current=false;requestAnimationFrame(()=>{if(stream.current)stream.current.scrollTop=stream.current.scrollHeight;});}},[messages.at(-1)?.id,messengerFilterKey(filter)]);
@@ -139,7 +141,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
    avatarPresetId:preset.id,
    avatar:preset.fallbackCode,
    role,
-   model:connectedModels[0]??'gpt-5-codex',
+   model:modelOptions[0],
    modelDevice:'',
    purpose:preset.defaultPurpose,
    personality:preset.defaultPersonality,
@@ -271,7 +273,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
    avatar:String(f.get('avatar')??editingAgent.avatar??'').trim(),
    avatarPresetId:editingAgent.avatarPresetId??'',
    role,
-   model:String(f.get('model')??'gpt-5-codex').trim(),
+   model:String(f.get('model')??modelOptions[0]).trim(),
    modelDevice:String(f.get('modelDevice')??'').trim(),
    purpose:String(f.get('purpose')??'').trim(),
    personality:String(f.get('personality')??'').trim(),
@@ -579,8 +581,10 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
         </select>
        </label>
        <label>Ausgewähltes KI-Modell
-        <input name="model" list={'agent-models-'+room.project.id} required maxLength={120} value={editingAgent.model??(connectedModels[0]??'gpt-5-codex')} onChange={e=>setEditingAgent({...editingAgent,model:e.target.value})} placeholder="z. B. gpt-5-codex"/>
-        <datalist id={'agent-models-'+room.project.id}>{modelOptions.map(m=><option key={m} value={m}/>)}</datalist>
+        <select name="model" value={modelOptions.includes(editingAgent.model??'')?editingAgent.model:modelOptions[0]} onChange={e=>setEditingAgent({...editingAgent,model:e.target.value})}>
+         {modelOptions.map(m=><option key={m} value={m}>{m}</option>)}
+        </select>
+        {editingAgent.model&&!modelOptions.includes(editingAgent.model)&&<small className="rw-muted">Bisher eingestellt: {editingAgent.model}. Das steht nicht zur Verfügung; beim Speichern gilt die Auswahl oben.</small>}
        </label>
       </div>
       <label>Beschreibung & Auftrag im Projekt

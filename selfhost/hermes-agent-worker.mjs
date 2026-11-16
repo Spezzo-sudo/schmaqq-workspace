@@ -242,10 +242,16 @@ export async function execute(cfg, job, env, { runtime = python, script = adapte
     clearInterval(heartbeat);
   }
 
-  const answered = code === 0 && !tooLong && !timedOut && !protocolError && output.trim();
+  // The engine prints a provider refusal as if it were the answer. That is an error, not something to post.
+  const refusal = /^\s*HTTP [45]\d\d\b/.exec(output);
+  const wrongModel = refusal && /model/i.test(output) && /not supported|not found|does not exist|unavailable/i.test(output);
+  if (refusal) errors = (errors + '\n' + output).slice(-4000);
+  const answered = code === 0 && !refusal && !tooLong && !timedOut && !protocolError && output.trim();
   const status = cancelled ? 'cancelled' : answered ? 'completed' : 'failed';
   const errorCode = cancelled ? 'cancelled'
     : timedOut ? 'timeout'
+    : wrongModel ? 'model-unavailable'
+    : refusal ? 'provider-unavailable'
     : tooLong || protocolError || code === 0 ? 'protocol-error'
     : 'provider-unavailable';
   if (status === 'failed') {

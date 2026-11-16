@@ -112,7 +112,7 @@ const workRun = z.object({ run: id, lease }).strict();
 const finishRun = workRun.extend({
   status: z.enum(['completed', 'failed', 'cancelled']),
   output: z.string().trim().max(4000).optional(),
-  errorCode: z.enum(['provider-unavailable', 'quota-exceeded', 'timeout', 'crash', 'cancelled', 'protocol-error']).optional()
+  errorCode: z.enum(['provider-unavailable', 'model-unavailable', 'quota-exceeded', 'timeout', 'crash', 'cancelled', 'protocol-error']).optional()
 }).strict();
 const toolCall = workRun.extend({
   callId: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
@@ -128,6 +128,14 @@ const MEMBER_ROUTES = ['/api/agent-runs', '/api/agent-runs/cancel', '/api/agent-
 const LOOPBACK = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
 // A reverse proxy or tunnel on this machine also connects from loopback. These headers give it away.
 const PROXY_HEADERS = ['x-forwarded-for', 'x-real-ip', 'forwarded', 'cf-connecting-ip', 'cf-ray'];
+
+// Models an agent can be set to, best general choice first. An agent whose profile names something else
+// (older profiles, typing errors) answers with the first one instead of failing.
+const MODEL_ID = /^[a-zA-Z0-9_.-]{1,100}$/;
+export function agentModels(setting = process.env.STUDIO_AGENT_MODELS) {
+  const models = String(setting ?? 'gpt-5.6-sol,gpt-5.6-terra,gpt-5.6-luna').split(',').map(m => m.trim()).filter(m => MODEL_ID.test(m));
+  return models.length ? [...new Set(models)].slice(0, 12) : ['gpt-5.6-sol'];
+}
 
 // Planning is what a project lead is for; other agents need the explicit permission.
 const plans = agent => agent.lead === true || agent.permissions?.manageTasks === true;
@@ -145,7 +153,8 @@ function validWorkers(workers) {
   return workers.map(w => ({ owner: w.owner, secret: w.token }));
 }
 
-export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], live = null }) {
+export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], live = null, models = agentModels() }) {
+  const modelFor = agent => (models.includes(agent.model) ? agent.model : models[0]);
   const registered = validWorkers(workers);
   // Agents are switched on by binding a worker to a person. Until then nothing is stored and nothing runs.
   const enabled = registered.length > 0;
@@ -214,6 +223,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       : store.activeRuns(member.id).filter(run => can(db, member, run.project, 'view'));
     return {
       configured: hasWorker(member.id),
+      models,
       online: hasWorker(member.id) && workerOnline(member.id, now),
       runs: runs.map(run => summary(run, position(run)))
     };
@@ -249,14 +259,14 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
         store.clearSteps(existing.id);
         store.updateRun(existing.id, {
           status: 'queued', created: now, updated: now, claimed: null, heartbeat: null, finished: null,
-          lease_hash: null, error_code: null, model: agent.model
+          lease_hash: null, error_code: null, model: modelFor(agent)
         });
         return { run: existing.id, status: 'queued', reused: false };
       }
       const run = randomUUID();
       store.insertRun({
         id: run, owner: member.id, project: request.project, agent: agent.id,
-        source_message: request.message, model: agent.model, status: 'queued', created: now
+        source_message: request.message, model: modelFor(agent), status: 'queued', created: now
       });
       return { run, status: 'queued', reused: false };
     });
@@ -586,7 +596,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
   async function memberRoute(route, { method, req, url, send }) {
     const member = user(req), now = Date.now();
     if (!enabled) {
-      if (method === 'GET' && route === '/api/agent-runs') return send({ configured: false, online: false, runs: [] });
+      if (method === 'GET' && route === '/api/agent-runs') return send({ configured: false, online: false, models, runs: [] });
       if (method !== 'POST') throw fail(405, 'Methode nicht erlaubt.');
       if (route === '/api/agent-runs') {
         throw fail(503, 'Für dich ist noch kein KI-Modellzugang eingerichtet. Keine KI-Antwort gestartet.');

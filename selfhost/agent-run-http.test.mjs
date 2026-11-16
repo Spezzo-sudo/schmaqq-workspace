@@ -303,3 +303,19 @@ test('planning: the lead proposes a few tasks in one run; accepting the plan cre
  const hint=f.app.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:task-agent:'+state.tasks.find(t=>t.title==='Überschrift kürzen').id);
  assert.equal(JSON.parse(hint.value).agent,mara,'who the lead had in mind is kept with the task');
 });
+
+test('models: an agent set to a model nobody can use answers with the default one; the list is offered to the app',async t=>{
+ const f=await fixture(t),[alice]=f.members,[worker]=f.secrets;
+ const {project,agent,message}=await f.createAgentMessage(); // the fixture profile says "pilot-codex"
+ const list=(await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data;
+ assert.deepEqual(list.models,['gpt-5.6-sol','gpt-5.6-terra','gpt-5.6-luna']);
+ await f.post('/api/agent-runs',{project,agent,message},{cookie:alice.cookie});
+ const job=(await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job;
+ assert.equal(job.model,'gpt-5.6-sol');
+ const failed=await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'failed',errorCode:'model-unavailable'},{token:worker.token});
+ assert.equal(failed.data.status,'failed');
+ assert.equal((await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data.runs[0].errorCode,'model-unavailable');
+ const {agentModels}=await import('./agent-run-http.mjs');
+ assert.deepEqual(agentModels('a-1, b.2 ,bad model,,a-1'),['a-1','b.2']);
+ assert.deepEqual(agentModels(''),['gpt-5.6-sol']);
+});

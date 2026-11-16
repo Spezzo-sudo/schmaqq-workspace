@@ -205,6 +205,7 @@ export function workDuration(ms:number){
 const agentRunFailures:Record<string,string>={
  timeout:'Das hat zu lange gedauert.',
  'provider-unavailable':'Der KI-Zugang war nicht erreichbar.',
+ 'model-unavailable':'Das gewählte Modell steht deinem KI-Zugang nicht zur Verfügung. Wähle im Profil des Agenten ein anderes.',
  'quota-exceeded':'Das Kontingent deines KI-Zugangs ist aufgebraucht.',
  'protocol-error':'Die Antwort kam unvollständig an.'
 };

@@ -282,3 +282,17 @@ test('job prompt: tool guidance matches the grant (no blanket "no actions" when 
  assert.match(both,/studio_project_read_context/);
  assert.doesNotMatch(read,/studio_task_propose auf/);
 });
+
+test('worker: a provider refusal printed by the engine is a failed run, never an answer in the chat',async t=>{
+ const f=await fixture(t),[alice]=f.members;
+ const {project,job}=await f.setup();
+ const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-refusal-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const script=path.join(dir,'refuse.py');
+ writeFileSync(script,'import sys\nsys.stdin.read()\nprint("HTTP 400: The \'x\' model is not supported when using Codex with a ChatGPT account.")\n');
+ const status=await execute({backend:f.host,origin:f.origin,token:f.secrets[0].token},job,{PATH:process.env.PATH,HERMES_HOME:dir},{runtime:'python3',script,maxMs:20000,heartbeatMs:500});
+ assert.equal(status,'failed');
+ const state=await f.room(project);
+ assert.ok(!state.messages.some(m=>m.origin==='verified-run'),'nothing was posted');
+ const run=(await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data.runs[0];
+ assert.deepEqual([run.status,run.errorCode],['failed','model-unavailable']);
+});
