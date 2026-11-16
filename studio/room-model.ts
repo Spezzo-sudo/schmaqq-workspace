@@ -207,13 +207,13 @@ export function agentExecutionStatus(agent:RoomAgent,roomOrRuns:RoomState|RoomRu
  // Only a real queued/running Hermes run for exactly this agent counts as working; configured alone is "ready on request".
  const hermesActive=hermes?.runs.some(r=>r.agent===agent.id&&(r.status==='queued'||r.status==='running'||r.status==='cancelling'))??false;
  if(hermesActive){
-  return {state:'running',label:'Hermes-Lauf aktiv',detail:`Bearbeitet gerade einen ausdrücklichen Auftrag über den Hermes-Pilot (${agent.model})`,modelAvailable:true,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
+  return {state:'running',label:'Arbeitet gerade',detail:`Bearbeitet gerade einen ausdrücklichen Auftrag (${agent.model})`,modelAvailable:true,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
  }
  if(modelAvailable){
   return {state:'ready',label:'Zugang verbunden · Ruhend',detail:`Modell ${agent.model} erreichbar über ${matchingResource!.name} (keine aktive Ausführung)`,modelAvailable:true,via:'runner',connectedResource:matchingResource,activeRuns,completedRuns};
  }
  if(hermes?.configured){
-  return {state:'ready',label:'Bereit über Hermes · auf Auftrag',detail:`Antwortet nur, wenn du eine Nachricht ausdrücklich beauftragst (Hermes-Pilot, ${agent.model})`,modelAvailable:true,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
+  return {state:'ready',label:'Bereit · antwortet auf Auftrag',detail:`Antwortet, wenn du eine Nachricht ausdrücklich beauftragst (${agent.model})`,modelAvailable:true,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
  }
  return {state:'idle',label:'Inaktiv · Kein Live-Modell verbunden',detail:`Modell ${agent.model} als Profil hinterlegt – kein verbundener Modellzugang aktiv`,modelAvailable:false,via:null,connectedResource:matchingResource,activeRuns,completedRuns};
 }

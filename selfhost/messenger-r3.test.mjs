@@ -70,13 +70,13 @@ test('R3: a shared model must not make unrelated personas appear to be working',
  assert.equal(agentExecutionStatus(agent,[{...run,agentId:'mara'}],[]).state,'running');
 });
 
-test('R5: Hermes pilot shows ready-on-request and only a run for this exact agent as working',()=>{
+test('R5: a bound model worker shows ready-on-request and only a run for this exact agent as working',()=>{
  const agent={id:'mara',model:'fixture-model',capabilities:[]};
  const hermesRun={id:'h1',agent:'mara',status:'running',model:'fixture-model'};
  assert.equal(agentExecutionStatus(agent,[],[],null).state,'idle');
  assert.equal(agentExecutionStatus(agent,[],[],{configured:false,runs:[]}).state,'idle');
  const ready=agentExecutionStatus(agent,[],[],{configured:true,runs:[]});
- assert.deepEqual([ready.state,ready.via,ready.label],['ready','hermes','Bereit über Hermes · auf Auftrag']);
+ assert.deepEqual([ready.state,ready.via,ready.label],['ready','hermes','Bereit · antwortet auf Auftrag']);
  assert.equal(agentExecutionStatus(agent,[],[],{configured:true,runs:[{...hermesRun,agent:'other'}]}).state,'ready');
  assert.equal(agentExecutionStatus(agent,[],[],{configured:true,runs:[{...hermesRun,status:'completed'}]}).state,'ready');
  const busy=agentExecutionStatus(agent,[],[],{configured:true,runs:[hermesRun]});

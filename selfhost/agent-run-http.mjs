@@ -210,7 +210,7 @@ export function createAgentRunRoute({db,user,readJSON,parse,workers=[]}){
    send({ok:true,status:next});return true;
   }
   const request=parse(runCreate,await readJSON(req,2048));
-  if(!allowed(member.id))throw fail(503,'Noch keine persönlich zugewiesene Hermes-Instanz. Keine KI-Antwort gestartet.');
+  if(!allowed(member.id))throw fail(503,'Für dich ist noch kein KI-Modellzugang eingerichtet. Keine KI-Antwort gestartet.');
   requirePermission(db,member,request.project,'view');
   const agent=agentsFor(db,request.project).find(a=>a.id===request.agent&&a.active!==false);
   if(!agent||agent.createdBy!==member.id||agent.permissions?.readProject===false||agent.permissions?.writeMessages===false)throw fail(403,'Dieser Agent wurde nicht von dir freigegeben.');

@@ -67,10 +67,10 @@ export default function ProjectReady({room,resources,members,userId,onRepository
    {step(live,'Live gehen',<>
     {/* Two calm choices. Studio itself never puts anything online; the choice only tells Studio whether a separate live step exists. */}
     {decides?<div className="po-live-choice" role="radiogroup" aria-label="Wie kommt eine Änderung online?">
-     <button role="radio" aria-checked={meta.live==='manual'} disabled={busy} onClick={()=>void chooseLive('manual')}><strong>Wir schalten selbst live</strong><small>Nach dem Zusammenführen macht jemand den Livegang, z. B. über Hermes.</small></button>
+     <button role="radio" aria-checked={meta.live==='manual'} disabled={busy} onClick={()=>void chooseLive('manual')}><strong>Wir schalten selbst live</strong><small>Nach dem Zusammenführen macht jemand aus dem Team den Livegang.</small></button>
      <button role="radio" aria-checked={meta.live==='merge'} disabled={busy} onClick={()=>void chooseLive('merge')}><strong>Geht von selbst live</strong><small>Nur wählen, wenn euer Hoster jede zusammengeführte Änderung selbst veröffentlicht.</small></button>
     </div>:<p>{meta.live==='merge'?'Übernommene Änderungen gehen von selbst live.':meta.live==='manual'?'Ihr schaltet selbst live.':'Legt der Projekt-Admin fest.'}</p>}
-    {meta.live==='manual'&&(decides?<form className="po-live-how" onSubmit={e=>{e.preventDefault();void chooseLive('manual',liveHow.trim());}}><label>Wie genau? (sieht jeder in der Aufgabe)<input value={liveHow} maxLength={300} onChange={e=>setLiveHow(e.target.value)} placeholder="Zum Beispiel: Marco startet den Hermes-Auftrag production-deploy-main."/></label>{liveHow.trim()!==(meta.liveHow??'')&&<button className="rw-button" disabled={busy}>Speichern</button>}</form>
+    {meta.live==='manual'&&(decides?<form className="po-live-how" onSubmit={e=>{e.preventDefault();void chooseLive('manual',liveHow.trim());}}><label>Wie genau? (sieht jeder in der Aufgabe)<input value={liveHow} maxLength={300} onChange={e=>setLiveHow(e.target.value)} placeholder="Zum Beispiel: Marco startet das Deploy-Skript für main."/></label>{liveHow.trim()!==(meta.liveHow??'')&&<button className="rw-button" disabled={busy}>Speichern</button>}</form>
      :meta.liveHow&&<p>So geht's: <strong>{meta.liveHow}</strong></p>)}
    </>)}
   </ol>

@@ -314,7 +314,7 @@ export function AgentProfileView({
       <dt>Tatsächlicher Modellzugang</dt>
       <dd>
        {execStatus.via==='hermes'
-        ?<span className="rw-fg-ok">Hermes-Pilot – nur auf ausdrücklichen Auftrag</span>
+        ?<span className="rw-fg-ok">Verbunden – antwortet auf ausdrücklichen Auftrag</span>
         :execStatus.modelAvailable
         ?<span className="rw-fg-ok">Verfügbar über verbundenen Rechner{assignedDevice?` (${assignedDevice.name})`:''}</span>
         :<span className="rw-fg-warn">Kein verbundener Runner für <code>{agent.model}</code> aktiv – dient zur Planung & manuellen Koordination</span>}
