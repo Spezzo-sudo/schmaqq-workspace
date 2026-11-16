@@ -8,9 +8,13 @@ import {createStudioServer} from './server.mjs';
 import {passwordHash,token,digest} from './store.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const directory=path.join(root,'.studio','local-demo'),origin='http://127.0.0.1:4320';
+// Independent engineering previews can run beside an existing demo, never on the live Studio port.
+const demoName=process.env.STUDIO_DEMO_NAME??'local-demo';
+const port=Number(process.env.STUDIO_DEMO_PORT??4320);
+if(!/^[a-z0-9][a-z0-9-]{0,63}$/.test(demoName)||!Number.isInteger(port)||port<1024||port>65534||[4309,4310,4311].includes(port))throw new Error('Ungültiger isolierter Demo-Name oder Port.');
+const directory=path.join(root,'.studio',demoName),origin='http://127.0.0.1:'+port;
 mkdirSync(directory,{recursive:true});
-const app=createStudioServer({filename:path.join(directory,'studio.sqlite'),origin,previewOrigin:'http://127.0.0.1:4321',sessionCookie:'studio_demo_session',demoMode:true});
+const app=createStudioServer({filename:path.join(directory,'studio.sqlite'),origin,previewOrigin:'http://127.0.0.1:'+(port+1),sessionCookie:'studio_demo_session',demoMode:true});
 const configFile=path.join(directory,'demo.private.json');
 const git=(cwd,...args)=>command(['git',...args],cwd);
 let settings;
@@ -41,11 +45,11 @@ if(!existsSync(configFile)){
  writeFileSync(configFile,JSON.stringify(settings,null,2),{mode:0o600});
  const guide=`# Lokaler Probelauf für zwei Personen\n\nStudio: ${origin}\n\nDies sind ausschließlich lokale Testkonten. Beide Runner laufen auf diesem PC. Es besteht keine Verbindung zum echten NetzKontor-Repository, VPS oder persönlichen ChatGPT-Konten.\n\n${settings.accounts.map(a=>`- ${a.name}: ${a.email}\n  Testpasswort: ${a.password}`).join('\n\n')}\n\n## Ablauf\n\n1. Als Marco anmelden, Entwicklung öffnen und im eigenen Arbeitsbereich auf Weiterarbeiten klicken.\n2. Dateien laden, site/index.html bearbeiten und speichern. Tests und Vorschau ausführen.\n3. Zur Teamprüfung wählen. Zum Testen beider Rollen ein zweites Browserprofil verwenden oder abmelden und als Markus anmelden. Zwei normale Tabs teilen dieselbe Sitzung.\n4. Als Markus den Prüfstand ansehen, kommentieren, Änderungen anfordern oder freigeben. In Markus' eigener Arbeitskopie lässt sich site/services.json bearbeiten.\n5. Branch veröffentlichen pusht hier ausschließlich in das lokale Test-Repository. Den veröffentlichten Stand mit der zweiten Rolle freigeben; danach kann der Autor Zusammenführen testen.\n\nCodex ist im Testprojekt deaktiviert: Es werden keine Modellaufrufe oder Abo-Kontingente verbraucht. Vorschauen und Tests laufen tatsächlich. Für den späteren echten Betrieb verwendet jede Person ihren eigenen PC und Codex-Login.\n\nNeustart aus dem Studio-Quellordner: node selfhost/demo.mjs. Bestehende Testdaten und Arbeitskopien bleiben erhalten. Stoppen mit Strg+C im zugehörigen Terminal. Der persönliche Workspace auf Port 4310 bleibt separat; die Demo verwendet einen eigenen Sitzungscookie.\n`;
  writeFileSync(path.join(directory,'LOKAL-TESTEN.md'),guide,{mode:0o600});
-}else settings=JSON.parse(readFileSync(configFile,'utf8'));
+}else{settings=JSON.parse(readFileSync(configFile,'utf8'));if(settings.origin!==origin)throw new Error('Diese Demo gehört zu einer anderen Adresse. Den bisherigen Port oder einen neuen STUDIO_DEMO_NAME verwenden.');}
 
 // Bind before launching runners; a second launch must not execute jobs twice.
-await new Promise((resolve,reject)=>{app.server.once('error',reject);app.server.listen(4320,'127.0.0.1',resolve);});
-try{await new Promise((resolve,reject)=>{app.previewServer.once('error',reject);app.previewServer.listen(4321,'127.0.0.1',resolve);});}catch(e){app.server.close();throw e;}
+await new Promise((resolve,reject)=>{app.server.once('error',reject);app.server.listen(port,'127.0.0.1',resolve);});
+try{await new Promise((resolve,reject)=>{app.previewServer.once('error',reject);app.previewServer.listen(port+1,'127.0.0.1',resolve);});}catch(e){app.server.close();throw e;}
 const children=[];
 for(const a of settings.accounts){const fd=openSync(path.join(directory,a.name.toLowerCase()+'.log'),'a');const child=spawn(process.execPath,[path.join(root,'selfhost/runner.mjs'),a.config],{cwd:root,windowsHide:true,stdio:['ignore',fd,fd]});closeSync(fd);children.push(child);child.on('error',e=>console.error(a.name+': '+e.message));}
 let stopping=false;

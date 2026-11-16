@@ -1,4 +1,63 @@
 {
+  "messenger_r3_20261115": {
+    "state": "implemented_on_feature_branch_verified_not_production_deployed",
+    "branch": "feat/studio-messenger-r3-20261115",
+    "base_branch": "feat/studio-field-guild-r2-avatars-20261115",
+    "implemented": [
+      "Messenger-first project shell with compact chat/contact rail, optional shared inspector and mobile list/chat routing",
+      "Existing tasks, reviews, preview, knowledge, profiles, permissions, account/team/help routes and explicit model/context tools retained",
+      "Real project file tree reuses authorized own workspaces and existing revision-bound runner editor; no parallel file store",
+      "Per-user/project/view drafts, recipient/topic reset, browser Back, reply navigation and explicit project-wide visibility",
+      "Backend rejects conflicting handoff recipient; agent activity no longer inferred from model name alone",
+      "CI extension prepared as docs/patches/STUDIO_CI_R3.patch, NOT applied: connected OAuth access lacks workflow write scope; active workflow left unchanged"
+    ],
+    "verification": {
+      "full_suite": {
+        "tests": 337,
+        "passed": 334,
+        "failed": 0,
+        "skipped": 3
+      },
+      "focused_suite": {
+        "tests": 23,
+        "passed": 23,
+        "failed": 0
+      },
+      "browser": "Real isolated Node/SQLite backend, two local sample runners, two authenticated users; 1440x960 desktop, 390x844 mobile and 390x470 reduced viewport. Message/reply/profile persistence, file tree/read/save/reload, task return, drafts, inspector, focus and browser Back passed.",
+      "evidence": "docs/STUDIO_MESSENGER_R3.md; docs/evidence/messenger-r3; tests/studio-messenger-r3.browser.py"
+    },
+    "limits": [
+      "Contact views are addressed project-visible conversations, not private DMs",
+      "Agent handoffs are auditable records, not autonomous execution",
+      "No provider quota/token/context-percent telemetry is invented",
+      "File panel supports the existing text-file operations; binary upload and full document preview were not added",
+      "Public Pages remains a UI-fixture preview. Durable protected full-stack staging requires a separately authorized runtime/deploy channel",
+      "GitHub OAuth access cannot update workflows; CI patch requires separate authorized review/application"
+    ],
+    "production_changed": false,
+    "main_changed": false,
+    "schema_migration": false,
+    "model_calls": false
+  },
+  "field_guild_r2_avatars_agent_profiles_20261115": {
+    "state": "implemented_on_feature_branch_verified_not_deployed",
+    "branch": "feat/studio-field-guild-r2-avatars-20261115",
+    "base_branch": "feat/project-messenger-team-agents-20261115",
+    "implemented": "SCHMAQQ Field Guild R2 Finale Avatar-Integration & Agentenprofile (studio/avatar-catalog.ts, studio/agent-avatar.tsx, studio/room-components.tsx, studio/room-model.ts, studio/project-overview.tsx, studio/team-workflow.css, selfhost/room-http.mjs, selfhost/server.mjs, public/avatars/field-guild-r2/). Includes: (1) Complete 12-character Field Guild R2 library (6 humans: leitwolf, herr-grau, mara, frau-kern, otto, nova; 6 animals: dachs, fuchs, baer, rabe, schaefer, eule) with unmodified original 1024x1024 .png assets, optimized 512x512 .webp portraits, 128x128 -sm.webp thumbnails, and ear/head-preserving object-position framing; (2) <AgentAvatar> rendering responsive <picture> WebP + PNG fallback across 40px (contacts), 48px (chat), 96px (profile/picker), and 256px (detail view) with automatic Kürzel-Avatar fallback; (3) Full 4-section Agent Profile (Identität, Technische Konfiguration, Berechtigungen, Aktivität) with collapsible Erweiterte Konfiguration in the edit form and direct avatar-tap to open profile vs. name-tap to switch chat; (4) Server-enforced agent permissions independent of avatar/role, project-member visibility filtering in GET /api/room, explicit room-visible recipient labeling, and honest origin ('human-authored' vs 'verified-run') on agent messages.",
+    "verification": "Full Linux studio:verify PASS (328 tests: 325 PASS, 0 FAIL, 3 expected skips), including selfhost/project-messenger.test.mjs verifying all 12 R2 presets, all 36 asset files (12 .png, 12 .webp, 12 -sm.webp served with 200 OK and correct MIME types), profile persistence, server-enforced permission separation (403 when delegateAgents=false or writeMessages=false), member visibility filtering, and message origin honesty; Source Guard, TypeScript (tsc --noEmit) and Vite build PASS. Visual QA verified at 40px, 48px, 96px, and 256px across desktop and 390px smartphone viewports.",
+    "limits": "All 12 final Field Guild R2 single portraits (.png + .webp + -sm.webp) are integrated; earlier contact sheets removed. Character descriptions and avatars are UI/personality presets and never bypass server-enforced permissions or imply autonomous model execution. No production deployment or merge performed.",
+    "next": "Review PR #75 against feat/project-messenger-team-agents-20261115 (PR #73).",
+    "production_changed": false
+  },
+  "project_messenger_team_agents_20261115": {
+    "state": "implemented_on_feature_branch_verified_not_deployed",
+    "branch": "feat/project-messenger-team-agents-20261115",
+    "implemented": "Project-bound Messenger in Conversation (studio/room-components.tsx, studio/room-model.ts, selfhost/room-http.mjs) backed by persistent SQLite messages and workspace_meta without adding new SQL tables (preserving the 25-object schema baseline). Includes: (1) Contacts & Channels rail with group chat, Agent & Handoffs view, human teammates with project roles and online state, and project AI agent team members with name, avatar, role (coordinator/developer/reviewer/researcher), capabilities, and selectable model; (2) Task/Topic binding on messages with clickable topic pills and topic filtering; (3) Direct recipient addressing (member or project agent) and message replies; (4) Bounded Coordinator-to-Agent handoff records with server-enforced role/capability checks (403 for non-coordinator agents, 403 for viewer-only members, 400 for self-handoff).",
+    "verification": "Full Linux studio:verify PASS: 327 tests (324 PASS, 0 FAIL, 3 expected skips), including selfhost/project-messenger.test.mjs, selfhost/room-http.test.mjs, selfhost/global-navigation.test.mjs, selfhost/schema-preflight.test.mjs and selfhost/schema-migration.test.mjs; Source Guard, TypeScript (tsc --noEmit) and Vite build PASS.",
+    "limits": "Agent team members and Coordinator handoffs are durable project records and structured Messenger workflows, not autonomous background model loops; real model execution remains explicitly user/connector-triggered via personal OAuth MCP or opted-in runner resources. No production deployment or merge performed.",
+    "next": "Stage 2: Connect Coordinator handoffs to explicit MCP/Runner job proposals with human confirmation and task-pane deep-linking.",
+    "production_changed": false
+  },
   "klimafinder_practice_20261030": {
     "state": "review_ready_not_shared",
     "update": "Own network namespace per test/build job live (a4c1667, rollback fed02f9). Klimafinder check fully green incl. test_backend; review commit 67b1cab on studio/ff3f7e80 with preview; not published (worker upload not permitted).",

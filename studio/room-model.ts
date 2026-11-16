@@ -1,16 +1,65 @@
 import type {Task} from '../app/workspace-model';
 export type Room={id:string;title:string;description:string;color:string;stage:string;openTasks?:number;lastMessage?:number;practice?:boolean};
-export type RoomMember={id:string;name:string;role:string;seen:number;removed?:number|boolean;invitedBy?:string|null};
-export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;replyTo?:string|null;kind?:'human'|'ai-shared';model?:string;taskId?:string|null};
+export type RoomMember={id:string;name:string;role:string;seen:number;removed?:number|boolean;invitedBy?:string|null;projectRoles?:string[]};
+export type RoomAgentRole=
+ |'coordinator'
+ |'advisor'
+ |'frontend'
+ |'developer'
+ |'reviewer'
+ |'operations'
+ |'strategy'
+ |'researcher'
+ |'debugger'
+ |'infrastructure'
+ |'security'
+ |'support'
+ |'knowledge';
+export type RoomAgentCapability='chat'|'task-plan'|'task-delegate'|'code-work'|'review-support'|'context-read';
+export type RoomAgentContextSource='messages'|'tasks'|'decisions'|'notes'|'repository'|'runs';
+export type RoomAgentPermissions={
+ readProject:boolean;
+ writeMessages:boolean;
+ manageTasks:boolean;
+ editCode:boolean;
+ prepareReviews:boolean;
+ delegateAgents:boolean;
+};
+export type RoomAgent={
+ id:string;
+ project:string;
+ name:string;
+ nickname?:string;
+ role:RoomAgentRole;
+ avatar:string;
+ avatarPresetId?:string|null;
+ avatarPackId?:string;
+ purpose:string;
+ personality?:string;
+ model:string;
+ modelDevice?:string|null;
+ capabilities:RoomAgentCapability[];
+ contextSources?:RoomAgentContextSource[];
+ knowledgeScope?:string;
+ responsibility?:string;
+ permissions?:RoomAgentPermissions;
+ active:boolean;
+ createdBy:string;
+ updatedBy?:string;
+ created:number;
+ updated:number;
+};
+export type AgentHandoff={fromAgent?:string;toAgent:string;task?:string|null;summary:string;status:'delegated'|'in_progress'|'completed'|'requested'|'stopped'};
+export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;senderAgent?:string|null;handoff?:AgentHandoff|null};
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
-export type RoomRun={id:string;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;task:string|null};
-export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];runs:RoomRun[]};
+export type RoomRun={id:string;agentId?:string|null;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;updated?:number;task:string|null};
+export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[]};
 /** Server-computed: ready only after a passed trial run on the shared main state. */
 export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;state:'ok'|'running'|'failed';at:number;error?:string}|null};
 export type Resource={team?:boolean;device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;readiness?:WorkshopReadiness;publish:boolean}[]};
 export type ContextPreview={text:string;hash:string;messageIds:string[];task:string|null};
-export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect';
+export type RoomTab='overview'|'talk'|'tasks'|'results'|'knowledge'|'connect'|'files'|'activity';
 export type RoomPage='rooms'|'projects'|'conversations'|'team'|'account'|'guide';
 export type RoomRoute={room:string;tab:RoomTab;task:string;page:RoomPage};
 // The five project areas stay inside each project, independently of the global navigation. Former "Ergebnisse" live under Aufgaben → Erledigt.
@@ -19,7 +68,7 @@ export function readRoomRoute(search=location.search):RoomRoute{
  const p=new URLSearchParams(search),old=p.get('view'),project=p.get('project'),explicit=p.get('tab');
  const room=p.get('room')??(project&&project!=='all'?project:'');
  const legacyTab:Record<string,RoomTab>={tasks:'tasks',docs:'knowledge',chat:'talk',development:'connect',settings:'connect',setup:'connect',models:'connect'};
- const tab=tabs.some(t=>t.id===explicit)?explicit as RoomTab:legacyTab[old??'']??'talk';
+ const tab=(tabs.some(t=>t.id===explicit)||explicit==='files'||explicit==='activity')?explicit as RoomTab:legacyTab[old??'']??'talk';
  const requested=p.get('page');
  const page:RoomPage=requested==='team'||requested==='projects'||requested==='conversations'||requested==='account'||requested==='guide'?requested:old==='team'?'team':'rooms';
  return {room,tab,task:room?p.get('task')??'':'',page};
@@ -28,6 +77,8 @@ export function readRoomRoute(search=location.search):RoomRoute{
 export function roomResumeURL(search:string){
  const route=readRoomRoute(search),p=new URLSearchParams();
  if(/^[\w-]{1,100}$/.test(route.room)){p.set('room',route.room);if(route.tab!=='talk')p.set('tab',route.tab);if(/^[\w-]{1,100}$/.test(route.task)){p.set('task',route.task);const pane=new URLSearchParams(search).get('pane');if(['conversation','work','preview','review'].includes(pane??''))p.set('pane',pane!);}}
+ const chat=new URLSearchParams(search).get('chat');
+ if(p.has('room')&&chat&&/^(?:all|handoffs|(?:member|agent|topic):[\w-]{1,100})$/.test(chat))p.set('chat',chat);
  if(route.page!=='rooms')p.set('page',route.page);
  return '/'+(p.size?'?'+p.toString():'');
 }
@@ -59,3 +110,128 @@ export function taskTitleFrom(body:string){
  const cut=line.slice(0,99),space=cut.lastIndexOf(' ');
  return (space>40?cut.slice(0,space):cut).replace(/[\s,.;:–-]+$/,'')+'…';
 }
+
+export const agentRoleLabels:Record<RoomAgentRole,string>={
+ coordinator:'Koordinator',
+ advisor:'Technischer Berater',
+ frontend:'Frontend / UX',
+ developer:'Entwickler-Agent',
+ reviewer:'Review / QA',
+ operations:'Operations',
+ strategy:'Forschung / Strategie',
+ researcher:'Recherche / Ideen',
+ debugger:'Debugging / Qualität',
+ infrastructure:'Infrastruktur / Systeme',
+ security:'Security',
+ support:'Support',
+ knowledge:'Wissen / Dokumentation'
+};
+
+export const agentCapabilityLabels:Record<RoomAgentCapability,string>={
+ chat:'Projektgespräch',
+ 'task-plan':'Aufgaben planen',
+ 'task-delegate':'Aufgaben delegieren',
+ 'code-work':'Code-Vorschläge',
+ 'review-support':'Review-Vorprüfung',
+ 'context-read':'Projektkontext lesen'
+};
+
+export const agentContextSourceLabels:Record<RoomAgentContextSource,string>={
+ messages:'Projektgespräch',
+ tasks:'Projektaufgaben',
+ decisions:'Entscheidungen',
+ notes:'Wissen & Notizen',
+ repository:'Repository-Referenz',
+ runs:'Test- & Modellläufe'
+};
+
+export const agentPermissionLabels:Record<keyof RoomAgentPermissions,string>={
+ readProject:'Projekt lesen',
+ writeMessages:'Nachrichten schreiben',
+ manageTasks:'Aufgaben anlegen und bearbeiten',
+ editCode:'Code bearbeiten',
+ prepareReviews:'Reviews vorbereiten',
+ delegateAgents:'Andere Agenten beauftragen'
+};
+
+export function agentEffectivePermissions(agent?:Partial<RoomAgent>|null):RoomAgentPermissions{
+ const explicit=agent?.permissions;
+ if(explicit){
+  return {
+   readProject:Boolean(explicit.readProject),
+   writeMessages:Boolean(explicit.writeMessages),
+   manageTasks:Boolean(explicit.manageTasks),
+   editCode:Boolean(explicit.editCode),
+   prepareReviews:Boolean(explicit.prepareReviews),
+   delegateAgents:Boolean(explicit.delegateAgents)
+  };
+ }
+ const caps=agent?.capabilities??[];
+ return {
+  readProject:true,
+  writeMessages:true,
+  manageTasks:caps.includes('task-plan'),
+  editCode:caps.includes('code-work'),
+  prepareReviews:caps.includes('review-support'),
+  delegateAgents:caps.includes('task-delegate')||agent?.role==='coordinator'
+ };
+}
+
+export function agentExecutionStatus(agent:RoomAgent,roomOrRuns:RoomState|RoomRun[]=[],resources:Resource[]=[]):{
+ state:'running'|'ready'|'idle';
+ label:string;
+ detail:string;
+ modelAvailable:boolean;
+ connectedResource:Resource|null;
+ activeRuns:RoomRun[];
+ completedRuns:RoomRun[];
+}{
+ const runs=Array.isArray(roomOrRuns)?roomOrRuns:(roomOrRuns?.runs??[]);
+ // A shared model does not identify an agent. Only an explicit run association may show this character as working.
+ const agentRuns=runs.filter(r=>r.agentId===agent.id&&r.model===agent.model&&(!agent.modelDevice||r.device===agent.modelDevice));
+ const activeRuns=agentRuns.filter(r=>r.status==='running'||r.status==='queued'||r.status==='cancelling');
+ const completedRuns=agentRuns.filter(r=>r.status==='completed'||r.status==='failed');
+ const matchingResource=(agent.modelDevice?resources.find(r=>r.device===agent.modelDevice):null)
+  ??resources.find(r=>r.online&&(r.models.includes(agent.model)||(r.codex==='chatgpt'&&agent.model==='gpt-5-codex')))
+  ??null;
+ const modelAvailable=Boolean(matchingResource&&matchingResource.online);
+ if(activeRuns.length>0){
+  return {state:'running',label:'Modelllauf aktiv',detail:`Läuft tatsächlich auf ${activeRuns[0].deviceName} (${agent.model})`,modelAvailable,connectedResource:matchingResource,activeRuns,completedRuns};
+ }
+ if(modelAvailable){
+  return {state:'ready',label:'Zugang verbunden · Ruhend',detail:`Modell ${agent.model} erreichbar über ${matchingResource!.name} (keine aktive Ausführung)`,modelAvailable:true,connectedResource:matchingResource,activeRuns,completedRuns};
+ }
+ return {state:'idle',label:'Inaktiv · Kein Live-Modell verbunden',detail:`Modell ${agent.model} als Profil hinterlegt – kein verbundener Modellzugang aktiv`,modelAvailable:false,connectedResource:matchingResource,activeRuns,completedRuns};
+}
+
+export function memberRoleSummary(member:RoomMember):string{
+ const roles=member.projectRoles??[];
+ if(roles.includes('admin')||member.role==='owner')return 'Admin';
+ const parts:string[]=[];
+ if(roles.includes('developer')||!roles.length)parts.push('Entwickler');
+ if(roles.includes('reviewer')||!roles.length)parts.push('Prüfer');
+ if(!parts.length&&roles.includes('viewer'))parts.push('Zuschauer');
+ return parts.join(' · ')||'Mitglied';
+}
+
+export type MessengerFilter=
+ |{kind:'all'}
+ |{kind:'handoffs'}
+ |{kind:'member';id:string}
+ |{kind:'agent';id:string}
+ |{kind:'topic';taskId:string};
+
+export function filterMessengerMessages(messages:RoomMessage[],filter:MessengerFilter,search=''):RoomMessage[]{
+ const q=search.trim().toLowerCase();
+ return messages.filter(m=>{
+  if(q&&!m.body.toLowerCase().includes(q))return false;
+  if(filter.kind==='all')return true;
+  if(filter.kind==='handoffs')return Boolean(m.handoff||m.kind==='agent-handoff'||m.senderAgent||m.recipientKind==='agent'||m.kind==='ai-shared');
+  if(filter.kind==='member')return m.author===filter.id||m.recipient===filter.id;
+  if(filter.kind==='agent')return m.senderAgent===filter.id||m.recipient===filter.id||m.handoff?.toAgent===filter.id;
+  if(filter.kind==='topic')return m.taskId===filter.taskId||m.topicTask===filter.taskId;
+  return true;
+ });
+}
+
+

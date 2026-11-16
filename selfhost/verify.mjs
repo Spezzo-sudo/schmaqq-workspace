@@ -11,9 +11,11 @@ const [major,minor]=process.versions.node.split('.').map(Number);
 if(major<24||major===24&&minor<15)throw new Error('Node.js >=24.15.0 erforderlich.');
 function run(args){const p=spawnSync(process.execPath,args,{cwd:root,stdio:'inherit',windowsHide:true});if(p.error)throw p.error;if(p.status!==0)process.exit(p.status??1);}
 run(['selfhost/source-guard.mjs']);
+// Fresh CI checkouts do not have studio-dist yet. Avatar HTTP contract tests
+// exercise real static assets, so create the exact Vite bundle before tests.
+run(['node_modules/vite/bin/vite.js','build','--config','studio/vite.config.ts']);
 run(['--test',...readdirSync(path.join(root,'selfhost')).filter(f=>f.endsWith('.test.mjs')).sort().map(f=>'selfhost/'+f)]);
 run(['node_modules/typescript/bin/tsc','--noEmit','--incremental','false']);
-run(['node_modules/vite/bin/vite.js','build','--config','studio/vite.config.ts']);
 if(linuxOperatorSupported){
  console.log('Studio verification passed: source guard, backend contracts including Linux operator fixtures, TypeScript and frontend build. Browser acceptance and Production approval are separate.');
 }else{
