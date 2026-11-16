@@ -16,7 +16,7 @@ const readMeta=(db,k)=>{const row=db.prepare('SELECT value FROM workspace_meta W
 const putMeta=(db,k,value)=>db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(k,JSON.stringify(value));
 const roomMeta=(db,project)=>readMeta(db,key('project',project))??{revision:0,repository:null};
 // Read positions belong to conversations, not members.seen (which tracks presence).
-// A missing receipt intentionally means 0 unread: existing history is not labelled new on rollout.
+// First view after rollout establishes a single project baseline; later new messages count even in unopened contact views.
 const chatView=z.string().regex(/^(?:all|handoffs|(?:member|agent):[\w-]{1,100})$/);
 const readKey=(project,member,view)=>key('read',project+':'+member+':'+view);
 function checkChatView(db,project,view){
@@ -39,10 +39,20 @@ function matchesChatView(row,view){
  return false;
 }
 function unreadFor(db,project,member,view){
- const marker=readMeta(db,readKey(project,member,view));
- if(!marker)return 0;
+ let marker=readMeta(db,readKey(project,member,view));
+ if(!marker){
+  // Preserve the same initial cursor for every projection. Missing per-chat receipts inherit this
+  // baseline; repeated GET polling never advances it or clears actual unread messages.
+  const baselineKey=key('read-baseline',project+':'+member);
+  marker=readMeta(db,baselineKey);
+  if(!marker){
+   const sequence=db.prepare('SELECT COALESCE(max(rowid),0) AS n FROM messages WHERE channel=?').get(project).n;
+   db.prepare('INSERT OR IGNORE INTO workspace_meta(key,value) VALUES(?,?)').run(baselineKey,JSON.stringify({sequence}));
+   marker=readMeta(db,baselineKey);
+  }
+ }
  const type=view.split(':')[0],target=view.slice(type.length+1);
- // Build SQL solely from fixed fragments. Cursor matches the message ordering (created,id).
+ // Build SQL solely from fixed fragments. Cursor follows SQLite insertion order, including time ties.
  const where={
   all:'1=1',
   handoffs:"(json_extract(x.value,'$.handoff.toAgent') IS NOT NULL OR json_extract(x.value,'$.senderAgent') IS NOT NULL OR json_extract(x.value,'$.recipientKind')='agent' OR json_extract(x.value,'$.kind') IN ('ai-shared','agent-handoff'))",

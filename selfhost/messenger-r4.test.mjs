@@ -35,6 +35,8 @@ test('R4: unread counts follow per-chat read positions, not polling or member pr
  let state=await get('/api/room?project='+project,other.cookie);
  assert.equal(state.status,200);assert.equal(state.data.unread.all,0);
  assert.equal((await get('/api/rooms',other.cookie)).data.rooms.find(r=>r.id===project).unread,0);
+ const baseline=app.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:read-baseline:'+project+':'+other.id);
+ assert.ok(baseline,'initial R4 access fixes the per-project unread baseline');
 
  const mark=async(view,messageId)=>post({action:'read',project,view,...(messageId?{messageId}:{})},other.cookie);
  assert.equal((await mark('all','r4-first')).status,200);
@@ -54,6 +56,7 @@ test('R4: unread counts follow per-chat read positions, not polling or member pr
  const agent=(await post({action:'agent',id:'r4-agent',project,name:'Mara',role:'frontend',avatar:'MA',model:'gpt-5-codex',purpose:'Test'},owner.cookie));
  assert.equal(agent.status,200);const agentId=agent.data.agentId;
  assert.equal((await send('r4-agent-1','Hallo Mara',{recipient:agentId})).status,200);
+ assert.equal((await get('/api/room?project='+project,other.cookie)).data.unread['agent:'+agentId],1,'a never-opened agent chat inherits the project baseline');
  // A member-view and an agent-view are two projections of the same *project-visible* messages.
  assert.equal((await mark('agent:'+agentId,'r4-agent-1')).status,200);
  assert.equal((await mark('member:'+owner.id,'r4-agent-1')).status,200);
