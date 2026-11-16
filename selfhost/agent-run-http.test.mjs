@@ -94,14 +94,23 @@ test('agent queue: explicit project-scoped request, idempotent claim, signed com
  assert.equal((await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data.runs[0].status,'completed');
 });
 
-test('agent queue: reject wrong source/recipient and duplicate concurrent runs per owner',async t=>{
+test('agent queue: reject wrong source/recipient; further requests queue up to a limit',async t=>{
  const f=await fixture(t),[alice]=f.members;
  const {project,agent,message}=await f.createAgentMessage();
  assert.equal((await f.post('/api/agent-runs',{project,agent,message:'missing-id'},{cookie:alice.cookie})).status,400);
  const second=await f.createAgentMessage(alice,'Eule','Another');
  assert.equal((await f.post('/api/agent-runs',{project,agent,message:second.message},{cookie:alice.cookie})).status,400,'No cross-project source');
  const started=await f.post('/api/agent-runs',{project,agent,message},{cookie:alice.cookie});assert.equal(started.status,202);
- assert.equal((await f.post('/api/agent-runs',{project:second.project,agent:second.agent,message:second.message},{cookie:alice.cookie})).status,409);
+ const queued=await f.post('/api/agent-runs',{project:second.project,agent:second.agent,message:second.message},{cookie:alice.cookie});
+ assert.equal(queued.status,202,'A second request waits in the queue');
+ const list=(await f.get('/api/agent-runs?project='+second.project,{cookie:alice.cookie})).data;
+ assert.equal(list.runs[0].position,2);
+ for(const n of [3,4,5]){
+  const extra=await f.createAgentMessage(alice,'Agent '+n,'Projekt '+n);
+  assert.equal((await f.post('/api/agent-runs',extra,{cookie:alice.cookie})).status,202);
+ }
+ const sixth=await f.createAgentMessage(alice,'Agent 6','Projekt 6');
+ assert.equal((await f.post('/api/agent-runs',sixth,{cookie:alice.cookie})).status,409,'The queue is bounded');
 });
 
 test('agent queue: queued cancel cannot be claimed and running cancel rejects late model output',async t=>{
@@ -118,4 +127,70 @@ test('agent queue: queued cancel cannot be claimed and running cancel rejects la
  assert.equal(finished.data.status,'cancelled');
  assert.equal(finished.data.message,null);
  assert.equal((await f.get('/api/room?project='+second.project,{cookie:alice.cookie})).data.messages.length,1);
+});
+
+test('agent queue: a waiting worker gets new work at once, one answer at a time, in order',async t=>{
+ const f=await fixture(t),[alice]=f.members,[worker]=f.secrets;
+ const first=await f.createAgentMessage(),second=await f.createAgentMessage(alice,'Eule','Zweites');
+ const before=Date.now();
+ const pending=f.post('/api/agent-worker/claim',{wait:20},{token:worker.token});
+ await new Promise(resolve=>setTimeout(resolve,150));
+ const online=(await f.get('/api/agent-runs?project='+first.project,{cookie:alice.cookie})).data;
+ assert.equal(online.online,true,'A worker that asks for work counts as reachable');
+ const run1=await f.post('/api/agent-runs',first,{cookie:alice.cookie});
+ const run2=await f.post('/api/agent-runs',second,{cookie:alice.cookie});
+ const job=(await pending).data.job;
+ assert.equal(job.run,run1.data.run);
+ assert.ok(Date.now()-before<5000,'No polling delay');
+ assert.equal((await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job,null,'Second request waits for the first');
+ const active=(await f.get('/api/agent-runs',{cookie:alice.cookie})).data.runs;
+ assert.deepEqual(active.map(r=>[r.id,r.status,r.position]),[[run1.data.run,'running',null],[run2.data.run,'queued',1]]);
+ assert.ok(active[0].started);
+ await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'Erste Antwort.'},{token:worker.token});
+ assert.equal((await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job.run,run2.data.run);
+});
+
+test('agent queue: the worker receives the earlier exchange with this agent',async t=>{
+ const f=await fixture(t),[alice]=f.members,[worker]=f.secrets;
+ const {project,agent,message}=await f.createAgentMessage();
+ await f.post('/api/agent-runs',{project,agent,message},{cookie:alice.cookie});
+ const job=(await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job;
+ assert.deepEqual(job.history,[]);
+ await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'Die Liste ist zu eng.'},{token:worker.token});
+ const next=randomUUID();
+ await f.post('/api/room',{action:'message',id:randomUUID(),project,body:'Nachricht an alle, nicht an den Agenten.'},{cookie:alice.cookie});
+ await f.post('/api/room',{action:'message',id:next,project,recipient:agent,body:'Und was schlägst du vor?'},{cookie:alice.cookie});
+ await f.post('/api/agent-runs',{project,agent,message:next},{cookie:alice.cookie});
+ const followUp=(await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job;
+ assert.deepEqual(followUp.history,[{from:'person',body:'Prüfe bitte den mobilen Messenger.'},{from:'agent',body:'Die Liste ist zu eng.'}]);
+ assert.equal(followUp.prompt,'Und was schlägst du vor?');
+});
+
+test('agent queue: a worker request that came through a proxy or tunnel is refused',async t=>{
+ const f=await fixture(t),[worker]=f.secrets;
+ const host='http://127.0.0.1:'+f.app.server.address().port;
+ for(const header of ['X-Forwarded-For','CF-Connecting-IP']){
+  const r=await fetch(host+'/api/agent-worker/claim',{method:'POST',headers:{Origin:'http://127.0.0.1:49151','Content-Type':'application/json',Authorization:'Bearer '+worker.token,[header]:'203.0.113.9'},body:'{}'});
+  assert.equal(r.status,403,header);
+ }
+});
+
+test('agent queue: runs and proposals of the first pilot are taken over from the old storage',async t=>{
+ const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-agent-migrate-'));
+ t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const filename=path.join(dir,'pilot.sqlite');
+ let db=openStore(filename,{seedProjects:false});
+ db.prepare("DELETE FROM workspace_meta WHERE key LIKE 'agent-runs:%'").run();
+ const put=(key,value)=>db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?)').run(key,JSON.stringify(value));
+ put('hermes:v1:run:r1',{id:'r1',owner:'o1',project:'p1',agent:'a1',source_message:'m1',model:'x',status:'completed',created:10,updated:20,claimed:12,
+  tool_policy:['task.propose'],completed_message:'m2',tool_calls:[{callId:'call-0001',tool:'task.propose',fingerprint:'f',at:15,proposal:'pr1'}]});
+ put('hermes:v1:proposal:pr1',{id:'pr1',run:'r1',owner:'o1',project:'p1',agent:'a1',source_message:'m1',title:'Titel',description:'',kind:'general',status:'accepted',message:'m2',task:'t1',decidedBy:'o1',decided:21,created:15,updated:21});
+ db.close();
+ db=openStore(filename,{seedProjects:false});
+ t.after(()=>db.close());
+ const run=db.prepare('SELECT * FROM agent_runs WHERE id=?').get('r1');
+ assert.equal(run.status,'completed');assert.equal(run.finished,20);assert.equal(run.tool_policy,'["task.propose"]');
+ assert.equal(db.prepare('SELECT tool FROM agent_run_steps WHERE run=?').get('r1').tool,'task.propose');
+ assert.equal(db.prepare('SELECT task FROM agent_proposals WHERE id=?').get('pr1').task,'t1');
+ assert.ok(db.prepare("SELECT 1 FROM workspace_meta WHERE key='hermes:v1:run:r1'").get(),'Old records stay for a rollback');
 });

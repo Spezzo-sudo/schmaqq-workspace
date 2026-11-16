@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {transaction} from './store.mjs';
 import {aiAccess} from './ai-routes.mjs';
 import {taskView,taskContract,storeMetadata,teamEvent} from './team-model.mjs';
+import {visibleProposal} from './agent-run-store.mjs';
 
 // R25 room orchestration. The current installation is one private team.
 // Reuse existing records; no implicit schema migration or provider access.
@@ -66,11 +67,10 @@ function unreadFor(db,project,member,view){
  const count=db.prepare("SELECT count(*) AS n FROM messages m LEFT JOIN workspace_meta x ON x.key='room:v1:message:'||m.id WHERE m.channel=? AND m.author!=? AND m.rowid>? AND "+where).get(...parameters).n;
  return Math.min(99,count);
 }
-// Hermes task proposal card. Only the verified run message carries the id; status comes from the server record.
+// Task proposal card of an agent. Only the verified run message carries the id; status comes from the server record.
 function proposalCard(db,proposalId,message,viewer){
- if(typeof proposalId!=='string')return null;
- const p=readMeta(db,'hermes:v1:proposal:'+proposalId);
- if(!p||p.message!==message.id||p.project!==message.channel||p.status==='draft'||p.status==='discarded')return null;
+ const p=visibleProposal(db,proposalId);
+ if(!p||p.message!==message.id||p.project!==message.channel)return null;
  return {id:p.id,title:p.title,description:p.description,kind:p.kind,status:p.status,task:p.task??null,agent:p.agent,owner:p.owner,canDecide:p.status==='pending'&&p.owner===viewer.id&&can(db,viewer,p.project,'develop')};
 }
 function requireProject(db,project){const row=db.prepare('SELECT * FROM projects WHERE id=?').get(project);if(!row)throw fail(404,'Dieser Projektraum existiert nicht.');return row;}

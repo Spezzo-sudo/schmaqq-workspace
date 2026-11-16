@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { randomBytes, createHash, scryptSync, timingSafeEqual } from 'node:crypto';
+import { agentRunSchema, migrateLegacyAgentRuns } from './agent-run-store.mjs';
 
 export const digest=value=>createHash('sha256').update(value).digest('hex');
 export const token=()=>randomBytes(32).toString('base64url');
@@ -31,6 +32,7 @@ export function openStore(filename,{seedProjects=true}={}){
  db.exec(`CREATE TABLE IF NOT EXISTS task_comments(id TEXT PRIMARY KEY,task TEXT NOT NULL REFERENCES tasks(id),author TEXT NOT NULL REFERENCES members(id),body TEXT NOT NULL,created INTEGER NOT NULL);CREATE INDEX IF NOT EXISTS task_comments_task ON task_comments(task,created);`);
  db.exec(`CREATE TABLE IF NOT EXISTS change_notes(workspace TEXT PRIMARY KEY REFERENCES workspaces(job),kind TEXT NOT NULL,body TEXT NOT NULL,revision INTEGER NOT NULL,author TEXT NOT NULL REFERENCES members(id),updated INTEGER NOT NULL);`);
  db.exec(`CREATE TABLE IF NOT EXISTS runner_project_state(device TEXT PRIMARY KEY REFERENCES devices(id),projects TEXT NOT NULL,updated INTEGER NOT NULL);CREATE TABLE IF NOT EXISTS project_starts(id TEXT PRIMARY KEY,project TEXT UNIQUE NOT NULL REFERENCES projects(id),owner TEXT NOT NULL REFERENCES members(id),mode TEXT NOT NULL,title TEXT NOT NULL,description TEXT NOT NULL);`);
+ db.exec(agentRunSchema);migrateLegacyAgentRuns(db);
  const seed=db.prepare('INSERT OR IGNORE INTO projects VALUES(?,?,?,?,?,?)');
  if(seedProjects)for(const p of [['website','Schmaqq Website','Unser Auftritt und unsere Plattform.','sage','Im Aufbau'],['bewertungen','Bewertungen','Unser erster digitaler Service.','sand','Verfügbar'],['automation','Automatisierung','Verlässliche digitale Abläufe.','violet','In Entwicklung'],['firmenscan','Firmenscan','Unternehmenssignale verständlich machen.','blue','In Entwicklung'],['sicherheit','Sicherheit','Technische Grundlagen im Blick.','rose','In Entwicklung']])seed.run(...p,0);
  return db;

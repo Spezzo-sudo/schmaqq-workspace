@@ -95,8 +95,10 @@ test('tool bridge: message -> tool call -> proposal card -> approval -> exactly 
  const state=await f.room(project);
  assert.equal(state.tasks.length,1);assert.equal(state.tasks[0].title,'Mobile Suche');assert.equal(state.tasks[0].status,'todo');
  assert.equal(state.messages.find(m=>m.id===finished.data.message).proposalCard.status,'accepted');
- const run=JSON.parse(f.app.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('hermes:v1:run:'+job.run).value);
- assert.deepEqual(run.tool_calls.map(c=>c.tool),['project.read_context','task.propose'],'every tool call is audited once');
+ const steps=f.app.db.prepare('SELECT tool FROM agent_run_steps WHERE run=? ORDER BY seq').all(job.run);
+ assert.deepEqual(steps.map(c=>c.tool),['project.read_context','task.propose'],'every tool call is audited once');
+ const listed=(await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data.runs[0];
+ assert.deepEqual(listed.steps.map(c=>c.tool),['project.read_context','task.propose'],'the person sees the work steps');
  assert.ok(message);
 });
 
