@@ -287,6 +287,27 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
  const listedMembers=activeMembers.filter(m=>(railMode==='contacts'||m.id!==userId&&(lastFor({kind:'member',id:m.id})||filter.kind==='member'&&filter.id===m.id))&&matchesContact(m.name+' '+memberRoleSummary(m)));
  const listedAgents=activeAgents.filter(a=>(railMode==='contacts'||lastFor({kind:'agent',id:a.id})||filter.kind==='agent'&&filter.id===a.id)&&matchesContact(a.name+' '+(agentRoleLabels[a.role]??a.role)));
  const hasDetail=Boolean(profileAgent||editingAgent||detail);
+ const viewKey=messengerFilterKey(filter);
+ const readMessageId=filter.kind==='topic'?undefined:filterMessengerMessages(messages,filter).at(-1)?.id;
+ const lastMarked=useRef('');
+ // A view is read only while its chat is actually on screen. Polling project data is not reading it.
+ useEffect(()=>{
+  if(filter.kind==='topic')return;
+  const mark=()=>{
+   if(document.hidden||hasDetail||(window.matchMedia('(max-width:760px)').matches&&mobilePanel!=='chat'))return;
+   const stamp=room.project.id+':'+viewKey+':'+(readMessageId??'');
+   if(lastMarked.current===stamp)return;
+   lastMarked.current=stamp;
+   void roomRequest('/api/room',{action:'read',project:room.project.id,view:viewKey,...(readMessageId?{messageId:readMessageId}:{})})
+    .catch(()=>{if(lastMarked.current===stamp)lastMarked.current='';});
+  };
+  mark();document.addEventListener('visibilitychange',mark);
+  return()=>document.removeEventListener('visibilitychange',mark);
+ },[room.project.id,viewKey,readMessageId,mobilePanel,hasDetail]);
+ const unreadBadge=(view:string)=>{
+  const count=room.unread?.[view]??0;
+  return count>0?<span className="r4-unread" aria-label={count+(count===99?'+':'')+' ungelesene Nachrichten'}>{count}{count===99?'+':''}</span>:null;
+ };
  const targetName=activeAgents.find(a=>a.id===recipient)?.name??activeMembers.find(m=>m.id===recipient)?.name??recipient;
  return <section className={'rw-conversation rw-messenger r3-messenger'+(hasDetail?' with-detail':'')} data-mobile-panel={mobilePanel} aria-label="Projektgespräch">
   <div className="rw-messenger-grid">
@@ -297,13 +318,13 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
     <div className="rw-messenger-search"><Search size={16} aria-hidden="true"/><input aria-label={railMode==='contacts'?'Kontakte suchen':'Nachrichten im Projekt durchsuchen'} value={railMode==='contacts'?contactSearch:localSearch} onChange={e=>railMode==='contacts'?setContactSearch(e.target.value):setLocalSearch(e.target.value)} placeholder={railMode==='contacts'?'Kontakt suchen …':'Nachrichten suchen …'}/>{(railMode==='contacts'?contactSearch:localSearch)&&<button className="rw-icon" onClick={()=>railMode==='contacts'?setContactSearch(''):setLocalSearch('')} aria-label="Suche leeren"><X size={14}/></button>}</div>
     <div className="r3-contact-scroll" id="r3-contact-list" role="tabpanel" aria-labelledby={railMode==='chats'?'r3-tab-chats':'r3-tab-contacts'}>
      {railMode==='chats'&&<div className="rw-messenger-group">
-      <button className={'rw-contact-row'+(filter.kind==='all'&&!profileAgentId?' active':'')} onClick={()=>selectFilter({kind:'all'})}><span className="rw-avatar channel"><Users size={19}/></span><span className="rw-contact-meta"><strong>Projektteam</strong><small>{messages.at(-1)?.body??'Euer gemeinsames Gespräch'}</small></span>{messages.at(-1)&&<time>{time(messages.at(-1)!.created)}</time>}</button>
-      <button className={'rw-contact-row'+(filter.kind==='handoffs'?' active':'')} onClick={()=>selectFilter({kind:'handoffs'})}><span className="rw-avatar agent"><Bot size={18}/></span><span className="rw-contact-meta"><strong>Agenten & Übergaben</strong><small>{handoffCount?handoffCount+' Beiträge im Projekt':'Aufträge und Abstimmung im Team'}</small></span></button>
+      <button className={'rw-contact-row'+(filter.kind==='all'&&!profileAgentId?' active':'')} onClick={()=>selectFilter({kind:'all'})}><span className="rw-avatar channel"><Users size={19}/></span><span className="rw-contact-meta"><strong>{room.project.title}</strong><small>{messages.at(-1)?.body??'Projektteam · gemeinsames Gespräch'}</small></span>{messages.at(-1)&&<time>{time(messages.at(-1)!.created)}</time>}{unreadBadge('all')}</button>
+      <button className={'rw-contact-row'+(filter.kind==='handoffs'?' active':'')} onClick={()=>selectFilter({kind:'handoffs'})}><span className="rw-avatar agent"><Bot size={18}/></span><span className="rw-contact-meta"><strong>Agenten & Übergaben</strong><small>{handoffCount?handoffCount+' Beiträge im Projekt':'Aufträge und Abstimmung im Team'}</small></span>{unreadBadge('handoffs')}</button>
      </div>}
-     {!!listedMembers.length&&<div className="rw-messenger-group"><div className="rw-messenger-group-head"><span>Menschen</span></div>{listedMembers.map(m=>{const latest=lastFor({kind:'member',id:m.id});return <button key={m.id} className={'rw-contact-row'+(filter.kind==='member'&&filter.id===m.id?' active':'')} onClick={()=>selectFilter({kind:'member',id:m.id})}><span className="rw-avatar">{initials(m.name)}</span><span className="rw-contact-meta"><strong>{m.name}{m.id===userId?' (Du)':''}</strong><small>{latest?.body??memberRoleSummary(m)}</small></span>{latest&&<time>{time(latest.created)}</time>}</button>;})}</div>}
+     {!!listedMembers.length&&<div className="rw-messenger-group"><div className="rw-messenger-group-head"><span>Menschen</span></div>{listedMembers.map(m=>{const latest=lastFor({kind:'member',id:m.id});return <button key={m.id} className={'rw-contact-row'+(filter.kind==='member'&&filter.id===m.id?' active':'')} onClick={()=>selectFilter({kind:'member',id:m.id})}><span className="rw-avatar">{initials(m.name)}</span><span className="rw-contact-meta"><strong>{m.name}{m.id===userId?' (Du)':''}</strong><small>{latest?.body??memberRoleSummary(m)}</small></span>{latest&&<time>{time(latest.created)}</time>}{unreadBadge('member:'+m.id)}</button>;})}</div>}
      {!!listedAgents.length&&<div className="rw-messenger-group"><div className="rw-messenger-group-head"><span>KI-Team</span></div>{listedAgents.map(a=>{
       const selected=filter.kind==='agent'&&filter.id===a.id||profileAgentId===a.id,exec=agentExecutionStatus(a,room,resources),latest=lastFor({kind:'agent',id:a.id});
-      return <div key={a.id} className={'rw-contact-card'+(selected?' active':'')}><div className="rw-contact-row rw-agent-contact-row"><button type="button" className="rw-avatar-btn" aria-label={`Profil von ${a.name} öffnen`} title={`Profil von ${a.name} öffnen`} onClick={()=>openProfile(a.id)}><AgentAvatar agent={a} size="sm" statusDot={exec.state==='running'?'running':exec.state==='ready'?'ready':'idle'}/></button><button type="button" className="rw-contact-meta-btn" onClick={()=>selectFilter({kind:'agent',id:a.id})}><span className="rw-contact-meta"><strong>{a.name}</strong><small>{latest?.body??agentRoleLabels[a.role]??a.role}</small></span></button>{latest&&<time>{time(latest.created)}</time>}</div></div>;
+      return <div key={a.id} className={'rw-contact-card'+(selected?' active':'')}><div className="rw-contact-row rw-agent-contact-row"><button type="button" className="rw-avatar-btn" aria-label={`Profil von ${a.name} öffnen`} title={`Profil von ${a.name} öffnen`} onClick={()=>openProfile(a.id)}><AgentAvatar agent={a} size="sm" statusDot={exec.state==='running'?'running':exec.state==='ready'?'ready':'idle'}/></button><button type="button" className="rw-contact-meta-btn" onClick={()=>selectFilter({kind:'agent',id:a.id})}><span className="rw-contact-meta"><strong>{a.name}</strong><small>{latest?.body??agentRoleLabels[a.role]??a.role}</small></span></button>{latest&&<time>{time(latest.created)}</time>}{unreadBadge('agent:'+a.id)}</div></div>;
      })}</div>}
      {railMode==='chats'&&<button className="r3-directory-link" onClick={()=>setRailMode('contacts')}><Users size={16}/>{listedAgents.length?'Alle Kontakte':'KI-Team und weitere Kontakte'}<ArrowRight size={14}/></button>}
      {railMode==='contacts'&&!listedMembers.length&&!listedAgents.length&&<p className="rw-messenger-empty">Keine passenden Kontakte.</p>}
@@ -315,7 +336,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
     <header className="rw-messenger-header">
      <button type="button" className="r3-icon-button r3-chat-back" aria-label={onBack?'Zu allen Chats':'Zur Gesprächsliste'} onClick={onBack??showConversationList}><ChevronLeft size={22}/></button>
      {filter.kind==='agent'?(()=>{const a=activeAgents.find(a=>a.id===filter.id);return a?<button className="rw-avatar-btn" aria-label={`Profil von ${a.name} öffnen`} onClick={()=>openProfile(a.id)}><AgentAvatar agent={a} size="sm"/></button>:null;})():<span className="rw-avatar channel">{filter.kind==='handoffs'?<Bot size={19}/>:filter.kind==='member'?initials(activeMembers.find(m=>m.id===filter.id)?.name??'?'):<MessageSquare size={19}/>}</span>}
-     <div className="r3-chat-heading"><strong title={activeFilterTitle}>{filter.kind==='all'?'Projektteam':filter.kind==='agent'?activeAgents.find(a=>a.id===filter.id)?.name:filter.kind==='member'?activeMembers.find(m=>m.id===filter.id)?.name:activeFilterTitle}</strong><small><span className="r3-shared-dot"/>Projektweit sichtbar · {filter.kind==='agent'?'adressierter Austausch':filter.kind==='member'?'adressierte Beiträge':'gemeinsamer Arbeitsraum'}</small></div>
+     <div className="r3-chat-heading"><strong title={activeFilterTitle}>{filter.kind==='all'?room.project.title:filter.kind==='agent'?activeAgents.find(a=>a.id===filter.id)?.name:filter.kind==='member'?activeMembers.find(m=>m.id===filter.id)?.name:activeFilterTitle}</strong><small><span className="r3-shared-dot"/>{filter.kind==='all'?'Projektteam':room.project.title} · Projektweit sichtbar{filter.kind==='agent'||filter.kind==='member'?' · adressiert':''}</small></div>
      {tools}
     </header>
 
