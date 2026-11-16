@@ -23,6 +23,7 @@ import TeamTaskView from './team-task';
 import ProjectOverview,{type TaskPane} from './project-overview';
 import TeamKnowledge from './team-knowledge';
 import RoomAssistant from './room-assistant';
+import CodexAccount from './codex-account';
 import MessengerProjectNavigation from './messenger-project-nav';
 import {ProjectFiles} from './messenger-detail';
 import {Conversation,ResourceList,RoomModal,type Modal} from './room-components';
@@ -113,6 +114,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
     <h1>Mein Konto</h1>
     <section className="studio-account-profile" aria-label="Dein Profil"><span className="rw-avatar">{initials(user.displayName)}</span><div><strong>{user.displayName}</strong><small>{owner?'Inhaber':'Mitglied'} im Team · Anmeldung mit „{user.email}“</small></div><button className="rw-button studio-signout" onClick={()=>void logout()}><LogOut size={17}/>Abmelden</button></section>
     <button className="team-work-card studio-guide-link" onClick={()=>goPage('guide')}><CircleHelp size={18}/><span><strong>So funktioniert Studio</strong><small>Der ganze Weg, was wann erscheint, Übungsrunde</small></span><ChevronRight size={17}/></button>
+    <CodexAccount/>
     <ChatgptConnect/>
     <PluginGrants/>
     <section className="studio-account-login"><ProviderLogin link/></section>
@@ -225,7 +227,7 @@ function TaskList({tasks,userId,name,search,onSearch,onOpen}:{tasks:TeamTask[];u
 /** The one working way to bring your own AI: ChatGPT (or another assistant) connects to Studio with this address. */
 function ChatgptConnect(){
  const address=location.origin+'/mcp',[copied,setCopied]=useState(false);
- return <section aria-labelledby="team-ai"><h2 id="team-ai">Dein ChatGPT verbinden</h2>
+ return <section aria-labelledby="team-ai"><h2 id="team-ai">ChatGPT greift auf Studio zu (Connector)</h2>
   <p>Damit dein ChatGPT Aufgaben lesen und Änderungen machen kann, fügst du Studio in ChatGPT einmal als Verbindung (Connector) hinzu. Diese Adresse trägst du dort ein:</p>
   <div className="team-copy"><code>{address}</code><button className="rw-button" onClick={()=>void navigator.clipboard?.writeText(address).then(()=>setCopied(true))}><Copy size={16}/>{copied?'Kopiert':'Kopieren'}</button></div>
   <p className="rw-muted">ChatGPT fragt danach, ob es auf Studio zugreifen darf. Du bestätigst es auf einer Studio-Seite. Jede Person verbindet ihr eigenes ChatGPT.</p>

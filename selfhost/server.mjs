@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import {aiRoute,aiAccess} from './ai-routes.mjs';
+import {codexAccountRoute} from './codex-account-http.mjs';
 import {listWorkspaces,validScope,assertAvailable} from './workspaces.mjs';
 import {reviewState,completeReview} from './reviews.mjs';
 import {createPullRequestReader,configuredRepos} from './github-pr-status.mjs';
@@ -195,6 +196,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     send({ok:true,repository:sharedMeta?.repository??null,base:sharedMeta?.base??'main'});return;
    }
    if(await aiRoute({route,method,req,db,user,device,send,readJSON,parse}))return;
+   if(await codexAccountRoute({route,method,req,db,user,send,readJSON,parse}))return;
    if(await authHttpRoute({route,method,req,res,send}))return;
    if(await roomRoute({route,method,req,res,url,send}))return;
    if(route==='/api/runner/poll'&&method==='POST'){
@@ -325,14 +327,14 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(route==='/api/development/job'&&method==='GET'){
     const m=user(req);const jid=parse(id,url.searchParams.get('id'));
     const job=db.prepare('SELECT id,owner,device,project,action,payload,status,created,started,result FROM jobs WHERE id=?').get(jid);
-    if(!job)throw fail(404,'Auftrag fehlt.');if(job.owner!==m.id&&job.action!=='local-ai')requirePermission(db,m,job.project,'view');if(job.action==='local-ai'&&job.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(job.device,m.id))throw fail(403,'KI-Anfrage ist nur für Absender und Rechnerbesitzer sichtbar.');if(['files','read-file','save-file','create-file'].includes(job.action)&&job.owner!==m.id)throw fail(403,'Dateiinhalte sind nur in der eigenen Arbeitskopie verfügbar.');
+    if(!job)throw fail(404,'Auftrag fehlt.');if(job.action==='codex-account'&&job.owner!==m.id)throw fail(403,'Die ChatGPT-Anmeldung sieht nur die eigene Person.');if(job.owner!==m.id&&job.action!=='local-ai')requirePermission(db,m,job.project,'view');if(job.action==='local-ai'&&job.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(job.device,m.id))throw fail(403,'KI-Anfrage ist nur für Absender und Rechnerbesitzer sichtbar.');if(['files','read-file','save-file','create-file'].includes(job.action)&&job.owner!==m.id)throw fail(403,'Dateiinhalte sind nur in der eigenen Arbeitskopie verfügbar.');
     // Results come from the executor itself; say so, so nobody mistakes them for an independent check.
     const executor=db.prepare('SELECT name FROM devices WHERE id=?').get(job.device),kind=metadata(db,'executor:v1:host:'+job.device)?.kind==='server'?'server':'pc';
     send({job:{...job,payload:JSON.parse(job.payload),result:job.result?JSON.parse(job.result):null,executor:{name:executor?.name??null,kind},resultSource:'Vom Ausführer gemeldet, nicht unabhängig geprüft. Vor einer Veröffentlichung prüft die zweite Person bzw. CI.'}});return;
    }
    if(route==='/api/development/events'&&method==='GET'){
     const m=user(req);const jid=parse(id,url.searchParams.get('job'));
-    const eventJob=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);if(!eventJob)throw fail(404,'Auftrag fehlt.');if(eventJob.owner!==m.id&&eventJob.action!=='local-ai')requirePermission(db,m,eventJob.project,'view');if(eventJob.action==='local-ai'&&eventJob.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(eventJob.device,m.id))throw fail(403,'KI-Auftrag ist privat.');
+    const eventJob=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);if(!eventJob)throw fail(404,'Auftrag fehlt.');if(eventJob.action==='codex-account'&&eventJob.owner!==m.id)throw fail(403,'Die ChatGPT-Anmeldung sieht nur die eigene Person.');if(eventJob.owner!==m.id&&eventJob.action!=='local-ai')requirePermission(db,m,eventJob.project,'view');if(eventJob.action==='local-ai'&&eventJob.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(eventJob.device,m.id))throw fail(403,'KI-Auftrag ist privat.');
     if(['files','read-file','save-file','create-file'].includes(eventJob.action)&&eventJob.owner!==m.id)throw fail(403,'Dateiprotokolle sind nur in der eigenen Arbeitskopie verfügbar.');
     const after=parse(z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER),url.searchParams.get('after')??0);
     send({events:db.prepare('SELECT seq,type,text,created FROM job_events WHERE job=? AND seq>? ORDER BY seq').all(jid,after)});return;

@@ -9,7 +9,7 @@ export function storeMetadata(db,key,value){db.prepare('INSERT INTO workspace_me
 // The project history keeps milestones and real work. Background jobs (reading, listing,
 // copying, setup checks) stay in the task's job log; older stored entries are filtered out.
 export const jobEventLabels={submit:'Code zur Prüfung geteilt','save-file':'Datei gespeichert','create-file':'Datei erstellt',review:'Prüfstand erstellt',check:'Tests abgeschlossen',preview:'Vorschau erstellt',codex:'KI-Bearbeitung abgeschlossen'};
-export const quietJobActions=['inspect','prepare','status','files','read-file','deploy-key','worktree'];
+export const quietJobActions=['inspect','prepare','status','files','read-file','deploy-key','worktree','codex-account'];
 export function teamEvent(db,{actor,project,task=null,kind,body}){
  const value={id:randomUUID(),actor,project,task,kind,body,created:Date.now()};
  storeMetadata(db,'team:v1:event:'+value.id,value);return value;

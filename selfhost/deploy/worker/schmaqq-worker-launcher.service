@@ -14,7 +14,7 @@ RestartSec=5
 
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=/var/lib/schmaqq-worker/state/worktrees
+ReadWritePaths=/var/lib/schmaqq-worker/state/worktrees -/var/lib/schmaqq-worker/codex
 ProtectHome=yes
 PrivateTmp=yes
 ProtectKernelTunables=yes

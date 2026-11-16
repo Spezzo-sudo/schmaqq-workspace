@@ -19,9 +19,18 @@ Studio wie jeder PC sehen und widerrufen.
 
 ## Bekannte Grenzen
 
-- Alle Jobs laufen unter demselben Nutzer. Ein Job kann die Worker-Konfiguration samt Gerätetoken lesen.
-  Das ist vertretbar, solange nur der Besitzer selbst Jobs auf seinen Worker legen kann (heutige Regel).
-  Für Jobs anderer Personen braucht es zuerst Isolation pro Job (eigener Nutzer/Container pro Auftrag).
+- Projektcode läuft über den Job-Launcher als `schmaqq-job` und sieht nur seine eine Arbeitskopie
+  (nicht Worker-Konfiguration, Gerätetoken oder andere Kopien). Es läuft immer nur ein Auftrag gleichzeitig.
+
+## ChatGPT-Anmeldung pro Person (Codex)
+
+- Jede Person verbindet in Studio unter „Mein Konto“ ihr **eigenes** ChatGPT-Konto (Device Code, auch vom Handy).
+- Die Anmeldung liegt unter `/var/lib/schmaqq-worker/codex/<mitglied>` (Ordner `codex` nur root). Der Launcher
+  leitet den Ordner aus dem Besitzer des Studio-Auftrags ab, bindet genau diesen einen Ordner in die Unit ein und
+  führt nur feste Codex-Befehle aus. Projektjobs sehen keinen dieser Ordner.
+- Codex ist eine eigene, fest versionierte Kopie unter `/usr/local/lib/schmaqq-worker/codex` (sha512 geprüft),
+  nie `/usr/bin/codex`. Codex-Codeaufträge sind auf dem Server-Worker gesperrt, bis sie über diese Anmeldung laufen.
+- Voraussetzung: Im ChatGPT-Workspace ist „Device Code Login“ erlaubt.
 - Kein Zugang zu privaten GitHub-Repositories: Dafür müssten Zugangsdaten auf den Server. Der Pilot
   verwendet deshalb ein lokales Test-Repository.
 

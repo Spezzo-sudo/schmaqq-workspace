@@ -1293,5 +1293,13 @@
       "note": "Read actual branch head from GitHub; no current commit SHA maintained in permanent prose."
     },
     "portable_evidence": "docs/archive/evidence/USE_CANDIDATE_20261022.json"
+  },
+  "codex_login_per_member_20261116": {
+    "state": "implemented_on_branch_verified_not_deployed",
+    "branch": "claude/codex-login-per-member (lokal, Push-Freigabe ausstehend)",
+    "implemented": "Jedes Mitglied verbindet sein eigenes ChatGPT-Konto auf dem Server-Worker per Device-Code (Konto-Seite, auch Handy). Login-Ordner pro Mitglied unter /var/lib/schmaqq-worker/codex/<member>, vom Launcher aus dem Job-Besitzer abgeleitet, als einziger Ordner in eine schmaqq-job-Unit eingebunden; Launcher führt nur feste Codex-Befehle aus; Trennen löscht nur den eigenen Ordner. Studio zeigt Code/Link nur der eigenen Person (Job und Events für andere 403). Codex-Codeaufträge auf dem Server-Worker gesperrt. Eigene Codex-Version 0.169.0 mit sha512-Prüfung statt /usr/bin/codex. Egress: auth.openai.com, chatgpt.com, api.openai.com.",
+    "verification": "studio:verify unter Node 24: 346 Tests, 343 PASS, 0 FAIL, 3 Skips; selfhost/codex-account.test.mjs 9/9. Browser (lokale Demo, Testdaten): Konto-Seite 390 px und 1440 px in den Zuständen nicht verbunden, wartet, Code angezeigt, verbunden; zweites Konto sieht nichts davon; keine Querverschiebung, keine JS-Fehler.",
+    "limits": "Codex-Binary in dieser Sitzung nicht ausführbar (Freigabe abgelehnt): echte Device-Code-Ausgabe, Codex-Proxy-Verhalten und Sandbox-Verhalten auf dem VPS ungeprüft; Abnahme erst auf dem Server. Device Code Login muss im ChatGPT-Workspace erlaubt sein. Eine Anmeldung blockiert den Worker bis zu 15 Minuten (ein Auftrag gleichzeitig). Agenten antworten noch nicht (Stufe 1b).",
+    "production_changed": false
   }
 }

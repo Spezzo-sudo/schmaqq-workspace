@@ -15,7 +15,8 @@ import {fileURLToPath} from 'node:url';
 import {publicAddress} from '../../studio-plugin-auth.mjs';
 
 // ssh.github.com: git over SSH on port 443 with per-repository deploy keys.
-export const defaultAllow=Object.freeze(['studio.schmaqq.com','registry.npmjs.org','github.com','ssh.github.com','codeload.github.com','objects.githubusercontent.com']);
+// auth.openai.com, chatgpt.com, api.openai.com: ChatGPT sign-in (device code) and Codex requests with each member's own account.
+export const defaultAllow=Object.freeze(['studio.schmaqq.com','registry.npmjs.org','github.com','ssh.github.com','codeload.github.com','objects.githubusercontent.com','auth.openai.com','chatgpt.com','api.openai.com']);
 const hostPattern=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
 
 export function createEgressProxy({allow=defaultAllow,maxConnections=64,idleMs=600000,
