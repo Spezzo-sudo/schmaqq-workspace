@@ -15,12 +15,15 @@ export function createLiveEvents({ canSee }) {
       'Cache-Control': 'no-store',
       'X-Accel-Buffering': 'no' // reverse proxies must pass each signal on at once
     });
-    res.write('retry: 3000\n\n');
+    // The heartbeat is a real event: a browser counts the connection as live only while these arrive.
+    // Some tunnels and proxies hold back streamed responses; then the regular refresh simply stays in charge.
+    const beat = 'event: hb\ndata: 1\n\n';
+    res.write('retry: 3000\n\n' + beat);
     const open = connections.get(member) ?? new Set();
     connections.set(member, open);
     if (open.size >= MAX_CONNECTIONS_PER_MEMBER) open.values().next().value.end(); // oldest tab reconnects later
     open.add(res);
-    const heartbeat = setInterval(() => res.write(': still here\n\n'), HEARTBEAT_MS);
+    const heartbeat = setInterval(() => res.write(beat), HEARTBEAT_MS);
     heartbeat.unref();
     const leave = () => {
       clearInterval(heartbeat);

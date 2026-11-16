@@ -5,12 +5,14 @@ export type LiveSignal={type:'room'|'runs';project:string};
 type Listener=(signal:LiveSignal)=>void;
 
 const listeners=new Set<Listener>();
-let source:EventSource|null=null;
+let source:EventSource|null=null,lastBeat=0;
 
 function connect(){
  if(source||typeof EventSource==='undefined')return;
  source=new EventSource('/api/live');
+ source.addEventListener('hb',()=>{lastBeat=Date.now();});
  source.onmessage=event=>{
+  lastBeat=Date.now();
   let signal:LiveSignal;
   try{signal=JSON.parse(event.data);}catch{return;}
   for(const listener of listeners)listener(signal);
@@ -23,5 +25,8 @@ export function onLiveSignal(listener:Listener):()=>void{
  return()=>{listeners.delete(listener);if(!listeners.size&&source){source.close();source=null;}};
 }
 
-/** True while the live connection is open; then the regular refresh can run much less often. */
-export const liveConnected=()=>source?.readyState===1;
+/**
+ * True only while heartbeats really arrive. An open connection alone proves nothing: some tunnels and
+ * proxies hold streamed responses back, and then the regular refresh must keep its normal pace.
+ */
+export const liveConnected=()=>Boolean(source)&&Date.now()-lastBeat<40000;

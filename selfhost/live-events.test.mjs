@@ -29,8 +29,8 @@ async function fixture(t){
   const control=new AbortController();open.push(control);
   const response=await fetch(host+'/api/live',{headers:{Cookie:member.cookie},signal:control.signal});
   assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/event-stream/);
-  const seen=[];
-  (async()=>{const decoder=new TextDecoder();let buffer='';try{for await(const chunk of response.body){buffer+=decoder.decode(chunk,{stream:true});let i;while((i=buffer.indexOf('\n\n'))>=0){const block=buffer.slice(0,i);buffer=buffer.slice(i+2);if(block.startsWith('data: '))seen.push(JSON.parse(block.slice(6)));}}}catch{/* closed by the test */}})();
+  const seen=[],beats={n:0};seen.beats=beats;
+  (async()=>{const decoder=new TextDecoder();let buffer='';try{for await(const chunk of response.body){buffer+=decoder.decode(chunk,{stream:true});let i;while((i=buffer.indexOf('\n\n'))>=0){const block=buffer.slice(0,i);buffer=buffer.slice(i+2);if(block.startsWith('event: hb'))beats.n++;else if(block.startsWith('data: '))seen.push(JSON.parse(block.slice(6)));}}}catch{/* closed by the test */}})();
   return seen;
  }
  const settle=()=>new Promise(resolve=>setTimeout(resolve,120));
@@ -47,6 +47,7 @@ test('live signals: group news reaches the project, private chats only their par
  await f.settle();
  assert.deepEqual([a.length,b.length,c.length],[1,1,1]);
  assert.deepEqual(a[0],{type:'room',project},'only where to look, never what was written');
+ assert.ok(a.beats.n>=1,'a heartbeat arrives right after connecting, so the browser knows the line really works');
  await f.post('/api/room',{action:'message',id:randomUUID(),project,recipient:bob.id,direct:true,body:'Nur für Bob'},{cookie:alice.cookie});
  await f.settle();
  assert.deepEqual([a.length,b.length,c.length],[2,2,1],'the third person is not even told that something happened');
