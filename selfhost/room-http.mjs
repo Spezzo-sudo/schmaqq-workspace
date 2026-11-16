@@ -141,6 +141,11 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
   const member=user(req);
   if(method==='GET'){
    db.prepare('UPDATE members SET seen=? WHERE id=?').run(now(),member.id);
+   if(route==='/api/rooms'&&url.searchParams.get('archived')==='1'){
+    // Archived projects, only for those who may restore them (project admin).
+    const archived=db.prepare("SELECT p.id,p.title,json_extract(m.value,'$.revision') AS revision FROM projects p JOIN workspace_meta m ON m.key='room:v1:project:'||p.id WHERE json_extract(m.value,'$.archived')=1 ORDER BY p.title").all().filter(r=>can(db,member,r.id,'admin'));
+    send({rooms:archived});return true;
+   }
    if(route==='/api/rooms'){
     send({rooms:db.prepare("SELECT p.*,(SELECT count(*) FROM tasks t WHERE t.project=p.id AND t.status!='done') AS openTasks,(SELECT max(created) FROM messages m WHERE m.channel=p.id) AS lastMessage FROM projects p WHERE NOT EXISTS (SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:project:'||p.id AND json_extract(m.value,'$.archived')=1) ORDER BY COALESCE((SELECT max(created) FROM messages WHERE channel=p.id),p.created) DESC,p.id").all().filter(r=>!hiddenPractice(db,r.id,member.id)&&can(db,member,r.id,'view')).map(r=>({...r,practice:!!practiceOwner(db,r.id)}))});return true;
    }

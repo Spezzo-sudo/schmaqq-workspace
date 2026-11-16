@@ -44,7 +44,9 @@ export function createTeamRoute({db,user,readJSON,parse}){
    // Only kind and state of unfinished work, never payloads or results.
    const active=db.prepare(`SELECT j.id,j.owner,j.project,j.action,j.status,j.created,w.task FROM jobs j LEFT JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree')
     WHERE j.status IN ('queued','running','cancelling') AND (? IS NULL OR j.project=?) ORDER BY j.created DESC LIMIT 20`).all(project,project);
-   const visible=p=>!hiddenPractice(db,p,member.id)&&can(db,member,p,'view');
+   // Archived projects stay out of the overall lists (tasks, news, running work); asked for directly, they still answer.
+   const archived=p=>!project&&metadata(db,'room:v1:project:'+p)?.archived===true;
+   const visible=p=>!hiddenPractice(db,p,member.id)&&can(db,member,p,'view')&&!archived(p);
    send({tasks:tasks.filter(t=>visible(t.project)),events:events.filter(e=>!e.project||visible(e.project)),unread:unread.filter(e=>!e.project||visible(e.project)),active:active.filter(j=>visible(j.project))});return true;
   }
   if(method!=='POST')throw teamError(405,'Methode nicht erlaubt.');
@@ -80,14 +82,19 @@ export function createTeamRoute({db,user,readJSON,parse}){
     const p=db.prepare('SELECT * FROM projects WHERE id=?').get(v.project);if(!p)throw teamError(404,'Projekt fehlt.');
     const meta=metadata(db,'room:v1:project:'+p.id,{revision:0,repository:null});
     if(meta.revision!==v.revision)throw teamError(409,'Projekteinstellungen inzwischen geändert. Bitte neu laden.');
-    if(v.archived&&db.prepare("SELECT id FROM tasks WHERE project=? AND status!='done'").get(p.id))throw teamError(409,'Vor der Archivierung offene Aufgaben abschließen oder abbrechen.');
+    // Archiving hides a project for everyone and keeps all data; it can be undone. Only the project admin decides,
+    // and not while work is running in it.
+    if(v.archived!==(meta.archived===true)){
+     if(!can(db,member,v.project,'admin'))throw teamError(403,'Archivieren und Wiederherstellen macht der Projekt-Admin.');
+     if(db.prepare("SELECT id FROM jobs WHERE project=? AND status IN ('queued','running','cancelling')").get(p.id))throw teamError(409,'In diesem Projekt läuft gerade ein Auftrag. Später erneut versuchen.');
+    }
     db.prepare('UPDATE projects SET title=?,description=? WHERE id=?').run(v.title,v.description,p.id);
     if((v.base&&v.base!==(meta.base??'main')||v.workflow&&v.workflow!==(meta.workflow??'pull-request'))){
      if(!can(db,member,v.project,'admin'))throw teamError(403,'Projektregeln ändert der Projekt-Admin.');
      if(db.prepare('SELECT w.job FROM workspaces w JOIN jobs j ON j.id=w.job WHERE j.project=? AND w.archived=0').get(p.id))throw teamError(409,'Aktive Bearbeitungen vor einer Änderung der Projektregeln abschließen.');
     }
     storeMetadata(db,'room:v1:project:'+p.id,{...meta,base:v.base??meta.base??'main',workflow:v.workflow??meta.workflow??'pull-request',archived:v.archived,revision:meta.revision+1});
-    teamEvent(db,{actor:member.id,project:p.id,kind:'project',body:'Projekt aktualisiert: '+v.title});return;
+    teamEvent(db,{actor:member.id,project:p.id,kind:'project',body:(v.archived!==(meta.archived===true)?(v.archived?'Projekt archiviert: ':'Projekt wiederhergestellt: '):'Projekt aktualisiert: ')+v.title});return;
    }
    const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(v.task);if(!task)throw teamError(404,'Aufgabe fehlt.');
    const contract=taskContract(db,task),key='team:v1:task:'+task.id;
