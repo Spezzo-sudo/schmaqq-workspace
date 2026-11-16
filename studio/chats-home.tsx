@@ -30,7 +30,7 @@ export function useAllAgents(rooms:Room[]){
    const list:AgentEntry[]=[];
    for(const item of results){if(!item)continue;
     for(const agent of (item.state.agents??[]).filter(a=>a.active!==false)){
-     const mine=item.state.messages.filter(m=>m.senderAgent===agent.id||m.recipient===agent.id||m.handoff?.toAgent===agent.id).sort((a,b)=>b.created-a.created)[0];
+     const mine=item.state.messages.filter(m=>m.senderAgent===agent.id||m.recipient===agent.id||m.handoff?.toAgent===agent.id).sort((a,b)=>(b.sequence??b.created)-(a.sequence??a.created))[0];
      list.push({agent,project:item.r,last:mine?.created??null,preview:mine?mine.body:agent.purpose||agentRoleLabels[agent.role]});
     }}
    setEntries(list);setLoaded(true);
