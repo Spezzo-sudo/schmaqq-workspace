@@ -17,7 +17,7 @@ const putMeta=(db,k,value)=>db.prepare('INSERT INTO workspace_meta(key,value) VA
 const roomMeta=(db,project)=>readMeta(db,key('project',project))??{revision:0,repository:null};
 // Read positions belong to conversations, not members.seen (which tracks presence).
 // A missing receipt intentionally means 0 unread: existing history is not labelled new on rollout.
-const chatView=z.string().regex(/^(?:all|handoffs|(?:member|agent):[\\w-]{1,100})$/);
+const chatView=z.string().regex(/^(?:all|handoffs|(?:member|agent):[\w-]{1,100})$/);
 const readKey=(project,member,view)=>key('read',project+':'+member+':'+view);
 function checkChatView(db,project,view){
  const [kind,target]=view.split(':');
