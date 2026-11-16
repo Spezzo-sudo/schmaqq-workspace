@@ -280,6 +280,8 @@ test('planning: the lead proposes a few tasks in one run; accepting the plan cre
  assert.ok(!other.toolPolicy.allowed.includes('plan.propose'));
  assert.equal((await call(other,'plan.propose',plan)).status,403);
  await f.post('/api/agent-worker/finish',{run:other.run,lease:other.lease,status:'completed',output:'Das plant Herr Grau.'},w);
+ // Even a lead whose profile lacks the planning permission (promoted from an older agent) can plan.
+ assert.equal((await f.post('/api/room',{action:'agent',id:randomUUID(),project,agentId:lead.id,name:lead.name,role:'reviewer',avatarPresetId:'herr-grau',model:'x',permissions:{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:true,delegateAgents:false}},{cookie:alice.cookie})).status,200);
  const job=await ask(lead.id,'Ich will die Startseite verständlicher machen. Mach einen Plan.');
  assert.ok(job.toolPolicy.allowed.includes('plan.propose'));
  assert.deepEqual(job.team.map(m=>[m.name,m.lead]),[['Herr Grau',true],['Mara',false]],'the lead knows who is in the team');

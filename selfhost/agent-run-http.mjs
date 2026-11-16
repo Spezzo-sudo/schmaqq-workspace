@@ -129,6 +129,8 @@ const LOOPBACK = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
 // A reverse proxy or tunnel on this machine also connects from loopback. These headers give it away.
 const PROXY_HEADERS = ['x-forwarded-for', 'x-real-ip', 'forwarded', 'cf-connecting-ip', 'cf-ray'];
 
+// Planning is what a project lead is for; other agents need the explicit permission.
+const plans = agent => agent.lead === true || agent.permissions?.manageTasks === true;
 const fingerprint = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const secureMatch = (a, b) => timingSafeEqual(Buffer.from(digest(a)), Buffer.from(digest(b)));
 
@@ -284,7 +286,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
    * person who may develop. The lead additionally gets the planning tool.
    */
   function policyFor(member, agent, project) {
-    const mayPlan = agent.permissions?.manageTasks === true && can(db, member, project, 'develop');
+    const mayPlan = plans(agent) && can(db, member, project, 'develop');
     if (!mayPlan) return { mode: 'no-tools', allowed: [] };
     const allowed = TOOL_IDS.filter(id => !TOOLS[id].leadOnly || agent.lead === true);
     return {
@@ -411,7 +413,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       const openTasks = listRoomTasks(db, run.project).tasks.slice(0, 20).map(t => ({ title: t.title, status: t.status }));
       result = { trust: 'untrusted-project-data', context: buildRoomContext(db, run.project).text, openTasks };
     } else {
-      if (agent.permissions?.manageTasks !== true || !can(db, member, run.project, 'develop')) {
+      if (!plans(agent) || !can(db, member, run.project, 'develop')) {
         throw fail(403, 'Aufgabenvorschläge sind für diesen Agenten oder dein Konto nicht mehr freigegeben.');
       }
       if (tool.leadOnly && agent.lead !== true) throw fail(403, 'Einen Plan schlägt nur die Projektleitung vor.');
@@ -456,7 +458,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
 
     // A draft becomes visible only with a successful, still authorised run; any other end discards it.
     const drafts = store.draftsOf(run.id);
-    const mayPropose = success && can(db, member, run.project, 'develop') && agent.permissions?.manageTasks === true;
+    const mayPropose = success && can(db, member, run.project, 'develop') && plans(agent);
     const published = mayPropose ? drafts[0] ?? null : null;
     for (const draft of drafts) {
       if (draft !== published) store.updateProposal(draft.id, { status: 'discarded', updated: now });
@@ -508,7 +510,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
     }
 
     const agent = activeAgent(p.project, p.agent);
-    if (!agent || agent.permissions?.manageTasks !== true) {
+    if (!agent || !plans(agent)) {
       throw fail(403, 'Der Agent darf keine Aufgaben mehr vorschlagen. Vorschlag nicht übernommen.');
     }
     const projectMeta = db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:project:' + p.project);
