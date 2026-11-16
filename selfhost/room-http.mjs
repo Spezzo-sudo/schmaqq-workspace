@@ -41,12 +41,12 @@ function matchesChatView(row,view){
 function unreadFor(db,project,member,view){
  let marker=readMeta(db,readKey(project,member,view));
  if(!marker){
-  // Preserve the same initial cursor for every projection. Missing per-chat receipts inherit this
-  // baseline; repeated GET polling never advances it or clears actual unread messages.
-  const baselineKey=key('read-baseline',project+':'+member);
+  // An installation-wide R4 start position is shared by every account/project. Historical
+  // messages are initially quiet, but all new messages count even before a member's first login.
+  const baselineKey=key('read-baseline','global');
   marker=readMeta(db,baselineKey);
   if(!marker){
-   const sequence=db.prepare('SELECT COALESCE(max(rowid),0) AS n FROM messages WHERE channel=?').get(project).n;
+   const sequence=db.prepare('SELECT COALESCE(max(rowid),0) AS n FROM messages').get().n;
    db.prepare('INSERT OR IGNORE INTO workspace_meta(key,value) VALUES(?,?)').run(baselineKey,JSON.stringify({sequence}));
    marker=readMeta(db,baselineKey);
   }

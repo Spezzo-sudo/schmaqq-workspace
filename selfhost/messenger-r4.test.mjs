@@ -35,8 +35,8 @@ test('R4: unread counts follow per-chat read positions, not polling or member pr
  let state=await get('/api/room?project='+project,other.cookie);
  assert.equal(state.status,200);assert.equal(state.data.unread.all,0);
  assert.equal((await get('/api/rooms',other.cookie)).data.rooms.find(r=>r.id===project).unread,0);
- const baseline=app.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:read-baseline:'+project+':'+other.id);
- assert.ok(baseline,'initial R4 access fixes the per-project unread baseline');
+ const baseline=app.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:read-baseline:global');
+ assert.ok(baseline,'initial R4 access fixes the installation-wide unread baseline');
 
  const mark=async(view,messageId)=>post({action:'read',project,view,...(messageId?{messageId}:{})},other.cookie);
  assert.equal((await mark('all','r4-first')).status,200);
@@ -50,6 +50,12 @@ test('R4: unread counts follow per-chat read positions, not polling or member pr
  const home=(await get('/api/rooms',other.cookie)).data.rooms.find(r=>r.id===project);
  assert.equal(home.unread,1);assert.equal(home.lastExcerpt,'Bitte prüfen');
  assert.equal((await get('/api/rooms',owner.cookie)).data.rooms.find(r=>r.id===project).unread,0);
+ // A brand new project after initial activation has unread messages even for members
+ // who have never visited the project, instead of getting a misleading zero.
+ const late=await post({action:'create',id:'r4-later-project',title:'Spätere Gruppe',description:''},owner.cookie);
+ assert.equal(late.status,200);
+ assert.equal((await post({action:'message',id:'r4-late-message',project:late.data.project,body:'Neue Projektinfo'},owner.cookie)).status,200);
+ assert.equal((await get('/api/rooms',other.cookie)).data.rooms.find(r=>r.id===late.data.project).unread,1);
  assert.equal((await mark('all','r4-second')).status,200);
  assert.equal((await get('/api/room?project='+project,other.cookie)).data.unread.all,0);
 
