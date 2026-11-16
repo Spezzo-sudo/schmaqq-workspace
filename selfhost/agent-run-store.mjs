@@ -103,6 +103,18 @@ export function migrateLegacyAgentRuns(db) {
   }
 }
 
+/**
+ * The agent tables exist only where agents are switched on (a worker is bound to a person). Without that
+ * the database keeps its previous shape, like the other optional schema extensions.
+ */
+export function ensureAgentRunSchema(db) {
+  db.exec(agentRunSchema);
+  migrateLegacyAgentRuns(db);
+}
+
+const schemaPresent = db =>
+  Boolean(db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='agent_proposals'").get());
+
 const parseRun = row => (row ? { ...row, tool_policy: JSON.parse(row.tool_policy) } : null);
 
 export function agentRunStore(db) {
@@ -136,6 +148,7 @@ export function agentRunStore(db) {
         .all(now - queueLimit, now - silenceLimit).map(parseRun),
 
     steps: run => db.prepare('SELECT * FROM agent_run_steps WHERE run=? ORDER BY seq').all(run),
+    clearSteps: run => db.prepare('DELETE FROM agent_run_steps WHERE run=?').run(run),
     addStep(run, step) {
       const seq = db.prepare('SELECT COALESCE(MAX(seq),0)+1 AS n FROM agent_run_steps WHERE run=?').get(run).n;
       db.prepare('INSERT INTO agent_run_steps VALUES(?,?,?,?,?,?,?)')
@@ -166,7 +179,7 @@ export function agentRunStore(db) {
 
 /** Proposal as the chat may show it, or null while it is a draft or was discarded. */
 export function visibleProposal(db, id) {
-  if (typeof id !== 'string') return null;
+  if (typeof id !== 'string' || !schemaPresent(db)) return null;
   const p = db.prepare('SELECT * FROM agent_proposals WHERE id=?').get(id);
   return p && p.status !== 'draft' && p.status !== 'discarded' ? p : null;
 }

@@ -6,6 +6,7 @@ import path from 'node:path';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {createStudioServer} from './server.mjs';
 import {openStore,digest,passwordHash} from './store.mjs';
+import {ensureAgentRunSchema} from './agent-run-store.mjs';
 
 async function fixture(t,{configured=true}={}){
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-hermes-queue-'));
@@ -179,18 +180,35 @@ test('agent queue: runs and proposals of the first pilot are taken over from the
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-agent-migrate-'));
  t.after(()=>rmSync(dir,{recursive:true,force:true}));
  const filename=path.join(dir,'pilot.sqlite');
- let db=openStore(filename,{seedProjects:false});
- db.prepare("DELETE FROM workspace_meta WHERE key LIKE 'agent-runs:%'").run();
+ const db=openStore(filename,{seedProjects:false});
  const put=(key,value)=>db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?)').run(key,JSON.stringify(value));
  put('hermes:v1:run:r1',{id:'r1',owner:'o1',project:'p1',agent:'a1',source_message:'m1',model:'x',status:'completed',created:10,updated:20,claimed:12,
   tool_policy:['task.propose'],completed_message:'m2',tool_calls:[{callId:'call-0001',tool:'task.propose',fingerprint:'f',at:15,proposal:'pr1'}]});
  put('hermes:v1:proposal:pr1',{id:'pr1',run:'r1',owner:'o1',project:'p1',agent:'a1',source_message:'m1',title:'Titel',description:'',kind:'general',status:'accepted',message:'m2',task:'t1',decidedBy:'o1',decided:21,created:15,updated:21});
- db.close();
- db=openStore(filename,{seedProjects:false});
  t.after(()=>db.close());
+ assert.equal(db.prepare("SELECT count(*) AS n FROM sqlite_master WHERE name LIKE 'agent_%'").get().n,0,'No agent tables before agents are switched on');
+ ensureAgentRunSchema(db);ensureAgentRunSchema(db);
  const run=db.prepare('SELECT * FROM agent_runs WHERE id=?').get('r1');
  assert.equal(run.status,'completed');assert.equal(run.finished,20);assert.equal(run.tool_policy,'["task.propose"]');
  assert.equal(db.prepare('SELECT tool FROM agent_run_steps WHERE run=?').get('r1').tool,'task.propose');
  assert.equal(db.prepare('SELECT task FROM agent_proposals WHERE id=?').get('pr1').task,'t1');
  assert.ok(db.prepare("SELECT 1 FROM workspace_meta WHERE key='hermes:v1:run:r1'").get(),'Old records stay for a rollback');
+});
+
+test('agent queue: a failed or stopped request can be tried again for the same message, only on request',async t=>{
+ const f=await fixture(t),[alice]=f.members,[worker]=f.secrets;
+ const request=await f.createAgentMessage();
+ const first=await f.post('/api/agent-runs',request,{cookie:alice.cookie});
+ const job=(await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job;
+ await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'failed',errorCode:'timeout'},{token:worker.token});
+ const same=await f.post('/api/agent-runs',request,{cookie:alice.cookie});
+ assert.deepEqual([same.data.status,same.data.reused],['failed',true],'A repeated request alone starts nothing');
+ const again=await f.post('/api/agent-runs',{...request,retry:true},{cookie:alice.cookie});
+ assert.deepEqual([again.data.run,again.data.status],[first.data.run,'queued']);
+ const second=(await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job;
+ assert.equal(second.run,first.data.run);assert.notEqual(second.lease,job.lease);
+ assert.equal((await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'Alt'},{token:worker.token})).status,403,'The old attempt cannot answer');
+ const done=await f.post('/api/agent-worker/finish',{run:second.run,lease:second.lease,status:'completed',output:'Jetzt klappt es.'},{token:worker.token});
+ assert.equal(done.data.status,'completed');
+ assert.equal((await f.post('/api/agent-runs',{...request,retry:true},{cookie:alice.cookie})).data.reused,true,'An answered message is not answered twice');
 });

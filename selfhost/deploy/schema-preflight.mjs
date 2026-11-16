@@ -7,6 +7,7 @@ import {fileURLToPath} from 'node:url';
 const defaultBaseline = fileURLToPath(new URL('./schema-baseline.v0.json', import.meta.url));
 const authExtensionFile = fileURLToPath(new URL('./schema-auth-extension.v0.json', import.meta.url));
 const pluginExtensionFile = fileURLToPath(new URL('./schema-plugin-extension.v1.json', import.meta.url));
+const agentExtensionFile = fileURLToPath(new URL('./schema-agent-extension.v1.json', import.meta.url));
 const sqlHash = sql => createHash('sha256').update((sql ?? '').replace(/\s+/g, ' ').trim()).digest('hex');
 
 /**
@@ -58,12 +59,14 @@ export function resolveExpectedSchema(base, actual) {
     for(const obj of optional.objects)expected.set(obj.type+':'+obj.name,obj);
   }
   const plugin=pluginExtension(expected,actual);
+  const agent=agentExtension(expected,actual);
   return {
     expected,
-    tables:{...base.tables,...(complete?optional.tables:{}),...(plugin.complete?plugin.tables:{})},
+    tables:{...base.tables,...(complete?optional.tables:{}),...(plugin.complete?plugin.tables:{}),...(agent.complete?agent.tables:{})},
     profile,
     completeAuthExtension:complete,
-    pluginExtension:plugin.state
+    pluginExtension:plugin.state,
+    agentExtension:agent.state
   };
 }
 
@@ -75,14 +78,27 @@ export function resolveExpectedSchema(base, actual) {
  * therefore BLOCKED. Pinned from the code by schema-plugin-profile.test.mjs.
  */
 function pluginExtension(expected,actual){
-  const extension=JSON.parse(readFileSync(pluginExtensionFile,'utf8'));
+  return pinnedExtension(pluginExtensionFile,'plugin-oauth-extension',/^plugin_[a-z_]+$/,expected,actual);
+}
+
+/**
+ * Agent runs, their work steps and task proposals (agent_*). Created only where a worker is bound to a
+ * person; accepted on the same terms as the plugin extension: complete and exact, or not at all.
+ * Pinned from the code by schema-agent-profile.test.mjs.
+ */
+function agentExtension(expected,actual){
+  return pinnedExtension(agentExtensionFile,'agent-run-extension',/^agent_[a-z_]+$/,expected,actual);
+}
+
+function pinnedExtension(file,profile,namePattern,expected,actual){
+  const extension=JSON.parse(readFileSync(file,'utf8'));
   const keys=(extension.objects??[]).map(x=>x.type+':'+x.name);
-  if(extension.format!==1||extension.profile!=='plugin-oauth-extension'||!keys.length||
+  if(extension.format!==1||extension.profile!==profile||!keys.length||
      new Set(keys).size!==keys.length||
-     extension.objects.some(x=>!['table','index'].includes(x.type)||!/^plugin_[a-z_]+$/.test(x.name)||!/^plugin_[a-z_]+$/.test(x.table)||!/^[a-f0-9]{64}$/.test(x.sqlHash))||
+     extension.objects.some(x=>!['table','index'].includes(x.type)||!namePattern.test(x.name)||!namePattern.test(x.table)||!/^[a-f0-9]{64}$/.test(x.sqlHash))||
      extension.objects.filter(x=>x.type==='table').some(x=>!Array.isArray(extension.tables?.[x.name]?.columns)||!Array.isArray(extension.tables[x.name].foreignKeys))||
      keys.some(k=>expected.has(k))){
-    throw new Error('Invalid pinned plugin schema extension.');
+    throw new Error('Invalid pinned schema extension: '+profile+'.');
   }
   const seen=keys.filter(k=>actual.has(k)).length;
   if(seen!==keys.length)return {state:seen?'partial-BLOCKED':'absent',complete:false};
@@ -147,6 +163,7 @@ export function inspectSchema(filename, baselineFile = defaultBaseline) {
       schema: 'R23-unversioned-v0',
       schemaProfile: resolved.profile,
       pluginExtension: resolved.pluginExtension,
+      agentExtension: resolved.agentExtension,
       userVersion: version,
       expectedVersion: baseline.userVersion,
       integrity: integrity.length === 1 && integrity[0].integrity_check === 'ok' ? 'ok' : 'failed',

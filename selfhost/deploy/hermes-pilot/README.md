@@ -4,6 +4,20 @@
 
 **Wichtig: NOCH KEIN ECHTER INFERENZLAUF.** Dies ist eine abgegrenzte, testbare Verbindungsschicht. Keine produktive Installation, kein Merge und keine neuen Tokens im Git.
 
+## Stand nach dem Umbau vom 16.11.2026 (Branch `feat/agent-messenger-foundation-20261116`)
+
+Dieser Abschnitt geht den Angaben weiter unten vor, wo sie sich widersprechen.
+
+- **Daten:** Agentenläufe, Arbeitsschritte und Aufgabenvorschläge liegen in eigenen Tabellen (`agent_runs`, `agent_run_steps`, `agent_proposals`). Sie entstehen nur, wenn `STUDIO_HERMES_WORKERS_FILE` gesetzt ist, und sind als geprüfte Schema-Erweiterung in `selfhost/deploy/schema-agent-extension.v1.json` festgehalten. Die bisherigen Einträge unter `hermes:v1:*` in `workspace_meta` werden beim ersten Start einmal kopiert und bleiben für ein Zurückgehen stehen.
+- **Routen:** Der Worker spricht `/api/agent-worker/claim|heartbeat|tool|finish`. `/api/hermes-worker/*` bleibt als gleichwertiger Alias, damit der installierte Worker weiterläuft.
+- **Reihenfolge beim Einspielen:** zuerst das Backend (es bedient beide Pfade), danach der Worker. Der neue Worker braucht das neue Backend.
+- **Warteschlange:** bis zu fünf wartende oder laufende Aufträge pro Person, es läuft immer nur einer. Ein fehlgeschlagener oder gestoppter Auftrag kann für dieselbe Nachricht erneut gestartet werden.
+- **Abholung:** Der Worker fragt mit `{"wait":20}`; das Backend hält die Anfrage offen und antwortet sofort, wenn ein Auftrag eintrifft.
+- **Zugriff:** Worker-Anfragen werden abgelehnt, wenn sie nicht von localhost kommen **oder** Kopfzeilen eines Proxys oder Tunnels tragen (`X-Forwarded-For`, `CF-Connecting-IP` und ähnliche).
+- **Fehlersuche:** Schlägt ein Lauf fehl, schreibt der Worker das Ende der Fehlerausgabe des Motors ins Journal (`journalctl -u schmaqq-hermes-agent@a`), lange Zeichenketten sind geschwärzt.
+- **Oberfläche:** Eine Nachricht an den eigenen Agenten fordert die Antwort von selbst an; der Knopf „Agent ausdrücklich beauftragen“ entfällt.
+- **Prüfsummen:** `operator-install-worker.sh` ist nicht angepasst. Das Einspielen des neuen Workers braucht einen eigenen, geprüften Schritt.
+
 ## Warum diese Form
 
 Die vorhandene Studio-SQLite-Version wird streng gegen einen signierten Schemakatalog geprüft. Das kleine Agenten-Pilotledger liegt deshalb unter `hermes:v1:run:*` in **`workspace_meta`**, das Studio bereits dauerhaft und transaktional verwendet. Ohne neue Tabellen und ohne Produktionsmigration. Für grössere Teams später bewusst versionierte Migration mit Indexen.

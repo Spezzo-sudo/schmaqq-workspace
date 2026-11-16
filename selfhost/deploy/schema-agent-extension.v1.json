@@ -1,0 +1,353 @@
+{
+  "format": 1,
+  "profile": "agent-run-extension",
+  "sourceModules": [
+    "selfhost/agent-run-store.mjs"
+  ],
+  "note": "Optional schema of agent runs, work steps and task proposals (created only where a worker is bound to a person). Accepted only complete and exact; compared against the code by schema-agent-profile.test.mjs.",
+  "objects": [
+    {
+      "type": "index",
+      "name": "agent_proposals_run",
+      "table": "agent_proposals",
+      "sqlHash": "1de96537f3ea530eeb60cad899b7dbc9ea3017b891e502ecdabf9341ccec50a1"
+    },
+    {
+      "type": "index",
+      "name": "agent_runs_owner",
+      "table": "agent_runs",
+      "sqlHash": "25fb756650c67ab0a037d69508a5f96b34ec70af40d5d5b14731503a23770a90"
+    },
+    {
+      "type": "index",
+      "name": "agent_runs_project",
+      "table": "agent_runs",
+      "sqlHash": "b827a16e47633246b34b5c05041e9aace208b43de6e64f65b446abd1696d00fb"
+    },
+    {
+      "type": "index",
+      "name": "agent_runs_source",
+      "table": "agent_runs",
+      "sqlHash": "b421eec2a4740690a10dc156458bff0cba06f5fd99fa86d57829502f54b58a90"
+    },
+    {
+      "type": "table",
+      "name": "agent_proposals",
+      "table": "agent_proposals",
+      "sqlHash": "9ac0566ca0d8900ec03aec5821504783d5a81939922939c177a81ac5d9954c91"
+    },
+    {
+      "type": "table",
+      "name": "agent_run_steps",
+      "table": "agent_run_steps",
+      "sqlHash": "cc458f81cb032d6caa7f7badf6adecd134a158c8b9bfd5a360c475a71cb47fc6"
+    },
+    {
+      "type": "table",
+      "name": "agent_runs",
+      "table": "agent_runs",
+      "sqlHash": "9fe71832ead860972297695915d295d0fe4b41fc413c6b1b9291551ad1677cde"
+    }
+  ],
+  "tables": {
+    "agent_proposals": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "run",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "owner",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "project",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "agent",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "source_message",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "title",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "kind",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "message",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "task",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "decided_by",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "decided",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "created",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "updated",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": []
+    },
+    "agent_run_steps": {
+      "columns": [
+        {
+          "name": "run",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "seq",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "name": "call_id",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "tool",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "fingerprint",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "proposal",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "created",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "parent": "agent_runs",
+          "from": "run",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ]
+    },
+    "agent_runs": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "name": "owner",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "project",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "agent",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "source_message",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "model",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "created",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "updated",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "claimed",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "heartbeat",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "finished",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "lease_hash",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "tool_policy",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": "'[]'",
+          "pk": 0
+        },
+        {
+          "name": "completed_message",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "name": "error_code",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreignKeys": []
+    }
+  }
+}

@@ -1,4 +1,35 @@
 {
+  "agent_messenger_foundation_20261116": {
+    "state": "feature_branch_pending_owner_review",
+    "branch": "feat/agent-messenger-foundation-20261116",
+    "base_branch": "ccr-272a6789-oo61vk (PR #87)",
+    "implemented": [
+      "Agent runs, work steps and task proposals live in their own tables (agent_runs, agent_run_steps, agent_proposals); pilot records are copied once from workspace_meta and the old rows stay for a rollback",
+      "The tables are an optional pinned schema extension (selfhost/deploy/schema-agent-extension.v1.json): created only where a worker is bound to a person, accepted by the release preflight only complete and exact",
+      "Requests queue per person (up to five, one answer at a time) instead of being refused; failed or stopped requests can be tried again for the same message",
+      "The worker's request for work is held open (up to 25 s), so an answer starts without polling delay; the worker also receives the earlier exchange between the person and the agent",
+      "Worker requests that passed a reverse proxy or tunnel are refused, not only non-loopback ones; /api/agent-worker/* is the engine-neutral path and /api/hermes-worker/* stays as alias for the installed pilot worker",
+      "The worker writes the redacted tail of the engine's error output to its service journal when a run fails and retries the final report on network errors",
+      "Messenger: calm bubbles, a work line per request (waiting, working with seconds, steps, stop, retry), a working bubble, a clearer approval card and a working mark in the chat overview; a message to your own agent requests the answer by itself",
+      "Reachability of a person's AI access is shown (ready / not reachable) instead of always 'ready'"
+    ],
+    "verification": {
+      "regression": "npm run studio:verify under Node 24.22.0; new tests in agent-run-http.test.mjs, agent-activity.test.mjs, schema-agent-profile.test.mjs",
+      "browser": "Chromium 1440x900 and 390x844 against an isolated local database with a scripted stand-in worker: accept proposal, live arrival of an answer, stop, retry; no horizontal overflow, no console errors"
+    },
+    "limits": [
+      "Not run against the installed engine: the pilot backend and worker still run the previous version",
+      "Answers still arrive as a whole, not word by word; the engine's one-shot interface offers no stream",
+      "The adapter still pins engine internals (tool search off, own toolset); the start check stops the worker if an engine update breaks this, and Studio then shows the access as not reachable",
+      "operator-install-worker.sh hashes are not updated: installing the new worker needs a separate operator step",
+      "GitHub runs the full check only for pull requests to main; this stacked branch was checked locally",
+      "No real Android keyboard test"
+    ],
+    "production_changed": false,
+    "main_changed": false,
+    "schema_migration": "optional extension, created only where agent workers are configured",
+    "model_calls": false
+  },
   "hermes_tool_gateway_r1_20261116": {
     "state": "feature_branch_pending_owner_review",
     "branch": "ccr-272a6789-oo61vk",

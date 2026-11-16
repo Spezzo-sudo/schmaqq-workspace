@@ -76,7 +76,7 @@ test('R5: a bound model worker shows ready-on-request and only a run for this ex
  assert.equal(agentExecutionStatus(agent,[],[],null).state,'idle');
  assert.equal(agentExecutionStatus(agent,[],[],{configured:false,runs:[]}).state,'idle');
  const ready=agentExecutionStatus(agent,[],[],{configured:true,runs:[]});
- assert.deepEqual([ready.state,ready.via,ready.label],['ready','hermes','Bereit · antwortet auf Auftrag']);
+ assert.deepEqual([ready.state,ready.via,ready.label],['ready','hermes','Bereit']);
  assert.equal(agentExecutionStatus(agent,[],[],{configured:true,runs:[{...hermesRun,agent:'other'}]}).state,'ready');
  assert.equal(agentExecutionStatus(agent,[],[],{configured:true,runs:[{...hermesRun,status:'completed'}]}).state,'ready');
  const busy=agentExecutionStatus(agent,[],[],{configured:true,runs:[hermesRun]});

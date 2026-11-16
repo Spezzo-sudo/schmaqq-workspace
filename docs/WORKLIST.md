@@ -18,7 +18,9 @@ Etappen und Entscheide: [PLAN.md](PLAN.md). Iststand mit Nachweisen: [STATUS.jso
 Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, schreibt sich unter „In Arbeit“ ein
 (z. B. „Claude Code – Aufräumen“ oder „Codex – Messenger-Feinschliff“).
 
-**In Arbeit:** ChatGPT/Codex – Messenger R4 und mobile UX (Issue #84, `feat/studio-mobile-messenger-r4-20261116`). Vor Owner-Abnahme kein Merge und kein Livegang.
+**In Arbeit:** Claude Code – Agenten-Fundament und Messenger-Feinschliff (`feat/agent-messenger-foundation-20261116`, baut auf #87 auf): eigene Tabellen für Agentenläufe, Warteschlange, Arbeitszeile mit Schritten, ruhigere Sprechblasen. Vor Owner-Abnahme kein Merge und kein Livegang.
+
+**Ebenfalls offen:** ChatGPT/Codex – Messenger R4 und mobile UX (Issue #84, `feat/studio-mobile-messenger-r4-20261116`). Vor Owner-Abnahme kein Merge und kein Livegang.
 
 1. [ ] Aufräumen: Probeprojekt (TEST-UX-Reste) entfernen, Klimafinder frisch starten (Owner-Ja nötig, nicht umkehrbar).
 2. [ ] GitHub-Prüfung stabil: restliche feste Test-Ports (44xxx) durch vom System vergebene Ports ersetzen.
@@ -27,7 +29,7 @@ Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, sch
 4. [ ] Hermes-Test: eine abgeschottete Hermes-Agent-Instanz pro Person (eigener Ordner, keine Shell, kein Root,
    Speichergrenze, Start bei Bedarf), Anmeldung mit dem eigenen ChatGPT-Konto über Studio, Studio-Werkzeuge per MCP,
    RAM gemessen. Ergebnis entscheidet den Motor; Ersatz ist Codex direkt.
-5. [ ] Agent antwortet über diesen Motor, mit Live-Arbeitskarte.
+5. [ ] Agent antwortet über diesen Motor, mit Live-Arbeitskarte. (Im Pilot erledigt; Arbeitszeile gebaut auf `feat/agent-messenger-foundation-20261116`, noch nicht auf dem Pilot installiert.)
 6. [ ] Freigabekarten und Studio-Werkzeuge für Agenten.
 7. [ ] Agent ↔ Agent als mitlesbarer Chat mit Rundenlimit und Stopp.
 

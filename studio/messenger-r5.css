@@ -1,0 +1,93 @@
+/* Messenger R5: calm bubbles, the agent's work line and the approval card. */
+
+/* ---- Bubbles ------------------------------------------------------------------------------------- */
+.r3-messenger .rw-message{margin-bottom:14px}
+.r3-messenger .rw-message-content{background:#eceae2;border-color:transparent;padding:11px 15px 11px;border-radius:6px 20px 20px 20px}
+.r3-messenger .rw-message-content>header{margin-bottom:4px}
+.r3-messenger .rw-message-content>header time{font-family:inherit;font-size:11px;opacity:.75}
+.r3-messenger .rw-message-content>p{font-size:15px;line-height:1.55}
+
+.r3-messenger .r3-own .rw-message-content{display:flex;flex-direction:column;background:var(--schmaqq-ink);border-color:var(--schmaqq-ink);border-radius:20px 6px 20px 20px;color:var(--schmaqq-paper-light)}
+.r3-messenger .r3-own .rw-message-content>p{color:var(--schmaqq-paper-light);margin-right:24px}
+.r3-messenger .r3-own .rw-message-content>header{order:9;margin:5px 0 0;justify-content:flex-end}
+.r3-messenger .r3-own .rw-message-content>header time{color:#c9c8d6;margin-left:0}
+.r3-messenger .r3-own .r3-message-menu>summary{color:#c9c8d6}
+.r3-messenger .r3-own .r3-message-menu>summary:hover,.r3-messenger .r3-own .r3-message-menu[open]>summary{background:#ffffff1f;color:var(--schmaqq-paper-light)}
+.r3-messenger .r3-own .rw-topic-pill{background:#ffffff1a;color:var(--schmaqq-paper-light)}
+.r3-messenger .r3-own .rw-reply-reference{background:#ffffff14;border-left-color:var(--schmaqq-acid);color:#dddce6}
+.r3-messenger .r3-own .r5-to{color:#c9c8d6}
+
+.r3-messenger .r5-to{font-size:11px;color:var(--schmaqq-muted)}
+.r3-messenger .rw-message-topic-row{margin:2px 0 7px}
+.r3-messenger .r5-menu-note{margin:4px 0 0;padding:8px 10px 4px;border-top:1px solid var(--schmaqq-rule);max-width:230px;font-size:11px;line-height:1.5;color:var(--schmaqq-muted)}
+
+/* ---- Chat head: what the agent is doing ------------------------------------------------------------ */
+.r3-messenger .r3-shared-dot.ready{background:#5f9a3a}
+.r3-messenger .r3-shared-dot.idle{background:#a5a3ab}
+.r3-messenger .r3-shared-dot.running{background:#5f9a3a;animation:r5-pulse 1.2s ease-in-out infinite}
+
+/* ---- Work line under a request --------------------------------------------------------------------- */
+.r3-messenger .r5-run{display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px 10px;margin:-4px 0 14px;padding-left:48px;font-size:12px;line-height:1.4;color:var(--schmaqq-muted)}
+.r3-messenger .r5-run.ask{justify-content:flex-end;padding-left:0}
+.r3-messenger .r5-run-text,.r3-messenger .r5-run-steps>summary{display:inline-flex;align-items:center;gap:8px;min-height:30px;padding:4px 12px;border:1px solid var(--schmaqq-rule);border-radius:999px;background:var(--schmaqq-paper-light);min-width:0}
+.r3-messenger .r5-run.ask .r5-run-text{border:0;background:transparent;padding:0}
+.r3-messenger .r5-run-steps{min-width:0}
+.r3-messenger .r5-run-steps>summary{list-style:none;cursor:pointer}
+.r3-messenger .r5-run-steps>summary::-webkit-details-marker{display:none}
+.r3-messenger .r5-run-steps>summary::before,.r3-messenger .r5-run-steps>summary::after{content:none!important}
+.r3-messenger .r5-run-steps>summary:hover{border-color:var(--schmaqq-rule-strong);color:var(--schmaqq-ink)}
+.r3-messenger .r5-run-steps>summary>svg{flex:none;transition:transform .15s}
+.r3-messenger .r5-run-steps[open]>summary>svg{transform:rotate(90deg)}
+.r3-messenger .r5-run-steps>ol{list-style:none;margin:8px 0 2px 15px;padding:0 0 0 14px;border-left:2px solid var(--schmaqq-rule);display:grid;gap:7px}
+.r3-messenger .r5-run-steps>ol>li{position:relative;display:flex;align-items:baseline;gap:10px;color:var(--schmaqq-ink)}
+.r3-messenger .r5-run-steps>ol>li::before{content:"";position:absolute;left:-19px;top:5px;width:8px;height:8px;border-radius:50%;background:#5f9a3a}
+.r3-messenger .r5-run-steps>ol>li>time{font-size:11px;color:var(--schmaqq-muted)}
+.r3-messenger .r5-run-mark{flex:none;width:9px;height:9px;border-radius:50%;background:#a5a3ab}
+.r3-messenger .r5-run.done .r5-run-mark{background:#5f9a3a}
+.r3-messenger .r5-run.failed .r5-run-mark{background:var(--schmaqq-coral)}
+.r3-messenger .r5-run.failed .r5-run-text,.r3-messenger .r5-run.failed summary{color:#7a2f20}
+.r3-messenger .r5-run.waiting .r5-run-mark{background:transparent;border:2px solid #a5a3ab}
+.r3-messenger .r5-run.working .r5-run-mark{width:12px;height:12px;background:transparent;border:2px solid #11122526;border-top-color:var(--schmaqq-ink);animation:r5-spin .8s linear infinite}
+.r3-messenger .r5-run.working .r5-run-text,.r3-messenger .r5-run.working summary{color:var(--schmaqq-ink)}
+.r3-messenger .r5-run>button{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:4px 12px;border:1px solid var(--schmaqq-rule-strong);border-radius:999px;background:transparent;color:var(--schmaqq-ink);font:600 12px/1 var(--schmaqq-sans);cursor:pointer}
+.r3-messenger .r5-run>button:hover{background:var(--schmaqq-paper-deep)}
+.r3-messenger .r5-run>button:disabled{opacity:.55;cursor:wait}
+
+/* ---- "Agent is working" at the end of the chat ------------------------------------------------------ */
+.r3-messenger .r5-working{display:flex;align-items:center;gap:10px;margin:0 0 14px}
+.r3-messenger .r5-working .rw-fg-avatar{width:38px;height:38px}
+.r3-messenger .r5-working-bubble{display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:6px 20px 20px 20px;background:#eceae2}
+.r5-dots{display:inline-flex;gap:5px}
+.r5-dots>i{width:7px;height:7px;border-radius:50%;background:var(--schmaqq-muted);animation:r5-bounce 1.2s ease-in-out infinite}
+.r5-dots>i:nth-child(2){animation-delay:.15s}
+.r5-dots>i:nth-child(3){animation-delay:.3s}
+
+/* ---- Approval card ---------------------------------------------------------------------------------- */
+.r3-messenger .r5-proposal-card{display:grid;gap:7px;margin-top:11px;padding:13px 14px;border:1px solid var(--schmaqq-rule);border-radius:14px;background:var(--schmaqq-paper-light);min-width:0}
+.r3-messenger .r5-proposal-card.pending{border-color:var(--schmaqq-ink);box-shadow:0 2px 0 var(--schmaqq-ink)}
+.r3-messenger .r5-proposal-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--schmaqq-muted)}
+.r3-messenger .r5-proposal-status{margin-left:auto;padding:3px 9px;border-radius:999px;background:#1112250d;font-size:11px;letter-spacing:0;text-transform:none;color:var(--schmaqq-ink)}
+.r3-messenger .r5-proposal-status.pending{background:var(--schmaqq-acid)}
+.r3-messenger .r5-proposal-status.accepted{background:#e3f0cf;color:#27431e}
+.r3-messenger .r5-proposal-title{margin:0;font-size:15px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}
+.r3-messenger .r5-proposal-body{margin:0;font-size:13px;line-height:1.5;color:#3d3d4b;white-space:pre-wrap;overflow-wrap:anywhere}
+.r3-messenger .r5-proposal-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.r3-messenger .r5-proposal-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 14px;border:1px solid var(--schmaqq-rule-strong);border-radius:12px;background:transparent;color:var(--schmaqq-ink);font:700 13px/1 var(--schmaqq-sans);cursor:pointer}
+.r3-messenger .r5-proposal-actions button.accept{flex:1 1 auto;border-color:var(--schmaqq-ink);background:var(--schmaqq-ink);color:var(--schmaqq-acid)}
+.r3-messenger .r5-proposal-actions button:disabled{opacity:.55;cursor:wait}
+.r3-messenger .r5-proposal-open{display:inline-flex;align-items:center;gap:4px;justify-self:start;padding:4px 0;border:0;background:transparent;color:var(--schmaqq-ink);font:700 13px/1.2 var(--schmaqq-sans);text-decoration:underline;text-decoration-color:var(--schmaqq-acid);text-decoration-thickness:3px;text-underline-offset:3px;cursor:pointer}
+
+/* ---- Chat list: an agent that is working -------------------------------------------------------------- */
+.ch-working{display:inline-flex;align-items:center;gap:7px;color:var(--rw-ink,#12152a);font-weight:600}
+
+@keyframes r5-spin{to{transform:rotate(360deg)}}
+@keyframes r5-pulse{50%{opacity:.35}}
+@keyframes r5-bounce{0%,60%,100%{transform:none;opacity:.45}30%{transform:translateY(-4px);opacity:1}}
+@media(prefers-reduced-motion:reduce){
+ .r5-dots>i,.r3-messenger .r5-run.working .r5-run-mark,.r3-messenger .r3-shared-dot.running{animation:none}
+}
+@media(max-width:650px){
+ .r3-messenger .r5-run{padding-left:37px}
+ .r3-messenger .r5-working .rw-fg-avatar{width:30px;height:30px}
+ .r3-messenger .r5-proposal-actions button{min-height:44px;flex:1 1 auto}
+}

@@ -56,7 +56,9 @@ export type AgentTaskProposal={id:string;title:string;description:string;kind:'g
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
 export type RoomRun={id:string;agentId?:string|null;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;updated?:number;task:string|null};
-export type HermesAgentRun={id:string;owner:string;project:string;agent:string;message:string;model:string;status:'queued'|'running'|'cancelling'|'completed'|'failed'|'cancelled';created:number;updated:number;completedMessage:string|null;errorCode:string|null};
+/** One answer an agent owes to one message. Only the person who asked sees their runs. */
+export type AgentRunStep={tool:string;at:number};
+export type HermesAgentRun={id:string;owner:string;project:string;agent:string;message:string;model:string;status:'queued'|'running'|'cancelling'|'completed'|'failed'|'cancelled';created:number;updated:number;started?:number|null;finished?:number|null;position?:number|null;steps?:AgentRunStep[];completedMessage:string|null;errorCode:string|null};
 export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[];unread?:Record<string,number>};
 /** Server-computed: ready only after a passed trial run on the shared main state. */
 export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;state:'ok'|'running'|'failed';at:number;error?:string}|null};
@@ -180,8 +182,35 @@ export function agentEffectivePermissions(agent?:Partial<RoomAgent>|null):RoomAg
  };
 }
 
-/** Hermes pilot state as seen by the viewer: configured means a worker is bound to this person (explicit runs only). */
-export type HermesAvailability={configured:boolean;runs:HermesAgentRun[]};
+/** The viewer's own AI access: configured = a worker is bound to this person, online = it asked for work recently. */
+export type HermesAvailability={configured:boolean;online?:boolean;runs:HermesAgentRun[]};
+export const agentRunActive=(run:Pick<HermesAgentRun,'status'>)=>run.status==='queued'||run.status==='running'||run.status==='cancelling';
+const agentStepLabels:Record<string,string>={'project.read_context':'Projektstand gelesen','task.propose':'Aufgabe vorgeschlagen'};
+export const agentStepLabel=(tool:string)=>agentStepLabels[tool]??'Arbeitsschritt';
+export function workDuration(ms:number){
+ const seconds=Math.max(1,Math.round(ms/1000));
+ if(seconds<60)return seconds+' s';
+ const rest=seconds%60;
+ return Math.floor(seconds/60)+' min'+(rest?' '+rest+' s':'');
+}
+const agentRunFailures:Record<string,string>={
+ timeout:'Das hat zu lange gedauert.',
+ 'provider-unavailable':'Der KI-Zugang war nicht erreichbar.',
+ 'quota-exceeded':'Das Kontingent deines KI-Zugangs ist aufgebraucht.',
+ 'protocol-error':'Die Antwort kam unvollständig an.'
+};
+/** The one line a person reads about a run. No engine names, no technical codes. */
+export function agentRunSummary(run:HermesAgentRun,agentName:string,now:number,online=true):{tone:'waiting'|'working'|'done'|'failed'|'stopped';text:string;canStop:boolean;canRetry:boolean}{
+ if(run.status==='queued'){
+  const text=!online?`Wartet – der KI-Zugang von ${agentName} ist gerade nicht erreichbar`:(run.position??1)>1?`Wartet · Platz ${run.position}`:`${agentName} fängt gleich an`;
+  return {tone:'waiting',text,canStop:true,canRetry:false};
+ }
+ if(run.status==='running')return {tone:'working',text:`${agentName} arbeitet · ${workDuration(now-(run.started??run.created))}`,canStop:true,canRetry:false};
+ if(run.status==='cancelling')return {tone:'working',text:'Wird gestoppt …',canStop:false,canRetry:false};
+ if(run.status==='completed')return {tone:'done',text:`Hat ${workDuration((run.finished??run.updated)-(run.started??run.created))} gearbeitet`,canStop:false,canRetry:false};
+ if(run.status==='cancelled')return {tone:'stopped',text:'Gestoppt',canStop:false,canRetry:true};
+ return {tone:'failed',text:'Keine Antwort. '+(agentRunFailures[run.errorCode??'']??'Dabei ist ein Fehler passiert.'),canStop:false,canRetry:true};
+}
 export function agentExecutionStatus(agent:RoomAgent,roomOrRuns:RoomState|RoomRun[]=[],resources:Resource[]=[],hermes:HermesAvailability|null=null):{
  state:'running'|'ready'|'idle';
  label:string;
@@ -204,16 +233,19 @@ export function agentExecutionStatus(agent:RoomAgent,roomOrRuns:RoomState|RoomRu
  if(activeRuns.length>0){
   return {state:'running',label:'Modelllauf aktiv',detail:`Läuft tatsächlich auf ${activeRuns[0].deviceName} (${agent.model})`,modelAvailable,via:modelAvailable?'runner':null,connectedResource:matchingResource,activeRuns,completedRuns};
  }
- // Only a real queued/running Hermes run for exactly this agent counts as working; configured alone is "ready on request".
+ // Only a real queued/running run for exactly this agent counts as working.
  const hermesActive=hermes?.runs.some(r=>r.agent===agent.id&&(r.status==='queued'||r.status==='running'||r.status==='cancelling'))??false;
  if(hermesActive){
-  return {state:'running',label:'Arbeitet gerade',detail:`Bearbeitet gerade einen ausdrücklichen Auftrag (${agent.model})`,modelAvailable:true,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
+  return {state:'running',label:'Arbeitet gerade',detail:`Arbeitet gerade an deiner Nachricht (${agent.model})`,modelAvailable:true,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
  }
  if(modelAvailable){
   return {state:'ready',label:'Zugang verbunden · Ruhend',detail:`Modell ${agent.model} erreichbar über ${matchingResource!.name} (keine aktive Ausführung)`,modelAvailable:true,via:'runner',connectedResource:matchingResource,activeRuns,completedRuns};
  }
+ if(hermes?.configured&&hermes.online===false){
+  return {state:'idle',label:'Gerade nicht erreichbar',detail:'Der KI-Zugang antwortet im Moment nicht. Nachrichten warten, bis er wieder da ist.',modelAvailable:false,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
+ }
  if(hermes?.configured){
-  return {state:'ready',label:'Bereit · antwortet auf Auftrag',detail:`Antwortet, wenn du eine Nachricht ausdrücklich beauftragst (${agent.model})`,modelAvailable:true,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
+  return {state:'ready',label:'Bereit',detail:`Antwortet, wenn du ${agent.name} schreibst (${agent.model})`,modelAvailable:true,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
  }
  return {state:'idle',label:'Inaktiv · Kein Live-Modell verbunden',detail:`Modell ${agent.model} als Profil hinterlegt – kein verbundener Modellzugang aktiv`,modelAvailable:false,via:null,connectedResource:matchingResource,activeRuns,completedRuns};
 }

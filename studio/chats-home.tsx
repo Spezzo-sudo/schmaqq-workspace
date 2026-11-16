@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Bot,ChevronDown,ChevronRight,MessageSquare,Plus,Search,Users} from 'lucide-react';
 import {AgentAvatar} from './agent-avatar';
-import {agentRoleLabels,roomRequest,type Room,type RoomAgent,type RoomState} from './room-model';
+import {agentRoleLabels,agentRunActive,roomRequest,type HermesAgentRun,type Room,type RoomAgent,type RoomState} from './room-model';
 import './chats-home.css';
 
 export type WaitingItem={id:string;title:string;detail:string;open:()=>void};
@@ -41,13 +41,36 @@ export function useAllAgents(rooms:Room[]){
  return {entries,loaded};
 }
 
+/** Agents that are answering the viewer right now, across all projects ("project:agent"). */
+function useWorkingAgents(){
+ const [working,setWorking]=useState<Set<string>>(new Set());
+ useEffect(()=>{
+  let mounted=true,timer:ReturnType<typeof setTimeout>|undefined;
+  const poll=async()=>{
+   let active=false;
+   if(!document.hidden){
+    try{
+     const state=await roomRequest<{runs:HermesAgentRun[]}>('/api/agent-runs');
+     const keys=state.runs.filter(agentRunActive).map(r=>r.project+':'+r.agent);
+     active=keys.length>0;
+     if(mounted)setWorking(previous=>previous.size===keys.length&&keys.every(k=>previous.has(k))?previous:new Set(keys));
+    }catch{/* Login and offline errors are handled by the workspace. */}
+   }
+   if(mounted)timer=setTimeout(poll,active?2000:8000);
+  };
+  void poll();
+  return()=>{mounted=false;clearTimeout(timer);};
+ },[]);
+ return working;
+}
+
 /** Start page: all conversations first, like a messenger. Open work stays one tap away at the top. */
 export function ChatsHome({rooms,waiting,greeting,onOpen,onGeneral,onCreateProject,onAgents}:{
  rooms:Room[];waiting:WaitingItem[];greeting:string;
  onOpen:(room:string,chat?:string)=>void;onGeneral:()=>void;onCreateProject:()=>void;onAgents:()=>void;
 }){
  const [filter,setFilter]=useState<Filter>('all'),[query,setQuery]=useState(''),[openWaiting,setOpenWaiting]=useState(false),[newMenu,setNewMenu]=useState(false);
- const {entries,loaded}=useAllAgents(rooms);
+ const {entries,loaded}=useAllAgents(rooms),working=useWorkingAgents();
  const q=query.trim().toLowerCase();
  const rows=useMemo(()=>{
   type Row={key:string;kind:'group'|'agent';last:number|null;render:()=>React.ReactNode};
@@ -61,11 +84,11 @@ export function ChatsHome({rooms,waiting,greeting,onOpen,onGeneral,onCreateProje
    <button className="ch-row" onClick={()=>onOpen(e.project.id,'agent:'+e.agent.id)}>
     <AgentAvatar agent={e.agent} size="md"/>
     <span className="ch-row-text"><span className="ch-row-top"><strong>{e.agent.name}</strong><time>{when(e.last)}</time></span>
-     <span className="ch-row-sub">{e.preview} · {e.project.title}</span></span>{!!e.unread&&<span className="ch-unread" aria-label={e.unread+' ungelesene Agentennachrichten'}>{e.unread}{e.unread===99?'+':''}</span>}
+     <span className="ch-row-sub">{working.has(e.project.id+':'+e.agent.id)?<span className="ch-working"><span className="r5-dots" aria-hidden><i/><i/><i/></span>arbeitet gerade</span>:e.preview} · {e.project.title}</span></span>{!!e.unread&&<span className="ch-unread" aria-label={e.unread+' ungelesene Agentennachrichten'}>{e.unread}{e.unread===99?'+':''}</span>}
    </button>}));
   const all=filter==='groups'?groups:filter==='agents'?agents:[...groups,...agents];
   return all.sort((a,b)=>(b.last??0)-(a.last??0));
- },[rooms,entries,filter,q,onOpen]);
+ },[rooms,entries,filter,q,onOpen,working]);
  return <div className="ch-home">
   <div className="ch-head">
    <p className="ch-hello">{greeting}</p>

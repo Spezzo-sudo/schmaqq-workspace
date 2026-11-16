@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { digest, token, transaction } from './store.mjs';
 import { can, requirePermission } from './project-roles.mjs';
 import { agentsFor, buildRoomContext, listRoomTasks, insertRoomTask } from './room-http.mjs';
-import { agentRunStore } from './agent-run-store.mjs';
+import { agentRunStore, ensureAgentRunSchema } from './agent-run-store.mjs';
 
 // Agent runs: a person asks one of their agents, a worker bound to that person produces the answer.
 // The worker protocol (claim, heartbeat, tool, finish) says nothing about the engine behind it.
@@ -25,7 +25,7 @@ const TOOL_LIMITS = Object.freeze({ 'project.read_context': 3, 'task.propose': 1
 // ---- Request shapes ---------------------------------------------------------------------------------
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,100}$/);
 const lease = z.string().regex(/^[a-zA-Z0-9_-]{43}$/);
-const runCreate = z.object({ project: id, agent: id, message: id }).strict();
+const runCreate = z.object({ project: id, agent: id, message: id, retry: z.boolean().optional() }).strict();
 const runCancel = z.object({ run: id }).strict();
 const claimRequest = z.object({ wait: z.number().int().min(0).max(MAX_CLAIM_WAIT_S).optional() }).strict();
 const workRun = z.object({ run: id, lease }).strict();
@@ -73,6 +73,9 @@ function validWorkers(workers) {
 
 export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] }) {
   const registered = validWorkers(workers);
+  // Agents are switched on by binding a worker to a person. Until then nothing is stored and nothing runs.
+  const enabled = registered.length > 0;
+  if (enabled) ensureAgentRunSchema(db);
   const store = agentRunStore(db);
   const lastContact = new Map(); // owner -> time the worker last asked for work
   const waiting = new Map(); // owner -> wake-up of a worker that is waiting for work
@@ -157,9 +160,19 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
     return transaction(db, () => {
       expire(now);
       const existing = store.runForMessage(member.id, agent.id, request.message);
-      if (existing) return { run: existing.id, status: existing.status, reused: true };
+      const retry = request.retry === true && existing && ['failed', 'cancelled'].includes(existing.status);
+      if (existing && !retry) return { run: existing.id, status: existing.status, reused: true };
       if (store.activeRuns(member.id).length >= QUEUE_LIMIT) {
         throw fail(409, 'Es warten schon mehrere Aufträge. Bitte zuerst einen abschliessen oder abbrechen.');
+      }
+      if (retry) {
+        // Same message, fresh attempt: the failed attempt left no answer and no visible proposal.
+        store.clearSteps(existing.id);
+        store.updateRun(existing.id, {
+          status: 'queued', created: now, updated: now, claimed: null, heartbeat: null, finished: null,
+          lease_hash: null, error_code: null, model: agent.model
+        });
+        return { run: existing.id, status: 'queued', reused: false };
       }
       const run = randomUUID();
       store.insertRun({
@@ -433,6 +446,14 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [] })
 
   async function memberRoute(route, { method, req, url, send }) {
     const member = user(req), now = Date.now();
+    if (!enabled) {
+      if (method === 'GET' && route === '/api/agent-runs') return send({ configured: false, online: false, runs: [] });
+      if (method !== 'POST') throw fail(405, 'Methode nicht erlaubt.');
+      if (route === '/api/agent-runs') {
+        throw fail(503, 'Für dich ist noch kein KI-Modellzugang eingerichtet. Keine KI-Antwort gestartet.');
+      }
+      throw fail(404, 'Agenten sind hier nicht eingerichtet.');
+    }
     if (method === 'GET' && route === '/api/agent-runs') {
       const requested = url.searchParams.get('project');
       const project = requested === null ? null : parse(id, requested);
