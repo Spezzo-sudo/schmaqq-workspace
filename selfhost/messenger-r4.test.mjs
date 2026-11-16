@@ -68,7 +68,7 @@ test('R4: unread counts follow per-chat read positions, not polling or member pr
 
  assert.equal((await mark('agent:unknown','r4-agent-2')).status,400);
  assert.equal((await mark('agent:'+agentId,'r4-second')).status,400);
- assert.equal((await post({action:'read',project:'not-authorized',view:'all'},other.cookie)).status,404);
+ assert.equal((await post({action:'read',project:'not-authorized',view:'all'},other.cookie)).status,403);
  const stored=app.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:read:'+project+':'+other.id+':agent:'+agentId);
  assert.equal(JSON.parse(stored.value).id,'r4-agent-2');
 });
