@@ -18,6 +18,6 @@ export default function MessengerProjectNavigation({rooms,project,connected,onPr
    <button onClick={()=>{if(menu.current)menu.current.open=false;onCreate();}}><Plus size={16}/>Neues Projekt</button>
   </div></details></div>
   <button className="r3-all-chats" onClick={()=>go('rooms')}><ChevronLeft size={17} aria-hidden/>Alle Chats</button>
-  <label className="r3-project-picker"><span>Arbeitsbereich <i className={'r3-sync-dot'+(connected?' connected':'')} title={connected?'Letzter Abruf erfolgreich; automatische Aktualisierung':'Verbindung unterbrochen'}/></span><select aria-label="Projekt wechseln" value={project} onChange={e=>onProject(e.target.value)}>{rooms.map(room=><option key={room.id} value={room.id}>{room.title}{room.practice?' · Übung':''}</option>)}</select></label>
+  <label className="r3-project-picker r5-project-title"><span className="rw-sr">Projekt</span><select aria-label="Projekt wechseln" value={project} onChange={e=>onProject(e.target.value)}>{rooms.map(room=><option key={room.id} value={room.id}>{room.title}{room.practice?' · Übung':''}</option>)}</select><i className={'r3-sync-dot'+(connected?' connected':'')} title={connected?'Letzter Abruf erfolgreich; automatische Aktualisierung':'Verbindung unterbrochen'}/></label>
  </div>;
 }

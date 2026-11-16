@@ -212,3 +212,19 @@ test('agent queue: a failed or stopped request can be tried again for the same m
  assert.equal(done.data.status,'completed');
  assert.equal((await f.post('/api/agent-runs',{...request,retry:true},{cookie:alice.cookie})).data.reused,true,'An answered message is not answered twice');
 });
+
+test('project lead: every new project starts with its lead, owned by the person who opened it',async t=>{
+ const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets;
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Neues Projekt',description:''},{cookie:alice.cookie})).data.project;
+ const agents=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.agents;
+ assert.equal(agents.length,1);
+ const lead=agents[0];
+ assert.deepEqual([lead.name,lead.avatarPresetId,lead.role,lead.createdBy,lead.active],['Herr Grau','herr-grau','coordinator',alice.id,true]);
+ assert.deepEqual(lead.permissions,{readProject:true,writeMessages:true,manageTasks:true,editCode:false,prepareReviews:false,delegateAgents:true});
+ const message=randomUUID();
+ await f.post('/api/room',{action:'message',id:message,project,recipient:lead.id,body:'Womit fangen wir an?'},{cookie:alice.cookie});
+ assert.equal((await f.post('/api/agent-runs',{project,agent:lead.id,message},{cookie:bob.cookie})).status,403,'Nobody else can spend the owner\'s AI access');
+ assert.equal((await f.post('/api/agent-runs',{project,agent:lead.id,message},{cookie:alice.cookie})).status,202);
+ const job=(await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job;
+ assert.equal(job.profile.name,'Herr Grau');assert.equal(job.toolPolicy.mode,'studio-tools-r1');
+});

@@ -35,3 +35,16 @@ test('agent status: an unreachable AI access is shown as such instead of "ready"
  assert.deepEqual([away.state,away.label],['idle','Gerade nicht erreichbar']);
  assert.equal(agentExecutionStatus(agent,[],[],{configured:true,online:false,runs:[{...run,status:'queued'}]}).state,'running');
 });
+
+test('live activity: names what the agent is doing from the steps it has really finished',async()=>{
+ const {agentLiveActivity,isProjectLead,projectLead}=await import('../studio/room-model.ts');
+ assert.equal(agentLiveActivity({status:'queued',steps:[]}),'Wartet auf den Start');
+ assert.equal(agentLiveActivity({status:'running',steps:[]}),'Liest deine Nachricht');
+ assert.equal(agentLiveActivity({status:'running',steps:[{tool:'project.read_context',at:1}]}),'Überlegt mit dem Projektstand');
+ assert.equal(agentLiveActivity({status:'running',steps:[{tool:'project.read_context',at:1},{tool:'task.propose',at:2}]}),'Schreibt die Antwort zum Vorschlag');
+ assert.equal(agentLiveActivity({status:'cancelling',steps:[]}),'Wird gestoppt');
+ const agents=[{id:'a',avatarPresetId:'mara',active:true},{id:'b',avatarPresetId:'herr-grau',active:false},{id:'c',avatarPresetId:'herr-grau',active:true}];
+ assert.equal(isProjectLead(agents[0]),false);
+ assert.equal(projectLead(agents).id,'c','Only an active lead counts');
+ assert.equal(projectLead([]),null);
+});

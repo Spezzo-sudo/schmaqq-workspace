@@ -91,3 +91,43 @@
  .r3-messenger .r5-working .rw-fg-avatar{width:30px;height:30px}
  .r3-messenger .r5-proposal-actions button{min-height:44px;flex:1 1 auto}
 }
+
+/* ---- One project name, as the heading -------------------------------------------------------------- */
+.r5-project-title{position:relative;display:block}
+.r5-project-title select{padding:6px 44px 6px 2px;min-height:44px;border:0;border-radius:8px;background-color:transparent;font-size:22px;font-weight:700;letter-spacing:-.5px}
+.r5-project-title select:hover{background-color:#1112250a}
+.r5-project-title>.r3-sync-dot{position:absolute;right:30px;top:50%;transform:translateY(-50%)}
+.r3-rail-tabs{align-items:center;padding-top:12px}
+.r3-rail-tabs>.r5-add-agent{margin-left:auto;width:36px;height:36px;min-height:36px;padding:0}
+
+/* ---- The project lead, a little more present than the other agents --------------------------------- */
+.r5-lead{margin:0 0 6px;border-radius:14px;background:linear-gradient(180deg,#f6ffd9,#eef7cf);box-shadow:inset 0 0 0 1px #c6d98a}
+.r5-lead.active{background:var(--schmaqq-ink);box-shadow:inset 0 0 0 2px var(--schmaqq-acid)}
+.r5-lead .rw-fg-avatar{box-shadow:0 0 0 2px var(--schmaqq-acid)}
+.r5-lead-tag,.ch-lead-tag{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 7px;border-radius:999px;background:var(--schmaqq-ink);color:var(--schmaqq-acid);font:700 10px/1.4 var(--schmaqq-sans);font-style:normal;letter-spacing:.02em;vertical-align:middle}
+.r5-lead.active .r5-lead-tag{background:var(--schmaqq-acid);color:var(--schmaqq-ink)}
+.r5-lead-missing{border:1px dashed var(--schmaqq-rule-strong);border-radius:14px;margin-bottom:6px}
+.r5-row-working{color:#3c6a1c;font-weight:600}
+.rw-contact-card.active .r5-row-working{color:var(--schmaqq-acid)}
+
+/* ---- Working pill ----------------------------------------------------------------------------------- */
+.r3-messenger .r5-working{flex-wrap:wrap;gap:6px 12px}
+.r3-messenger .r5-working-pill{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:6px 16px 6px 6px;border-radius:26px;background:var(--schmaqq-ink);color:var(--schmaqq-paper-light);max-width:100%}
+.r3-messenger .r5-working-pill .rw-fg-avatar{width:36px;height:36px}
+.r3-messenger .r5-working-pill>span:nth-child(2){display:grid;min-width:0}
+.r3-messenger .r5-working-pill strong{font-size:13px;line-height:1.3}
+.r3-messenger .r5-working-pill small{font-size:12px;line-height:1.3;color:#c9c8d6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r3-messenger .r5-working-pill .r5-dots>i{background:var(--schmaqq-acid)}
+.r3-messenger .r5-working>small{font-size:12px;color:var(--schmaqq-muted)}
+.r3-messenger .r5-run-steps>ol>li.current{color:var(--schmaqq-ink);font-weight:600}
+.r3-messenger .r5-run-steps>ol>li.current::before{background:transparent;border:2px solid #11122526;border-top-color:var(--schmaqq-ink);width:6px;height:6px;top:4px;animation:r5-spin .8s linear infinite}
+
+/* ---- Chat overview: one block per project ------------------------------------------------------------ */
+.ch-project{display:grid;gap:2px;margin-top:14px}
+.ch-project>h2{display:flex;align-items:baseline;gap:8px;margin:0;padding:0 6px 4px;font-size:20px;font-weight:800;letter-spacing:-.4px}
+.ch-project>h2>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch-project>h2>small{margin-left:auto;flex:none;font-size:12px;font-weight:600;color:var(--rw-muted,#5d6273)}
+.ch-row.ch-lead{background:linear-gradient(180deg,#f6ffd9,#eef7cf);box-shadow:inset 0 0 0 1px #c6d98a}
+.ch-row.ch-lead .rw-fg-avatar{box-shadow:0 0 0 2px var(--schmaqq-acid,#d9ff6b)}
+.ch-row-top .ch-lead-tag{flex:none;margin-left:0}
+@media(prefers-reduced-motion:reduce){.r3-messenger .r5-run-steps>ol>li.current::before{animation:none}}

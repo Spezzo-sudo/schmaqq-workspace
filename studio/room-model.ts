@@ -199,6 +199,20 @@ const agentRunFailures:Record<string,string>={
  'quota-exceeded':'Das Kontingent deines KI-Zugangs ist aufgebraucht.',
  'protocol-error':'Die Antwort kam unvollständig an.'
 };
+/** What the agent is doing right now, derived from the steps it has really finished. */
+export function agentLiveActivity(run:Pick<HermesAgentRun,'status'|'steps'>):string{
+ if(run.status==='queued')return 'Wartet auf den Start';
+ if(run.status==='cancelling')return 'Wird gestoppt';
+ const last=run.steps?.at(-1)?.tool;
+ if(last==='task.propose')return 'Schreibt die Antwort zum Vorschlag';
+ if(last==='project.read_context')return 'Überlegt mit dem Projektstand';
+ return 'Liest deine Nachricht';
+}
+/** Every project has one lead who speaks for the team: always the same character. */
+export const PROJECT_LEAD_PRESET='herr-grau';
+export const isProjectLead=(agent:Pick<RoomAgent,'avatarPresetId'>|null|undefined)=>agent?.avatarPresetId===PROJECT_LEAD_PRESET;
+export const projectLead=<T extends Pick<RoomAgent,'avatarPresetId'|'active'>>(agents:T[]|undefined)=>(agents??[]).find(a=>a.active!==false&&isProjectLead(a))??null;
+
 /** The one line a person reads about a run. No engine names, no technical codes. */
 export function agentRunSummary(run:HermesAgentRun,agentName:string,now:number,online=true):{tone:'waiting'|'working'|'done'|'failed'|'stopped';text:string;canStop:boolean;canRetry:boolean}{
  if(run.status==='queued'){

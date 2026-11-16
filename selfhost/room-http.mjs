@@ -161,6 +161,21 @@ export function insertRoomTask(db,member,{project,title,description='',kind='gen
  return {task,reused:false};
 }
 
+// Every project starts with its lead: always the same character, first contact and voice of the team.
+// It belongs to the person who opens the project and answers with that person's own AI access.
+function projectLeadFor(db,project,member,at){
+ const earlier=db.prepare("SELECT json_extract(value,'$.model') AS model FROM workspace_meta WHERE key LIKE 'room:v1:agent:%' AND json_extract(value,'$.createdBy')=? ORDER BY json_extract(value,'$.updated') DESC LIMIT 1").get(member.id);
+ return {
+  id:null,project,name:'Herr Grau',nickname:'',role:'coordinator',avatar:'HG',avatarPresetId:'herr-grau',avatarPackId:'field-guild-r2',
+  purpose:'Führt das Projekt, behält den Überblick und spricht für das Team.',
+  personality:'Trockener Humor, eigenwillig, analytisch und gelegentlich leicht ironisch – benennt Schwachstellen frühzeitig.',
+  responsibility:'Erste Anlaufstelle im Projekt: ordnet ein, schlägt nächste Schritte vor und hält Aufgaben zusammen.',
+  model:earlier?.model??'gpt-5.6-sol',modelDevice:null,
+  capabilities:['context-read','chat','task-plan','task-delegate'],contextSources:['messages','tasks','decisions'],knowledgeScope:'',
+  permissions:{readProject:true,writeMessages:true,manageTasks:true,editCode:false,prepareReviews:false,delegateAgents:true},
+  active:true,createdBy:member.id,updatedBy:member.id,created:at,updated:at
+ };
+}
 const avatarPresetIds=z.enum(['leitwolf','herr-grau','mara','frau-kern','otto','nova','dachs','fuchs','baer','rabe','schaefer','eule']);
 const agentRoles=z.enum(['coordinator','advisor','frontend','developer','reviewer','operations','strategy','researcher','debugger','infrastructure','security','support','knowledge']);
 const agentCapabilities=z.enum(['chat','task-plan','task-delegate','code-work','review-support','context-read','code-worktree','review-check']);
@@ -254,6 +269,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now}){
     const project=randomUUID();db.prepare('INSERT INTO projects VALUES(?,?,?,?,?,?)').run(project,value.title,value.description,'sage','Im Aufbau',now());
     putMeta(db,key('project',project),{revision:0,repository:null,teamShared:true,createdBy:member.id,base:'main',workflow:'pull-request'});
     startRoles(db,project,member.id);
+    const lead=randomUUID();putMeta(db,key('agent',project+':'+lead),{...projectLeadFor(db,project,member,now()),id:lead});
     db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(randomUUID(),member.id,'Raum eröffnet: '+value.title,now());
     return remember(db,member,value,{ok:true,project});
    }

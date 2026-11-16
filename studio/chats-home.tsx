@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Bot,ChevronDown,ChevronRight,MessageSquare,Plus,Search,Users} from 'lucide-react';
+import {Bot,ChevronDown,ChevronRight,Crown,MessageSquare,Plus,Search,Users} from 'lucide-react';
 import {AgentAvatar} from './agent-avatar';
-import {agentRoleLabels,agentRunActive,roomRequest,type HermesAgentRun,type Room,type RoomAgent,type RoomState} from './room-model';
+import {agentLiveActivity,agentRoleLabels,agentRunActive,isProjectLead,roomRequest,type HermesAgentRun,type Room,type RoomAgent,type RoomState} from './room-model';
 import './chats-home.css';
 
 export type WaitingItem={id:string;title:string;detail:string;open:()=>void};
@@ -43,7 +43,7 @@ export function useAllAgents(rooms:Room[]){
 
 /** Agents that are answering the viewer right now, across all projects ("project:agent"). */
 function useWorkingAgents(){
- const [working,setWorking]=useState<Set<string>>(new Set());
+ const [working,setWorking]=useState<Map<string,HermesAgentRun>>(new Map());
  useEffect(()=>{
   let mounted=true,timer:ReturnType<typeof setTimeout>|undefined;
   const poll=async()=>{
@@ -51,9 +51,9 @@ function useWorkingAgents(){
    if(!document.hidden){
     try{
      const state=await roomRequest<{runs:HermesAgentRun[]}>('/api/agent-runs');
-     const keys=state.runs.filter(agentRunActive).map(r=>r.project+':'+r.agent);
-     active=keys.length>0;
-     if(mounted)setWorking(previous=>previous.size===keys.length&&keys.every(k=>previous.has(k))?previous:new Set(keys));
+     const next=new Map(state.runs.filter(agentRunActive).map(r=>[r.project+':'+r.agent,r] as const));
+     active=next.size>0;
+     if(mounted)setWorking(next);
     }catch{/* Login and offline errors are handled by the workspace. */}
    }
    if(mounted)timer=setTimeout(poll,active?2000:8000);
@@ -72,23 +72,13 @@ export function ChatsHome({rooms,waiting,greeting,onOpen,onGeneral,onCreateProje
  const [filter,setFilter]=useState<Filter>('all'),[query,setQuery]=useState(''),[openWaiting,setOpenWaiting]=useState(false),[newMenu,setNewMenu]=useState(false);
  const {entries,loaded}=useAllAgents(rooms),working=useWorkingAgents();
  const q=query.trim().toLowerCase();
- const rows=useMemo(()=>{
-  type Row={key:string;kind:'group'|'agent';last:number|null;render:()=>React.ReactNode};
-  const groups:Row[]=rooms.filter(r=>!q||r.title.toLowerCase().includes(q)).map(r=>({key:'g:'+r.id,kind:'group',last:r.lastMessage??null,render:()=>
-   <button className="ch-row" onClick={()=>onOpen(r.id,'all')}>
-    <span className="ch-group-mark" style={{background:tone(r.id)}} aria-hidden>{initials(r.title)}</span>
-    <span className="ch-row-text"><span className="ch-row-top"><strong>{r.title}</strong>{r.practice&&<em className="ch-tag">Übung</em>}<time>{when(r.lastMessage)}</time></span>
-     <span className="ch-row-sub">{r.lastExcerpt||'Noch keine Nachricht'}{r.openTasks?' · '+r.openTasks+' offen':''}</span></span>{!!r.unread&&<span className="ch-unread" aria-label={r.unread+' ungelesene Nachrichten'}>{r.unread}{r.unread===99?'+':''}</span>}
-   </button>}));
-  const agents:Row[]=entries.filter(e=>!q||e.agent.name.toLowerCase().includes(q)||e.project.title.toLowerCase().includes(q)).map(e=>({key:'a:'+e.project.id+':'+e.agent.id,kind:'agent',last:e.last,render:()=>
-   <button className="ch-row" onClick={()=>onOpen(e.project.id,'agent:'+e.agent.id)}>
-    <AgentAvatar agent={e.agent} size="md"/>
-    <span className="ch-row-text"><span className="ch-row-top"><strong>{e.agent.name}</strong><time>{when(e.last)}</time></span>
-     <span className="ch-row-sub">{working.has(e.project.id+':'+e.agent.id)?<span className="ch-working"><span className="r5-dots" aria-hidden><i/><i/><i/></span>arbeitet gerade</span>:e.preview} · {e.project.title}</span></span>{!!e.unread&&<span className="ch-unread" aria-label={e.unread+' ungelesene Agentennachrichten'}>{e.unread}{e.unread===99?'+':''}</span>}
-   </button>}));
-  const all=filter==='groups'?groups:filter==='agents'?agents:[...groups,...agents];
-  return all.sort((a,b)=>(b.last??0)-(a.last??0));
- },[rooms,entries,filter,q,onOpen,working]);
+ // One block per project: its name once as the heading, then the group chat, the lead and the other agents.
+ const sections=useMemo(()=>rooms.map(r=>{
+  const titleMatch=!q||r.title.toLowerCase().includes(q);
+  const agents=entries.filter(e=>e.project.id===r.id&&(titleMatch||e.agent.name.toLowerCase().includes(q)))
+   .sort((a,b)=>Number(isProjectLead(b.agent))-Number(isProjectLead(a.agent))||(b.last??0)-(a.last??0));
+  return {room:r,showGroup:filter!=='agents'&&titleMatch,agents:filter==='groups'?[]:agents,last:Math.max(r.lastMessage??0,...agents.map(a=>a.last??0))};
+ }).filter(x=>x.showGroup||x.agents.length).sort((a,b)=>b.last-a.last),[rooms,entries,filter,q]);
  return <div className="ch-home">
   <div className="ch-head">
    <p className="ch-hello">{greeting}</p>
@@ -110,8 +100,22 @@ export function ChatsHome({rooms,waiting,greeting,onOpen,onGeneral,onCreateProje
     <span className="ch-group-mark ch-team" aria-hidden><Users size={22}/></span>
     <span className="ch-row-text"><span className="ch-row-top"><strong>Team</strong></span><span className="ch-row-sub">Allgemeines Gespräch, nicht an ein Projekt gebunden</span></span>
    </button></li>}
-   {rows.map(r=><li key={r.key}>{r.render()}</li>)}
   </ul>
+  {sections.map(({room:r,showGroup,agents})=><section key={r.id} className="ch-project" aria-labelledby={'ch-p-'+r.id}>
+   <h2 id={'ch-p-'+r.id}><span>{r.title}</span>{r.practice&&<em className="ch-tag">Übung</em>}{!!r.openTasks&&<small>{r.openTasks} offen</small>}</h2>
+   <ul className="ch-list">
+    {showGroup&&<li><button className="ch-row" onClick={()=>onOpen(r.id,'all')}>
+     <span className="ch-group-mark" style={{background:tone(r.id)}} aria-hidden><Users size={22}/></span>
+     <span className="ch-row-text"><span className="ch-row-top"><strong>Gruppenchat</strong><time>{when(r.lastMessage)}</time></span>
+      <span className="ch-row-sub">{r.lastExcerpt||'Noch keine Nachricht'}</span></span>{!!r.unread&&<span className="ch-unread" aria-label={r.unread+' ungelesene Nachrichten'}>{r.unread}{r.unread===99?'+':''}</span>}
+    </button></li>}
+    {agents.map(e=>{const run=working.get(r.id+':'+e.agent.id),lead=isProjectLead(e.agent);return <li key={e.agent.id}><button className={'ch-row'+(lead?' ch-lead':'')} onClick={()=>onOpen(r.id,'agent:'+e.agent.id)}>
+     <AgentAvatar agent={e.agent} size="md"/>
+     <span className="ch-row-text"><span className="ch-row-top"><strong>{e.agent.name}</strong>{lead&&<em className="ch-lead-tag"><Crown size={11} aria-hidden/>Guru</em>}<time>{when(e.last)}</time></span>
+      <span className="ch-row-sub">{run?<span className="ch-working"><span className="r5-dots" aria-hidden><i/><i/><i/></span>{agentLiveActivity(run)} …</span>:e.preview}</span></span>{!!e.unread&&<span className="ch-unread" aria-label={e.unread+' ungelesene Agentennachrichten'}>{e.unread}{e.unread===99?'+':''}</span>}
+    </button></li>;})}
+   </ul>
+  </section>)}
   {!rooms.length&&<div className="ch-empty"><p>Noch kein Projekt. Ein Projekt ist eine Gruppe mit Menschen und Agenten.</p><button className="rw-button lime" onClick={onCreateProject}><Plus size={16}/>Erstes Projekt anlegen</button></div>}
   {!!rooms.length&&filter==='agents'&&loaded&&!entries.length&&<div className="ch-empty"><p>Noch keine Agenten. Du stellst sie in einer Projektgruppe an.</p><button className="rw-button" onClick={onAgents}><Bot size={16}/>Zu den Agenten</button></div>}
   <div className="ch-fab-wrap">

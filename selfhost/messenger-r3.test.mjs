@@ -123,7 +123,7 @@ test('R3 real SQLite: messages, replies, profiles and task references survive re
  assert.equal(result.data.messages.find(m=>m.id===payload.id).recipient,agent.data.agentId);
  assert.equal(result.data.messages.find(m=>m.id===payload.id).topicTask,task.data.task);
  assert.equal(result.data.messages.find(m=>m.id==='r3-reply').replyTo,payload.id);
- assert.equal(result.data.agents[0].avatarPresetId,'mara');
+ assert.deepEqual(result.data.agents.map(a=>a.avatarPresetId),['herr-grau','mara'],'the project lead plus the saved profile');
  assert.equal((await f.get('/api/room?project='+project)).status,401);
  assert.equal((await f.post({action:'roles',project,member:visitor.id,roles:[]},alice.cookie,'/api/project-roles')).status,200);
  assert.equal((await f.get('/api/room?project='+project,visitor.cookie)).status,403);
