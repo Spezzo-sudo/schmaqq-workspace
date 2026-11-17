@@ -17,7 +17,7 @@ const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('note'),project:id,note:id,revision,title:z.string().trim().min(1).max(160),body:z.string().trim().min(1).max(12000),archived:z.boolean()}),
  z.object({action:z.literal('live'),project:id,revision,live:z.enum(['merge','manual']),liveHow:z.string().trim().max(300).optional()}),
  z.object({action:z.literal('went-live'),task:id}),
- z.object({action:z.literal('project'),project:id,revision,title:z.string().trim().min(1).max(160),description:z.string().trim().max(12000),archived:z.boolean(),base:z.string().regex(/^[\w./-]{1,100}$/).refine(s=>!s.includes('..')&&!s.startsWith('-')).optional(),workflow:z.enum(['direct','pull-request']).optional()})
+ z.object({action:z.literal('project'),project:id,revision,title:z.string().trim().min(1).max(160),description:z.string().trim().max(12000),archived:z.boolean(),base:z.string().regex(/^[\w./-]{1,100}$/).refine(s=>!s.includes('..')&&!s.startsWith('-')).optional(),workflow:z.enum(['direct','pull-request']).optional(),scope:z.array(z.string().trim().regex(/^[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*\/?$/).refine(s=>!s.split('/').includes('..'),'Pfad ohne ..')).max(10).optional()})
 ]);
 export function createTeamRoute({db,user,readJSON,parse}){
  return async({route,method,req,url,send})=>{
@@ -93,7 +93,10 @@ export function createTeamRoute({db,user,readJSON,parse}){
      if(!can(db,member,v.project,'admin'))throw teamError(403,'Projektregeln ändert der Projekt-Admin.');
      if(db.prepare('SELECT w.job FROM workspaces w JOIN jobs j ON j.id=w.job WHERE j.project=? AND w.archived=0').get(p.id))throw teamError(409,'Aktive Bearbeitungen vor einer Änderung der Projektregeln abschließen.');
     }
-    storeMetadata(db,'room:v1:project:'+p.id,{...meta,base:v.base??meta.base??'main',workflow:v.workflow??meta.workflow??'pull-request',archived:v.archived,revision:meta.revision+1});
+    // The project's area in a shared repository (paths). Only the admin draws the line.
+    const scope=v.scope?[...new Set(v.scope.map(s=>s.replace(/\/+$/,'')+'/'))]:meta.scope??[];
+    if(v.scope&&JSON.stringify(scope)!==JSON.stringify(meta.scope??[])&&!can(db,member,v.project,'admin'))throw teamError(403,'Den Zuständigkeitsbereich legt der Projekt-Admin fest.');
+    storeMetadata(db,'room:v1:project:'+p.id,{...meta,scope,base:v.base??meta.base??'main',workflow:v.workflow??meta.workflow??'pull-request',archived:v.archived,revision:meta.revision+1});
     teamEvent(db,{actor:member.id,project:p.id,kind:'project',body:(v.archived!==(meta.archived===true)?(v.archived?'Projekt archiviert: ':'Projekt wiederhergestellt: '):'Projekt aktualisiert: ')+v.title});return;
    }
    const task=db.prepare('SELECT * FROM tasks WHERE id=?').get(v.task);if(!task)throw teamError(404,'Aufgabe fehlt.');
