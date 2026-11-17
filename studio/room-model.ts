@@ -68,7 +68,7 @@ export type HermesAgentRun={id:string;owner:string;project:string;agent:string;m
 export type AgentChain={root:string;depth:number;used:number;limit:number;stopped:boolean;full:boolean;active:boolean};
 /** The four marking colours; "check alle blauen" means the messages marked in blue. */
 export const MARK_COLORS=['blau','grün','orange','lila'] as const;
-export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[];unread?:Record<string,number>};
+export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string;scope?:string[]};neighbours?:{id:string;title:string;scope:string[]}[];messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[];unread?:Record<string,number>};
 /** Server-computed: ready only after a passed trial run on the shared main state. */
 export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;state:'ok'|'running'|'failed';at:number;error?:string}|null};
 export type Resource={team?:boolean;device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;readiness?:WorkshopReadiness;publish:boolean}[]};
@@ -324,3 +324,11 @@ export function filterMessengerMessages(messages:RoomMessage[],filter:MessengerF
 }
 
 
+
+/** Changed files of a diff that lie outside the project's area, and which neighbour project they belong to. */
+export function outsideScope(diff:string,scope:string[]=[],neighbours:{id:string;title:string;scope:string[]}[]=[]):{file:string;owner:string|null}[]{
+ if(!scope.length)return [];
+ const files=[...new Set([...diff.matchAll(/^diff --git a\/(\S+) b\/(\S+)$/gm)].map(m=>m[2]))];
+ const inside=(file:string,paths:string[])=>paths.some(p=>file===p.replace(/\/$/,'')||file.startsWith(p));
+ return files.filter(f=>!inside(f,scope)).map(file=>({file,owner:neighbours.find(n=>inside(file,n.scope))?.title??null}));
+}

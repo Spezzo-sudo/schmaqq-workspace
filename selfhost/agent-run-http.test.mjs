@@ -432,3 +432,25 @@ test('agent ↔ agent: only in a task, one level, counted, stoppable, and paid b
  assert.equal(after.stopped,true);
  assert.equal((await f.post('/api/agent-chains',{run:a.run,action:'continue'},{cookie:alice.cookie})).data.limit,7,'"Weitermachen?" opens another round');
 });
+
+test('scope areas: two projects on one repository know each other; the area is the admin\'s; changes outside are named',async t=>{
+ const {outsideScope}=await import('../studio/room-model.ts');
+ const f=await fixture(t),[alice,bob]=f.members;
+ const make=async title=>(await f.post('/api/room',{action:'create',id:randomUUID(),title,description:''},{cookie:alice.cookie})).data.project;
+ const front=await make('Frontend'),back=await make('Backend');
+ for(const p of [front,back]){const k='room:v1:project:'+p,v=JSON.parse(f.app.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get(k).value);f.app.db.prepare('UPDATE workspace_meta SET value=? WHERE key=?').run(JSON.stringify({...v,repository:'https://github.com/example/app'}),k);}
+ const settings=async(p,scope,member=alice)=>{const r=(await f.get('/api/room?project='+p,{cookie:alice.cookie})).data;return f.post('/api/team',{action:'project',project:p,revision:r.meta.revision,title:r.project.title,description:'',archived:false,scope},{cookie:member.cookie});};
+ assert.equal((await settings(front,['frontend'])).status,200);
+ assert.equal((await settings(back,['backend/','../etc'])).status,400,'no paths that climb out');
+ assert.equal((await settings(back,['backend/'])).status,200);
+ const room=(await f.get('/api/room?project='+front,{cookie:alice.cookie})).data;
+ assert.deepEqual(room.meta.scope,['frontend/']);
+ assert.deepEqual(room.neighbours.map(n=>[n.title,n.scope]),[['Backend',['backend/']]]);
+ const context=(await f.get('/api/room/context?project='+front,{cookie:alice.cookie})).data.text;
+ assert.match(context,/ZUSTÄNDIGKEITSBEREICH DIESES PROJEKTS: frontend\//);
+ assert.match(context,/NACHBARPROJEKT „Backend“ im selben Repository: backend\//);
+ const diff='diff --git a/frontend/app.tsx b/frontend/app.tsx\n+x\ndiff --git a/backend/api.mjs b/backend/api.mjs\n+y\ndiff --git a/README.md b/README.md\n+z\n';
+ assert.deepEqual(outsideScope(diff,room.meta.scope,room.neighbours),[{file:'backend/api.mjs',owner:'Backend'},{file:'README.md',owner:null}]);
+ assert.deepEqual(outsideScope(diff,[],room.neighbours),[],'without an area nothing is outside');
+ void bob;
+});

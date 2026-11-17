@@ -1,6 +1,6 @@
 import {useEffect,useState,useRef} from 'react';
 import {GitCommitHorizontal,RefreshCw} from 'lucide-react';
-import {roomRequest} from './room-model';
+import {outsideScope,roomRequest} from './room-model';
 
 type DiffResult={review:string;owner:string;ownerName:string;state:string;checks:string;published:boolean;preview:string|null;previewExpired?:boolean;contractSnapshot?:{title:string;description:string;criteria:string}|null;commit:string|null;created:number;complete:boolean;diff:string;limited:boolean};
 type DiffLine={kind:'add'|'remove'|'meta'|'context';old:number|null;next:number|null;text:string};
@@ -16,7 +16,7 @@ export function parseReviewDiff(diff:string):DiffLine[]{
   return {kind:'meta',old:null,next:null,text};
  });
 }
-export default function TaskReviewDiff({task,review,changedAfter=false,onClose,userId,onChange,closed=false,canReview=true,selfApprove=false}:{task:string;review:string;changedAfter?:boolean;onClose:()=>void;userId?:string;onChange?:()=>void;closed?:boolean;canReview?:boolean;selfApprove?:boolean}){
+export default function TaskReviewDiff({scope,neighbours,task,review,changedAfter=false,onClose,userId,onChange,closed=false,canReview=true,selfApprove=false}:{scope?:string[];neighbours?:{id:string;title:string;scope:string[]}[];task:string;review:string;changedAfter?:boolean;onClose:()=>void;userId?:string;onChange?:()=>void;closed?:boolean;canReview?:boolean;selfApprove?:boolean}){
  const [result,setResult]=useState<DiffResult|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true);
  const [revision,setRevision]=useState(0);
  const [body,setBody]=useState(''),[busy,setBusy]=useState(false);
@@ -32,6 +32,7 @@ export default function TaskReviewDiff({task,review,changedAfter=false,onClose,u
    .finally(()=>{if(alive)setLoading(false);});return()=>{alive=false;};
  },[task,review,revision]);
  const lines=result&&result.complete?parseReviewDiff(result.diff):[];
+ const outside=result?outsideScope(result.diff??'',scope,neighbours):[];
  // A snapshot that was never handed in ("Zur Prüfung geben") is only a look at work in progress, not a review request.
  const draft=!!result&&result.published===false;
  const stateText=draft?'Zwischenstand – noch nicht zur Prüfung gegeben.':result?.state==='approved'?'Freigegeben.':result?.state==='changes_requested'?'Es wurden Änderungen gewünscht.':'Wartet auf Freigabe.';
@@ -43,6 +44,7 @@ export default function TaskReviewDiff({task,review,changedAfter=false,onClose,u
   {error&&<p role="alert" className="rw-error">Die Änderung konnte nicht geladen werden: {error}</p>}
   {result&&<>
    <p className="review-head"><strong>Änderung von {result.ownerName}</strong> · {new Date(result.created).toLocaleString('de-CH',{dateStyle:'short',timeStyle:'short'})}<br/>{stateText}</p>
+   {outside.length>0&&<div role="alert" className="r27-diff-warning"><strong>Ändert Dateien außerhalb dieses Projekts ({(scope??[]).join(', ')}):</strong><ul>{outside.slice(0,8).map(o=><li key={o.file}><code>{o.file}</code>{o.owner&&<> – gehört zu „{o.owner}“, dort kurz abstimmen</>}</li>)}</ul>{outside.length>8&&<small>und {outside.length-8} weitere</small>}</div>}
    {changedAfter&&<p role="alert" className="r27-diff-warning">Seitdem wurde noch etwas geändert. Freigeben geht erst, wenn die neue Fassung zur Prüfung gegeben ist.</p>}
    {result.preview?<a className="rw-button lime review-preview" href={result.preview} target="_blank" rel="noreferrer">Vorschau öffnen – so sieht es aus ↗</a>:result.previewExpired?<p className="muted">Die Live-Vorschau dieser Fassung ist abgelaufen: Sie läuft höchstens eine Stunde und nur bis zur nächsten Live-Vorschau auf dieser Werkstatt. Die Person, die geändert hat, kann sie unter „Ändern“ neu starten. Unten unter „Was wurde geändert“ siehst du die Änderung im Text.</p>:<p className="muted">Für diese Fassung gibt es keine Vorschau. Unten unter „Was wurde geändert“ siehst du die Änderung im Text.</p>}
    {userId&&!mine&&canReview&&!draft&&!closed&&result.state!=='approved'&&<ol className="review-checklist" aria-label="So prüfst du">

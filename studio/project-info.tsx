@@ -71,6 +71,10 @@ export default function ProjectInfo({room,tasks,userId,onTab,onChat,onMemberChat
    <div><span>Wartet auf Prüfung</span><strong>{inReview.length}</strong></div>
    <p className="pi-note">{preview?<>Vorschau: „{preview.title}“</>:'Keine laufende Vorschau. Sie entsteht, wenn eine Code-Aufgabe zur Prüfung kommt.'}</p>
   </section>
+  {(!!room.meta.scope?.length||!!room.neighbours?.length)&&<p className="pi-note pi-scope">
+   {!!room.meta.scope?.length&&<>Bereich: <code>{room.meta.scope.join(', ')}</code>. </>}
+   {!!room.neighbours?.length&&<>Gleiches Repository wie: {room.neighbours.map(n=>n.title).join(', ')}.</>}
+  </p>}
   <section className="pi-members" aria-labelledby="pi-members-title">
    <h3 id="pi-members-title">Mitglieder ({agents.length+people.length})</h3>
    <ul>
