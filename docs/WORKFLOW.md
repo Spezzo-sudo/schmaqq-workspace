@@ -1,6 +1,6 @@
 # Arbeitsweise: Wer baut, wer entscheidet, wer schaltet live
 
-Stand 16.11.2026. Gilt für Marco, Markus, Hermes und jeden Entwicklungs-Agenten (Claude Code oder ChatGPT/Codex).
+Stand 17.11.2026. Gilt für Marco, Markus, Hermes und jeden Entwicklungs-Agenten (Claude Code oder ChatGPT/Codex).
 Livegang im Detail: [OPERATIONS.md](OPERATIONS.md). Etappen: [PLAN.md](PLAN.md). Was gerade dran ist: [WORKLIST.md](WORKLIST.md).
 Belegter Iststand: [STATUS.json](STATUS.json). Bei Widerspruch gilt: OPERATIONS.md für den Livegang, dieses Dokument für den Ablauf davor.
 Gemeint ist hier die Entwicklung von Studio selbst. Das Zusammenführen von Aufgaben **in** Studio (Rollen Autor/Admin) beschreiben ANLEITUNG.md und SECURITY.md.
@@ -46,18 +46,19 @@ Immer nur **ein** Schritt in Arbeit (WORKLIST.md, Abschnitt „In Arbeit“).
 - Was nicht geprüft werden konnte (fehlendes Werkzeug, nur auf dem VPS testbar), steht ausdrücklich im Pull Request.
 - Tests ohne feste Ports und ohne feste Wartezeiten, damit die GitHub-Prüfung nicht zufällig scheitert oder hängt.
 
-## Zielablauf für Agenten in Studio (geplant, noch nicht umgesetzt)
+## Zielablauf für Agenten in Studio (Umsetzungsstand je Baustein in STATUS.json)
 
 So sollen Agenten im Produkt arbeiten. Grundlage: PLAN.md Etappe 3 und die Bot-HQ-Analyse vom 16.11.2026.
 Was davon tatsächlich läuft, steht in STATUS.json.
 
 1. Eine Person schreibt einem Agenten oder lässt einen Agenten einen anderen fragen.
-2. **Rechte:** Ein Agent gehört der Person, die ihn anlegt. Andere brauchen dessen Freigabe, damit kein fremdes Kontingent verbraucht wird.
+2. **Rechte und Nutzung:** Agenten gehören zum Projekt. Wer einen Lauf beauftragt, nutzt die eigene KI-Anmeldung und das eigene Kontingent. Projektmitgliedschaft erlaubt keine Nutzung fremder Konten. Einzelchats sind privat; Gruppenchat ist gemeinsam, Agenten antworten dort nur auf @Name.
 3. **Warteschlange pro Agent:** ein Auftrag nach dem anderen, jederzeit abbrechbar.
 4. **Motor: Hermes Agent, eine eigene Instanz pro Person** (nicht pro Agent, nicht pro Projekt), mit der eigenen
    ChatGPT-Anmeldung dieser Person, abgeschottet auf dem VPS: eigener Prozess, nur der eigene Ordner, keine Shell,
-   kein Root, Speichergrenze, Start bei Bedarf und Stopp nach Ruhezeit. Die Agenten einer Person teilen sich deren
-   Instanz; Rolle, Anweisungen, Projektkontext und Agenten-Gedächtnis kommen bei jedem Auftrag aus Studio.
+   kein Root, Speichergrenze, Start bei Bedarf und Stopp nach Ruhezeit. Die von einer Person beauftragten Läufe nutzen deren
+   Instanz; Rolle, Anweisungen und Projektkontext kommen bei jedem Auftrag aus Studio.
+   Ziel für dauerhaftes Wissen ist eine Projektakte; ein separates Gedächtnis pro Agent ist kein zusätzlicher Bauauftrag.
    **Nie** der Betriebs-Hermes. Erst nach bestandenem Hermes-Test; scheitert er, ist Codex direkt der Ersatz
    (die ChatGPT-Anmeldung pro Person dafür ist live).
 5. **Live-Arbeitskarte** im Chat (arbeitet seit …, Schritte aufklappbar, Abbrechen).
