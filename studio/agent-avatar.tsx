@@ -354,11 +354,13 @@ export function AgentProfileView({
       {(agent.lead===true||perms.manageTasks)&&<li className="yes">Aufgaben vorschlagen – du entscheidest</li>}
       {agent.lead===true&&<li className="yes">Pläne aus wenigen Aufgaben vorschlagen</li>}
       {perms.delegateAgents&&<li className="yes">In einer Aufgabe ein anderes Teammitglied fragen (sichtbar, höchstens 6 Antworten, dann fragt Studio)</li>}
+      {perms.editCode&&<li className="yes">In einer Code-Aufgabe Code in deiner Arbeitskopie ändern – mit deiner Anmeldung für Programmierläufe; du prüfst und gibst ab</li>}
+      {perms.webResearch&&<li className="yes">Öffentliche Webseiten lesen (höchstens drei pro Antwort)</li>}
      </ul>
      <strong>Kann noch nicht</strong>
      <ul className="rw-fg-can">
-      <li className="no">Code ändern oder Programmierläufe starten</li>
-      <li className="no">Im Web recherchieren</li>
+      {!perms.editCode&&<li className="no">Code ändern (in den Berechtigungen einschaltbar)</li>}
+      {!perms.webResearch&&<li className="no">Im Web recherchieren (in den Berechtigungen einschaltbar)</li>}
       {!perms.delegateAgents&&<li className="no">Andere Agenten fragen</li>}
       <li className="no">Zusammenführen oder live stellen</li>
      </ul>

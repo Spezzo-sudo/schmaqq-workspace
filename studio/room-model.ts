@@ -27,6 +27,7 @@ export type RoomAgentPermissions={
  editCode:boolean;
  prepareReviews:boolean;
  delegateAgents:boolean;
+ webResearch?:boolean;
 };
 export type RoomAgent={
  id:string;
@@ -168,7 +169,8 @@ export const agentPermissionLabels:Record<keyof RoomAgentPermissions,string>={
  manageTasks:'Aufgaben anlegen und bearbeiten',
  editCode:'Code bearbeiten',
  prepareReviews:'Reviews vorbereiten',
- delegateAgents:'Andere Agenten beauftragen'
+ delegateAgents:'Andere Agenten beauftragen',
+ webResearch:'Im Web recherchieren'
 };
 
 export function agentEffectivePermissions(agent?:Partial<RoomAgent>|null):RoomAgentPermissions{
@@ -180,7 +182,9 @@ export function agentEffectivePermissions(agent?:Partial<RoomAgent>|null):RoomAg
    manageTasks:Boolean(explicit.manageTasks),
    editCode:Boolean(explicit.editCode),
    prepareReviews:Boolean(explicit.prepareReviews),
-   delegateAgents:Boolean(explicit.delegateAgents)
+   delegateAgents:Boolean(explicit.delegateAgents),
+   // Older profiles have no setting: the project lead reads the web, others only when switched on.
+   webResearch:explicit.webResearch??agent?.lead===true
   };
  }
  const caps=agent?.capabilities??[];
@@ -190,14 +194,15 @@ export function agentEffectivePermissions(agent?:Partial<RoomAgent>|null):RoomAg
   manageTasks:caps.includes('task-plan'),
   editCode:caps.includes('code-work'),
   prepareReviews:caps.includes('review-support'),
-  delegateAgents:caps.includes('task-delegate')||agent?.role==='coordinator'
+  delegateAgents:caps.includes('task-delegate')||agent?.role==='coordinator',
+  webResearch:agent?.lead===true
  };
 }
 
 /** The viewer's own AI access: configured = a worker is bound to this person, online = it asked for work recently. */
 export type HermesAvailability={configured:boolean;online?:boolean;runs:HermesAgentRun[]};
 export const agentRunActive=(run:Pick<HermesAgentRun,'status'>)=>run.status==='queued'||run.status==='running'||run.status==='cancelling';
-const agentStepLabels:Record<string,string>={'project.read_context':'Projektstand gelesen','task.propose':'Aufgabe vorgeschlagen','plan.propose':'Plan vorgeschlagen'};
+const agentStepLabels:Record<string,string>={'project.read_context':'Projektstand gelesen','task.propose':'Aufgabe vorgeschlagen','plan.propose':'Plan vorgeschlagen','agent.ask':'Anderen Agenten gefragt','code.change':'Codeänderung gestartet','web.read':'Webseite gelesen'};
 export const agentStepLabel=(tool:string)=>agentStepLabels[tool]??'Arbeitsschritt';
 export function workDuration(ms:number){
  const seconds=Math.max(1,Math.round(ms/1000));

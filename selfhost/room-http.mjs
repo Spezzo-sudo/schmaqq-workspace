@@ -193,7 +193,7 @@ function projectLeadFor(db,project,member,at){
   responsibility:'Erste Anlaufstelle im Projekt: ordnet ein, schlägt nächste Schritte vor und hält Aufgaben zusammen.',
   model:earlier?.model??'gpt-5.6-sol',modelDevice:null,
   capabilities:['context-read','chat','task-plan','task-delegate'],contextSources:['messages','tasks','decisions'],knowledgeScope:'',
-  permissions:{readProject:true,writeMessages:true,manageTasks:true,editCode:false,prepareReviews:false,delegateAgents:true},
+  permissions:{readProject:true,writeMessages:true,manageTasks:true,editCode:false,prepareReviews:false,delegateAgents:true,webResearch:true},
   active:true,lead:true,createdBy:member.id,updatedBy:member.id,created:at,updated:at
  };
 }
@@ -223,7 +223,8 @@ const agentPermissionsSchema=z.object({
  manageTasks:z.boolean(),
  editCode:z.boolean(),
  prepareReviews:z.boolean(),
- delegateAgents:z.boolean()
+ delegateAgents:z.boolean(),
+ webResearch:z.boolean().optional()
 });
 const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('create'),id,title,description:z.string().trim().max(12000).default('')}),

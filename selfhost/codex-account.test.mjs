@@ -1,7 +1,7 @@
 // Each member's own ChatGPT sign-in on the server worker: strictly separated, owner-only, phone-friendly.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,mkdirSync,rmSync,writeFileSync,existsSync} from 'node:fs';
+import {mkdtempSync,mkdirSync,rmSync,writeFileSync,existsSync,realpathSync} from 'node:fs';
 import {spawn} from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -33,7 +33,7 @@ test('member folders: only well-formed member ids, never paths',()=>{
  const root='/var/lib/schmaqq-worker/codex';
  assert.equal(codexHome(root,MARCO),root+'/'+MARCO);
  for(const bad of ['../etc','..',MARCO+'/x','','x'.repeat(36),null,'AAAAAAAA-1111-4111-8111-111111111111','/'+MARCO])assert.throws(()=>codexHome(root,bad),undefined,String(bad));
- assert.deepEqual(Object.keys(codexModes).sort(),['login','status']);
+ assert.deepEqual(Object.keys(codexModes).sort(),['exec','login','status']);
  assert.deepEqual(codexModes.login.args,['login','--device-auth']);
 });
 
@@ -74,7 +74,8 @@ test('launcher: fixed Codex commands in the member\'s own folder; logout removes
  const run=(file,args)=>{calls.push(args);return spawn(process.execPath,['-e',`process.stdout.write(${JSON.stringify(DEVICE_OUTPUT)})`],{stdio:['ignore','pipe','pipe']});};
  const {url,codexRoot}=await launcher(t,{root,run});
  assert.equal((await post(url,{member:MARCO,mode:'status'},'Bearer wrong')).status,401);
- for(const bad of [{member:'../x',mode:'status'},{member:MARCO,mode:'exec'},{member:MARCO,mode:'constructor'},{member:MARCO}])assert.equal((await post(url,bad)).status,400,JSON.stringify(bad));
+ for(const bad of [{member:'../x',mode:'status'},{member:MARCO,mode:'constructor'},{member:MARCO}])assert.equal((await post(url,bad)).status,400,JSON.stringify(bad));
+ assert.equal((await post(url,{member:MARCO,mode:'exec',dir:'/tmp',prompt:'x'})).status,409,'no code run without the member\'s own sign-in');
  const r=await post(url,{member:MARCO,mode:'login',argv:['/bin/sh'],dir:'/etc'});assert.equal(r.status,200);
  const text=await r.text();assert.match(text,/ABCD-12345/);assert.match(text,/"type":"exit","code":0/);
  const args=calls.at(-1);
@@ -108,7 +109,6 @@ test('runner: sign-in for the job owner only, link and code as one event, no raw
  const session=events.filter(e=>e.type==='session');assert.equal(session.length,1);
  assert.deepEqual(JSON.parse(session[0].text),{url:'https://auth.openai.com/codex/device',code:'ABCD-12345'});
  assert.ok(!events.some(e=>e.type==='output'),'raw Codex output is never forwarded');
- await assert.rejects(runner.run({id:'j2',owner:MARKUS,project:'p',action:'codex',payload:{prompt:'x'}},{}),/getrennte ChatGPT-Anmeldung/);
  const pc=new LocalRunner({stateDir:path.join(root,'state-pc'),projects:{}});
  await assert.rejects(pc.run({id:'j3',owner:MARKUS,project:'p',action:'codex-account',payload:{mode:'status'}},{}),/nur auf dem Server-Worker/);
 });
@@ -160,4 +160,24 @@ test('studio: each member starts and sees only their own sign-in; others get 403
  assert.equal((await request('/api/project-roles',{action:'roles',project,member:bId,roles:['viewer']},a.cookie)).status,200);
  assert.deepEqual((await request('/api/codex-account',null,b.cookie)).data.places,[]);
  assert.equal((await request('/api/codex-account',{action:'check'},b.cookie)).status,409);
+});
+
+test('launcher: a code run binds exactly the member\'s sign-in and one job copy; the command and the place are fixed',async t=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'codex-exec-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const calls=[],prepared=[];
+ const run=(file,args)=>{calls.push(args);return spawn(process.execPath,['-e','process.stdout.write(JSON.stringify({type:"turn.started"})+"\\n")'],{stdio:['ignore','pipe','pipe']});};
+ const {url,codexRoot}=await launcher(t,{root,run,prepare:async d=>{prepared.push(d);}});
+ const copy=path.join(root,'worktrees','p-1');mkdirSync(copy,{recursive:true});mkdirSync(path.join(codexRoot,MARCO));
+ assert.equal((await post(url,{member:MARCO,mode:'exec',dir:'/etc',prompt:'x'})).status,403,'only a copy in the job area');
+ assert.equal((await post(url,{member:MARCO,mode:'exec',dir:copy,prompt:''})).status,400);
+ assert.equal((await post(url,{member:MARCO,mode:'exec',dir:copy,prompt:'x'.repeat(16001)})).status,400);
+ assert.equal((await post(url,{member:MARKUS,mode:'exec',dir:copy,prompt:'x'})).status,409,'Markus has not signed in');
+ const r=await post(url,{member:MARCO,mode:'exec',dir:copy,prompt:'Ändere die Überschrift.',argv:['/bin/sh']});assert.equal(r.status,200);await r.text();
+ const args=calls.at(-1),real=realpathSync(copy),home=path.join(codexRoot,MARCO);
+ assert.deepEqual(args.slice(args.indexOf('--')+1),['/fixture/codex','exec','-c','forced_login_method="chatgpt"','-c','approval_policy="never"','-c','sandbox_mode="danger-full-access"','--skip-git-repo-check','--json','-C',real,'Ändere die Überschrift.']);
+ assert.ok(args.includes(`BindPaths=${home} ${real}`)&&args.includes(`ReadWritePaths=${home} ${real}`));
+ assert.ok(args.includes('CODEX_HOME='+home)&&args.includes('--working-directory='+real));
+ assert.ok(args.includes('IPAddressAllow=127.0.0.60/32'),'network only through the egress proxy');
+ assert.ok(!args.join(' ').includes(MARKUS));
+ assert.ok(prepared.length&&prepared.every(d=>d===real),'only the copy is prepared, never the sign-in folder');
 });

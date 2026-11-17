@@ -117,7 +117,6 @@ export class LocalRunner{
   if(job.action==='codex-account')return this.codexAccount(job,control);
   // On the server, Codex would otherwise run inside the worker process with its device token in reach.
   // It runs there only through the launcher with the member's own sign-in (see codexAccount).
-  if(job.action==='codex'&&this.config.launcher)throw new Error('Codex-Codeaufträge laufen auf dem Server-Worker erst über die getrennte ChatGPT-Anmeldung pro Person.');
   if(job.action==='connect-project')return connectManagedProject(this,job);
   if(job.action==='deploy-key'){
    if(this.config.kind!=='server'||!this.config.launcher)throw new Error('Deploy-Keys gibt es nur auf dem Server-Worker. Dein PC nutzt deinen eigenen GitHub-Zugang.');
@@ -279,6 +278,18 @@ export class LocalRunner{
    let output='';const child=spawn(p.preview.argv[0],p.preview.argv.slice(1),{cwd:w.dir,shell:false,windowsHide:true,stdio:['ignore','pipe','pipe']});child.stdout.on('data',b=>output=(output+b).slice(-10000));child.stderr.on('data',b=>output=(output+b).slice(-10000));let failure;child.on('error',e=>{failure=e;});this.previews.set(w.key,child);
    for(let i=0;i<30;i++){if(failure||child.exitCode!==null)throw new Error('Vorschau konnte nicht starten. '+(failure?.message??output));try{const r=await fetch(p.preview.url,{signal:AbortSignal.timeout(1000)});if(r.ok)return {url:p.preview.url,scope:'runner',output};}catch{}await new Promise(r=>setTimeout(r,500));}
    child.kill();throw new Error('Vorschau innerhalb des Zeitlimits nicht erreichbar. '+output);
+  }
+  if(job.action==='codex'&&this.config.launcher){
+   // Server worker: Codex runs in the job launcher with the job owner's own ChatGPT sign-in, only in this copy.
+   const launcher=this.config.launcher,member=job.owner,signal=control.signal;
+   const execute=async(argv,cwd,{input,onStdout}={})=>{
+    if(argv[1]==='login')return launcherCodex(launcher,{member,mode:'status'},{signal});
+    try{return await launcherCodex(launcher,{member,mode:'exec',dir:w.dir,prompt:input},{signal,onOutput:t=>onStdout?.(Buffer.from(t))});}
+    catch(e){if(/409/.test(e.message)&&/not signed in/.test(e.message))throw new Error('Für Programmierläufe zuerst unter Mein Konto die Anmeldung für Programmierläufe verbinden.');throw e;}
+   };
+   const result=await runCodex({executable:'codex',cwd:w.dir,prompt:job.payload.prompt,sessionFile:path.join(this.state,`codex-${job.id}.session`),signal,onEvent:control.onEvent,execute});
+   rmSync(path.join(this.state,`codex-${job.id}.session`),{force:true});
+   return {...result,branch:w.branch,status:await this.git(w.dir,'status','--short')};
   }
   if(job.action==='codex'){
    if(!p.allowCodex)throw new Error('Codex für dieses lokale Projekt noch nicht freigegeben.');

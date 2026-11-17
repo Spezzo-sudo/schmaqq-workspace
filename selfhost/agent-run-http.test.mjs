@@ -454,3 +454,79 @@ test('scope areas: two projects on one repository know each other; the area is t
  assert.deepEqual(outsideScope(diff,[],room.neighbours),[],'without an area nothing is outside');
  void bob;
 });
+
+test('code runs: an allowed agent changes code only in the asker\'s own copy of a code task; nothing is shared',async t=>{
+ const f=await fixture(t),[alice]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Code',description:''},{cookie:alice.cookie})).data.project;
+ const room=async()=>(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data;
+ const lead=(await room()).agents[0];
+ const perms=edit=>({readProject:true,writeMessages:true,manageTasks:true,editCode:edit,prepareReviews:false,delegateAgents:true});
+ const setLead=async edit=>assert.equal((await f.post('/api/room',{action:'agent',id:randomUUID(),project,agentId:lead.id,name:lead.name,role:'coordinator',avatarPresetId:'herr-grau',model:'x',permissions:perms(edit)},{cookie:alice.cookie})).status,200);
+ const task=(await f.post('/api/room',{action:'task',id:randomUUID(),project,title:'Überschrift kürzen',description:'Oben zu lang',kind:'code',criteria:'Passt in zwei Zeilen'},{cookie:alice.cookie})).data.task;
+ const general=(await f.post('/api/room',{action:'task',id:randomUUID(),project,title:'Texte sammeln',description:'',kind:'general'},{cookie:alice.cookie})).data.task;
+ const ask=async(topic,body)=>{const id=randomUUID();await f.post('/api/room',{action:'message',id,project,topicTask:topic,body:'@Herr Grau '+body},{cookie:alice.cookie});await f.post('/api/agent-runs',{project,agent:lead.id,message:id},{cookie:alice.cookie});return (await f.post('/api/agent-worker/claim',{},w)).data.job;};
+ const finish=job=>f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'ok'},w);
+ const call=(job,args)=>f.post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool:'code.change',args},w);
+ // Without the permission, or in a task that is not about code, there is no code tool.
+ let job=await ask(task,'Mach die Überschrift kürzer.');assert.ok(!job.toolPolicy.allowed.includes('code.change'));await finish(job);
+ await setLead(true);
+ job=await ask(general,'Ändere Code.');assert.ok(!job.toolPolicy.allowed.includes('code.change'));await finish(job);
+ job=await ask(task,'Mach die Überschrift kürzer.');assert.ok(job.toolPolicy.allowed.includes('code.change'));
+ // No Werkstatt for this project: nothing is queued, the agent hears why.
+ assert.equal((await call(job,{instruction:'Kürze die Überschrift in site/index.html.'})).status,409);
+ await finish(job);
+ // A PC runner of Alice that has the project.
+ const device=randomUUID();
+ f.app.db.prepare('INSERT INTO devices(id,owner,name,hash,seen,revoked) VALUES(?,?,?,?,?,0)').run(device,alice.id,'Alices PC',randomUUID(),Date.now()+3600000);
+ f.app.db.prepare('INSERT INTO runner_project_state(device,projects,updated) VALUES(?,?,?)').run(device,JSON.stringify([{id:project,check:true}]),Date.now());
+ job=await ask(task,'Mach die Überschrift kürzer.');
+ const done=await call(job,{instruction:'Kürze die Überschrift in site/index.html.'});
+ assert.equal(done.status,200,JSON.stringify(done.data));
+ assert.equal(done.data.result.preparedCopy,true);
+ assert.equal((await call(job,{instruction:'Noch mal.'})).status,429,'one code run per answer');
+ await finish(job);
+ const jobs=f.app.db.prepare('SELECT action,owner,device,payload,status FROM jobs WHERE project=? ORDER BY created').all(project);
+ assert.deepEqual(jobs.map(j=>[j.action,j.owner,j.device,j.status]),[['prepare',alice.id,device,'queued'],['codex',alice.id,device,'queued']],'whoever asks pays, in their own copy');
+ const payload=JSON.parse(jobs[1].payload);
+ assert.equal(payload.worktree,JSON.parse(JSON.stringify(f.app.db.prepare("SELECT id FROM jobs WHERE action='prepare' AND project=?").get(project).id)));
+ assert.match(payload.prompt,/Überschrift kürzen[\s\S]*Fertig, wenn: Passt in zwei Zeilen[\s\S]*Kürze die Überschrift in site\/index.html[\s\S]*Committe nicht, pushe nicht/);
+ assert.deepEqual(payload.agent.name,'Herr Grau');
+ assert.equal((await room()).tasks.find(t=>t.id===task).assignee,alice.id,'the person who asked takes the task');
+ // While the copy is busy, a second code run waits.
+ job=await ask(task,'Und noch die Farbe.');
+ assert.equal((await call(job,{instruction:'Ändere die Farbe.'})).status,409);
+ await finish(job);
+});
+
+test('web research: only public https pages, every address checked, redirects too; the page is data',async t=>{
+ const {publicAddress,checkWebUrl,readWebPage,pageText}=await import('./web-read.mjs');
+ for(const a of ['127.0.0.1','10.1.2.3','172.20.0.1','192.168.1.1','169.254.169.254','100.64.0.1','0.0.0.0','224.0.0.1','::1','fe80::1','fd00::1','::ffff:127.0.0.1','2001:db8::1','64:ff9b::7f00:1'])assert.equal(publicAddress(a),false,a);
+ for(const a of ['93.184.216.34','2606:2800:220:1:248:1893:25c8:1946'])assert.equal(publicAddress(a),true,a);
+ for(const bad of ['http://example.com','https://127.0.0.1/','https://[::1]/','https://localhost/','https://user:pw@example.com/','https://example.com:8443/','https://intranet/','file:///etc/passwd'])assert.throws(()=>checkWebUrl(bad),undefined,bad);
+ const lookup=table=>(host,o,cb)=>cb(null,(table[host]??[]).map(address=>({address,family:address.includes(':')?6:4})));
+ await assert.rejects(readWebPage('https://evil.example/',{lookup:lookup({'evil.example':['93.184.216.34','10.0.0.1']}),request:()=>assert.fail('no request')}),/öffentliche Internet/,'one private address is enough to refuse');
+ const pages={'https://a.example/':{redirect:'https://b.example/x'},'https://b.example/x':{body:'<html><title>B</title><script>steal()</script><p>Hallo &amp; Welt</p></html>',type:'text/html'}};
+ const seen=[];
+ const ok=await readWebPage('https://a.example/',{lookup:lookup({'a.example':['93.184.216.34'],'b.example':['93.184.216.35']}),request:async(url,address)=>{seen.push([url.toString(),address.address]);return pages[url.toString()];}});
+ assert.deepEqual(seen,[['https://a.example/','93.184.216.34'],['https://b.example/x','93.184.216.35']],'connects to exactly the checked address');
+ assert.deepEqual([ok.title,ok.text,ok.trust],['B','Hallo & Welt','untrusted-web-content']);
+ await assert.rejects(readWebPage('https://a.example/',{lookup:lookup({'a.example':['93.184.216.34'],'b.example':['127.0.0.1']}),request:async url=>pages[url.toString()]}),/öffentliche Internet/,'a redirect into the server is refused');
+ assert.equal(pageText('<style>x{}</style><b>fett</b>').text,'fett');
+ // The tool is offered to the lead (default) and refused for an agent without the setting.
+ const f=await fixture(t),[alice]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Web',description:''},{cookie:alice.cookie})).data.project;
+ const lead=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.agents[0];
+ const message=randomUUID();await f.post('/api/room',{action:'message',id:message,project,body:'@Herr Grau lies nach'},{cookie:alice.cookie});
+ await f.post('/api/agent-runs',{project,agent:lead.id,message},{cookie:alice.cookie});
+ const job=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ assert.ok(job.toolPolicy.allowed.includes('web.read'));
+ const local=await f.post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool:'web.read',args:{url:'https://localhost/admin'}},w);
+ assert.equal(local.status,200);assert.match(local.data.result.error,/öffentliche Webseiten/,'refusal reaches the model as data');
+ const mara=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Mara',role:'frontend',avatarPresetId:'mara',model:'x',permissions:{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false}},{cookie:alice.cookie})).data.agentId;
+ await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'ok'},w);
+ const m2=randomUUID();await f.post('/api/room',{action:'message',id:m2,project,recipient:mara,body:'lies nach'},{cookie:alice.cookie});
+ await f.post('/api/agent-runs',{project,agent:mara,message:m2},{cookie:alice.cookie});
+ const j2=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ assert.ok(!j2.toolPolicy.allowed.includes('web.read'));
+ assert.equal((await f.post('/api/agent-worker/tool',{run:j2.run,lease:j2.lease,callId:randomUUID().slice(0,16),tool:'web.read',args:{url:'https://example.com/'}},w)).status,403);
+});
