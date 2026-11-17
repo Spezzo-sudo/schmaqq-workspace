@@ -220,7 +220,7 @@ const agentPermissionsSchema=z.object({
 const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('create'),id,title,description:z.string().trim().max(12000).default('')}),
  z.object({action:z.literal('share'),id,project:id,message:id}),
- z.object({action:z.literal('message'),id,project:id,body,replyTo:id.optional(),topicTask:id.optional(),recipient:id.optional(),direct:z.boolean().optional(),senderAgent:id.optional(),handoff:z.object({toAgent:id,summary:z.string().trim().min(1).max(600),status:z.enum(['delegated','in_progress','completed','requested','stopped']).default('delegated')}).optional()}),
+ z.object({action:z.literal('message'),id,project:id,body,replyTo:id.optional(),marked:z.array(id).min(1).max(20).optional(),topicTask:id.optional(),recipient:id.optional(),direct:z.boolean().optional(),senderAgent:id.optional(),handoff:z.object({toAgent:id,summary:z.string().trim().min(1).max(600),status:z.enum(['delegated','in_progress','completed','requested','stopped']).default('delegated')}).optional()}),
  z.object({action:z.literal('read'),project:id,view:chatView,messageId:id.optional()}),
  z.object({
   action:z.literal('agent'),
@@ -425,6 +425,14 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null})
      else if(targetAgent&&targetAgent.active)recipientKind='agent';
      else throw fail(400,'Der gewählte Empfänger gehört nicht zu diesem Projekt.');
     }
+    // Marked messages go to exactly one agent, who then reads only those. Each request gets its own colour.
+    let markColor=null;
+    if(value.marked){
+     if(recipientKind!=='agent'||value.direct||value.senderAgent||value.handoff)throw fail(400,'Markierte Nachrichten gehen an genau einen Agenten.');
+     for(const mid of value.marked){const row=db.prepare('SELECT id FROM messages WHERE id=? AND channel=?').get(mid,value.project);if(!row||privateScope(db,mid)||!mayRead(db,mid,member.id))throw fail(400,'Markieren geht nur mit Nachrichten aus diesem Projektchat.');}
+     value.marked=[...new Set(value.marked)];
+     markColor=db.prepare("SELECT count(*) AS n FROM messages m JOIN workspace_meta x ON x.key='room:v1:message:'||m.id WHERE m.channel=? AND json_extract(x.value,'$.marked') IS NOT NULL").get(value.project).n%4;
+    }
     let senderAgent=null,senderModel=null,handoff=null;
     if(value.senderAgent||value.handoff){
      if(!value.senderAgent)throw fail(400,'Für eine Agenten-Übergabe wird ein absendender Agent benötigt.');
@@ -453,6 +461,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null})
      replyTo:value.replyTo??null,
      ...(senderModel?{model:senderModel}:{}),
      ...(value.topicTask?{topicTask:value.topicTask}:{}),
+     ...(value.marked?{marked:value.marked,markColor}:{}),
      ...(value.recipient||handoff?{recipient:value.recipient??handoff.toAgent,recipientKind}:{}),
      ...(senderAgent?{senderAgent}:{}),
      ...(handoff?{handoff}:{})

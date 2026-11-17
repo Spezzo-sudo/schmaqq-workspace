@@ -55,7 +55,7 @@ export type RoomAgent={
  lead?:boolean;
 };
 export type AgentHandoff={fromAgent?:string;toAgent:string;task?:string|null;summary:string;status:'delegated'|'in_progress'|'completed'|'requested'|'stopped'};
-export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;sequence?:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff'|'card';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;scope?:string;senderAgent?:string|null;handoff?:AgentHandoff|null;proposalCard?:AgentTaskProposal|null;inTask?:string|null;sharedBy?:string|null;card?:{from:'direct';agent:string;tasks:string[];titles:string[]}|null};
+export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;sequence?:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff'|'card';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;scope?:string;senderAgent?:string|null;handoff?:AgentHandoff|null;proposalCard?:AgentTaskProposal|null;inTask?:string|null;sharedBy?:string|null;marked?:string[];markColor?:number|null;card?:{from:'direct';agent:string;tasks:string[];titles:string[]}|null};
 /** Hermes task proposal shown in the chat. Server decides `canDecide`; a proposal is never a task until accepted. */
 export type AgentPlan={tasks:{title:string;done_when:string;kind:'general'|'code';who:string}[];hire:{role:string;why:string}[]};
 export type AgentTaskProposal={id:string;title:string;description:string;kind:'general'|'code'|'plan';status:'pending'|'accepted'|'rejected';task:string|null;tasks?:string[];plan?:AgentPlan;agent:string;owner:string;canDecide:boolean};
@@ -64,7 +64,10 @@ export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgp
 export type RoomRun={id:string;agentId?:string|null;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;updated?:number;task:string|null};
 /** One answer an agent owes to one message. Only the person who asked sees their runs. */
 export type AgentRunStep={tool:string;at:number};
-export type HermesAgentRun={id:string;owner:string;project:string;agent:string;message:string;model:string;status:'queued'|'running'|'cancelling'|'completed'|'failed'|'cancelled';created:number;updated:number;started?:number|null;finished?:number|null;position?:number|null;steps?:AgentRunStep[];completedMessage:string|null;errorCode:string|null};
+export type HermesAgentRun={id:string;owner:string;project:string;agent:string;message:string;model:string;status:'queued'|'running'|'cancelling'|'completed'|'failed'|'cancelled';created:number;updated:number;started?:number|null;finished?:number|null;position?:number|null;steps?:AgentRunStep[];completedMessage:string|null;errorCode:string|null;chain?:AgentChain|null};
+export type AgentChain={root:string;depth:number;used:number;limit:number;stopped:boolean;full:boolean;active:boolean};
+/** The four marking colours; "check alle blauen" means the messages marked in blue. */
+export const MARK_COLORS=['blau','grün','orange','lila'] as const;
 export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[];unread?:Record<string,number>};
 /** Server-computed: ready only after a passed trial run on the shared main state. */
 export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;state:'ok'|'running'|'failed';at:number;error?:string}|null};
