@@ -40,7 +40,7 @@ und verteilt, ist aber kein Pflicht-Umweg.
    dieses Gespräch plus Projektstand; an einer Karte deren Gespräch. Nie den ganzen Verlauf.
 7. **Kein Motor- oder Modellname** in der Oberfläche (nur unter „Erweitert“ im Agentenprofil).
 8. **Ehrlich, was ein Agent kann:** Das Profil zeigt unter „Kann“ nur, was wirklich freigeschaltet ist
-   (heute: Projekt lesen, Aufgaben vorschlagen, Pläne vorschlagen für die Projektleitung).
+   (heute: Projekt lesen, Aufgaben vorschlagen, Pläne vorschlagen für die Projektleitung, in einer Aufgabe einen anderen Agenten fragen).
 
 ## Bildschirme
 
@@ -77,14 +77,14 @@ kommen:
 
 Jeder Schritt: eigener Pull Request, Prüfung auf dem Pilot (Handy und Desktop), dann „merge“ und „JA LIVE“.
 
-1. **Start und Desktop-Gerüst:** nur Projekte auf dem Start, Menü hinter dem Avatar, KI-Zugang mit Status,
+1. ✅ live · **Start und Desktop-Gerüst:** nur Projekte auf dem Start, Menü hinter dem Avatar, KI-Zugang mit Status,
    Agentenleiste und Reiter Chat | Aufgaben im Projekt, Desktop mit drei Spalten, Projektinfo (aus PR #95 übernommen).
-2. **Projektchat und Direktchats:** Agenten schweigen, @Name holt genau einen Agenten, Direktchat mit jedem Agenten.
-3. **Karten:** Plan, Aufgabe, Ergebnis, Vorschau als Karten mit eigenem Gespräch; automatische Karte aus Direktchats;
+2. ✅ live · **Projektchat und Direktchats:** Agenten schweigen, @Name holt genau einen Agenten, Direktchat mit jedem Agenten.
+3. ✅ live · **Karten:** Plan, Aufgabe, Ergebnis, Vorschau als Karten mit eigenem Gespräch; automatische Karte aus Direktchats;
    „Im Projekt teilen“.
-4. **Markieren und Weitergabe:** Nachrichten markieren → „Agent fragen“; Agent ↔ Agent an der Karte mit Grenzen,
+4. ✅ live · **Markieren und Weitergabe:** Nachrichten markieren → „Agent fragen“; Agent ↔ Agent an der Karte mit Grenzen,
    Zähler und Stopp.
-5. **Agenten machen wirklich etwas:** zuerst Zuständigkeitsbereiche pro Projekt mit Warnung; dann Programmierläufe mit
+5. **Agenten machen wirklich etwas:** ✅ live: Zuständigkeitsbereiche pro Projekt mit Warnung. Offen: dann Programmierläufe mit
    persönlicher Anmeldung über den Launcher (eigener Sicherheits-PR) und Webrecherche als Werkzeug für Agenten.
 
 ## Später (nicht im laufenden Bau)

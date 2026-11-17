@@ -2,6 +2,16 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 17.11.2026 (Abend)
+- **Reihenfolge:** Schritt 3 (Karten) vor Schritt 2, weil Aufgaben ohne Agenten leer wirkten. Inhalt unverändert.
+- **Gespräch einer Aufgabe = Projektnachrichten mit Aufgabenbezug**; im Projektchat steht dafür **eine** Karte.
+  Ältere Aufgabenkommentare bleiben sichtbar.
+- **Markieren:** vier Farben (blau, grün, orange, lila), eine pro Anfrage; der Agent liest nur die markierten Nachrichten.
+- **Agent ↔ Agent:** Werkzeug „anderen Agenten fragen“ nur in Aufgaben, nur für Agenten mit Freigabe „Delegieren“,
+  B gibt nicht weiter, B's Antwort geht nicht automatisch an A zurück. „Weitermachen“ erlaubt 6 weitere Antworten ab dem aktuellen Stand.
+- **Zuständigkeitsbereich** legt nur der Projekt-Admin fest; Studio warnt beim Anschauen, blockiert aber nicht.
+- **Offen (eigener Sicherheits-PR):** Programmierläufe durch Agenten und Webrecherche als Werkzeug (Schritt 5b/5c).
+
 ## 17.11.2026
 - **Jeder Bauschritt geht nach bestandener Prüfung direkt live** (Owner, 17.11.2026), nicht erst das ganze Konzept.
   Ablauf je Schritt: Tests und Sichtprüfung Handy/Desktop, GitHub-Prüfung grün, Merge, `studio-deploy.sh release`, Bericht.

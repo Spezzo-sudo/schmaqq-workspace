@@ -1,4 +1,21 @@
 {
+  "messenger_steps2to5a_20261117": {
+    "state": "live_after_checks",
+    "concept": "docs/CONCEPT_MESSENGER.md, Schritte 2, 3, 4, 5a",
+    "implemented": [
+      "Step 3 (#99): @Agent in a task with task context; task conversation as one card in the project chat; cards for work from direct chats; Im Projekt teilen; Als Ergebnis übernehmen",
+      "Step 2 (#100): composer hint '@Name holt einen Agenten'; honest Kann / Kann noch nicht in the agent profile",
+      "Step 4 (#101): marking (colour per request, agent reads only those); agent.ask tool in tasks, one level, chain counter 6, Stopp, Weitermachen; whoever starts pays",
+      "Step 5a (#103): scope areas per project (admin), neighbours on the same repository, warning for changed files outside, scope in agent context"
+    ],
+    "open": [
+      "Step 5b: coding runs by agents via the launcher with personal sign-in (own security PR)",
+      "Step 5c: web research as an agent tool (SSRF-safe, own security PR)"
+    ],
+    "verification": {
+      "regression": "npm run studio:verify (Node 24.22.0) green for each step; GitHub CI green; production deploys RESULT=PASS with predeploy backups (latest predeploy-7e0c322-20261117T220830Z.sqlite)"
+    }
+  },
   "messenger_step1_20261117": {
     "state": "live_after_checks",
     "concept": "docs/CONCEPT_MESSENGER.md, Schritt 1",
