@@ -9,8 +9,8 @@ export default function MessengerProjectNavigation({rooms,project,connected,onPr
  return <div className="r3-project-navigation">
   <div className="r3-brand-row"><StudioBrand compact onHome={()=>go('rooms')}/><details ref={menu} className="r3-workspace-menu"><summary className="r3-icon-button" aria-label="Workspace-Menü" title="Workspace-Menü"><MoreHorizontal size={21}/></summary><div>
    <button onClick={()=>go('rooms')}><MessagesSquare size={16}/>Alle Chats</button>
-   <button onClick={()=>go('agents')}><Bot size={16}/>Agenten</button>
-   <button onClick={()=>go('projects')}><Folder size={16}/>Alle Projekte</button>
+   <button onClick={()=>go('agents')}><Users size={16}/>Kontakte</button>
+   <button onClick={()=>go('projects')}><Folder size={16}/>Projekte und Archiv</button>
    <button onClick={()=>go('conversations')}><MessageSquare size={16}/>Team-Chat</button>
    <button onClick={()=>go('team')}><Users size={16}/>Team verwalten</button>
    <button onClick={()=>go('account')}><UserRound size={16}/>Mein Konto</button>

@@ -1,4 +1,25 @@
 {
+  "messenger_step1_20261117": {
+    "state": "live_after_checks",
+    "concept": "docs/CONCEPT_MESSENGER.md, Schritt 1",
+    "implemented": [
+      "Start lists projects only (one line each, counts include own agent chats), Wartet auf dich, Team, Direktnachrichten folded",
+      "Project rows: ⋯ / press-and-hold with open, project info, archive (two taps)",
+      "Menu behind the avatar replaces bottom bar and account button",
+      "Project: agent bar (tap = direct chat, hold = profile, green dot = working, unread), tabs Chat | Aufgaben",
+      "Desktop: project list left, chat middle, project info right and open by default from 1200 px",
+      "Project info: now, quick actions, members, areas, archive; KI-Zugang card with real status in the account"
+    ],
+    "verification": {
+      "regression": "npm run studio:verify (Node 24.22.0): 382 passed, 0 failed, 3 skipped",
+      "visual": "Local demo at 390 px and 1440 px"
+    },
+    "limits": [
+      "Agents still answer @Name in the project chat (Schritt 2 makes them silent unless called)",
+      "Cards with their own conversation follow in Schritt 3"
+    ],
+    "production_changed": true
+  },
   "conversations_planning_20261117": {
     "state": "live",
     "branch": "main (PR #91, squash ce5a50a)",
