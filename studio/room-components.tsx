@@ -24,7 +24,7 @@ const ALL_CONTEXT_SOURCES:RoomAgentContextSource[]=['messages','tasks','decision
 const CONTEXT_SOURCE_KEYS:RoomAgentContextSource[]=['messages','tasks','decisions','repository','runs'];
 const ALL_ROLES:RoomAgentRole[]=agentDepartments.flatMap(d=>d.roles);
 
-export function Conversation({room,resources=[],userId,search,refresh,onTask,onConvert,projectNavigation,tools,detail,detailTitle,detailKey='talk',detailNavigation,onCloseDetail,onFiles,onBack,onInfo,rail,subHeader}:{onBack?:()=>void;onInfo?:()=>void;rail?:ReactNode;subHeader?:ReactNode;room:RoomState;resources?:Resource[];userId:string;search:string;refresh:()=>Promise<void>;onTask:(id:string)=>void;onConvert:(kind:'task'|'decision',source:RoomMessage)=>void;projectNavigation?:ReactNode;tools?:ReactNode;detail?:ReactNode;detailTitle?:string;detailKey?:string;detailNavigation?:ReactNode;onCloseDetail?:()=>void;onFiles?:()=>void}){
+export function Conversation({room,resources=[],userId,search,refresh,onTask,onConvert,projectNavigation,tools,detail,detailTitle,detailKey='talk',detailNavigation,onCloseDetail,onFiles,onBack,onInfo,rail,subHeader,mainContent}:{onBack?:()=>void;onInfo?:()=>void;rail?:ReactNode;subHeader?:ReactNode;mainContent?:ReactNode;room:RoomState;resources?:Resource[];userId:string;search:string;refresh:()=>Promise<void>;onTask:(id:string)=>void;onConvert:(kind:'task'|'decision',source:RoomMessage)=>void;projectNavigation?:ReactNode;tools?:ReactNode;detail?:ReactNode;detailTitle?:string;detailKey?:string;detailNavigation?:ReactNode;onCloseDetail?:()=>void;onFiles?:()=>void}){
  const [filter,setFilter]=useState<MessengerFilter>(()=>readMessengerFilter(location.search,room));
  const draftKey=messengerDraftKey(userId,room.project.id,filter),initialTarget=messengerComposerTarget(filter);
  const [text,setText]=useState(()=>storedDraft(draftKey)),[reply,setReply]=useState<RoomMessage|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[older,setOlder]=useState<RoomMessage[]>([]),[more,setMore]=useState(room.more);
@@ -419,6 +419,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
     </div>}
     {subHeader}
 
+    {mainContent??<>
     <div className="rw-chat-stream" ref={stream} onScroll={()=>{if(stream.current)followLatest.current=stream.current.scrollHeight-stream.current.scrollTop-stream.current.clientHeight<80;}}>
      {more&&messages.length>0&&<button className="rw-button subtle" disabled={busy} onClick={()=>void loadOlder()}>Ältere Nachrichten laden</button>}
      {!messages.length&&<div className="rw-room-welcome"><span className="rw-welcome-icon"><MessageSquare size={30}/></span><span className="rw-eyebrow">DER ANFANG IST EIN GESPRÄCH</span><h2>Ein Raum für eure nächste Idee.</h2><p>Teilt Gedanken, stellt Fragen, adressiert Teammitglieder oder KI-Agenten und verknüpft Nachrichten direkt mit Aufgaben.</p><div><button onClick={()=>{setText('Unser Ziel für dieses Projekt: ');saveDraft(draftKey,'Unser Ziel für dieses Projekt: ');}}>Ziel festhalten</button><button onClick={()=>{setText('Was müssen wir zuerst herausfinden?');saveDraft(draftKey,'Was müssen wir zuerst herausfinden?');}}>Offene Fragen sammeln</button></div></div>}
@@ -539,6 +540,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
       <button className="rw-send" disabled={busy||!text.trim()} aria-label="Nachricht senden"><Send size={18}/></button>
      </form>
     </div>
+    </>}
    </div>
    {hasDetail&&<MessengerInspector title={editingAgent?'Agentenprofil bearbeiten':profileAgent?profileAgent.name:detailTitle??'Details'} overlay={overlay} wide={detailKey==='files'||!!editingAgent} onClose={closeInspector} navigation={!profileAgent&&!editingAgent?detailNavigation:undefined}>
     {profileAgent&&!editingAgent&&<AgentProfileView
