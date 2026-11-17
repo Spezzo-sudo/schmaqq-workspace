@@ -1,7 +1,7 @@
+import {liveConnected,onLiveSignal} from './live';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {ArrowRight,BookOpen,Bot,CircleHelp,ChevronRight,Copy,Folder,Hash,Home,LayoutGrid,ListChecks,LogOut,MessageSquare,MessagesSquare,Plus,Search,Settings,UserRound,Users,FolderOpen,PanelRight} from 'lucide-react';
 import {taskSummary} from './task-next-step';
-import {humanEvent} from './project-overview-model';
 import type {ChatGPTUser} from '../app/chatgpt-auth';
 import {hasDrafts,clearDrafts} from '../app/editor-drafts';
 import StudioBrand from '../app/studio-brand';
@@ -58,7 +58,12 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
    setRooms(r.rooms);setResources(a.resources);setTeam(t);setMembers(w.members);if(selected===activeRoom.current)setRoom(p);setConnected(true);setError('');
   }catch(e){setError((e as Error).message);setConnected(false);}
  },[]);
- useEffect(()=>{let running=false;const tick=async()=>{if(running||document.hidden)return;running=true;try{await refresh();}finally{running=false;}};void tick();const timer=setInterval(tick,5000);return()=>clearInterval(timer);},[refresh]);
+ useEffect(()=>{let running=false;const tick=async()=>{if(running||document.hidden)return;running=true;try{await refresh();}finally{running=false;}};void tick();
+  // With the live connection open, changes arrive as signals; the regular refresh is only a safety net.
+  let last=Date.now(),soon:ReturnType<typeof setTimeout>|undefined;
+  const timer=setInterval(()=>{if(Date.now()-last>=(liveConnected()?20000:5000)){last=Date.now();void tick();}},1000);
+  const stop=onLiveSignal(signal=>{if(signal.type!=='room')return;clearTimeout(soon);soon=setTimeout(()=>{last=Date.now();void tick();},120);});
+  return()=>{clearInterval(timer);clearTimeout(soon);stop();};},[refresh]);
  useEffect(()=>{setRoom(null);setSearch('');void refresh();},[route.room,refresh]);
  // First visit opens the last permitted project, not another management dashboard. Explicit links always win.
  useEffect(()=>{if(route.room&&rooms.some(r=>r.id===route.room)){try{localStorage.setItem('studio:last-project:'+user.userId,route.room);}catch{}}},[route.room,rooms,user.userId]);
@@ -78,10 +83,8 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
  async function logout(){if(hasDrafts()){setError('Es gibt ungespeicherte Dateiänderungen. Speichere oder verwerfe sie vor dem Abmelden in der betreffenden Aufgabe.');return;}try{await roomRequest('/api/auth/logout',{});clearDrafts();for(let i=sessionStorage.length-1;i>=0;i--){const key=sessionStorage.key(i);if(key?.includes(user.userId))sessionStorage.removeItem(key);}location.replace('/');}catch(e){setError((e as Error).message);}}
  const projectTasks=team.tasks.filter(t=>t.project===route.room);
  const myWork=team.tasks.map(task=>({task,summary:taskSummary(task,user.userId,id=>members.find(m=>m.id===id)?.name??'Jemand')})).filter(w=>w.summary.mine);
- const news=(team.unread??[]).map(event=>({event,text:humanEvent(event.kind,event.body)})).filter((n):n is {event:typeof n.event;text:string}=>!!n.text).slice(0,8);
  const waiting:WaitingItem[]=[
-  ...myWork.map(({task,summary})=>({id:'t:'+task.id,title:task.title,detail:(rooms.find(r=>r.id===task.project)?.title??'Projekt')+' · '+summary.text,open:()=>openTask(task)})),
-  ...news.map(({event,text})=>({id:'e:'+event.id,title:text+(event.task&&team.tasks.find(t=>t.id===event.task)?': '+team.tasks.find(t=>t.id===event.task)!.title:''),detail:rooms.find(r=>r.id===event.project)?.title??'',open:()=>{navigate({room:event.project,task:event.task??'',tab:event.task?'tasks':'talk',page:'rooms'});void roomRequest('/api/team',{action:'read',event:event.id}).then(refresh);}}))
+  ...myWork.map(({task,summary})=>({id:'t:'+task.id,title:task.title,detail:(rooms.find(r=>r.id===task.project)?.title??'Projekt')+' · '+summary.text,open:()=>openTask(task)}))
  ];
  const projectEvents=team.events.filter(e=>e.project===route.room),owner=members.some(m=>m.id===user.userId&&m.role==='owner');
  const tab=route.tab==='results'?'tasks':route.tab,name=(id:string)=>members.find(m=>m.id===id)?.name??'Jemand';
@@ -193,17 +196,16 @@ function ProjectSettings({room,resources,userId,refresh,onRepository,onArchived}
   try{await roomRequest('/api/team',{action:'project',project:room.project.id,revision:room.meta.revision,title:room.project.title,description:room.project.description,archived:true,base:room.meta.base??'main',workflow:room.meta.workflow??'pull-request'});onArchived();}catch(e){setError((e as Error).message);}
  }
  async function update(e:React.FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);try{await roomRequest('/api/team',{action:'project',project:room.project.id,revision:room.meta.revision,title:f.get('title'),description:f.get('description'),archived:false,base:f.get('base'),workflow:f.get('workflow')});await refresh();setError('');}catch(e){setError((e as Error).message);}}
- return <section className="rw-connections team-settings"><h2>Projekt</h2>{error&&<p className="rw-error" role="alert">{error}</p>}
-  {/* Everyday settings first; Werkstatt, GitHub and the technical rules sit under "Für Entwickler". */}
+ return <section className="rw-connections team-settings r4-settings"><h2>Projekteinstellungen</h2>{error&&<p className="rw-error" role="alert">{error}</p>}
+  <details className="r4-settings-section" open><summary>Projektprofil</summary><div className="r4-settings-body">
   {access.admin?<form className="team-form" key={room.meta.revision} onSubmit={update}><label>Name<input name="title" required defaultValue={room.project.title} maxLength={160}/></label><label>Worum geht es?<textarea name="description" defaultValue={room.project.description} maxLength={12000} placeholder="Ein, zwei Sätze zum Ziel."/></label><input type="hidden" name="base" value={room.meta.base??'main'}/><input type="hidden" name="workflow" value={room.meta.workflow??'pull-request'}/><button className="rw-button lime">Speichern</button></form>:<div className="studio-readonly"><p><strong>{room.project.title}</strong></p><p>{room.project.description||'Noch kein Ziel beschrieben.'}</p><small className="rw-muted">Name und Ziel ändert der Projekt-Admin.</small></div>}
-  <h2>Einrichtung</h2><ProjectReady room={room} resources={resources} members={room.members} userId={userId} onRepository={onRepository} onRefresh={refresh}/>
-  <ProjectRoles project={room.project.id}/>
-  {access.admin&&<section className="studio-archive" aria-labelledby="studio-archive-title"><h2 id="studio-archive-title">Projekt archivieren</h2>
-   <p>Das Projekt verschwindet für alle aus Chats, Projekten und „Wartet auf dich“. Nichts wird gelöscht; unter Projekte → Archiviert kannst du es wiederherstellen.</p>
-   <button className="rw-button" onClick={()=>void archive()}>Projekt archivieren</button></section>}
-  <details className="team-secondary team-developer"><summary>Für Entwickler</summary>
+  </div></details>
+  <details className="r4-settings-section"><summary>Einrichtung und Verbindung</summary><div className="r4-settings-body"><ProjectReady room={room} resources={resources} members={room.members} userId={userId} onRepository={onRepository} onRefresh={refresh}/></div></details>
+  <details className="r4-settings-section"><summary>Team und Berechtigungen</summary><div className="r4-settings-body"><ProjectRoles project={room.project.id}/></div></details>
+  <details className="r4-settings-section"><summary>Technik und Werkstatt</summary><div className="r4-settings-body">
   {access.admin&&<form className="team-form" key={'dev'+room.meta.revision} onSubmit={update}><input type="hidden" name="title" value={room.project.title}/><input type="hidden" name="description" value={room.project.description}/><label>Hauptbranch<input name="base" required defaultValue={room.meta.base??'main'} maxLength={100}/></label><label>Wie freigegebene Änderungen übernommen werden<select name="workflow" defaultValue={room.meta.workflow??'pull-request'}><option value="pull-request">Über GitHub (Pull Request)</option>{!room.meta.repository&&<option value="direct">Direkt durch die Werkstatt</option>}</select></label><button className="rw-button">Speichern</button></form>}
-  <section className="studio-dev-pc"><h3>Eigener PC (optional)</h3><p>Studio arbeitet in der Werkstatt des Projekts. Einen eigenen PC brauchst du nur, wenn du lieber lokal arbeitest.</p><button ref={runnerToggle} className="rw-button" aria-expanded={showRunner} onClick={()=>{if(showRunner)closeRunner();else openRunner();}}>{showRunner?'Schliessen':'Eigenen PC verbinden'}</button>{resources.some(r=>r.owner===userId)&&<Executors project={room.project.id} embedded onSetup={openSetup}/>}{showRunner&&<div ref={runnerPanel} tabIndex={-1}><RunnerConnect project={room.project.id} projects={[room.project]} onRegistered={refresh} onClose={closeRunner}/></div>} {showSetup&&<><div ref={setupPanel} tabIndex={-1}><ProjectConnect key={setupDevice} project={room.project.id} projectTitle={room.project.title} initialDevice={setupDevice} resources={resources} userId={userId} onDone={refresh}/></div></>}{checking&&<p role="status">Einrichtungsstand wird geladen …</p>}</section></details></section>;
+  <section className="studio-dev-pc"><h3>Eigener PC (optional)</h3><p>Studio arbeitet in der Werkstatt des Projekts. Einen eigenen PC brauchst du nur, wenn du lieber lokal arbeitest.</p><button ref={runnerToggle} className="rw-button" aria-expanded={showRunner} onClick={()=>{if(showRunner)closeRunner();else openRunner();}}>{showRunner?'Schliessen':'Eigenen PC verbinden'}</button>{resources.some(r=>r.owner===userId)&&<Executors project={room.project.id} embedded onSetup={openSetup}/>}{showRunner&&<div ref={runnerPanel} tabIndex={-1}><RunnerConnect project={room.project.id} projects={[room.project]} onRegistered={refresh} onClose={closeRunner}/></div>} {showSetup&&<><div ref={setupPanel} tabIndex={-1}><ProjectConnect key={setupDevice} project={room.project.id} projectTitle={room.project.title} initialDevice={setupDevice} resources={resources} userId={userId} onDone={refresh}/></div></>}{checking&&<p role="status">Einrichtungsstand wird geladen …</p>}</section></div></details>
+  {access.admin&&<details className="r4-settings-section r4-settings-archive"><summary>Projekt archivieren</summary><div className="r4-settings-body"><p>Das Projekt verschwindet für alle aus Chats, Projekten und „Wartet auf dich“. Nichts wird gelöscht; unter Projekte → Archiviert kannst du es wiederherstellen.</p><button className="rw-button" onClick={()=>void archive()}>Projekt archivieren</button></div></details>}</section>;
 }
 
 /** Tasks as a plain list grouped by who acts next; the same short status as everywhere else. */
@@ -212,7 +214,7 @@ function TaskList({tasks,userId,name,search,onSearch,onOpen}:{tasks:TeamTask[];u
  const rows=tasks.filter(t=>!query||(t.title+' '+t.description).toLowerCase().includes(query)).map(task=>({task,summary:taskSummary(task,userId,name)}));
  const groups:[string,string,typeof rows][]=[['mine','Bei dir',rows.filter(r=>r.summary.group==='mine')],['open','Noch offen – wer übernimmt?',rows.filter(r=>r.summary.group==='open')],['others','Bei den anderen',rows.filter(r=>r.summary.group==='others')]];
  const done=rows.filter(r=>r.summary.group==='done');
- const row=({task,summary}:typeof rows[number])=><li key={task.id}><button className="team-work-card" onClick={()=>onOpen(task)}><span><strong>{task.title}</strong><small>{summary.text}</small></span><ChevronRight size={17}/></button></li>;
+ const row=({task,summary}:typeof rows[number])=><li key={task.id}><button className="team-work-card r4-task-item" title={task.title} onClick={()=>onOpen(task)}><span><strong>{task.title}</strong><small>{summary.text}</small></span><ChevronRight size={17}/></button></li>;
  return <section className="team-task-list" aria-label="Aufgaben">
   {tasks.length>6&&<label className="team-search"><Search size={16} aria-hidden="true"/><input aria-label="Aufgaben durchsuchen" value={search} onChange={e=>onSearch(e.target.value)} placeholder="Aufgabe suchen"/></label>}
   {groups.filter(([, ,items])=>items.length).map(([id,label,items])=><section key={id} aria-labelledby={'tasks-'+id}><h2 id={'tasks-'+id}>{label}</h2><ul>{items.map(row)}</ul></section>)}

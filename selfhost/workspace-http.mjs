@@ -72,7 +72,7 @@ export function createWorkspaceHttpRoute({
           projects: db.prepare('SELECT * FROM projects ORDER BY created,id').all().filter(p => visible(p.id)),
           tasks: db.prepare('SELECT * FROM tasks ORDER BY created DESC').all().filter(t => visible(t.project)),
           members: db.prepare("SELECT id,name,email,role,seen,EXISTS(SELECT 1 FROM workspace_meta w WHERE w.key='member:v1:removed:'||members.id) AS removed,(SELECT json_extract(w.value,'$.by') FROM workspace_meta w WHERE w.key='member:v1:invited:'||members.id) AS invitedBy FROM members ORDER BY name").all(),
-          messages: db.prepare('SELECT * FROM (SELECT * FROM messages ORDER BY created DESC LIMIT 2000) ORDER BY created').all().filter(x => x.channel === 'general' || visible(x.channel)).slice(-500).map(x => {
+          messages: db.prepare("SELECT * FROM (SELECT * FROM messages m WHERE NOT EXISTS(SELECT 1 FROM chat_private s WHERE s.message=m.id AND NOT (s.member=? OR (s.kind='dm' AND s.peer=?))) ORDER BY created DESC LIMIT 2000) ORDER BY created").all(m.id, m.id).filter(x => x.channel === 'general' || visible(x.channel)).slice(-500).map(x => {
             if (x.channel !== 'general') return x;
             const meta = key => { const row = db.prepare('SELECT value FROM workspace_meta WHERE key=?').get(key); return row ? JSON.parse(row.value) : null; };
             const task = meta('room:v1:source-task:' + x.id)?.task ?? null, taskRow = task ? db.prepare('SELECT project FROM tasks WHERE id=?').get(task) : null;

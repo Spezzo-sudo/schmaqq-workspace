@@ -328,3 +328,56 @@
 @media (max-width:760px){.r3-toolbar-tabs button{min-height:44px;font-size:14px}.r3-toolbar-sub button{min-height:40px}}
 .r3-all-chats{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--schmaqq-rule-strong,#cfc9bd);background:transparent;font:700 13px/1 var(--schmaqq-sans,inherit);color:var(--schmaqq-ink,#12152a);cursor:pointer;justify-self:start}
 .r3-all-chats:hover{background:var(--rw-lime,#d6ff4f)}
+
+/* Messenger R4: information density and honest read status; SCHMAQQ colors stay unchanged. */
+.r3-shell .r4-unread,.r3-shell .ch-unread{
+ display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+ min-width:22px;height:22px;padding:0 5px;border-radius:11px;
+ background:var(--schmaqq-acid,#d9ff6b);color:var(--schmaqq-ink,#111225);
+ font:800 11px/1 var(--schmaqq-sans,Inter,sans-serif);font-variant-numeric:tabular-nums
+}
+.r3-shell .r3-messenger .rw-contact-row{gap:8px}
+.r3-shell .r3-messenger .rw-contact-row .r4-unread{margin-left:auto}
+.r3-shell .r3-messenger .rw-contact-row.active .r4-unread{background:var(--schmaqq-acid,#d9ff6b)}
+.r3-shell .r3-messenger .rw-contact-row>time{margin-left:auto}
+.r3-shell .r3-messenger .rw-contact-row:has(.r4-unread)>time{margin-left:0}
+.r3-shell .r3-messenger .rw-contact-card .r4-unread{margin:0 6px 0 0}
+.r3-shell .ch-row .ch-unread{margin:0 7px 0 0;align-self:center}
+
+/* One glance = title, next action, arrow; full details remain on the task page. */
+.r3-shell .r4-task-item{min-height:62px;padding:12px 14px;margin:6px 0;border-color:var(--schmaqq-rule-strong,#cfc9bd);gap:10px}
+.r3-shell .r4-task-item>span{min-width:0;flex:1;display:grid;gap:4px}
+.r3-shell .r4-task-item strong{font-size:14px;line-height:1.38;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.r3-shell .r4-task-item small{font-size:12px;line-height:1.3;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r3-shell .r4-task-item>svg{flex:0 0 18px}
+.r3-shell .project-overview section{margin-bottom:18px}
+.r3-shell .project-overview h2{font-size:16px;margin-bottom:8px}
+.r3-shell .project-overview .r3-panel-intro{font-size:13px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+/* Project settings are explicit sections, not one endless technical form. */
+.r3-shell .r4-settings{display:grid;gap:10px;min-width:0}
+.r3-shell .r4-settings>h2{font-size:19px;margin:0 0 7px}
+.r3-shell .r4-settings-section{border:1px solid var(--schmaqq-rule-strong,#cfc9bd);background:var(--schmaqq-paper-light,#fbfaf6);min-width:0}
+.r3-shell .r4-settings-section>summary{min-height:56px;padding:12px 14px;font-size:14px;font-weight:750;color:var(--schmaqq-ink,#111225);cursor:pointer}
+.r3-shell .r4-settings-section[open]>summary{border-bottom:1px solid var(--schmaqq-rule,#ddd);background:var(--schmaqq-paper,#f1efe8)}
+.r3-shell .r4-settings-body{min-width:0;padding:15px;display:grid;gap:14px}
+.r3-shell .r4-settings-body>.studio-project-roles{margin:0;max-width:100%}
+.r3-shell .r4-settings-body>p{font-size:13px;line-height:1.5;margin:0}
+.r3-shell .r4-settings-archive{border-color:var(--schmaqq-coral,#e06d53)}
+.r3-shell .r4-settings-archive>summary{color:var(--schmaqq-ink,#111225)}
+.r3-shell .r4-settings-section .po-ready{margin:0}
+.r3-shell .r4-settings-body .team-form{max-width:100%;min-width:0}
+.r3-shell .r4-settings-body input,.r3-shell .r4-settings-body textarea,.r3-shell .r4-settings-body select{max-width:100%}
+@media(max-width:760px){
+ .r3-shell .r3-messenger .rw-contact-row{min-height:66px;padding:10px}
+ .r3-shell .r3-messenger .rw-contact-meta strong{font-size:14px}
+ .r3-shell .r3-messenger .rw-contact-meta small{font-size:12px}
+ .r3-shell .r3-messenger .rw-messenger-header{min-height:66px}
+ .r3-shell .r3-messenger .r3-chat-heading strong{font-size:16px}
+ .r3-shell .r3-messenger .rw-chat-stream{overscroll-behavior:contain}
+ .r3-shell .r4-settings-body{padding:12px}
+ .r3-shell .r4-task-item{padding:10px 12px}
+ .r3-shell .r4-settings .team-form input,.r3-shell .r4-settings .team-form textarea,.r3-shell .r4-settings .team-form select{font-size:16px}
+}
+
+/* Hermes R1: explicit human-triggered agent run; never indicate synthetic AI output. */

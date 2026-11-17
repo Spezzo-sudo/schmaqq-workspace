@@ -1,4 +1,121 @@
 {
+  "conversations_planning_20261117": {
+    "state": "feature_branch_pending_owner_review",
+    "branch": "feat/guru-plans-20261117 (contains feat/conversations-team-20261117 and feat/agent-messenger-foundation-20261116)",
+    "implemented": [
+      "One group chat per project plus private one-to-one chats (chat_private, pinned schema extension); private messages are delivered, counted, quoted, exported and signalled only to their two participants and never enter another person's agent context",
+      "'@Name' in the group chat addresses an agent; question and answer stay in the group",
+      "Agents belong to the project; whoever asks gets the answer on their own AI access",
+      "The project lead is a flag on the agent: fully editable, never removed, can always plan",
+      "One side list (group chat, team, people) with a single highlight; formatted agent answers; folded long texts",
+      "Live signals over /api/live (no content), regular refresh stays as a safety net and relaxes only while heartbeats arrive",
+      "Planning: the lead turns a goal into two to six tasks with a checkable result and an owner in one run; accepting creates exactly those tasks once",
+      "Tools are one list in Studio; worker and adapter take descriptions per run",
+      "Only usable models are offered (STUDIO_AGENT_MODELS); an unusable profile model falls back to the default; a provider refusal is a failed run, never a posted answer",
+      "Model names may take the routed form 'vendor/model:variant' (e.g. OpenRouter), in Studio and in the worker"
+    ],
+    "verification": {
+      "regression": "npm run studio:verify under Node 24.22.0",
+      "pilot": "Installed on the isolated pilot. Real requests at 390 px: '@Mara' in the group chat answered as a formatted list after 10 s; the lead produced a three-task plan card in one run of 22 s",
+      "live_signals": "Two local browser windows: a new message appears in the second after 0.4 to 1.2 s"
+    },
+    "limits": [
+      "The server workshop does not program by itself: coding runs exist only for a personal PC runner and are deliberately blocked on the server worker until they run under the member's own sign-in through the launcher. Agents therefore plan and advise; they do not change code yet",
+      "The pilot's quick tunnel holds the live connection back; behind the production proxy it is unverified",
+      "Message search left the side list and is not back elsewhere yet",
+      "Agents are off in production until a worker is bound there",
+      "No real Android keyboard test",
+      "Scaling, not built yet: workers connect only from the same machine (no laptop worker), one worker per person from a server file, one server-wide model list; providers via API key or OpenRouter need per-worker model lists (see docs/HANDOFF-AGENTS.md)"
+    ],
+    "production_changed": false,
+    "main_changed": false
+  },
+  "agent_messenger_foundation_20261116": {
+    "state": "feature_branch_pending_owner_review",
+    "branch": "feat/agent-messenger-foundation-20261116",
+    "base_branch": "ccr-272a6789-oo61vk (PR #87)",
+    "implemented": [
+      "Agent runs, work steps and task proposals live in their own tables (agent_runs, agent_run_steps, agent_proposals); pilot records are copied once from workspace_meta and the old rows stay for a rollback",
+      "The tables are an optional pinned schema extension (selfhost/deploy/schema-agent-extension.v1.json): created only where a worker is bound to a person, accepted by the release preflight only complete and exact",
+      "Requests queue per person (up to five, one answer at a time) instead of being refused; failed or stopped requests can be tried again for the same message",
+      "The worker's request for work is held open (up to 25 s), so an answer starts without polling delay; the worker also receives the earlier exchange between the person and the agent",
+      "Worker requests that passed a reverse proxy or tunnel are refused, not only non-loopback ones; /api/agent-worker/* is the engine-neutral path and /api/hermes-worker/* stays as alias for the installed pilot worker",
+      "The worker writes the redacted tail of the engine's error output to its service journal when a run fails and retries the final report on network errors",
+      "Messenger: calm bubbles, a work line per request (waiting, working with seconds, steps, stop, retry), a working bubble, a clearer approval card and a working mark in the chat overview; a message to your own agent requests the answer by itself",
+      "Reachability of a person's AI access is shown (ready / not reachable) instead of always 'ready'",
+      "Live activity: while an agent works the chat names what it is doing right now (work line with steps, pill at the end of the chat, chat head, lists)",
+      "Project lead: every new project starts with Herr Grau as its lead, owned by the person who opens it; pinned and set apart in the lists; existing projects offer to add him",
+      "The project name appears once, as a heading; the group chat is called 'Gruppenchat'"
+    ],
+    "verification": {
+      "regression": "npm run studio:verify under Node 24.22.0; new tests in agent-run-http.test.mjs, agent-activity.test.mjs, schema-agent-profile.test.mjs",
+      "browser": "Chromium 1440x900 and 390x844 against an isolated local database with a scripted stand-in worker: accept proposal, live arrival of an answer, stop, retry; no horizontal overflow, no console errors",
+      "pilot": "Installed on the isolated pilot (backend :14439, worker a) on 2026-11-16: earlier runs and proposals taken over, schema preflight PASS with agentExtension complete; one real request through the pilot link at 390 px: picked up in under a second, live activity shown, proposal card after 15 s, no console errors"
+    },
+    "limits": [
+      "Answers still arrive as a whole, not word by word; the engine's one-shot interface offers no stream",
+      "The adapter still pins engine internals (tool search off, own toolset); the start check stops the worker if an engine update breaks this, and Studio then shows the access as not reachable",
+      "operator-install-worker.sh hashes are not updated: installing the new worker needs a separate operator step",
+      "GitHub runs the full check only for pull requests to main; this stacked branch was checked locally",
+      "No real Android keyboard test"
+    ],
+    "production_changed": false,
+    "main_changed": false,
+    "schema_migration": "optional extension, created only where agent workers are configured",
+    "model_calls": "one real request on the pilot with the owner's own account"
+  },
+  "hermes_tool_gateway_r1_20261116": {
+    "state": "feature_branch_pending_owner_review",
+    "branch": "ccr-272a6789-oo61vk",
+    "base_branch": "feat/hermes-agent-queue-20261116",
+    "implemented": [
+      "Two Studio tools only (project.read_context, task.propose), granted per run at claim time solely to agents with manageTasks whose owner may develop; all other agents stay no-tools",
+      "Lease-bound /api/hermes-worker/tool: project/agent/owner bound to the run, strict zod args, per-run limits, callId idempotency, audit in the run record",
+      "Proposals stay drafts until a successful still-authorised finish; cancel/fail/timeout/revocation never publish a card",
+      "Chat proposal card; only the commissioning person with develop decides; acceptance uses the existing room task path once (source-task dedupe)",
+      "Worker passes tool calls over fd 3; the model process never holds the Studio token; Python adapter registers the toolset via the Hermes v0.20.5 registry and --check requires exactly two exposed tools"
+    ],
+    "verification": {
+      "regression": "selfhost/hermes-tool-bridge.test.mjs (isolated SQLite, two accounts, mock model through real worker and python adapter against a Hermes v0.20.5 API stub)",
+      "browser": "390px Chromium check of pending and accepted card on an isolated test database",
+      "hermes_api": "Checked against Hermes Agent source tag v2026.8.19 (pyproject 0.20.5); not executed against the installed pilot runtime"
+    },
+    "limits": [
+      "operator-install-worker.sh hashes intentionally not updated: re-staging needs separate operator review and the --check on the real pilot runtime",
+      "No real model call made; first live tool run needs owner approval"
+    ],
+    "production_changed": false,
+    "main_changed": false,
+    "schema_migration": false,
+    "model_calls": false
+  },
+  "messenger_r4_20261116": {
+    "state": "feature_branch_pending_owner_mobile_qa",
+    "branch": "feat/studio-mobile-messenger-r4-20261116",
+    "base_branch": "main",
+    "implemented": [
+      "Group chat header names the actual project; the shared project-wide visibility of addressed messages remains explicit",
+      "Actual message excerpts and unread badges in global project/agent list and each project contact/channel list",
+      "Separate per-member/chat read receipts and installation-wide initial baseline in existing SQLite workspace_meta, not members.seen (presence); no new tables",
+      "Actionable task-only Wartet auf dich; compact task/overview cards retaining full original details behind tap",
+      "Project settings organized into accessible sections for profile, setup, team rights, technical workshop and reversible archive"
+    ],
+    "verification": {
+      "regression": "selfhost/messenger-r4.test.mjs (two real HTTP accounts, SQLite, auth, cross-chat read cursors, equal timestamp, new project unread)",
+      "ci": "GitHub Actions status and result are tracked on PR #85, not duplicated as an unverified permanent claim",
+      "browser": "R3 reference screenshots exist in docs/evidence/messenger-r3; R4 has not yet been independently clicked on a real 390px phone or a desktop browser"
+    },
+    "limits": [
+      "Agent profiles and handoffs are not autonomous model executions; live work cards and agent-to-agent execution are future steps",
+      "No separately hosted persistent full-stack staging backend or R4 preview is proven",
+      "Project addresses are visible to authorized project members, not private DMs",
+      "Production, main and the VPS remain unchanged by this feature branch"
+    ],
+    "production_changed": false,
+    "main_changed": false,
+    "schema_migration": false,
+    "model_calls": false
+  },
   "messenger_r3_20261115": {
     "state": "implemented_on_feature_branch_verified_not_production_deployed",
     "branch": "feat/studio-messenger-r3-20261115",

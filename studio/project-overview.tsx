@@ -18,7 +18,7 @@ export default function ProjectOverview({room,tasks,events,active,members,resour
  const working=[...active.filter(j=>runningLabels[j.action]).map(j=>({id:j.id,task:j.task,action:j.action})),...room.runs.filter(r=>r.status==='queued'||r.status==='running').map(r=>({id:r.id,task:r.task,action:'codex'}))];
  const human=events.map(e=>({...e,body:humanEvent(e.kind,e.body)})).filter((e):e is TeamEvent=>!!e.body);
  const groups=groupEvents(human,titles),shown=all?groups:groups.slice(0,5);
- const row=({task,summary}:{task:TeamTask;summary:{text:string}})=><li key={task.id}><button className="team-work-card" onClick={()=>onOpenTask(task)}><span><strong>{task.title}</strong><small>{summary.text}</small></span><ChevronRight size={17} aria-hidden="true"/></button></li>;
+ const row=({task,summary}:{task:TeamTask;summary:{text:string}})=><li key={task.id}><button className="team-work-card r4-task-item" title={task.title} onClick={()=>onOpenTask(task)}><span><strong>{task.title}</strong><small>{summary.text}</small></span><ChevronRight size={17} aria-hidden="true"/></button></li>;
  return <div className="project-overview">
   <p className="r3-panel-intro">{room.project.description||'Aufgaben, laufende Arbeit und Entscheidungen in diesem Projekt.'}</p>
   <section aria-labelledby="po-mine"><h2 id="po-mine">Bei dir</h2>

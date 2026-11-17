@@ -7,7 +7,7 @@ import {
 import {
  agentRoleLabels,agentCapabilityLabels,agentContextSourceLabels,agentPermissionLabels,
  agentEffectivePermissions,agentExecutionStatus,time,
- type RoomAgent,type RoomAgentPermissions,type RoomState,type Resource
+ type RoomAgent,type RoomAgentPermissions,type RoomState,type Resource,type HermesAvailability
 } from './room-model';
 
 export function AgentAvatar({
@@ -227,9 +227,9 @@ export function AgentProfileView({
  onEdit,
  onOpenAvatarPicker,
  onAddressInChat,
- onActAsAgent,
  onOpenTask,
- onClose
+ onClose,
+ hermes=null
 }:{
  agent:RoomAgent;
  room:RoomState;
@@ -238,13 +238,13 @@ export function AgentProfileView({
  onEdit:()=>void;
  onOpenAvatarPicker:()=>void;
  onAddressInChat:()=>void;
- onActAsAgent:()=>void;
  onOpenTask:(taskId:string)=>void;
  onClose:()=>void;
+ hermes?:HermesAvailability|null;
 }){
  const preset=findAvatarPreset(agent.avatarPresetId);
  const perms:RoomAgentPermissions=agentEffectivePermissions(agent);
- const execStatus=agentExecutionStatus(agent,room,resources);
+ const execStatus=agentExecutionStatus(agent,room,resources,hermes);
  const assignedDevice=agent.modelDevice?resources.find(r=>r.device===agent.modelDevice):null;
 
  const agentMessages=room.messages.filter(m=>m.senderAgent===agent.id||m.recipient===agent.id||m.handoff?.toAgent===agent.id);
@@ -293,7 +293,6 @@ export function AgentProfileView({
     </dl>
     <div className="rw-fg-profile-quick-actions">
      <button type="button" className="rw-button lime" onClick={onAddressInChat}><MessageSquare size={15}/>Zum Chat mit {agent.name}</button>
-     {canDevelop&&perms.writeMessages&&<button type="button" className="rw-button subtle" onClick={onActAsAgent}><UserCheck size={15}/>Beitrag für {agent.name} verfassen</button>}
      {canDevelop&&<button type="button" className="rw-button subtle" onClick={onEdit}><Wrench size={15}/>Eigenschaften anpassen</button>}
     </div>
    </div>
@@ -311,7 +310,11 @@ export function AgentProfileView({
      <div>
       <dt>Tatsächlicher Modellzugang</dt>
       <dd>
-       {execStatus.modelAvailable
+       {execStatus.via==='hermes'
+        ?execStatus.modelAvailable||execStatus.state==='running'
+         ?<span className="rw-fg-ok">Verbunden – antwortet, wenn du schreibst</span>
+         :<span className="rw-fg-warn">Verbunden, aber gerade nicht erreichbar</span>
+        :execStatus.modelAvailable
         ?<span className="rw-fg-ok">Verfügbar über verbundenen Rechner{assignedDevice?` (${assignedDevice.name})`:''}</span>
         :<span className="rw-fg-warn">Kein verbundener Runner für <code>{agent.model}</code> aktiv – dient zur Planung & manuellen Koordination</span>}
       </dd>

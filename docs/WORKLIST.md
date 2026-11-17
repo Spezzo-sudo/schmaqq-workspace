@@ -18,7 +18,17 @@ Etappen und Entscheide: [PLAN.md](PLAN.md). Iststand mit Nachweisen: [STATUS.jso
 Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, schreibt sich unter „In Arbeit“ ein
 (z. B. „Claude Code – Aufräumen“ oder „Codex – Messenger-Feinschliff“).
 
-**In Arbeit:** –
+**In Arbeit:** Claude Code – Release-Kandidat `feat/guru-plans-20261117` abschliessen (übernimmt die Konsolidierung von Codex aus #90): Prüfung, Pilot nachziehen, Pull Request nach `main`. Übergabe und Skalierungsgrenzen: [HANDOFF-AGENTS.md](HANDOFF-AGENTS.md).
+
+**Gemeinsame Grundlage:** Der Guru-Branch enthält den Gesprächs-/Team-Branch (GitHub-Vergleich: vier Commits voraus, keiner zurück). Frühere Messenger-Arbeitsaufträge sind daher keine parallelen Bauaufträge. Vor dem Schliessen älterer PRs deren Einbeziehung einzeln prüfen.
+
+**Nächste Schritte:**
+- Widersprüche zwischen Arbeitsliste, Workflow und STATUS.json bereinigen; historische Evidence als solche erhalten.
+- Backend prüfen: private Chats, Auftraggeber/Kontingent, Freigaben, wiederholte Planannahme, Abbruch und Fehlerzustände.
+- Danach Messenger am Handy und Desktop prüfen und konkrete Befunde beheben.
+- Einen konsolidierten Release-Kandidaten mit gültigen Prüfbelegen zur Owner-Abnahme vorlegen.
+
+**Abgrenzung:** Der Pilot ist nicht automatisch der aktuelle GitHub-Stand. Laufende Dienste erst anhand aktueller Evidence zuordnen; keine Vorschau ohne Zuordnung stoppen. Merge und Livegang folgen weiterhin WORKFLOW.md/OPERATIONS.md.
 
 1. [ ] Aufräumen: Probeprojekt (TEST-UX-Reste) entfernen, Klimafinder frisch starten (Owner-Ja nötig, nicht umkehrbar).
 2. [ ] GitHub-Prüfung stabil: restliche feste Test-Ports (44xxx) durch vom System vergebene Ports ersetzen.
@@ -27,7 +37,7 @@ Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, sch
 4. [ ] Hermes-Test: eine abgeschottete Hermes-Agent-Instanz pro Person (eigener Ordner, keine Shell, kein Root,
    Speichergrenze, Start bei Bedarf), Anmeldung mit dem eigenen ChatGPT-Konto über Studio, Studio-Werkzeuge per MCP,
    RAM gemessen. Ergebnis entscheidet den Motor; Ersatz ist Codex direkt.
-5. [ ] Agent antwortet über diesen Motor, mit Live-Arbeitskarte.
+5. [ ] Agent antwortet über diesen Motor, mit Live-Arbeitskarte. (Im Pilot erledigt; Arbeitszeile gebaut auf `feat/agent-messenger-foundation-20261116`, noch nicht auf dem Pilot installiert.)
 6. [ ] Freigabekarten und Studio-Werkzeuge für Agenten.
 7. [ ] Agent ↔ Agent als mitlesbarer Chat mit Rundenlimit und Stopp.
 

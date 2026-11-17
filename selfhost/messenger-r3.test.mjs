@@ -12,7 +12,7 @@ import {readRoomRoute,roomResumeURL,agentExecutionStatus} from '../studio/room-m
 const room={members:[{id:'alice',name:'Alice'},{id:'removed',removed:true}],agents:[{id:'mara',active:true},{id:'archived',active:false}],tasks:[{id:'task-1'}]};
 
 test('R3: conversation URLs validate both syntax and current project membership',()=>{
- for(const filter of [{kind:'all'},{kind:'handoffs'},{kind:'member',id:'alice'},{kind:'agent',id:'mara'},{kind:'topic',taskId:'task-1'}]){
+ for(const filter of [{kind:'all'},{kind:'member',id:'alice'},{kind:'agent',id:'mara'},{kind:'topic',taskId:'task-1'}]){
   assert.deepEqual(readMessengerFilter('?chat='+encodeURIComponent(messengerFilterKey(filter)),room),filter);
  }
  for(const value of ['member:removed','agent:archived','agent:foreign','topic:foreign','https://example.invalid','agent:../../secrets','member:alice:extra']){
@@ -24,14 +24,14 @@ test('R3: composer view transitions reset recipient and task together',()=>{
  assert.deepEqual(messengerComposerTarget({kind:'agent',id:'mara'}),{recipient:'mara',topicTask:''});
  assert.deepEqual(messengerComposerTarget({kind:'member',id:'alice'}),{recipient:'alice',topicTask:''});
  assert.deepEqual(messengerComposerTarget({kind:'topic',taskId:'task-1'}),{recipient:'',topicTask:'task-1'});
- for(const kind of ['all','handoffs'])assert.deepEqual(messengerComposerTarget({kind}),{recipient:'',topicTask:''});
+ for(const kind of ['all'])assert.deepEqual(messengerComposerTarget({kind}),{recipient:'',topicTask:''});
 });
 
 test('R3: drafts are separate by user, project and conversation view; existing group drafts survive',()=>{
  assert.equal(messengerDraftKey('u1','p1',{kind:'all'}),'room-chat:u1:p1');
  const keys=new Set();
- for(const user of ['u1','u2'])for(const project of ['p1','p2'])for(const filter of [{kind:'all'},{kind:'handoffs'},{kind:'agent',id:'mara'},{kind:'member',id:'alice'},{kind:'topic',taskId:'task-1'}])keys.add(messengerDraftKey(user,project,filter));
- assert.equal(keys.size,20);
+ for(const user of ['u1','u2'])for(const project of ['p1','p2'])for(const filter of [{kind:'all'},{kind:'agent',id:'mara'},{kind:'member',id:'alice'},{kind:'topic',taskId:'task-1'}])keys.add(messengerDraftKey(user,project,filter));
+ assert.equal(keys.size,16);
 });
 
 test('R3: bookmark and login restoration preserve inspector and addressed view safely',()=>{
@@ -68,6 +68,19 @@ test('R3: a shared model must not make unrelated personas appear to be working',
  assert.equal(agentExecutionStatus(agent,[run],[]).state,'idle');
  assert.equal(agentExecutionStatus(agent,[{...run,agentId:'another-agent'}],[]).state,'idle');
  assert.equal(agentExecutionStatus(agent,[{...run,agentId:'mara'}],[]).state,'running');
+});
+
+test('R5: a bound model worker shows ready-on-request and only a run for this exact agent as working',()=>{
+ const agent={id:'mara',model:'fixture-model',capabilities:[]};
+ const hermesRun={id:'h1',agent:'mara',status:'running',model:'fixture-model'};
+ assert.equal(agentExecutionStatus(agent,[],[],null).state,'idle');
+ assert.equal(agentExecutionStatus(agent,[],[],{configured:false,runs:[]}).state,'idle');
+ const ready=agentExecutionStatus(agent,[],[],{configured:true,runs:[]});
+ assert.deepEqual([ready.state,ready.via,ready.label],['ready','hermes','Bereit']);
+ assert.equal(agentExecutionStatus(agent,[],[],{configured:true,runs:[{...hermesRun,agent:'other'}]}).state,'ready');
+ assert.equal(agentExecutionStatus(agent,[],[],{configured:true,runs:[{...hermesRun,status:'completed'}]}).state,'ready');
+ const busy=agentExecutionStatus(agent,[],[],{configured:true,runs:[hermesRun]});
+ assert.deepEqual([busy.state,busy.via],['running','hermes']);
 });
 
 async function fixture(t){
@@ -110,7 +123,7 @@ test('R3 real SQLite: messages, replies, profiles and task references survive re
  assert.equal(result.data.messages.find(m=>m.id===payload.id).recipient,agent.data.agentId);
  assert.equal(result.data.messages.find(m=>m.id===payload.id).topicTask,task.data.task);
  assert.equal(result.data.messages.find(m=>m.id==='r3-reply').replyTo,payload.id);
- assert.equal(result.data.agents[0].avatarPresetId,'mara');
+ assert.deepEqual(result.data.agents.map(a=>a.avatarPresetId),['herr-grau','mara'],'the project lead plus the saved profile');
  assert.equal((await f.get('/api/room?project='+project)).status,401);
  assert.equal((await f.post({action:'roles',project,member:visitor.id,roles:[]},alice.cookie,'/api/project-roles')).status,200);
  assert.equal((await f.get('/api/room?project='+project,visitor.cookie)).status,403);

@@ -123,15 +123,15 @@ test('project messenger & Field Guild R2 profiles: configurable agent profiles, 
  const coordConflict=await post({...coordPayload,name:'Anderer Name'},marco.cookie);
  assert.equal(coordConflict.status,409);
 
- // Markus creates "Herr Grau" with full Field Guild R2 profile fields (character chosen independently of role/model)
+ // Markus creates "Frau Kern" (the lead Herr Grau exists once per project) with full Field Guild R2 profile fields (character chosen independently of role/model)
  const grauRes=await post({
   action:'agent',
   id:'op-agent-grau',
   project,
-  name:'Herr Grau',
+  name:'Frau Kern',
   nickname:'Der Prüfer',
-  avatar:'HG',
-  avatarPresetId:'herr-grau',
+  avatar:'FK',
+  avatarPresetId:'frau-kern',
   role:'advisor',
   model:'gpt-4.1',
   purpose:'Prüft Architektur, Systemgrenzen und mobile Bedienbarkeit',
@@ -278,9 +278,9 @@ test('project messenger & Field Guild R2 profiles: configurable agent profiles, 
  assert.equal(agentEffectivePermissions(coord).delegateAgents,true);
 
  const grau=roomState.data.agents.find(a=>a.id===revAgentId);
- assert.equal(grau.name,'Herr Grau');
+ assert.equal(grau.name,'Frau Kern');
  assert.equal(grau.nickname,'Der Prüfer');
- assert.equal(grau.avatarPresetId,'herr-grau');
+ assert.equal(grau.avatarPresetId,'frau-kern');
  assert.equal(grau.role,'advisor');
  assert.equal(grau.personality,'Trocken, präzise, skeptisch gegenüber unnötiger Komplexität');
  assert.deepEqual(grau.contextSources,['messages','tasks','decisions','repository','runs']);
@@ -312,9 +312,10 @@ test('project messenger & Field Guild R2 profiles: configurable agent profiles, 
 
  // Verify pure filter helpers on the returned messages
  assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'all'}).length,2);
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'handoffs'}).length,1);
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'member',id:markus.id}).length,1);
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'agent',id:revAgentId}).length,1);
+ // Both messages were written in the group chat (addressed, not private), so the one-to-one chats stay empty.
+ assert.deepEqual(roomState.data.messages.map(m=>m.scope),['group','group']);
+ assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'member',id:markus.id}).length,0);
+ assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'agent',id:revAgentId}).length,0);
  assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'topic',taskId}).length,2);
  assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'all'},'Viewport-Prüfung').length,0);
  assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'all'},'mobilen Abstände').length,1);

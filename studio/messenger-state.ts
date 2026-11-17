@@ -9,7 +9,6 @@ export function messengerFilterKey(filter:MessengerFilter):string{
 
 export function readMessengerFilter(search:string,room?:Pick<RoomState,'members'|'agents'|'tasks'>):MessengerFilter{
  const value=new URLSearchParams(search).get('chat')??'all';
- if(value==='handoffs')return {kind:'handoffs'};
  const match=/^(member|agent|topic):([\w-]{1,100})$/.exec(value);
  if(!match)return {kind:'all'};
  const [,kind,id]=match;

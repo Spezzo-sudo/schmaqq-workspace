@@ -1,5 +1,5 @@
 import type {Task} from '../app/workspace-model';
-export type Room={id:string;title:string;description:string;color:string;stage:string;openTasks?:number;lastMessage?:number;practice?:boolean};
+export type Room={id:string;title:string;description:string;color:string;stage:string;openTasks?:number;lastMessage?:number;lastExcerpt?:string;unread?:number;practice?:boolean};
 export type RoomMember={id:string;name:string;role:string;seen:number;removed?:number|boolean;invitedBy?:string|null;projectRoles?:string[]};
 export type RoomAgentRole=
  |'coordinator'
@@ -14,7 +14,10 @@ export type RoomAgentRole=
  |'infrastructure'
  |'security'
  |'support'
- |'knowledge';
+ |'knowledge'
+ |'creative'
+ |'hr'
+ |'allrounder';
 export type RoomAgentCapability='chat'|'task-plan'|'task-delegate'|'code-work'|'review-support'|'context-read';
 export type RoomAgentContextSource='messages'|'tasks'|'decisions'|'notes'|'repository'|'runs';
 export type RoomAgentPermissions={
@@ -48,13 +51,21 @@ export type RoomAgent={
  updatedBy?:string;
  created:number;
  updated:number;
+ /** Server-set: the one project lead. */
+ lead?:boolean;
 };
 export type AgentHandoff={fromAgent?:string;toAgent:string;task?:string|null;summary:string;status:'delegated'|'in_progress'|'completed'|'requested'|'stopped'};
-export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;senderAgent?:string|null;handoff?:AgentHandoff|null};
+export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;sequence?:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;scope?:string;senderAgent?:string|null;handoff?:AgentHandoff|null;proposalCard?:AgentTaskProposal|null};
+/** Hermes task proposal shown in the chat. Server decides `canDecide`; a proposal is never a task until accepted. */
+export type AgentPlan={tasks:{title:string;done_when:string;kind:'general'|'code';who:string}[];hire:{role:string;why:string}[]};
+export type AgentTaskProposal={id:string;title:string;description:string;kind:'general'|'code'|'plan';status:'pending'|'accepted'|'rejected';task:string|null;tasks?:string[];plan?:AgentPlan;agent:string;owner:string;canDecide:boolean};
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
 export type RoomRun={id:string;agentId?:string|null;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;updated?:number;task:string|null};
-export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[]};
+/** One answer an agent owes to one message. Only the person who asked sees their runs. */
+export type AgentRunStep={tool:string;at:number};
+export type HermesAgentRun={id:string;owner:string;project:string;agent:string;message:string;model:string;status:'queued'|'running'|'cancelling'|'completed'|'failed'|'cancelled';created:number;updated:number;started?:number|null;finished?:number|null;position?:number|null;steps?:AgentRunStep[];completedMessage:string|null;errorCode:string|null};
+export type RoomState={project:Room;meta:{revision:number;repository:string|null;base?:string;workflow?:string};messages:RoomMessage[];more:boolean;tasks:Task[];notes:RoomNote[];links:RoomLink[];members:RoomMember[];agents?:RoomAgent[];runs:RoomRun[];unread?:Record<string,number>};
 /** Server-computed: ready only after a passed trial run on the shared main state. */
 export type WorkshopReadiness={ready:boolean;missing:string;probe:{id:string;state:'ok'|'running'|'failed';at:number;error?:string}|null};
 export type Resource={team?:boolean;device:string;owner:string;ownerName:string;name:string;online:boolean;status:string;models:string[];projects:string[];codex:string;allowTeam:boolean;grants:string[];development?:{id:string;setupVersion?:number;check:boolean;preview:boolean;allowCodex:boolean;readiness?:WorkshopReadiness;publish:boolean}[]};
@@ -124,7 +135,10 @@ export const agentRoleLabels:Record<RoomAgentRole,string>={
  infrastructure:'Infrastruktur / Systeme',
  security:'Security',
  support:'Support',
- knowledge:'Wissen / Dokumentation'
+ knowledge:'Wissen / Dokumentation',
+ creative:'Kreation',
+ hr:'Personal (HR)',
+ allrounder:'Allrounder'
 };
 
 export const agentCapabilityLabels:Record<RoomAgentCapability,string>={
@@ -177,11 +191,69 @@ export function agentEffectivePermissions(agent?:Partial<RoomAgent>|null):RoomAg
  };
 }
 
-export function agentExecutionStatus(agent:RoomAgent,roomOrRuns:RoomState|RoomRun[]=[],resources:Resource[]=[]):{
+/** The viewer's own AI access: configured = a worker is bound to this person, online = it asked for work recently. */
+export type HermesAvailability={configured:boolean;online?:boolean;runs:HermesAgentRun[]};
+export const agentRunActive=(run:Pick<HermesAgentRun,'status'>)=>run.status==='queued'||run.status==='running'||run.status==='cancelling';
+const agentStepLabels:Record<string,string>={'project.read_context':'Projektstand gelesen','task.propose':'Aufgabe vorgeschlagen','plan.propose':'Plan vorgeschlagen'};
+export const agentStepLabel=(tool:string)=>agentStepLabels[tool]??'Arbeitsschritt';
+export function workDuration(ms:number){
+ const seconds=Math.max(1,Math.round(ms/1000));
+ if(seconds<60)return seconds+' s';
+ const rest=seconds%60;
+ return Math.floor(seconds/60)+' min'+(rest?' '+rest+' s':'');
+}
+const agentRunFailures:Record<string,string>={
+ timeout:'Das hat zu lange gedauert.',
+ 'provider-unavailable':'Der KI-Zugang war nicht erreichbar.',
+ 'model-unavailable':'Das gewählte Modell steht deinem KI-Zugang nicht zur Verfügung. Wähle im Profil des Agenten ein anderes.',
+ 'quota-exceeded':'Das Kontingent deines KI-Zugangs ist aufgebraucht.',
+ 'protocol-error':'Die Antwort kam unvollständig an.'
+};
+/** What the agent is doing right now, derived from the steps it has really finished. */
+export function agentLiveActivity(run:Pick<HermesAgentRun,'status'|'steps'>):string{
+ if(run.status==='queued')return 'Wartet auf den Start';
+ if(run.status==='cancelling')return 'Wird gestoppt';
+ const last=run.steps?.at(-1)?.tool;
+ if(last==='task.propose')return 'Schreibt die Antwort zum Vorschlag';
+ if(last==='plan.propose')return 'Schreibt die Antwort zum Plan';
+ if(last==='project.read_context')return 'Überlegt mit dem Projektstand';
+ return 'Liest deine Nachricht';
+}
+/** The team is built like a small company: the lead on top, then departments the owner fills as needed. */
+export const agentDepartments:{id:string;label:string;roles:RoomAgentRole[]}[]=[
+ {id:'build',label:'Entwicklung',roles:['developer','frontend','debugger','infrastructure']},
+ {id:'safety',label:'Sicherheit & Prüfung',roles:['security','reviewer']},
+ {id:'research',label:'Forschung & Wissen',roles:['researcher','knowledge']},
+ {id:'creative',label:'Kreation',roles:['creative']},
+ {id:'advice',label:'Beratung & Strategie',roles:['advisor','strategy']},
+ {id:'doing',label:'Macher & Betrieb',roles:['operations','support','coordinator']},
+ {id:'people',label:'Personal',roles:['hr']},
+ {id:'allround',label:'Allrounder',roles:['allrounder']}
+];
+export const agentDepartment=(agent:Pick<RoomAgent,'role'>)=>agentDepartments.find(d=>d.roles.includes(agent.role))??agentDepartments.at(-1)!;
+/** Every project has exactly one lead who speaks for the team. Face, name and model are free; Herr Grau is the default. */
+export const PROJECT_LEAD_PRESET='herr-grau';
+export const isProjectLead=(agent:{lead?:boolean}|null|undefined)=>agent?.lead===true;
+export const projectLead=<T extends {lead?:boolean;active?:boolean}>(agents:T[]|undefined)=>(agents??[]).find(a=>a.active!==false&&isProjectLead(a))??null;
+
+/** The one line a person reads about a run. No engine names, no technical codes. */
+export function agentRunSummary(run:HermesAgentRun,agentName:string,now:number,online=true):{tone:'waiting'|'working'|'done'|'failed'|'stopped';text:string;canStop:boolean;canRetry:boolean}{
+ if(run.status==='queued'){
+  const text=!online?`Wartet – der KI-Zugang von ${agentName} ist gerade nicht erreichbar`:(run.position??1)>1?`Wartet · Platz ${run.position}`:`${agentName} fängt gleich an`;
+  return {tone:'waiting',text,canStop:true,canRetry:false};
+ }
+ if(run.status==='running')return {tone:'working',text:`${agentName} arbeitet · ${workDuration(now-(run.started??run.created))}`,canStop:true,canRetry:false};
+ if(run.status==='cancelling')return {tone:'working',text:'Wird gestoppt …',canStop:false,canRetry:false};
+ if(run.status==='completed')return {tone:'done',text:`Hat ${workDuration((run.finished??run.updated)-(run.started??run.created))} gearbeitet`,canStop:false,canRetry:false};
+ if(run.status==='cancelled')return {tone:'stopped',text:'Gestoppt',canStop:false,canRetry:true};
+ return {tone:'failed',text:'Keine Antwort. '+(agentRunFailures[run.errorCode??'']??'Dabei ist ein Fehler passiert.'),canStop:false,canRetry:true};
+}
+export function agentExecutionStatus(agent:RoomAgent,roomOrRuns:RoomState|RoomRun[]=[],resources:Resource[]=[],hermes:HermesAvailability|null=null):{
  state:'running'|'ready'|'idle';
  label:string;
  detail:string;
  modelAvailable:boolean;
+ via:'runner'|'hermes'|null;
  connectedResource:Resource|null;
  activeRuns:RoomRun[];
  completedRuns:RoomRun[];
@@ -196,12 +268,23 @@ export function agentExecutionStatus(agent:RoomAgent,roomOrRuns:RoomState|RoomRu
   ??null;
  const modelAvailable=Boolean(matchingResource&&matchingResource.online);
  if(activeRuns.length>0){
-  return {state:'running',label:'Modelllauf aktiv',detail:`Läuft tatsächlich auf ${activeRuns[0].deviceName} (${agent.model})`,modelAvailable,connectedResource:matchingResource,activeRuns,completedRuns};
+  return {state:'running',label:'Modelllauf aktiv',detail:`Läuft tatsächlich auf ${activeRuns[0].deviceName} (${agent.model})`,modelAvailable,via:modelAvailable?'runner':null,connectedResource:matchingResource,activeRuns,completedRuns};
+ }
+ // Only a real queued/running run for exactly this agent counts as working.
+ const hermesActive=hermes?.runs.some(r=>r.agent===agent.id&&(r.status==='queued'||r.status==='running'||r.status==='cancelling'))??false;
+ if(hermesActive){
+  return {state:'running',label:'Arbeitet gerade',detail:`Arbeitet gerade an deiner Nachricht (${agent.model})`,modelAvailable:true,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
  }
  if(modelAvailable){
-  return {state:'ready',label:'Zugang verbunden · Ruhend',detail:`Modell ${agent.model} erreichbar über ${matchingResource!.name} (keine aktive Ausführung)`,modelAvailable:true,connectedResource:matchingResource,activeRuns,completedRuns};
+  return {state:'ready',label:'Zugang verbunden · Ruhend',detail:`Modell ${agent.model} erreichbar über ${matchingResource!.name} (keine aktive Ausführung)`,modelAvailable:true,via:'runner',connectedResource:matchingResource,activeRuns,completedRuns};
  }
- return {state:'idle',label:'Inaktiv · Kein Live-Modell verbunden',detail:`Modell ${agent.model} als Profil hinterlegt – kein verbundener Modellzugang aktiv`,modelAvailable:false,connectedResource:matchingResource,activeRuns,completedRuns};
+ if(hermes?.configured&&hermes.online===false){
+  return {state:'idle',label:'Gerade nicht erreichbar',detail:'Der KI-Zugang antwortet im Moment nicht. Nachrichten warten, bis er wieder da ist.',modelAvailable:false,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
+ }
+ if(hermes?.configured){
+  return {state:'ready',label:'Bereit',detail:`Antwortet, wenn du ${agent.name} schreibst (${agent.model})`,modelAvailable:true,via:'hermes',connectedResource:matchingResource,activeRuns,completedRuns};
+ }
+ return {state:'idle',label:'Inaktiv · Kein Live-Modell verbunden',detail:`Modell ${agent.model} als Profil hinterlegt – kein verbundener Modellzugang aktiv`,modelAvailable:false,via:null,connectedResource:matchingResource,activeRuns,completedRuns};
 }
 
 export function memberRoleSummary(member:RoomMember):string{
@@ -216,7 +299,6 @@ export function memberRoleSummary(member:RoomMember):string{
 
 export type MessengerFilter=
  |{kind:'all'}
- |{kind:'handoffs'}
  |{kind:'member';id:string}
  |{kind:'agent';id:string}
  |{kind:'topic';taskId:string};
@@ -225,10 +307,11 @@ export function filterMessengerMessages(messages:RoomMessage[],filter:MessengerF
  const q=search.trim().toLowerCase();
  return messages.filter(m=>{
   if(q&&!m.body.toLowerCase().includes(q))return false;
-  if(filter.kind==='all')return true;
-  if(filter.kind==='handoffs')return Boolean(m.handoff||m.kind==='agent-handoff'||m.senderAgent||m.recipientKind==='agent'||m.kind==='ai-shared');
-  if(filter.kind==='member')return m.author===filter.id||m.recipient===filter.id;
-  if(filter.kind==='agent')return m.senderAgent===filter.id||m.recipient===filter.id||m.handoff?.toAgent===filter.id;
+  // The server names the conversation of every message it delivers: group | agent:<id> | member:<id>.
+  const scope=m.scope??'group';
+  if(filter.kind==='all')return scope==='group';
+  if(filter.kind==='member')return scope==='member:'+filter.id;
+  if(filter.kind==='agent')return scope==='agent:'+filter.id;
   if(filter.kind==='topic')return m.taskId===filter.taskId||m.topicTask===filter.taskId;
   return true;
  });

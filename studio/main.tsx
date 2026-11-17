@@ -10,6 +10,7 @@ import '../app/globals.css';
 import './brand.css';
 import './ui-preview.css';
 import './messenger-r3.css';
+import './messenger-r5.css';
 import type {ChatGPTUser} from '../app/chatgpt-auth';
 
 import {installStudioUIPreview} from './ui-preview-api';
