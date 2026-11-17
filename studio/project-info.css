@@ -1,0 +1,31 @@
+/* Project info: one calm page, from "what is going on" to the areas. */
+.pi{display:grid;gap:14px;padding-bottom:8px}
+.pi-hero{position:relative;text-align:center;padding:6px 44px 0}
+.pi-mark{display:grid;place-items:center;width:64px;height:64px;margin:0 auto 8px;border-radius:18px;background:#2f6f5e;color:#fff;font:800 22px/1 var(--schmaqq-sans,inherit)}
+.pi-hero h2{margin:0;font-size:21px}
+.pi-hero p{margin:4px 0 0;color:var(--schmaqq-muted);font-size:14px}
+.pi-more{position:absolute;top:0;right:0}
+.pi-menu{position:absolute;right:0;top:42px;z-index:5;min-width:210px;background:var(--schmaqq-paper-light);border:1px solid var(--schmaqq-rule-strong);border-radius:12px;box-shadow:0 10px 30px rgba(17,18,37,.16);padding:6px;display:grid}
+.pi-menu button{display:flex;gap:10px;align-items:center;min-height:44px;padding:0 12px;border:0;background:transparent;border-radius:8px;font:600 14px/1.2 var(--schmaqq-sans,inherit);color:inherit;text-align:left;cursor:pointer}
+.pi-menu button:hover{background:var(--schmaqq-paper)}.pi-menu .danger{color:#b4452f}
+.pi-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.pi-actions .rw-button{min-height:40px}
+.pi-actions .rw-button:disabled{opacity:.45;cursor:not-allowed}
+.pi-add{display:grid;gap:6px}
+.pi-add button,.pi-areas button,.pi-members button{width:100%;display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 12px;border:1px solid var(--schmaqq-rule);border-radius:12px;background:var(--schmaqq-paper-light);color:inherit;text-align:left;cursor:pointer;font:inherit}
+.pi-add button>span,.pi-members button>span:not(.rw-avatar):not(.rw-fg-avatar){flex:1;display:grid;gap:2px;min-width:0}
+.pi-add small,.pi-members small{color:var(--schmaqq-muted);font-size:13px}
+.pi-now{background:var(--schmaqq-paper);border-radius:14px;padding:10px 14px;display:grid;gap:4px;font-size:14px}
+.pi-now div{display:flex;justify-content:space-between}
+.pi-note{margin:4px 0 0;color:var(--schmaqq-muted);font-size:13px}
+.pi h3{font:700 11px/1 var(--schmaqq-mono,monospace);letter-spacing:.14em;text-transform:uppercase;color:var(--schmaqq-muted);margin:4px 2px 8px}
+.pi-members ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pi-members button:disabled{cursor:default}
+.pi-members strong{display:flex;align-items:center;gap:6px}
+.pi-areas{display:grid;gap:6px}
+.pi-areas button span{flex:1;font-weight:700}
+.pi-areas small{color:var(--schmaqq-muted);font-size:13px}
+/* Back from a project area to the project info. */
+.pi-back{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 10px;border:0;background:transparent;font:700 14px/1 var(--schmaqq-sans,inherit);color:inherit;cursor:pointer}
+.pi-members .rw-fg-avatar{flex:none!important;width:40px!important;height:40px!important}
+.pi-members button>span:not(.rw-fg-avatar):not(.rw-avatar){flex:1}

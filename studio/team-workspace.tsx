@@ -1,6 +1,6 @@
 import {liveConnected,onLiveSignal} from './live';
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {ArrowRight,BookOpen,Bot,CircleHelp,ChevronRight,Copy,Folder,Hash,Home,LayoutGrid,ListChecks,LogOut,MessageSquare,MessagesSquare,Plus,Search,Settings,UserRound,Users,FolderOpen,PanelRight} from 'lucide-react';
+import {ArrowRight,BookOpen,Bot,CircleHelp,ChevronLeft,ChevronRight,Info,Copy,Folder,Hash,Home,LayoutGrid,ListChecks,LogOut,MessageSquare,MessagesSquare,Plus,Search,Settings,UserRound,Users,FolderOpen,PanelRight} from 'lucide-react';
 import {taskSummary} from './task-next-step';
 import type {ChatGPTUser} from '../app/chatgpt-auth';
 import {hasDrafts,clearDrafts} from '../app/editor-drafts';
@@ -25,7 +25,9 @@ import TeamKnowledge from './team-knowledge';
 import RoomAssistant from './room-assistant';
 import CodexAccount from './codex-account';
 import AgentAccess from './agent-access';
-import {ChatsHome,AgentsPage,type WaitingItem} from './chats-home';
+import {ProjectList,type WaitingItem} from './chats-home';
+import ProjectInfo,{archiveProject,hireAgent} from './project-info';
+import SideMenu from './side-menu';
 import MessengerProjectNavigation from './messenger-project-nav';
 import {ProjectFiles} from './messenger-detail';
 import {Conversation,ResourceList,RoomModal,type Modal} from './room-components';
@@ -37,11 +39,11 @@ import './team-workflow.css';
 import './schmaqq-convergence.css';
 import './studio-navigation.css';
 const emptyTeam:TeamState={tasks:[],events:[]};
-const detailTitles:Record<string,string>={overview:'Projektübersicht',tasks:'Aufgaben',files:'Dateien',knowledge:'Wissen',activity:'KI & Kontext',connect:'Projekteinstellungen'};
+const detailTitles:Record<string,string>={overview:'Projektinfo',tasks:'Aufgaben',files:'Dateien und Code',knowledge:'Wissen',activity:'Projektinfo',connect:'Einstellungen'};
 export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;demoMode?:boolean}){
  const [route,setRoute]=useState(readRoomRoute),[rooms,setRooms]=useState<Room[]>([]),[room,setRoom]=useState<RoomState|null>(null),[team,setTeam]=useState<TeamState>(emptyTeam);
  const [resources,setResources]=useState<Resource[]>([]),[members,setMembers]=useState<RoomMember[]>([]),[error,setError]=useState(''),[connected,setConnected]=useState(false),[search,setSearch]=useState(''),[modal,setModal]=useState<Modal|null>(null);
- const [practice,setPractice]=useState<string|null>(null),[practiceBusy,setPracticeBusy]=useState(false),[spot,setSpot]=useState('');
+ const [wide,setWide]=useState(()=>window.matchMedia('(min-width:1200px)').matches),[infoHidden,setInfoHidden]=useState(false),[menuOpen,setMenuOpen]=useState(false),[practice,setPractice]=useState<string|null>(null),[practiceBusy,setPracticeBusy]=useState(false),[spot,setSpot]=useState('');
  const activeRoom=useRef(route.room);activeRoom.current=route.room;
  useEffect(()=>{
   const root=document.documentElement,previous=root.style.getPropertyValue('--r3-viewport');
@@ -49,6 +51,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
   resize();window.visualViewport?.addEventListener('resize',resize);window.addEventListener('resize',resize);
   return()=>{window.visualViewport?.removeEventListener('resize',resize);window.removeEventListener('resize',resize);previous?root.style.setProperty('--r3-viewport',previous):root.style.removeProperty('--r3-viewport');};
  },[]);
+ useEffect(()=>{const m=window.matchMedia('(min-width:1200px)'),f=()=>setWide(m.matches);m.addEventListener('change',f);return()=>m.removeEventListener('change',f);},[]);
  useEffect(()=>{roomRequest<{project:string|null}>('/api/practice').then(r=>setPractice(r.project)).catch(()=>{});},[]);
  // "Zeig mir wo": wait for the element on the target page, scroll to it and light it up briefly in lime.
  useEffect(()=>{if(!spot)return;let tries=0,timer:ReturnType<typeof setTimeout>;const look=()=>{const el=document.querySelector<HTMLElement>(spot);
@@ -73,7 +76,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
  function navigate(change:Partial<RoomRoute>){const next={...readRoomRoute(),...change};const url=new URL(location.href);if(change.room!==undefined&&change.room!==readRoomRoute().room)url.searchParams.delete('chat');for(const key of ['view','project','pane'])url.searchParams.delete(key);for(const k of ['room','tab','task','page'] as const){if(next[k])url.searchParams.set(k,next[k]);else url.searchParams.delete(k);}history.pushState(null,'',url);setRoute(next);}
  const goPage=(page:RoomPage)=>navigate({page,room:'',task:'',tab:'overview'});
  // Open a project group, optionally straight into one conversation (agent:<id>, member:<id>, all).
- const openChat=(project:string,chat?:string)=>{navigate({room:project,tab:'talk',task:'',page:'rooms'});if(chat){const url=new URL(location.href);url.searchParams.set('chat',chat);history.replaceState(null,'',url);setRoute(readRoomRoute());}};
+ const openChat=(project:string,chat?:string,extra:Record<string,string>={})=>{navigate({room:project,tab:'talk',task:'',page:'rooms'});if(chat||Object.keys(extra).length){const url=new URL(location.href);if(chat)url.searchParams.set('chat',chat);for(const [k,v] of Object.entries(extra))url.searchParams.set(k,v);history.replaceState(null,'',url);setRoute(readRoomRoute());}};
  const isHome=route.page==='rooms'&&!route.room,inProject=route.page==='rooms'&&!!route.room;
  const showWhere=(t:GuideTarget)=>{const target=(t.tab==='tasks'?practice??rooms.find(r=>!r.practice&&r.openTasks)?.id:undefined)??rooms.find(r=>!r.practice)?.id??practice??rooms[0]?.id??'';navigate(t.project?{page:'rooms',room:target,tab:t.tab??'overview',task:''}:{page:t.page??'rooms',room:'',tab:'overview',task:''});setSpot(t.selector);};
  async function startPractice(){setPracticeBusy(true);try{const r=await roomRequest<{project:string}>('/api/practice',{action:'start'});setPractice(r.project);await refresh();navigate({page:'rooms',room:r.project,tab:'overview',task:''});}catch(e){setError((e as Error).message);}finally{setPracticeBusy(false);}}
@@ -90,21 +93,25 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
  const projectEvents=team.events.filter(e=>e.project===route.room),owner=members.some(m=>m.id===user.userId&&m.role==='owner');
  const tab=route.tab==='results'?'tasks':route.tab,name=(id:string)=>members.find(m=>m.id===id)?.name??'Jemand';
  const openTask=(task:TeamTask,pane?:TaskPane)=>{const target=pane??(task.status==='review'?'review':undefined);navigate({room:task.project,task:task.id,tab:route.room===task.project&&route.tab==='overview'?'overview':'tasks',page:'rooms'});if(target){const url=new URL(location.href);url.searchParams.set('pane',target);history.replaceState(null,'',url);}};
+ const archive=(r:Room)=>void archiveProject(r.id,r.title).then(done=>{if(done){if(route.room===r.id)goPage('rooms');void refresh();}}).catch(e=>setError((e as Error).message));
+ const projectList=(compact:boolean)=><ProjectList rooms={rooms} members={members} userId={user.userId} active={route.room} waiting={waiting} compact={compact}
+  onOpen={id=>openChat(id,'all')} onInfo={id=>navigate({room:id,tab:'overview',task:'',page:'rooms'})} onArchive={archive}
+  onMemberChat={(project,member)=>openChat(project,'member:'+member)} onGeneral={()=>goPage('conversations')} onCreateProject={()=>setModal({kind:'room'})}/>;
+ // Wide screens keep the project info open beside the chat until it is closed.
+ const showInfo=tab==='overview'||tab==='activity'||(wide&&tab==='talk'&&!infoHidden);
+ const detailTab=tab==='talk'&&showInfo?'overview':tab;
  return <div className={'rw-shell team-shell r3-shell'+(route.room&&route.page==='rooms'?' r3-project':'')}>
   <aside className="rw-sidebar" aria-label="Workspace-Navigation">
    <div className="rw-brand"><StudioBrand compact onHome={()=>goPage('rooms')}/></div>
    <nav className="studio-global-links" aria-label="Hauptnavigation">
-    <button className={'rw-nav-home'+(isHome?' selected':'')} aria-current={isHome?'page':undefined} onClick={()=>goPage('rooms')}><MessagesSquare size={18}/>Chats</button>
-    <button className={'rw-nav-home'+(route.page==='agents'?' selected':'')} aria-current={route.page==='agents'?'page':undefined} onClick={()=>goPage('agents')}><Bot size={18}/>Agenten</button>
-    <button className={'rw-nav-home'+(route.page==='projects'||inProject?' selected':'')} aria-current={route.page==='projects'||inProject?'page':undefined} onClick={()=>goPage('projects')}><Folder size={18}/>Projekte</button>
-    <button className={'rw-nav-home'+(route.page==='account'||route.page==='team'?' selected':'')} aria-current={route.page==='account'||route.page==='team'?'page':undefined} onClick={()=>goPage('account')}><UserRound size={18}/>Konto</button>
+    <button className={'rw-nav-home'+(isHome||inProject?' selected':'')} aria-current={isHome?'page':undefined} onClick={()=>goPage('rooms')}><MessagesSquare size={18}/>Projekte</button>
    </nav>
    <div className="rw-sidebar-bottom">
     <button className={route.page==='guide'?'active':''} aria-current={route.page==='guide'?'page':undefined} onClick={()=>goPage('guide')}><CircleHelp size={18}/>So funktioniert Studio</button>
-    <div className="studio-profile-name">{user.displayName}</div>
+    <button className="studio-profile-name studio-profile-open" onClick={()=>setMenuOpen(true)}><span className="studio-menu-button" aria-hidden>{initials(user.displayName)}</span>{user.displayName}</button>
    </div>
   </aside>
-  <main className="rw-main" inert={modal||route.task?true:undefined}><header className="rw-topbar"><div className="studio-topbar-brand"><StudioBrand compact tag onHome={()=>goPage('rooms')}/></div><div className="rw-breadcrumb"><span>Studio</span><ChevronRight size={14}/><strong>{route.page==='guide'?'So funktioniert Studio':route.page==='team'?'Team':route.page==='account'?'Mein Konto':route.page==='conversations'?'Team-Chat':route.page==='projects'?'Projekte':route.page==='agents'?'Agenten':route.room?(room?.project.title??'Projekt'):'Chats'}</strong></div><span className={'rw-sync '+(connected?'ok':'')}>{connected?'Aktueller Stand geladen':'Verbindung wird geprüft'}</span><button className={'studio-account-button'+(route.page==='account'?' active':'')} aria-label={'Mein Konto ('+user.displayName+')'} aria-current={route.page==='account'?'page':undefined} onClick={()=>goPage('account')}>{initials(user.displayName)}</button></header>
+  <main className="rw-main" inert={modal||route.task?true:undefined}><header className="rw-topbar"><div className="studio-topbar-brand"><StudioBrand compact tag onHome={()=>goPage('rooms')}/></div><div className="rw-breadcrumb"><span>Studio</span><ChevronRight size={14}/><strong>{route.page==='guide'?'So funktioniert Studio':route.page==='team'?'Team':route.page==='account'?'Mein Konto':route.page==='conversations'?'Team-Chat':route.page==='projects'?'Projekte und Archiv':route.page==='agents'?'Kontakte':route.room?(room?.project.title??'Projekt'):'Chats'}</strong></div><span className={'rw-sync '+(connected?'ok':'')}>{connected?'Aktueller Stand geladen':'Verbindung wird geprüft'}</span><button className="studio-menu-button studio-topbar-menu" aria-label={'Menü öffnen ('+user.displayName+')'} aria-expanded={menuOpen} onClick={()=>setMenuOpen(true)}>{initials(user.displayName)}</button></header>
    {demoMode&&<div className="rw-demo-strip">ISOLIERTER PROBELAUF · Keine Verbindung zur Produktion</div>}
    {error&&<p className="rw-error global" role="alert">{error}<button className="rw-button" onClick={()=>void refresh()}>Erneut versuchen</button></p>}
    {route.page==='team'?<div className="rw-page team-page">
@@ -131,9 +138,9 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
     </details>
    </div>:
    route.page==='guide'?<GuidePage practice={practice} busy={practiceBusy} onShow={showWhere} onPractice={()=>void (practice?navigate({page:'rooms',room:practice,tab:'overview',task:''}):startPractice())} onDeletePractice={()=>void deletePractice()}/>:
-   route.page==='agents'?<AgentsPage rooms={rooms} onOpen={openChat} onCreateProject={()=>setModal({kind:'room'})}/>:
+   route.page==='agents'?projectList(false):
    route.page==='projects'?<div className="rw-page team-page studio-projects-page">
-    <div className="team-section-head"><h1>Projekte</h1><button className="rw-button lime" onClick={()=>setModal({kind:'room'})}><Plus size={17}/>Neues Projekt</button></div>
+    <div className="team-section-head"><h1>Projekte und Archiv</h1><button className="rw-button lime" onClick={()=>setModal({kind:'room'})}><Plus size={17}/>Neues Projekt</button></div>
         <section aria-label="Deine Projekte">{rooms.map(r=><button className="team-work-card" key={r.id} onClick={()=>openChat(r.id,'all')}><span><strong>{r.title}{r.practice&&<em className="studio-practice-tag">Übung</em>}</strong><small>{r.openTasks?r.openTasks===1?'1 offene Aufgabe':r.openTasks+' offene Aufgaben':'Keine offenen Aufgaben'}</small></span><ChevronRight size={17}/></button>)}{!rooms.length&&<p className="rw-muted">Noch kein Projekt. Lege euer erstes Projekt an.</p>}</section>
     <ArchivedProjects onRestored={()=>void refresh()}/>
     <GeneralKnowledge/>
@@ -146,35 +153,31 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
      {rooms.map(r=><button className="team-work-card" key={r.id} onClick={()=>openChat(r.id,'all')}><MessageSquare size={18}/><span><strong>{r.title}{r.practice&&<em className="studio-practice-tag">Übung</em>}</strong><small>{[r.lastMessage?'Letzte Nachricht '+new Date(r.lastMessage).toLocaleString('de-DE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Noch keine Nachricht',r.openTasks?r.openTasks===1?'1 offene Aufgabe':r.openTasks+' offene Aufgaben':null].filter(Boolean).join(' · ')}</small></span><ChevronRight size={17}/></button>)}
     </section>}
    </div>:
-   !route.room?<ChatsHome rooms={rooms} greeting={'Hallo '+user.displayName.split(' ')[0]} waiting={waiting} onOpen={openChat} onGeneral={()=>goPage('conversations')} onCreateProject={()=>setModal({kind:'room'})} onAgents={()=>goPage('agents')}/>:
+   !route.room?projectList(false):
    !room?<div className="rw-loading">Projekt wird geladen …</div>:<>
     <div className={'team-project-content r3-project-content'+(rooms.find(r=>r.id===route.room)?.practice?' studio-practice':'')}>
-     <Conversation key={room.project.id} room={room} resources={resources} userId={user.userId} search="" refresh={refresh} onTask={id=>navigate({task:id})} onConvert={(kind,source)=>setModal({kind,source})} onBack={()=>goPage('rooms')}
-      projectNavigation={<MessengerProjectNavigation rooms={rooms} project={room.project.id} connected={connected} onProject={id=>navigate({room:id,tab:'talk',task:'',page:'rooms'})} onPage={goPage} onCreate={()=>setModal({kind:'room'})}/>}
+     <Conversation key={room.project.id} onInfo={()=>{setInfoHidden(false);navigate({tab:'overview'});}} room={room} resources={resources} userId={user.userId} search="" refresh={refresh} onTask={id=>navigate({task:id})} onConvert={(kind,source)=>setModal({kind,source})} onBack={()=>goPage('rooms')}
+      rail={<div className="r6-rail"><div className="r6-rail-head"><button className="studio-menu-button" aria-label="Menü öffnen" onClick={()=>setMenuOpen(true)}>{initials(user.displayName)}</button><StudioBrand compact onHome={()=>goPage('rooms')}/></div><div className="r6-rail-scroll">{projectList(true)}</div></div>}
+      subHeader={<div className="r6-tabs" role="tablist" aria-label="Projekt"><button role="tab" aria-selected={tab!=='tasks'} className={tab!=='tasks'?'on':''} onClick={()=>navigate({tab:'talk'})}>Chat</button><button role="tab" aria-selected={tab==='tasks'} className={tab==='tasks'?'on':''} onClick={()=>navigate({tab:'tasks'})}>Aufgaben{projectTasks.filter(t=>t.status!=='done').length?' ('+projectTasks.filter(t=>t.status!=='done').length+')':''}</button></div>}
       tools={<div className="r3-chat-tools">
-       <button className="r3-icon-button" aria-label="Projektwerkzeuge: Aufgaben, Dateien, Wissen, Info" title="Aufgaben, Dateien, Wissen, Info" aria-pressed={tab!=='talk'} onClick={()=>navigate({tab:tab==='talk'?'tasks':'talk'})}><LayoutGrid size={19}/></button>
+       <button className="r3-icon-button" aria-label="Projektinfo" title="Projektinfo" aria-pressed={showInfo} onClick={()=>{if(showInfo){setInfoHidden(true);navigate({tab:'talk'});}else{setInfoHidden(false);navigate({tab:'overview'});}}}><Info size={19}/></button>
       </div>}
-      detailKey={tab} detailTitle={detailTitles[tab]} onCloseDetail={()=>navigate({tab:'talk'})} onFiles={()=>navigate({tab:'files'})}
-      detailNavigation={<ProjectToolbar tab={tab} onTab={t=>navigate({tab:t})}/>}
-      detail={tab==='talk'?undefined:<>
-       {tab==='overview'&&<ProjectOverview room={room} tasks={projectTasks} events={projectEvents} active={(team.active??[]).filter(j=>j.project===route.room)} members={members} resources={resources} userId={user.userId} onOpenTask={openTask} onTab={tab=>navigate({tab,task:''})} onRepository={()=>setModal({kind:'repository'})} onRefresh={refresh}/>}
+      detailKey={detailTab} detailTitle={detailTitles[detailTab]} onCloseDetail={()=>{if(showInfo)setInfoHidden(true);navigate({tab:'talk'});}} onFiles={()=>navigate({tab:'files'})}
+      detailNavigation={detailTab==='overview'||detailTab==='activity'?undefined:<button className="pi-back" onClick={()=>navigate({tab:'overview'})}><ChevronLeft size={18}/>Projektinfo</button>}
+      detail={detailTab==='talk'?undefined:<>
+       {(detailTab==='overview'||detailTab==='activity')&&<ProjectInfo room={room} tasks={projectTasks} userId={user.userId} onTab={t=>navigate({tab:t,task:''})} onChat={()=>{if(wide)document.querySelector<HTMLTextAreaElement>('#rw-message')?.focus();else navigate({tab:'talk'});}} onMemberChat={m=>openChat(room.project.id,'member:'+m)} onOpenTask={(t,pane)=>openTask(t,pane)} onNewTask={()=>setModal({kind:'task'})} onInvite={()=>goPage('team')} onArchived={()=>{goPage('rooms');void refresh();}}/>}
        {tab==='tasks'&&<><div className="r3-panel-actions"><button className="rw-button lime" onClick={()=>setModal({kind:'task'})}><Plus size={16}/>Aufgabe</button></div><TaskList tasks={projectTasks} userId={user.userId} name={name} search={search} onSearch={setSearch} onOpen={openTask}/></>}
        {tab==='files'&&!route.task&&<ProjectFiles key={room.project.id} room={room} userId={user.userId} onTask={id=>navigate({task:id})} onTasks={()=>navigate({tab:'tasks'})} onSetup={()=>navigate({tab:'connect'})}/>}
        {tab==='knowledge'&&<><TeamKnowledge room={room} search="" refresh={refresh} onNew={kind=>setModal({kind})} onSource={source=>{navigate({tab:'talk'});requestAnimationFrame(()=>document.getElementById('message-'+source)?.scrollIntoView({block:'center'}));}}/><ProjectBriefing room={room} tasks={projectTasks}/></>}
-       {tab==='activity'&&<><p className="r3-panel-intro">Echte Aufträge mit deinem freigegebenen Modellzugang. Ein Agentenprofil allein startet keinen Modelllauf.</p><RoomAssistant room={room} resources={resources} userId={user.userId} onClose={()=>navigate({tab:'talk'})} onRefresh={refresh} onConnect={()=>navigate({tab:'connect'})}/><details className="r3-usage-note"><summary>Verbrauch und Kontingente</summary><p>Der aktuelle Runner liefert keine belastbaren Tokenzahlen, Kontextfenster-Auslastung oder verbleibenden Abo-Kontingente. Studio zeigt deshalb keine geschätzten Prozentwerte. Den tatsächlich mitgesendeten Projektkontext kannst du oben prüfen.</p></details></>}
-       {tab==='connect'&&<ProjectSettings room={room} resources={resources} userId={user.userId} refresh={refresh} onRepository={()=>setModal({kind:'repository'})} onArchived={()=>{goPage('rooms');void refresh();}}/>}
+              {tab==='connect'&&<ProjectSettings room={room} resources={resources} userId={user.userId} refresh={refresh} onRepository={()=>setModal({kind:'repository'})} onArchived={()=>{goPage('rooms');void refresh();}}/>}
       </>}
      />
     </div>
    </>}
   </main>
   {!route.task&&!modal&&<ScrollHint/>}
-  {!route.task&&!modal&&<nav className="studio-mobile-nav" aria-label="Hauptnavigation">
-   <button aria-current={isHome?'page':undefined} className={isHome?'active':''} onClick={()=>goPage('rooms')}><MessagesSquare size={21}/><span>Chats</span></button>
-   <button aria-current={route.page==='agents'?'page':undefined} className={route.page==='agents'?'active':''} onClick={()=>goPage('agents')}><Bot size={21}/><span>Agenten</span></button>
-   <button aria-current={route.page==='projects'||inProject?'page':undefined} className={route.page==='projects'||inProject?'active':''} onClick={()=>goPage('projects')}><Folder size={21}/><span>Projekte</span></button>
-   <button aria-current={route.page==='account'||route.page==='team'?'page':undefined} className={route.page==='account'||route.page==='team'?'active':''} onClick={()=>goPage('account')}><UserRound size={21}/><span>Konto</span></button>
-  </nav>}
+  
+  <SideMenu open={menuOpen} name={user.displayName} owner={owner} onClose={()=>setMenuOpen(false)} onPage={goPage} onCreateProject={()=>setModal({kind:'room'})} onAccess={()=>{goPage('account');setSpot('#agent-access-title');}} onLogout={()=>void logout()}/>
   {modal&&<RoomModal spec={modal} room={room} onClose={()=>setModal(null)} onSaved={async r=>{setModal(null);if(r.project)navigate({room:r.project,page:'rooms',tab:'talk',task:''});await refresh();if(r.task)navigate({task:r.task});}}/>}
   {route.task&&room&&<TeamTaskView key={route.task} taskId={route.task} room={room} resources={resources} userId={user.userId} onClose={closeTask} onRefresh={refresh} onConnect={()=>{navigate({task:'',tab:'connect'});setSpot('.po-ready');}}/>}
  </div>;
@@ -203,7 +206,7 @@ function ProjectSettings({room,resources,userId,refresh,onRepository,onArchived}
   {access.admin?<form className="team-form" key={room.meta.revision} onSubmit={update}><label>Name<input name="title" required defaultValue={room.project.title} maxLength={160}/></label><label>Worum geht es?<textarea name="description" defaultValue={room.project.description} maxLength={12000} placeholder="Ein, zwei Sätze zum Ziel."/></label><input type="hidden" name="base" value={room.meta.base??'main'}/><input type="hidden" name="workflow" value={room.meta.workflow??'pull-request'}/><button className="rw-button lime">Speichern</button></form>:<div className="studio-readonly"><p><strong>{room.project.title}</strong></p><p>{room.project.description||'Noch kein Ziel beschrieben.'}</p><small className="rw-muted">Name und Ziel ändert der Projekt-Admin.</small></div>}
   </div></details>
   <details className="r4-settings-section"><summary>Einrichtung und Verbindung</summary><div className="r4-settings-body"><ProjectReady room={room} resources={resources} members={room.members} userId={userId} onRepository={onRepository} onRefresh={refresh}/></div></details>
-  <details className="r4-settings-section"><summary>Team und Berechtigungen</summary><div className="r4-settings-body"><ProjectRoles project={room.project.id}/></div></details>
+  <details className="r4-settings-section r4-settings-roles"><summary>Team und Berechtigungen</summary><div className="r4-settings-body"><ProjectRoles project={room.project.id}/></div></details>
   <details className="r4-settings-section"><summary>Technik und Werkstatt</summary><div className="r4-settings-body">
   {access.admin&&<form className="team-form" key={'dev'+room.meta.revision} onSubmit={update}><input type="hidden" name="title" value={room.project.title}/><input type="hidden" name="description" value={room.project.description}/><label>Hauptbranch<input name="base" required defaultValue={room.meta.base??'main'} maxLength={100}/></label><label>Wie freigegebene Änderungen übernommen werden<select name="workflow" defaultValue={room.meta.workflow??'pull-request'}><option value="pull-request">Über GitHub (Pull Request)</option>{!room.meta.repository&&<option value="direct">Direkt durch die Werkstatt</option>}</select></label><button className="rw-button">Speichern</button></form>}
   <section className="studio-dev-pc"><h3>Eigener PC (optional)</h3><p>Studio arbeitet in der Werkstatt des Projekts. Einen eigenen PC brauchst du nur, wenn du lieber lokal arbeitest.</p><button ref={runnerToggle} className="rw-button" aria-expanded={showRunner} onClick={()=>{if(showRunner)closeRunner();else openRunner();}}>{showRunner?'Schliessen':'Eigenen PC verbinden'}</button>{resources.some(r=>r.owner===userId)&&<Executors project={room.project.id} embedded onSetup={openSetup}/>}{showRunner&&<div ref={runnerPanel} tabIndex={-1}><RunnerConnect project={room.project.id} projects={[room.project]} onRegistered={refresh} onClose={closeRunner}/></div>} {showSetup&&<><div ref={setupPanel} tabIndex={-1}><ProjectConnect key={setupDevice} project={room.project.id} projectTitle={room.project.title} initialDevice={setupDevice} resources={resources} userId={userId} onDone={refresh}/></div></>}{checking&&<p role="status">Einrichtungsstand wird geladen …</p>}</section></div></details>

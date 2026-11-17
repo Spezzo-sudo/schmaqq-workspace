@@ -1,0 +1,25 @@
+.sm-layer{position:fixed;inset:0;z-index:300}
+.sm-backdrop{position:absolute;inset:0;border:0;background:rgba(17,18,37,.45);cursor:pointer}
+.sm-panel{position:absolute;left:0;top:0;bottom:0;width:min(300px,84vw);background:var(--schmaqq-paper-light,#fbfaf6);display:flex;flex-direction:column;overflow-y:auto;box-shadow:8px 0 30px rgba(17,18,37,.2);animation:sm-in .16s ease-out}
+@keyframes sm-in{from{transform:translateX(-24px);opacity:.4}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.sm-panel{animation:none}}
+.sm-head{background:var(--schmaqq-ink,#111225);color:#fff;padding:calc(22px + env(safe-area-inset-top,0px)) 18px 16px;display:grid;gap:3px}
+.sm-head small{color:#c9cbe0}
+.sm-avatar{width:52px;height:52px;border-radius:50%;background:var(--schmaqq-acid,#d9ff6b);color:var(--schmaqq-ink,#111225);display:grid;place-items:center;font-weight:800;margin-bottom:8px}
+.sm-panel>button{display:flex;align-items:center;gap:14px;min-height:50px;padding:0 20px;border:0;background:transparent;font:600 15px/1.2 var(--schmaqq-sans,inherit);color:inherit;text-align:left;cursor:pointer}
+.sm-panel>button:hover,.sm-panel>button:focus-visible{background:var(--schmaqq-paper,#f1efe8)}
+.sm-panel>button span{flex:1}
+.sm-panel small{font-size:12px;font-weight:700}.sm-panel small.ok{color:#2f7d5b}.sm-panel small.off{color:#9a6a12}
+.sm-panel hr{border:0;border-top:1px solid var(--schmaqq-rule,rgba(17,18,37,.16));margin:6px 0}
+/* Home tabs: Chats | Kontakte, like a messenger. */
+.home-tabs{display:flex;border-bottom:1px solid var(--schmaqq-rule,rgba(17,18,37,.16));margin:0 0 10px}
+.home-tabs button{flex:1;min-height:46px;border:0;background:transparent;font:700 15px/1 var(--schmaqq-sans,inherit);color:var(--schmaqq-muted,#5d5c68);cursor:pointer;border-bottom:3px solid transparent}
+.home-tabs button.on{color:var(--schmaqq-ink,#111225);border-bottom-color:var(--schmaqq-ink,#111225)}
+.home-tabs .n{display:inline-block;margin-left:6px;background:var(--schmaqq-ink,#111225);color:var(--schmaqq-acid,#d9ff6b);border-radius:10px;font-size:11px;padding:2px 7px;vertical-align:1px}
+/* Avatar button that opens the menu. */
+.studio-menu-button{width:40px;height:40px;border-radius:50%;border:2px solid var(--schmaqq-ink,#111225);background:var(--schmaqq-acid,#d9ff6b);font:800 13px/1 var(--schmaqq-sans,inherit);color:var(--schmaqq-ink,#111225);cursor:pointer;flex:none}
+/* Topbar: the avatar opens the menu on phones (left, like a messenger); the sidebar has its own entry on wider screens. */
+.team-shell .studio-topbar-menu{display:none}
+@media (max-width:650px){.team-shell .studio-topbar-menu{display:grid;place-items:center;order:-1;margin-right:10px}}
+.team-shell .studio-profile-open{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;border:0;background:transparent;font:700 14px/1.2 var(--schmaqq-sans,inherit);color:inherit;cursor:pointer;text-align:left;padding:4px 0}
+.team-shell .studio-profile-open .studio-menu-button{display:grid;place-items:center}

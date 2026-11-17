@@ -30,7 +30,7 @@
 .team-shell .studio-mobile-nav{display:none}
 @media (max-width:650px){
  .team-shell .rw-sidebar{display:none}
- .team-shell .rw-main{height:100dvh;padding-bottom:calc(67px + env(safe-area-inset-bottom,0px))}
+ .team-shell .rw-main{height:100dvh;padding-bottom:env(safe-area-inset-bottom,0px)}
  .team-shell .rw-page{padding-bottom:30px}
  .team-shell .studio-mobile-nav{position:fixed;inset:auto 0 0;z-index:130;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--schmaqq-ink);border-top:1px solid var(--schmaqq-ink-soft);padding:4px 4px max(7px,env(safe-area-inset-bottom,0px));}
  .team-shell .studio-mobile-nav>button{background:transparent;border:0;border-radius:0;color:#c8c8d2;min-height:55px;padding:5px 2px;display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;font:700 11px/1.35 var(--schmaqq-sans)}
@@ -143,9 +143,11 @@
 .studio-scroll-hint button{pointer-events:auto;width:26px;height:26px;border:0;background:var(--schmaqq-ink);color:var(--schmaqq-acid);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;animation:studio-hint 2.4s ease-in-out infinite}
 .studio-scroll-hint button:focus-visible{outline:3px solid var(--schmaqq-acid);outline-offset:2px}
 @keyframes studio-hint{0%,70%,100%{transform:translateY(0)}80%{transform:translateY(3px)}}
-@media (max-width:650px){.studio-scroll-hint{bottom:calc(67px + env(safe-area-inset-bottom,0px))}}
+@media (max-width:650px){.studio-scroll-hint{bottom:env(safe-area-inset-bottom,0px)}}
+/* Above an open detail panel too, so its lower part is never hidden by surprise. */
+.studio-scroll-hint{z-index:140}
 /* Room below the last entry, so the hint never covers it. */
-.team-shell .ch-home,.team-shell .rw-page{padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))}
+.team-shell .ch-home,.team-shell .rw-page,.team-shell .r3-inspector-body,.team-shell .r5-chat-list{padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))!important}
 @media(prefers-reduced-motion:reduce){.studio-scroll-hint button{animation:none}}
 /* Timeline: a short visible word under each symbol. */
 .task-timeline-track>li{position:relative}

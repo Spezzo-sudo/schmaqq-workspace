@@ -381,3 +381,31 @@
 }
 
 /* Hermes R1: explicit human-triggered agent run; never indicate synthetic AI output. */
+/* The group name opens the project info, like a messenger's group page. */
+.r3-chat-heading-button{display:block;text-align:left;border:0;background:transparent;padding:4px 6px;margin:-4px -6px;border-radius:10px;color:inherit;font:inherit;cursor:pointer}
+.r3-chat-heading-button:hover,.r3-chat-heading-button:focus-visible{background:var(--schmaqq-paper,#f1efe8)}
+.r3-chat-heading-button strong,.r3-chat-heading-button small{display:block}
+/* Agent bar: everyone in the project is one tap away; a green dot shows who is working. */
+.r6-agent-bar{display:flex;gap:4px;overflow-x:auto;padding:8px 10px 6px;border-bottom:1px solid var(--schmaqq-rule);background:var(--schmaqq-paper-light);scrollbar-width:none}
+.r6-agent-bar::-webkit-scrollbar{display:none}
+.r6-agent{position:relative;flex:none;width:64px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 2px;border:0;border-radius:12px;background:transparent;color:inherit;cursor:pointer;-webkit-touch-callout:none;user-select:none}
+.r6-agent:hover{background:var(--schmaqq-paper)}
+.r6-agent-pic{position:relative;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;box-shadow:0 0 0 2px transparent;transition:box-shadow .12s}
+.r6-agent-pic .rw-fg-avatar{width:46px!important;height:46px!important}
+.r6-agent.on .r6-agent-pic{box-shadow:0 0 0 2px var(--schmaqq-paper-light),0 0 0 4px var(--schmaqq-ink)}
+.r6-group{background:var(--schmaqq-ink);color:var(--schmaqq-acid)}
+.r6-add .r6-agent-pic{border:2px dashed var(--schmaqq-rule-strong);color:var(--schmaqq-muted)}
+.r6-agent-name{font:600 11px/1.2 var(--schmaqq-sans);max-width:62px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:2px}
+.r6-working{position:absolute;right:0;bottom:0;width:13px;height:13px;border-radius:50%;background:#2fb36b;border:2px solid var(--schmaqq-paper-light);animation:r6-pulse 1.4s ease-in-out infinite}
+@keyframes r6-pulse{50%{transform:scale(1.18)}}
+@media(prefers-reduced-motion:reduce){.r6-working{animation:none}}
+.r6-agent .r4-unread{position:absolute;top:0;right:6px}
+/* Chat | Aufgaben under the agent bar. */
+.r6-tabs{display:flex;border-bottom:1px solid var(--schmaqq-rule);background:var(--schmaqq-paper-light)}
+.r6-tabs button{flex:1;min-height:40px;border:0;background:transparent;font:700 13.5px/1 var(--schmaqq-sans);color:var(--schmaqq-muted);border-bottom:3px solid transparent;cursor:pointer}
+.r6-tabs button.on{color:var(--schmaqq-ink);border-bottom-color:var(--schmaqq-ink)}
+/* Project list as the left column on wide screens. */
+.r6-rail{display:flex;flex-direction:column;min-height:0;height:100%}
+.r6-rail-head{display:flex;align-items:center;gap:10px;padding:12px 12px 8px}
+.r6-rail-head .studio-menu-button{display:grid;place-items:center}
+.r6-rail-scroll{flex:1;min-height:0;overflow:auto}
