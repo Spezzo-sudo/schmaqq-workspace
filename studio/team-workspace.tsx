@@ -160,7 +160,7 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
     <div className={'team-project-content r3-project-content'+(rooms.find(r=>r.id===route.room)?.practice?' studio-practice':'')}>
      <Conversation key={room.project.id} onInfo={()=>{setInfoHidden(false);navigate({tab:'overview'});}} room={room} resources={resources} userId={user.userId} search="" refresh={refresh} onTask={id=>navigate({task:id})} onConvert={(kind,source)=>setModal({kind,source})} onBack={()=>goPage('rooms')}
       rail={<div className="r6-rail"><div className="r6-rail-head"><button className="studio-menu-button" aria-label="Menü öffnen" onClick={()=>setMenuOpen(true)}>{initials(user.displayName)}</button><StudioBrand compact onHome={()=>goPage('rooms')}/></div><div className="r6-rail-scroll">{projectList(true)}</div></div>}
-      mainContent={tab==='tasks'?<div className="r6-tasks"><div className="r3-panel-actions"><button className="rw-button lime" onClick={()=>setModal({kind:'task'})}><Plus size={16}/>Aufgabe</button></div><TaskList tasks={projectTasks} userId={user.userId} name={name} search={search} onSearch={setSearch} onOpen={openTask}/></div>:undefined}
+      mainContent={tab==='tasks'?<div className="r6-tasks"><div className="r3-panel-actions"><button className="rw-button lime" onClick={()=>setModal({kind:'task'})}><Plus size={16}/>Aufgabe</button></div><TaskList project={room.project.id} tasks={projectTasks} userId={user.userId} name={name} search={search} onSearch={setSearch} onOpen={openTask}/></div>:undefined}
       subHeader={<div className="r6-tabs" role="tablist" aria-label="Projekt"><button role="tab" aria-selected={tab!=='tasks'} className={tab!=='tasks'?'on':''} onClick={()=>navigate({tab:'talk'})}>Chat</button><button role="tab" aria-selected={tab==='tasks'} className={tab==='tasks'?'on':''} onClick={()=>navigate({tab:'tasks'})}>Aufgaben{projectTasks.filter(t=>t.status!=='done').length?' ('+projectTasks.filter(t=>t.status!=='done').length+')':''}</button></div>}
       tools={<div className="r3-chat-tools">
        <button className="r3-icon-button" aria-label="Projektinfo" title="Projektinfo" aria-pressed={showInfo} onClick={()=>{if(showInfo){setInfoHidden(true);if(!inline)navigate({tab:'talk'});}else{setInfoHidden(false);navigate({tab:'overview'});}}}><Info size={19}/></button>
@@ -216,9 +216,10 @@ function ProjectSettings({room,resources,userId,refresh,onRepository,onArchived}
 }
 
 /** Tasks as a plain list grouped by who acts next; the same short status as everywhere else. */
-function TaskList({tasks,userId,name,search,onSearch,onOpen}:{tasks:TeamTask[];userId:string;name:(id:string)=>string;search:string;onSearch:(v:string)=>void;onOpen:(task:TeamTask)=>void}){
+function TaskList({project,tasks,userId,name,search,onSearch,onOpen}:{project:string;tasks:TeamTask[];userId:string;name:(id:string)=>string;search:string;onSearch:(v:string)=>void;onOpen:(task:TeamTask)=>void}){
+ const selfApprove=useProjectAccess(project,userId).selfApprove;
  const query=search.trim().toLowerCase();
- const rows=tasks.filter(t=>!query||(t.title+' '+t.description).toLowerCase().includes(query)).map(task=>({task,summary:taskSummary(task,userId,name)}));
+ const rows=tasks.filter(t=>!query||(t.title+' '+t.description).toLowerCase().includes(query)).map(task=>({task,summary:taskSummary(task,userId,name,{selfApprove})}));
  const groups:[string,string,typeof rows][]=[['mine','Bei dir',rows.filter(r=>r.summary.group==='mine')],['open','Noch offen – wer übernimmt?',rows.filter(r=>r.summary.group==='open')],['others','Bei den anderen',rows.filter(r=>r.summary.group==='others')]];
  const done=rows.filter(r=>r.summary.group==='done');
  const row=({task,summary}:typeof rows[number])=><li key={task.id}><button className="team-work-card r4-task-item" title={task.title} onClick={()=>onOpen(task)}><span><strong>{task.title}</strong><small>{summary.text}</small></span><ChevronRight size={17}/></button></li>;
