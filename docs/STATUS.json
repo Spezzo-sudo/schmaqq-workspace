@@ -1,7 +1,7 @@
 {
   "conversations_planning_20261117": {
-    "state": "feature_branch_pending_owner_review",
-    "branch": "feat/guru-plans-20261117 (contains feat/conversations-team-20261117 and feat/agent-messenger-foundation-20261116)",
+    "state": "live",
+    "branch": "main (PR #91, squash ce5a50a)",
     "implemented": [
       "One group chat per project plus private one-to-one chats (chat_private, pinned schema extension); private messages are delivered, counted, quoted, exported and signalled only to their two participants and never enter another person's agent context",
       "'@Name' in the group chat addresses an agent; question and answer stay in the group",
@@ -23,12 +23,16 @@
       "The server workshop does not program by itself: coding runs exist only for a personal PC runner and are deliberately blocked on the server worker until they run under the member's own sign-in through the launcher. Agents therefore plan and advise; they do not change code yet",
       "The pilot's quick tunnel holds the live connection back; behind the production proxy it is unverified",
       "Message search left the side list and is not back elsewhere yet",
-      "Agents are off in production until a worker is bound there",
       "No real Android keyboard test",
       "Scaling, not built yet: workers connect only from the same machine (no laptop worker), one worker per person from a server file, one server-wide model list; providers via API key or OpenRouter need per-worker model lists (see docs/HANDOFF-AGENTS.md)"
     ],
-    "production_changed": false,
-    "main_changed": false
+    "production_changed": true,
+    "main_changed": true,
+    "live": {
+      "deployed": "2026-11-17 via studio-deploy.sh release, RESULT=PASS, worker unchanged",
+      "agents": "switched on in production for Marco: STUDIO_HERMES_WORKERS_FILE set, the one existing agent worker moved from the pilot to production (own ChatGPT sign-in); the pilot has no worker now",
+      "not_yet": "Markus has no worker yet (own worker and own sign-in needed); live connection behind the production proxy still to be confirmed by use"
+    }
   },
   "agent_messenger_foundation_20261116": {
     "state": "feature_branch_pending_owner_review",

@@ -49,19 +49,18 @@ Seitenregeln und Dateiübersicht vom 08.11. gelten weiter: [HANDOFF.md](HANDOFF.
 
 ## Stand
 
-- **Kandidat:** `feat/guru-plans-20261117`. Enthält #85, #87, #88, #89 und #90. Pull Request nach `main` folgt.
-- **Produktion:** unverändert auf `main`; dort sind Agenten aus.
-- **Pilot:** isoliert auf dem VPS (Port 14439), Worker `schmaqq-hermes-agent@a`. Rückweg:
-  `/root/schmaqq-agent-messenger-rollout/ROLLBACK.md` (nur auf dem VPS).
+- **Live seit 17.11.2026:** `main` mit #91 (enthält #85, #87, #88, #89, #90). Agenten antworten in Produktion für Marco,
+  über den bisherigen Pilot-Worker mit seiner eigenen Anmeldung. Markus braucht einen eigenen Worker mit eigener Anmeldung.
+- **Pilot:** isoliert auf dem VPS (Port 14439), Code auf dem Live-Stand, aber ohne Worker. Rückwege (nur auf dem VPS):
+  `/root/schmaqq-agent-messenger-rollout/ROLLBACK.md` und `…/prod-agents-*/ROLLBACK.md`.
 - **Werkstatt:** Agenten planen und beraten. Code ändern sie noch nicht: Programmierläufe sind auf dem Server-Worker
   gesperrt, bis sie mit der persönlichen Anmeldung über den Launcher laufen. Das ist sicherheitskritisch und wird
   getrennt geprüft.
 
 ## Nächste Schritte (Reihenfolge)
 
-1. Pull Request vom Kandidaten nach `main`, GitHub-Prüfung grün; danach #85, #87, #88, #89, #90 schliessen.
-2. Owner: „merge“, dann „JA LIVE“. Zusammen damit Agenten in Produktion einschalten (Worker an Produktion binden,
-   eigenes Konto, Eintrag in der Server-Umgebung), sonst zeigt Produktion die Oberfläche ohne antwortende Agenten.
+1. ~~Merge, Livegang, Agenten in Produktion~~ erledigt am 17.11.2026. Offen: Worker für Markus (eigene Anmeldung).
+2. Live-Verbindung hinter dem Produktions-Proxy im Alltag bestätigen.
 3. Auftragsketten: die Projektleitung gibt Aufgaben an andere Agenten weiter (höchstens 2 Ebenen, 6 Antworten,
    Stopp für die ganze Kette), im Chat als eingeklappte, mitlesbare Karte.
 4. Ausführungsorte und Anbieter (siehe „Bekannte Grenzen“ 1–3): eigener Rechner als Agenten-Worker, Modelle pro Worker,
