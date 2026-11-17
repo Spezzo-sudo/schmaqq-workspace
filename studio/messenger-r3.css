@@ -412,3 +412,7 @@
 /* Aufgaben shown in place of the chat, below the agent bar and the tabs. */
 .r6-tasks{flex:1;min-height:0;overflow:auto;padding:12px 14px calc(56px + env(safe-area-inset-bottom,0px));background:var(--schmaqq-paper-light)}
 .r6-tasks .r3-panel-actions{display:flex;justify-content:flex-end;margin-bottom:6px}
+/* Agent profile: the honest "Kann" list. */
+.rw-fg-can{list-style:none;margin:6px 0 12px;padding:0;display:grid;gap:6px;font-size:14px;line-height:1.45}
+.rw-fg-can li{display:flex;gap:8px}.rw-fg-can li::before{flex-shrink:0;font-weight:700}
+.rw-fg-can .yes::before{content:"✓";color:#4f7a1f}.rw-fg-can .no{color:var(--schmaqq-muted)}.rw-fg-can .no::before{content:"–"}
