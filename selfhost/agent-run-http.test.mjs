@@ -321,3 +321,54 @@ test('models: an agent set to a model nobody can use answers with the default on
  // Names of routed providers carry a vendor and a variant; paths and options still do not pass.
  assert.deepEqual(agentModels('openai/gpt-5.6-sol,meta-llama/llama-4:free,/etc/x,-x,a b'),['openai/gpt-5.6-sol','meta-llama/llama-4:free']);
 });
+
+test('cards: asked inside a task, the agent works with that task and answers in its conversation',async t=>{
+ const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Karten',description:''},{cookie:alice.cookie})).data.project;
+ const room=async(member=alice)=>(await f.get('/api/room?project='+project,{cookie:member.cookie})).data;
+ const lead=(await room()).agents[0];
+ const task=(await f.post('/api/room',{action:'task',id:randomUUID(),project,title:'Startseite kürzen',description:'Weniger Text oben',kind:'general'},{cookie:alice.cookie})).data.task;
+ await f.post('/api/room',{action:'message',id:randomUUID(),project,body:'Ein Gedanke im Projektchat.'},{cookie:bob.cookie});
+ await f.post('/api/room',{action:'message',id:randomUUID(),project,topicTask:task,body:'Ich fange oben an.'},{cookie:bob.cookie});
+ const question=randomUUID();
+ const sent=await f.post('/api/room',{action:'message',id:question,project,topicTask:task,body:'@Herr Grau was fehlt noch?'},{cookie:alice.cookie});
+ assert.equal(sent.data.ask,lead.id,'"@Name" in the task addresses exactly that agent');
+ assert.equal((await f.post('/api/agent-runs',{project,agent:lead.id,message:question},{cookie:alice.cookie})).status,202);
+ const job=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ assert.equal(job.place,'task');
+ assert.match(job.context,/AUFGABE \([^)]+\): Startseite kürzen/,'the task, its goal and "Fertig, wenn" come with the run');
+ assert.deepEqual(job.history.map(h=>h.body),['Ich fange oben an.'],'history is this task\'s conversation, not the project chat');
+ const done=await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'Ein Satz zum Nutzen fehlt.'},w);
+ const state=await room(bob);
+ const answer=state.messages.find(m=>m.id===done.data.message);
+ assert.equal(answer.inTask,task,'the answer stays in the task conversation');
+ const detail=(await f.get('/api/collaboration/task?id='+task,{cookie:bob.cookie})).data;
+ assert.deepEqual(detail.thread.map(m=>[m.body,m.senderAgent]),[['Ich fange oben an.',null],['@Herr Grau was fehlt noch?',null],['Ein Satz zum Nutzen fehlt.',lead.id]]);
+ assert.ok(!detail.thread.some(m=>m.body==='Ein Gedanke im Projektchat.'));
+});
+
+test('cards: work from a direct chat appears as a card in the project chat; an answer can be shared',async t=>{
+ const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Direkt',description:''},{cookie:alice.cookie})).data.project;
+ const room=async(member=alice)=>(await f.get('/api/room?project='+project,{cookie:member.cookie})).data;
+ const lead=(await room()).agents[0];
+ const ask=async body=>{const message=randomUUID();await f.post('/api/room',{action:'message',id:message,project,recipient:lead.id,direct:true,body},{cookie:alice.cookie});await f.post('/api/agent-runs',{project,agent:lead.id,message},{cookie:alice.cookie});return (await f.post('/api/agent-worker/claim',{},w)).data.job;};
+ const job=await ask('Halte fest: Logo tauschen.');
+ assert.equal((await f.post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool:'task.propose',args:{title:'Logo tauschen'}},w)).status,200);
+ const done=await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'Vorschlag steht.'},w);
+ const proposal=(await room()).messages.find(m=>m.id===done.data.message).proposalCard;
+ assert.equal((await room(bob)).messages.length,0,'the direct chat stays private');
+ const accepted=await f.post('/api/agent-proposals/decide',{proposal:proposal.id,decision:'accept'},{cookie:alice.cookie});
+ const cards=(await room(bob)).messages.filter(m=>m.kind==='card');
+ assert.equal(cards.length,1,'the new work is visible to everyone');
+ assert.deepEqual(cards[0].card.tasks,[accepted.data.task]);
+ assert.match(cards[0].body,/Logo tauschen.*Alices Gespräch mit Herr Grau/);
+ // Sharing an answer: only my own agent answer, once, word for word.
+ assert.equal((await f.post('/api/room',{action:'share',id:randomUUID(),project,message:done.data.message},{cookie:bob.cookie})).status,400);
+ const shareId=randomUUID();
+ assert.equal((await f.post('/api/room',{action:'share',id:shareId,project,message:done.data.message},{cookie:alice.cookie})).status,200);
+ const again=await f.post('/api/room',{action:'share',id:randomUUID(),project,message:done.data.message},{cookie:alice.cookie});
+ assert.equal(again.data.message,shareId,'sharing twice posts once');
+ const shared=(await room(bob)).messages.find(m=>m.id===shareId);
+ assert.deepEqual([shared.body,shared.senderAgent,shared.sharedBy,shared.scope],['Vorschlag steht.',lead.id,alice.id,'group']);
+});

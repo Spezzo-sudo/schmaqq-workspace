@@ -55,7 +55,7 @@ export type RoomAgent={
  lead?:boolean;
 };
 export type AgentHandoff={fromAgent?:string;toAgent:string;task?:string|null;summary:string;status:'delegated'|'in_progress'|'completed'|'requested'|'stopped'};
-export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;sequence?:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;scope?:string;senderAgent?:string|null;handoff?:AgentHandoff|null;proposalCard?:AgentTaskProposal|null};
+export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;sequence?:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff'|'card';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;scope?:string;senderAgent?:string|null;handoff?:AgentHandoff|null;proposalCard?:AgentTaskProposal|null;inTask?:string|null;sharedBy?:string|null;card?:{from:'direct';agent:string;tasks:string[];titles:string[]}|null};
 /** Hermes task proposal shown in the chat. Server decides `canDecide`; a proposal is never a task until accepted. */
 export type AgentPlan={tasks:{title:string;done_when:string;kind:'general'|'code';who:string}[];hire:{role:string;why:string}[]};
 export type AgentTaskProposal={id:string;title:string;description:string;kind:'general'|'code'|'plan';status:'pending'|'accepted'|'rejected';task:string|null;tasks?:string[];plan?:AgentPlan;agent:string;owner:string;canDecide:boolean};
@@ -305,11 +305,14 @@ export type MessengerFilter=
 
 export function filterMessengerMessages(messages:RoomMessage[],filter:MessengerFilter,search=''):RoomMessage[]{
  const q=search.trim().toLowerCase();
+ const latestInTask=new Map<string,string>();
+ for(const m of messages)if(m.inTask&&(m.scope??'group')==='group')latestInTask.set(m.inTask,m.id);
  return messages.filter(m=>{
   if(q&&!m.body.toLowerCase().includes(q))return false;
   // The server names the conversation of every message it delivers: group | agent:<id> | member:<id>.
   const scope=m.scope??'group';
-  if(filter.kind==='all')return scope==='group';
+  // In the project chat a task's conversation is one card (its latest message stands for it), not every message.
+  if(filter.kind==='all')return scope==='group'&&(!m.inTask||latestInTask.get(m.inTask)===m.id||Boolean(q));
   if(filter.kind==='member')return scope==='member:'+filter.id;
   if(filter.kind==='agent')return scope==='agent:'+filter.id;
   if(filter.kind==='topic')return m.taskId===filter.taskId||m.topicTask===filter.taskId;

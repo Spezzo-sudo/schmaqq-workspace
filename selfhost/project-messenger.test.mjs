@@ -311,7 +311,8 @@ test('project messenger & Field Guild R2 profiles: configurable agent profiles, 
  assert.equal(mh.handoff.summary,'Mobile Viewport-Prüfung (<=650px) für Messenger-Header');
 
  // Verify pure filter helpers on the returned messages
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'all'}).length,2);
+ // Both belong to one task: the project chat shows that task's conversation as one card (its latest message).
+ assert.deepEqual(filterMessengerMessages(roomState.data.messages,{kind:'all'}).map(m=>m.id),['msg-handoff-1']);
  // Both messages were written in the group chat (addressed, not private), so the one-to-one chats stay empty.
  assert.deepEqual(roomState.data.messages.map(m=>m.scope),['group','group']);
  assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'member',id:markus.id}).length,0);

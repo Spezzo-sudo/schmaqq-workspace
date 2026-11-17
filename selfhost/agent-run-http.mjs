@@ -291,6 +291,12 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
     const row = db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:message:' + messageId);
     return row ? JSON.parse(row.value) : {};
   };
+  /** The task card a group question was asked in, if it still belongs to the project. */
+  const taskTopic = (project, messageId) => {
+    if (privateScope(db, messageId)) return null;
+    const topic = messageMeta(messageId).topicTask;
+    return topic && db.prepare('SELECT id FROM tasks WHERE id=? AND project=?').get(topic, project) ? topic : null;
+  };
 
   /**
    * Tools are granted per run at claim time: only to agents explicitly allowed to plan tasks, asked by a
@@ -313,9 +319,11 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
    * What was said before in the same conversation, oldest first: the private chat of this person with
    * this agent, or the group chat when the agent was addressed there.
    */
-  function dialogue(run, source) {
+  function dialogue(run, source, topic) {
     const scope = privateScope(db, source.id);
-    const where = scope ? "s.kind='agent' AND s.member=? AND s.peer=?" : 's.message IS NULL';
+    // Asked inside a task card, the conversation is that card's thread, not the whole project chat.
+    const where = scope ? "s.kind='agent' AND s.member=? AND s.peer=?"
+      : topic ? "s.message IS NULL AND json_extract(x.value,'$.topicTask')=?" : 's.message IS NULL';
     const rows = db.prepare(`
       SELECT m.body, n.name, json_extract(x.value,'$.senderAgent') AS senderAgent
       FROM messages m JOIN members n ON n.id=m.author
@@ -323,7 +331,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       LEFT JOIN workspace_meta x ON x.key='room:v1:message:'||m.id
       WHERE m.channel=? AND m.rowid<? AND ${where}
       ORDER BY m.rowid DESC LIMIT ?`)
-      .all(run.project, source.sequence, ...(scope ? [scope.member, scope.peer] : []), HISTORY_MESSAGES);
+      .all(run.project, source.sequence, ...(scope ? [scope.member, scope.peer] : topic ? [topic] : []), HISTORY_MESSAGES);
     const agents = new Map(agentsFor(db, run.project).map(a => [a.id, a.name]));
     return rows.reverse().map(row => ({
       from: row.senderAgent === run.agent ? 'agent' : 'person',
@@ -352,6 +360,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
 
       const leaseToken = token();
       const toolPolicy = policyFor(member, agent, run.project);
+      const topic = taskTopic(run.project, source.id);
       store.updateRun(run.id, {
         status: 'running', lease_hash: digest(leaseToken), claimed: now, heartbeat: now, updated: now,
         tool_policy: toolPolicy.allowed
@@ -359,9 +368,9 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       return {
         run: run.id, lease: leaseToken, owner, project: run.project, agent: run.agent, model: run.model,
         prompt: source.body, replyTo: source.id,
-        context: buildRoomContext(db, run.project).text,
-        history: dialogue(run, source),
-        place: privateScope(db, source.id) ? 'direct' : 'group',
+        context: buildRoomContext(db, run.project, topic ?? undefined).text,
+        history: dialogue(run, source, topic),
+        place: privateScope(db, source.id) ? 'direct' : topic ? 'task' : 'group',
         team: agentsFor(db, run.project).filter(a => a.active !== false).map(a => ({ name: a.name, role: a.role, lead: a.lead === true })).slice(0, 20),
         profile: {
           name: agent.name, role: agent.role, purpose: agent.purpose,
@@ -481,9 +490,11 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(messageId, run.project, owner, request.output, now);
       inheritScope(db, run.source_message, messageId); // the answer lands where the question was asked
       if (published) store.updateProposal(published.id, { status: 'pending', message: messageId, updated: now });
+      const topic = taskTopic(run.project, run.source_message);
       const meta = {
         kind: 'agent', origin: 'verified-run', senderAgent: run.agent, model: run.model,
         replyTo: run.source_message, recipient: owner, recipientKind: 'member', runId: run.id,
+        ...(topic ? { topicTask: topic } : {}),
         ...(published ? { proposal: published.id } : {})
       };
       db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?)').run('room:v1:message:' + messageId, JSON.stringify(meta));
@@ -495,6 +506,22 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       status, updated: now, finished: now, lease_hash: null, completed_message: messageId, error_code: errorCode
     });
     return { ok: true, status, message: messageId };
+  }
+
+  /**
+   * Work never stays hidden: tasks that came out of a private chat with an agent appear as a card in the
+   * project chat ("aus Marcos Gespräch mit Herr Grau"). The chat itself stays private.
+   */
+  function announce(member, proposal, agent, tasks, now) {
+    if (!privateScope(db, proposal.message) || !tasks.length) return;
+    const id = randomUUID();
+    const titles = tasks.map(t => db.prepare('SELECT title FROM tasks WHERE id=?').get(t)?.title).filter(Boolean);
+    const body = (tasks.length > 1 ? `Plan „${proposal.title}“ mit ${tasks.length} Aufgaben` : `Neue Aufgabe „${titles[0] ?? proposal.title}“`)
+      + ` aus ${member.name}s Gespräch mit ${agent.name}.`;
+    db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(id, proposal.project, member.id, body, now);
+    db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?)').run('room:v1:message:' + id, JSON.stringify({
+      kind: 'card', origin: 'human', replyTo: null, card: { from: 'direct', agent: agent.id, tasks, titles }
+    }));
   }
 
   // ---- A member decides on a proposal -----------------------------------------------------------------
@@ -545,12 +572,14 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
         return created.task;
       });
       store.updateProposal(p.id, { status: 'accepted', task: JSON.stringify(tasks), decided_by: member.id, decided: now, updated: now });
+      announce(member, p, agent, tasks, now);
       return { ok: true, status: 'accepted', task: tasks[0], tasks };
     }
     const created = insertRoomTask(db, member, {
       project: p.project, title: p.title, description: p.description, kind: p.kind, source: p.message
     }, now);
     store.updateProposal(p.id, { status: 'accepted', task: created.task, decided_by: member.id, decided: now, updated: now });
+    announce(member, p, agent, [created.task], now);
     return { ok: true, status: 'accepted', task: created.task };
   }
 

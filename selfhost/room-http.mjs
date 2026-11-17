@@ -68,6 +68,21 @@ function proposalCard(db,proposalId,message,viewer){
  }
  return {id:p.id,title:p.title,description:p.description,kind:p.kind,status:p.status,task:p.task??null,agent:p.agent,owner:p.owner,canDecide:p.status==='pending'&&p.owner===viewer.id&&can(db,viewer,p.project,'develop')};
 }
+/**
+ * The conversation of a task card: group messages that belong to the task (its source and everything written
+ * "in" the task), oldest first. Private chats never appear here; shared cards announce work from them.
+ */
+export function taskThread(db,taskId,viewer){
+ const task=db.prepare('SELECT id,project FROM tasks WHERE id=?').get(taskId);if(!task)return [];
+ ensureChatSchema(db);
+ const source=readMeta(db,key('task-source',task.id))?.message??null;
+ const rows=db.prepare("SELECT m.rowid AS sequence,m.* FROM messages m LEFT JOIN chat_private s ON s.message=m.id LEFT JOIN workspace_meta x ON x.key='room:v1:message:'||m.id WHERE m.channel=? AND s.message IS NULL AND (json_extract(x.value,'$.topicTask')=? OR m.id=?) ORDER BY m.rowid DESC LIMIT 60").all(task.project,task.id,source??'').reverse();
+ const names=new Map(db.prepare('SELECT id,name FROM members').all().map(m=>[m.id,m.name]));
+ return rows.map(m=>{const meta=readMeta(db,key('message',m.id))??{};
+  return {id:m.id,author:m.author,authorName:names.get(m.author)??'Mitglied',body:m.body,created:m.created,kind:meta.kind??'human',origin:meta.origin??'human',
+   senderAgent:meta.senderAgent??null,recipient:meta.recipient??null,recipientKind:meta.recipientKind??null,replyTo:meta.replyTo??null,source:m.id===source,
+   proposalCard:proposalCard(db,meta.proposal,m,viewer)};});
+}
 function requireProject(db,project){const row=db.prepare('SELECT * FROM projects WHERE id=?').get(project);if(!row)throw fail(404,'Dieser Projektraum existiert nicht.');return row;}
 function requireSource(db,project,source,viewer){if(!source)return null;const row=db.prepare('SELECT * FROM messages WHERE id=? AND channel=?').get(source,project);if(!row||(viewer&&!mayRead(db,row.id,viewer)))throw fail(400,'Die Nachricht gehört nicht zu diesem Raum.');return row;}
 function safeURL(value,repository=false){
@@ -204,6 +219,7 @@ const agentPermissionsSchema=z.object({
 });
 const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('create'),id,title,description:z.string().trim().max(12000).default('')}),
+ z.object({action:z.literal('share'),id,project:id,message:id}),
  z.object({action:z.literal('message'),id,project:id,body,replyTo:id.optional(),topicTask:id.optional(),recipient:id.optional(),direct:z.boolean().optional(),senderAgent:id.optional(),handoff:z.object({toAgent:id,summary:z.string().trim().min(1).max(600),status:z.enum(['delegated','in_progress','completed','requested','stopped']).default('delegated')}).optional()}),
  z.object({action:z.literal('read'),project:id,view:chatView,messageId:id.optional()}),
  z.object({
@@ -268,7 +284,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null})
    const more=messageRows.length>100;
    const messages=messageRows.slice(0,100).reverse().map(({scope_kind,scope_member,scope_peer,...m})=>{
     const meta=readMeta(db,key('message',m.id))??{},sourceTask=readMeta(db,key('source-task',m.id))?.task??null;
-    return {...m,...meta,scope:scopeLabel({scope_kind,scope_member,scope_peer},member.id),proposal:undefined,proposalCard:proposalCard(db,meta.proposal,m,member),topicTask:meta.topicTask??sourceTask,taskId:sourceTask??meta.topicTask??null};
+    return {...m,...meta,scope:scopeLabel({scope_kind,scope_member,scope_peer},member.id),proposal:undefined,proposalCard:proposalCard(db,meta.proposal,m,member),topicTask:meta.topicTask??sourceTask,taskId:sourceTask??meta.topicTask??null,inTask:meta.topicTask??null};
    });
    const runs=db.prepare("SELECT j.id,j.owner,j.device,j.project,j.status,j.created,j.action,j.result,d.name AS deviceName FROM jobs j JOIN devices d ON d.id=j.device WHERE j.project=? AND EXISTS(SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:run:'||j.id) AND (j.owner=? OR d.owner=?) ORDER BY j.created DESC,j.id DESC LIMIT 30").all(project,member.id,member.id).map(j=>{
     const meta=readMeta(db,key('run',j.id));let result;try{result=JSON.parse(j.result??'null');}catch{result=null;}
@@ -283,7 +299,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null})
   }
   if(method!=='POST'||route!=='/api/room')throw fail(405,'Methode nicht erlaubt.');
   const value=parse(actions,await readJSON(req,24000));
-  if(value.project)requirePermission(db,member,value.project,value.action==='read'||value.action==='message'&&!value.senderAgent&&!value.handoff?'view':value.action==='repository'?'admin':'develop');
+  if(value.project)requirePermission(db,member,value.project,value.action==='read'||value.action==='share'||value.action==='message'&&!value.senderAgent&&!value.handoff?'view':value.action==='repository'?'admin':'develop');
   const result=transaction(db,()=>{
    if(value.action==='create'){
     const previous=replay(db,member,value);if(previous)return previous;
@@ -377,6 +393,19 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null})
     putMeta(db,agentKey,record);
     teamEvent(db,{actor:member.id,project:value.project,kind:'agent',body:(existing?'KI-Teammitglied aktualisiert: ':'KI-Teammitglied im Projekt: ')+value.name});
     return remember(db,member,value,{ok:true,agent:agentId,agentId});
+   }
+   if(value.action==='share'){
+    // "Im Projekt teilen": an agent's answer from my private chat, copied word for word into the project chat.
+    const shared=readMeta(db,key('share',value.message));if(shared)return {ok:true,message:shared.message,reused:true};
+    const original=db.prepare('SELECT * FROM messages WHERE id=? AND channel=?').get(value.message,value.project);
+    const scope=original?privateScope(db,original.id):null,meta=original?readMeta(db,key('message',original.id))??{}:{};
+    if(!original||!scope||scope.member!==member.id||meta.origin!=='verified-run'||!meta.senderAgent)throw fail(400,'Teilen geht nur mit einer Agentenantwort aus deinem eigenen Direktchat.');
+    if(db.prepare('SELECT id FROM messages WHERE id=?').get(value.id))throw fail(409,'Nachrichtenkennung bereits verwendet.');
+    db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(value.id,value.project,member.id,original.body,now());
+    putMeta(db,key('message',value.id),{kind:'agent',origin:'verified-run',senderAgent:meta.senderAgent,model:meta.model,replyTo:null,sharedBy:member.id,sharedFrom:original.id});
+    putMeta(db,key('share',original.id),{message:value.id});
+    teamEvent(db,{actor:member.id,project:value.project,kind:'message',body:'Agentenantwort im Projekt geteilt'});
+    return {ok:true,message:value.id};
    }
    if(value.action==='message'){
     requireSource(db,value.project,value.replyTo,member.id);

@@ -1,4 +1,5 @@
 import {mayRead} from './chat-scope.mjs';
+import {taskThread} from './room-http.mjs';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {transaction} from './store.mjs';
@@ -114,7 +115,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   const activeJobs=db.prepare(`SELECT j.id,j.action,j.status,m.name AS ownerName FROM jobs j JOIN members m ON m.id=j.owner WHERE j.status IN ('queued','running','cancelling') AND (json_extract(j.payload,'$.worktree') IN (SELECT job FROM workspaces WHERE task=?) OR (j.action='integrate' AND json_extract(j.payload,'$.reviewJob') IN (SELECT r.id FROM jobs r JOIN workspaces w ON w.job=json_extract(r.payload,'$.worktree') WHERE w.task=?))) AND j.action NOT IN ('files','read-file','save-file') ORDER BY j.created`).all(task.id,task.id);
   // A queued job of this task may wait behind someone else's work on the same Werkstatt.
   for(const j of activeJobs)if(j.status==='queued'){const ahead=db.prepare("SELECT m.name FROM jobs o JOIN members m ON m.id=o.owner WHERE o.device=(SELECT device FROM jobs WHERE id=?) AND o.status IN ('running','cancelling') AND o.id<>? LIMIT 1").get(j.id,j.id);if(ahead)j.behind=ahead.name;}
-  send({task:taskView(db,task),brief,reviews,activeJobs,...taskJobState(db,task.id),source,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),workspaces:workspaces.map(w=>({...w,changed:copyHasChange(db,w.id),behind:copyBehind(db,w.id)}))});return true;
+  send({task:taskView(db,task),brief,reviews,activeJobs,...taskJobState(db,task.id),source,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),thread:taskThread(db,task.id,member),workspaces:workspaces.map(w=>({...w,changed:copyHasChange(db,w.id),behind:copyBehind(db,w.id)}))});return true;
  }
  if(route!=='/api/collaboration/task'||method!=='POST')throw fail(405,'Methode nicht erlaubt.');
  const value=parse(z.discriminatedUnion('action',[

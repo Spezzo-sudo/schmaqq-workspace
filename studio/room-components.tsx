@@ -1,5 +1,5 @@
 import {Fragment,useEffect,useRef,useState,type ReactNode} from 'react';
-import {ArrowRight,Bot,CheckCheck,Crown,ExternalLink,Hash,Link2,MessageSquare,Monitor,Pin,Plus,Reply,Search,Send,Shield,Sparkles,UserCircle,Users,X,ChevronLeft,MoreHorizontal,FolderOpen} from 'lucide-react';
+import {ArrowRight,Bot,CheckCheck,ListChecks,Crown,ExternalLink,Hash,Link2,MessageSquare,Monitor,Pin,Plus,Reply,Search,Send,Shield,Sparkles,UserCircle,Users,X,ChevronLeft,MoreHorizontal,FolderOpen} from 'lucide-react';
 import {
  roomRequest,operationId,time,initials,storedDraft,saveDraft,taskTitleFrom,
  agentRoleLabels,agentCapabilityLabels,agentContextSourceLabels,agentPermissionLabels,
@@ -70,6 +70,11 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
   setHermesBusy(true);setError('');
   try{await roomRequest('/api/agent-runs',{project:room.project.id,agent:agentId,message:messageId,...(retry?{retry:true}:{})});await loadAgentRuns();followLatest.current=true;}
   catch(e){setError((e as Error).message);}finally{setHermesBusy(false);}
+ }
+ async function shareInProject(message:RoomMessage){
+  setError('');
+  try{await roomRequest('/api/room',{action:'share',project:room.project.id,id:operationId(),message:message.id});await refresh();selectFilter({kind:'all'});}
+  catch(e){setError((e as Error).message);}
  }
  async function decideProposal(proposal:string,decision:'accept'|'reject'){
   if(hermesBusy)return;setHermesBusy(true);setError('');
@@ -443,6 +448,24 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
       const showReply=Boolean(message.replyTo)&&visible[index-1]?.id!==message.replyTo;
       const recipientName=targetAgent?.name??targetMember?.name;
       const closeMenu=(e:React.MouseEvent<HTMLElement>)=>e.currentTarget.closest('details')?.removeAttribute('open');
+      // A task's conversation shows up as one card; tapping it opens the task with its conversation.
+      if(filter.kind==='all'&&message.inTask&&!query.trim()){
+       const thread=messages.filter(m=>m.inTask===message.inTask&&(m.scope??'group')==='group');
+       const who=sAgent?.name??person?.name??'Jemand';
+       return <button key={message.id} className="r7-card" id={'message-'+message.id} onClick={()=>onTask(message.inTask!)}>
+        <ListChecks size={18} aria-hidden/>
+        <span className="r7-card-body"><span className="r7-card-kind">Aufgabe · {thread.length} {thread.length===1?'Nachricht':'Nachrichten'}</span><strong>{linkedTask?.title??'Aufgabe'}</strong><small>{who}: {message.body.slice(0,140)}</small></span>
+        <ArrowRight size={16} aria-hidden/>
+       </button>;
+      }
+      if(message.kind==='card'&&message.card){
+       const from=(room.agents??[]).find(a=>a.id===message.card!.agent);
+       return <div key={message.id} className="r7-card" id={'message-'+message.id} role="group" aria-label="Neue Arbeit aus einem Direktchat">
+        {from?<AgentAvatar agent={from} size="sm"/>:<ListChecks size={18} aria-hidden/>}
+        <span className="r7-card-body"><span className="r7-card-kind">{message.card.tasks.length>1?'Plan':'Aufgabe'} aus einem Direktchat · {time(message.created)}</span><strong>{message.body}</strong>
+         {message.card.tasks.slice(0,6).map((t,i)=><button key={t} className="rw-link" onClick={()=>onTask(t)}>{message.card!.titles[i]??'Aufgabe öffnen'} →</button>)}</span>
+       </div>;
+      }
 
       return <Fragment key={message.id}>
        <article className={'rw-message'+(isOwn?' r3-own':'')+(isAgentMsg?' ai':'')+(message.handoff?' handoff':'')} aria-label={isOwn?'Deine Nachricht':undefined} id={'message-'+message.id}>
@@ -460,6 +483,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
            ?<button type="button" className="rw-link rw-msg-agent-name" onClick={()=>openProfile(sAgent.id)}>{sAgent.name}{sAgent.nickname?` „${sAgent.nickname}“`:''}</button>
            :message.kind==='ai-shared'?message.model:person?.name??'Mitglied'}
          </strong>
+         {message.sharedBy&&<span className="r7-shared">geteilt von {room.members.find(m=>m.id===message.sharedBy)?.name??'Mitglied'}</span>}
          {sAgent&&!isVerifiedRun&&<span className="rw-origin-badge manual" title={'Von '+(person?.name??'einem Mitglied')+' eingetragen; keine Antwort des Agenten'}>Manuell protokolliert</span>}
          {!sAgent&&message.kind==='ai-shared'&&<span className="rw-badge">KI-Antwort · geteilt von {person?.name}</span>}
          {!directView&&recipientName&&<span className="r5-to">an {recipientName}</span>}
@@ -499,6 +523,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
          <button onClick={e=>{closeMenu(e);linkedTaskId?onTask(linkedTaskId):onConvert('task',message);}}><CheckCheck size={14}/>{linkedTaskId?'Aufgabe':'Als Aufgabe'}</button>
          <button onClick={e=>{closeMenu(e);onConvert('decision',message);}}><Pin size={14}/>Festhalten</button>
          {linkedTaskId&&filter.kind!=='topic'&&<button onClick={e=>{closeMenu(e);selectFilter({kind:'topic',taskId:linkedTaskId});}}><Hash size={14}/>Nur dieses Thema</button>}
+         {filter.kind==='agent'&&sAgent&&isVerifiedRun&&message.author===userId&&<button onClick={e=>{closeMenu(e);void shareInProject(message);}}><Users size={14}/>Im Projekt teilen</button>}
          {isAgentMsg&&<p className="r5-menu-note">{isVerifiedRun
           ?`Echte Antwort${sAgent?' von '+sAgent.name:''}${message.model?' · Modell '+message.model:''}. Entscheidungen bleiben beim Team.`
           :`Von ${person?.name??'einem Mitglied'} von Hand eingetragen, keine Antwort des Agenten.`}</p>}
