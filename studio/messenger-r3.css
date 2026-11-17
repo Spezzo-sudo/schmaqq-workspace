@@ -381,3 +381,7 @@
 }
 
 /* Hermes R1: explicit human-triggered agent run; never indicate synthetic AI output. */
+/* The group name opens the project info, like a messenger's group page. */
+.r3-chat-heading-button{display:block;text-align:left;border:0;background:transparent;padding:4px 6px;margin:-4px -6px;border-radius:10px;color:inherit;font:inherit;cursor:pointer}
+.r3-chat-heading-button:hover,.r3-chat-heading-button:focus-visible{background:var(--schmaqq-paper,#f1efe8)}
+.r3-chat-heading-button strong,.r3-chat-heading-button small{display:block}

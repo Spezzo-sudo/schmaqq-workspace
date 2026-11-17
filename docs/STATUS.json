@@ -1,4 +1,30 @@
 {
+  "messenger_navigation_20261117": {
+    "state": "feature_branch_pending_owner_review",
+    "branch": "feat/messenger-navigation-20261117",
+    "concept": "docs/CONCEPT_MESSENGER.md",
+    "implemented": [
+      "Start page with Chats | Kontakte; one flat chat list newest first; projects appear as groups; an agent chat appears once something was said",
+      "Each project row has ⋯ (and press-and-hold): project info, open group chat, archive — archiving takes two taps",
+      "Menu behind the avatar (phone: top left; desktop: sidebar bottom): account, new project, invite, AI access with real status, projects and archive, guide, sign out; no bottom bar, no second account entry",
+      "Project info replaces the grid of tabs: what is going on now, Chat / Vorschau / Aufgabe / Mitglied, members (agents and people), tasks, files, knowledge, settings; ⋯ for archive; areas lead back to the project info",
+      "Tapping the group name in the chat opens the project info",
+      "Mitglied: hire an agent, take someone from the team into the project (roles), invite a new person",
+      "Contacts: people (message them in a project) and agents per project with profile and hire",
+      "Scroll hint also covers detail panels and keeps room below the last entry"
+    ],
+    "verification": {
+      "regression": "npm run studio:verify under Node 24.22.0: 382 passed, 0 failed, 3 skipped",
+      "visual": "Local demo at 390 px (chats, contacts, row menu, group chat, project info, agent profile, menu) and 1280 px"
+    },
+    "limits": [
+      "Agent profile keeps its current layout; the single permission list from the concept is still open",
+      "Private chats between people stay inside a project",
+      "Old 'KI & Kontext' area is no longer reachable from the navigation; its route shows the project info"
+    ],
+    "production_changed": false,
+    "main_changed": false
+  },
   "conversations_planning_20261117": {
     "state": "live",
     "branch": "main (PR #91, squash ce5a50a)",

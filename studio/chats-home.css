@@ -43,3 +43,21 @@
  .ch-home{padding:8px 14px 150px}
  .ch-fab-wrap{right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 }
+/* Flat list: projects are groups, agents are contacts with a small "KI" tag. */
+.ch-flat{margin-top:4px}
+.ch-group-mark{color:#fff;font-weight:800;font-size:16px}
+.ch-agent-tag{font-style:normal;font-size:10px;font-weight:800;letter-spacing:.04em;background:var(--rw-lime,#d6ff4f);color:var(--rw-ink,#12152a);border-radius:5px;padding:1px 5px}
+.ch-row-project{color:var(--schmaqq-ink,#111225);font-weight:600}
+.ch-row-wrap{position:relative;display:flex;align-items:center}
+.ch-row-wrap>.ch-row{flex:1;min-width:0;-webkit-touch-callout:none;user-select:none}
+.ch-row-more{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--schmaqq-muted,#5d5c68);cursor:pointer;display:grid;place-items:center}
+.ch-row-more:hover,.ch-row-more[aria-expanded=true]{background:var(--schmaqq-paper,#f1efe8);color:var(--schmaqq-ink,#111225)}
+.ch-row-menu{position:absolute;right:6px;top:calc(100% - 6px);z-index:20;min-width:210px;background:var(--schmaqq-paper-light,#fbfaf6);border:1px solid var(--schmaqq-rule-strong,rgba(17,18,37,.34));border-radius:12px;box-shadow:0 10px 30px rgba(17,18,37,.16);padding:6px;display:grid}
+.ch-row-menu button{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border:0;border-radius:8px;background:transparent;font:600 14px/1.2 var(--schmaqq-sans,inherit);color:inherit;text-align:left;cursor:pointer}
+.ch-row-menu button:hover{background:var(--schmaqq-paper,#f1efe8)}.ch-row-menu .danger{color:#b4452f}
+/* Contacts */
+.ch-contact-actions{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 6px}
+.ch-section{font:700 11px/1 var(--schmaqq-mono,monospace);letter-spacing:.14em;text-transform:uppercase;color:var(--schmaqq-muted,#5d5c68);margin:16px 2px 6px}
+.ch-person{width:46px;height:46px;flex:none;font-size:15px}
+.ch-contacts .ch-row:disabled{cursor:default;opacity:1}
+.ch-person-chats{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 10px 58px}

@@ -24,7 +24,7 @@ const ALL_CONTEXT_SOURCES:RoomAgentContextSource[]=['messages','tasks','decision
 const CONTEXT_SOURCE_KEYS:RoomAgentContextSource[]=['messages','tasks','decisions','repository','runs'];
 const ALL_ROLES:RoomAgentRole[]=agentDepartments.flatMap(d=>d.roles);
 
-export function Conversation({room,resources=[],userId,search,refresh,onTask,onConvert,projectNavigation,tools,detail,detailTitle,detailKey='talk',detailNavigation,onCloseDetail,onFiles,onBack}:{onBack?:()=>void;room:RoomState;resources?:Resource[];userId:string;search:string;refresh:()=>Promise<void>;onTask:(id:string)=>void;onConvert:(kind:'task'|'decision',source:RoomMessage)=>void;projectNavigation?:ReactNode;tools?:ReactNode;detail?:ReactNode;detailTitle?:string;detailKey?:string;detailNavigation?:ReactNode;onCloseDetail?:()=>void;onFiles?:()=>void}){
+export function Conversation({room,resources=[],userId,search,refresh,onTask,onConvert,projectNavigation,tools,detail,detailTitle,detailKey='talk',detailNavigation,onCloseDetail,onFiles,onBack,onInfo}:{onBack?:()=>void;onInfo?:()=>void;room:RoomState;resources?:Resource[];userId:string;search:string;refresh:()=>Promise<void>;onTask:(id:string)=>void;onConvert:(kind:'task'|'decision',source:RoomMessage)=>void;projectNavigation?:ReactNode;tools?:ReactNode;detail?:ReactNode;detailTitle?:string;detailKey?:string;detailNavigation?:ReactNode;onCloseDetail?:()=>void;onFiles?:()=>void}){
  const [filter,setFilter]=useState<MessengerFilter>(()=>readMessengerFilter(location.search,room));
  const draftKey=messengerDraftKey(userId,room.project.id,filter),initialTarget=messengerComposerTarget(filter);
  const [text,setText]=useState(()=>storedDraft(draftKey)),[reply,setReply]=useState<RoomMessage|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[older,setOlder]=useState<RoomMessage[]>([]),[more,setMore]=useState(room.more);
@@ -127,6 +127,16 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
   const wasAgent=Boolean(profileAgentId||editingAgent);setProfileAgentId(null);setEditingAgent(null);
   if(detail)onCloseDetail?.();if(wasAgent)setMobilePanel(profileReturn.current);
  }
+ const outside=useRef({profile:openProfile,hire:()=>startCreateAgent()});outside.current={profile:openProfile,hire:()=>startCreateAgent()};
+ useEffect(()=>{
+  const profile=(e:Event)=>{const id=(e as CustomEvent<{id:string}>).detail?.id;if(id)outside.current.profile(id);};
+  const hire=()=>outside.current.hire();
+  window.addEventListener('studio:open-agent',profile);window.addEventListener('studio:hire-agent',hire);
+  // Links such as ?profile=<agent> or ?hire=1 open once, then leave the address.
+  const url=new URL(location.href),wanted=url.searchParams.get('profile'),hiring=url.searchParams.get('hire')==='1';
+  if(wanted||hiring){url.searchParams.delete('profile');url.searchParams.delete('hire');history.replaceState(null,'',url);requestAnimationFrame(()=>{if(wanted)outside.current.profile(wanted);else outside.current.hire();});}
+  return()=>{window.removeEventListener('studio:open-agent',profile);window.removeEventListener('studio:hire-agent',hire);};
+ },[]);
  function resetComposer(){const target=messengerComposerTarget(filter);setRecipient(target.recipient);setTopicTask(target.topicTask);setSenderAgent('');setHandoffTo('');setHandoffSummary('');}
 
  function startCreateAgent(presetId?:string){
@@ -396,7 +406,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
     <header className="rw-messenger-header">
      <button type="button" className="r3-icon-button r3-chat-back" aria-label={onBack?'Zu allen Chats':'Zur Gesprächsliste'} onClick={onBack??showConversationList}><ChevronLeft size={22}/></button>
      {filter.kind==='agent'?(()=>{const a=activeAgents.find(a=>a.id===filter.id);return a?<button className="rw-avatar-btn" aria-label={`Profil von ${a.name} öffnen`} onClick={()=>openProfile(a.id)}><AgentAvatar agent={a} size="sm"/></button>:null;})():<span className="rw-avatar channel">{filter.kind==='member'?initials(activeMembers.find(m=>m.id===filter.id)?.name??'?'):<MessageSquare size={19}/>}</span>}
-     <div className="r3-chat-heading"><strong title={activeFilterTitle}>{filter.kind==='all'?room.project.title:filter.kind==='agent'?activeAgents.find(a=>a.id===filter.id)?.name:filter.kind==='member'?activeMembers.find(m=>m.id===filter.id)?.name:activeFilterTitle}</strong><small><span className={'r3-shared-dot'+(viewStatus?' '+viewStatus.state:filter.kind==='member'?' idle':' ready')}/>{viewStatus?(workingRun&&viewAgent&&workingRun.agent===viewAgent.id?agentLiveActivity(workingRun)+' …':viewStatus.label)+' · privat':filter.kind==='member'?'Privat':filter.kind==='topic'?'Thema im Gruppenchat':`${activeMembers.length} Menschen · ${activeAgents.length} Agenten`}</small></div>
+     {filter.kind==='all'&&onInfo?<button type="button" className="r3-chat-heading r3-chat-heading-button" aria-label={"Projektinfo von "+room.project.title+" öffnen"} onClick={onInfo}><strong title={room.project.title}>{room.project.title}</strong><small><span className="r3-shared-dot ready"/>{`${activeMembers.length} Menschen · ${activeAgents.length} Agenten`} · Info antippen</small></button>:<div className="r3-chat-heading"><strong title={activeFilterTitle}>{filter.kind==='all'?room.project.title:filter.kind==='agent'?activeAgents.find(a=>a.id===filter.id)?.name:filter.kind==='member'?activeMembers.find(m=>m.id===filter.id)?.name:activeFilterTitle}</strong><small><span className={'r3-shared-dot'+(viewStatus?' '+viewStatus.state:filter.kind==='member'?' idle':' ready')}/>{viewStatus?(workingRun&&viewAgent&&workingRun.agent===viewAgent.id?agentLiveActivity(workingRun)+' …':viewStatus.label)+' · privat':filter.kind==='member'?'Privat':filter.kind==='topic'?'Thema im Gruppenchat':`${activeMembers.length} Menschen · ${activeAgents.length} Agenten`}</small></div>}
      {tools}
     </header>
 

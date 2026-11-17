@@ -8,9 +8,10 @@ export default function ScrollHint(){
  useEffect(()=>{
   const check=()=>{
    // The scrolling area differs per page (page, project content, main); take the tallest one that scrolls.
-   const areas=[...document.querySelectorAll<HTMLElement>('.rw-main, .rw-main > *, .rw-main > * > *, .team-project-content > *')]
+   const areas=[...document.querySelectorAll<HTMLElement>('.rw-main, .rw-main > *, .rw-main > * > *, .team-project-content > *, .r3-inspector-body, .r5-chat-list')]
     .filter(e=>e.scrollHeight>e.clientHeight+40&&['auto','scroll'].includes(getComputedStyle(e).overflowY)).sort((a,b)=>b.clientHeight-a.clientHeight);
-   const found=areas[0]??(document.documentElement.scrollHeight>innerHeight+40?document.scrollingElement as HTMLElement:null);
+   const panel=areas.find(e=>e.classList.contains('r3-inspector-body'));
+   const found=panel??areas[0]??(document.documentElement.scrollHeight>innerHeight+40?document.scrollingElement as HTMLElement:null);
    const more=found&&found.scrollTop+found.clientHeight<found.scrollHeight-48;
    setBox(more?found:null);
   };

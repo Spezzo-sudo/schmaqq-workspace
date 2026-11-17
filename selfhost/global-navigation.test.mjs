@@ -31,16 +31,17 @@ test('unknown pages and unsafe redirects cannot become navigation targets',()=>{
  assert.equal(roomResumeURL('?page=bad&room=..%2F..&task=bad%2Ftask'),'/');
 });
 
-test('mobile global bar does not replace the project conversation component',()=>{
+test('phones navigate with Chats | Kontakte and the menu; the project conversation stays one component',()=>{
  const page=readFileSync(new URL('../studio/team-workspace.tsx',import.meta.url),'utf8');
- const css=readFileSync(new URL('../studio/studio-navigation.css',import.meta.url),'utf8');
+ const home=readFileSync(new URL('../studio/chats-home.tsx',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../studio/side-menu.css',import.meta.url),'utf8');
  assert.match(page,/<Conversation key=\{room\.project\.id\}/);
  assert.match(page,/route\.page==='conversations'/);
  assert.match(page,/tab:'talk'/);
- assert.match(page,/studio-mobile-nav/);
- assert.match(css,/\.team-shell \.team-areas\{position:static/);
- assert.match(css,/\.team-shell \.studio-mobile-nav\{position:fixed/);
- assert.match(css,/\n\.team-shell \.studio-mobile-nav\{display:none\}/,'above 650 px only the sidebar navigates');
+ assert.doesNotMatch(page,/studio-mobile-nav/,'no bottom bar: the account lives in the menu');
+ assert.match(page,/<SideMenu /);
+ assert.match(home,/role="tablist" aria-label="Start"/);
+ assert.match(css,/\.team-shell \.studio-topbar-menu\{display:none\}/,'above 650 px the sidebar opens the menu');
  assert.doesNotMatch(page,/Codex in Studio ausführen/);
 });
 
@@ -52,7 +53,7 @@ test('every former-view function has a place in the new navigation',()=>{
  assert.match(page,/<DownloadAll\/>/);
  assert.match(page,/<ProjectBriefing /);
  assert.match(page,/<PluginGrants\/>/);
- assert.match(page,/studio-account-button/);
+ assert.match(page,/studio-menu-button/);
  assert.doesNotMatch(page,/studio-more/);
  assert.match(general,/channel:'general'/);
  assert.match(general,/filter\(d=>!d\.project\)/);
