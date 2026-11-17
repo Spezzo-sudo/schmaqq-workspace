@@ -3,6 +3,12 @@
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
 ## 17.11.2026
+- **Start zeigt nur Projekte** (plus „Wartet auf dich“ und eine eingeklappte Zeile für Direktnachrichten mit Menschen);
+  Agenten-Direktchats nur im Projekt über die **Agentenleiste**.
+- **Projekt mit zwei Reitern: Chat | Aufgaben.**
+- **Agenten sollen wirklich arbeiten:** Programmierläufe und Webrecherche in Schritt 5; bis dahin zeigt das Profil
+  ehrlich, was ein Agent kann.
+- **Konzept abgeschlossen** (Owner: „belassen wir es bei dem Konzept“). Weitere Ideen nur unter „Später“.
 - **Ein Projekt ist ein Chat für Menschen**; Agenten schweigen dort, bis man sie holt (@Name, Nachrichten markieren,
   Direktchat). Ersetzt „Gruppenchat, in dem Agenten auf @Name antworten“ und die Idee eines separaten Projektverlaufs.
 - **Direktchat mit jedem Agenten** bleibt, nicht nur über die Projektleitung.

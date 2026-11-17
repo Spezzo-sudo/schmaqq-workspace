@@ -39,14 +39,20 @@ und verteilt, ist aber kein Pflicht-Umweg.
 6. **Was ein Agent weiß:** im Projektchat die markierten bzw. erwähnenden Nachrichten plus offene Aufgaben; im Direktchat
    dieses Gespräch plus Projektstand; an einer Karte deren Gespräch. Nie den ganzen Verlauf.
 7. **Kein Motor- oder Modellname** in der Oberfläche (nur unter „Erweitert“ im Agentenprofil).
+8. **Ehrlich, was ein Agent kann:** Das Profil zeigt unter „Kann“ nur, was wirklich freigeschaltet ist
+   (heute: Projekt lesen, Aufgaben vorschlagen, Pläne vorschlagen für die Projektleitung).
 
 ## Bildschirme
 
 **Handy** (eine Ebene pro Bildschirm)
-- **Start:** „Wartet auf dich“, dann **eine Zeile pro Projekt** (führt in den Projektchat), dann Direktchats mit Menschen.
+- **Start:** „Wartet auf dich“, dann **nur die Projekte**, eine Zeile pro Projekt (führt in den Projektchat; die Zahl
+  zählt auch Ungelesenes aus Direktchats mit den Agenten dieses Projekts). Direktchats mit Menschen als **eine**
+  eingeklappte Zeile „Direktnachrichten“. Agenten-Direktchats stehen nie auf dem Start.
   Avatar oben links öffnet das Menü (Konto, Neues Projekt, Einladen, KI-Zugang, Projekte und Archiv, Anleitung).
-- **Projektchat:** Kopf mit Projektname (Tipp öffnet Projektinfo). Nachrichten, Karten, markierte Nachrichten.
-  Eingabe „Nachricht … (@Name holt einen Agenten)“.
+- **Projekt:** Kopf mit Projektname (Tipp öffnet Projektinfo), darunter die **Agentenleiste**: rundes Bild je Agent,
+  Tipp öffnet den Direktchat, lange drücken das Profil, grüner Punkt = arbeitet gerade, Zähler = ungelesen, (+) Agent
+  anstellen. Darunter zwei Reiter: **Chat** (Nachrichten, Karten, markierte Nachrichten; Eingabe „Nachricht …
+  (@Name holt einen Agenten)“) und **Aufgaben** (alle Karten als Liste: bei dir, läuft, erledigt).
 - **Karte:** Status, Zuständige, Vorschau, darunter das Gespräch der Karte inklusive Agent ↔ Agent.
 - **Projektinfo:** Jetzt (offen, bei dir, Prüfung, Vorschau), Mitglieder (Tipp: Profil oder „Privat schreiben“),
   Aufgaben, Ergebnisse, Einstellungen, ⋯ Archivieren.
@@ -71,15 +77,15 @@ kommen:
 
 Jeder Schritt: eigener Pull Request, Prüfung auf dem Pilot (Handy und Desktop), dann „merge“ und „JA LIVE“.
 
-1. **Start und Desktop-Gerüst:** eine Zeile pro Projekt, Menü hinter dem Avatar, KI-Zugang mit Status,
-   Desktop mit drei Spalten, Projektinfo (aus PR #95 übernommen).
+1. **Start und Desktop-Gerüst:** nur Projekte auf dem Start, Menü hinter dem Avatar, KI-Zugang mit Status,
+   Agentenleiste und Reiter Chat | Aufgaben im Projekt, Desktop mit drei Spalten, Projektinfo (aus PR #95 übernommen).
 2. **Projektchat und Direktchats:** Agenten schweigen, @Name holt genau einen Agenten, Direktchat mit jedem Agenten.
 3. **Karten:** Plan, Aufgabe, Ergebnis, Vorschau als Karten mit eigenem Gespräch; automatische Karte aus Direktchats;
    „Im Projekt teilen“.
 4. **Markieren und Weitergabe:** Nachrichten markieren → „Agent fragen“; Agent ↔ Agent an der Karte mit Grenzen,
    Zähler und Stopp.
-5. **Zuständigkeitsbereiche, dann Programmierläufe:** Pfade pro Projekt mit Warnung; danach Programmierläufe mit
-   persönlicher Anmeldung über den Launcher (eigener Sicherheits-PR).
+5. **Agenten machen wirklich etwas:** zuerst Zuständigkeitsbereiche pro Projekt mit Warnung; dann Programmierläufe mit
+   persönlicher Anmeldung über den Launcher (eigener Sicherheits-PR) und Webrecherche als Werkzeug für Agenten.
 
 ## Später (nicht im laufenden Bau)
 
