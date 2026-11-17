@@ -9,7 +9,8 @@
 .ch-filters button.on{background:var(--rw-ink,#12152a);border-color:var(--rw-ink,#12152a);color:var(--schmaqq-paper,#f2efe8)}
 .ch-waiting{border-radius:16px;background:var(--rw-ink,#12152a);color:var(--schmaqq-paper,#f2efe8);overflow:hidden}
 .ch-waiting-head{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer;min-height:58px}
-.ch-waiting-head .ch-row-text span{color:#c9cbd6;font-size:13px}
+.ch-waiting-head .ch-row-text span{color:#e9eaf2;font-size:14px}
+.ch-waiting-head .ch-row-text small{display:block;color:#c9cbd6;font-size:12.5px;margin-top:2px}
 .ch-waiting-head svg{flex:none;transition:transform .15s}.ch-waiting-head svg.turned{transform:rotate(180deg)}
 .ch-waiting-count{flex:none;width:34px;height:34px;border-radius:50%;background:var(--rw-lime,#d6ff4f);color:var(--rw-ink,#12152a);display:grid;place-items:center;font-weight:800}
 .ch-waiting ul{list-style:none;margin:0;padding:0 8px 8px;display:grid;gap:6px}

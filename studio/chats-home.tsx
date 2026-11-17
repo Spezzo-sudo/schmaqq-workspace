@@ -7,7 +7,6 @@ import './chats-home.css';
 
 export type WaitingItem={id:string;title:string;detail:string;open:()=>void};
 type AgentEntry={agent:RoomAgent;project:Room;last:number|null;preview:string;unread:number};
-type Filter='all'|'groups'|'agents';
 
 const when=(t:number|null|undefined)=>{
  if(!t)return '';
@@ -71,7 +70,7 @@ export function ChatsHome({rooms,waiting,greeting,onOpen,onGeneral,onCreateProje
  rooms:Room[];waiting:WaitingItem[];greeting:string;
  onOpen:(room:string,chat?:string)=>void;onGeneral:()=>void;onCreateProject:()=>void;onAgents:()=>void;
 }){
- const [filter,setFilter]=useState<Filter>('all'),[query,setQuery]=useState(''),[openWaiting,setOpenWaiting]=useState(false),[newMenu,setNewMenu]=useState(false);
+ const [query,setQuery]=useState(''),[openWaiting,setOpenWaiting]=useState(false),[newMenu,setNewMenu]=useState(false);
  const {entries,loaded}=useAllAgents(rooms),working=useWorkingAgents();
  const q=query.trim().toLowerCase();
  // One block per project: its name once as the heading, then the group chat, the lead and the other agents.
@@ -79,26 +78,23 @@ export function ChatsHome({rooms,waiting,greeting,onOpen,onGeneral,onCreateProje
   const titleMatch=!q||r.title.toLowerCase().includes(q);
   const agents=entries.filter(e=>e.project.id===r.id&&(titleMatch||e.agent.name.toLowerCase().includes(q)))
    .sort((a,b)=>Number(isProjectLead(b.agent))-Number(isProjectLead(a.agent))||(b.last??0)-(a.last??0));
-  return {room:r,showGroup:filter!=='agents'&&titleMatch,agents:filter==='groups'?[]:agents,last:Math.max(r.lastMessage??0,...agents.map(a=>a.last??0))};
- }).filter(x=>x.showGroup||x.agents.length).sort((a,b)=>b.last-a.last),[rooms,entries,filter,q]);
+  return {room:r,showGroup:titleMatch,agents,last:Math.max(r.lastMessage??0,...agents.map(a=>a.last??0))};
+ }).filter(x=>x.showGroup||x.agents.length).sort((a,b)=>b.last-a.last),[rooms,entries,q]);
  return <div className="ch-home">
   <div className="ch-head">
    <p className="ch-hello">{greeting}</p>
    <label className="ch-search"><Search size={18} aria-hidden/><span className="rw-sr">Chats durchsuchen</span><input id="team-search" type="search" placeholder="Chats durchsuchen" value={query} onChange={e=>setQuery(e.target.value)}/></label>
-   <div className="ch-filters" role="group" aria-label="Chats filtern">
-    {([['all','Alle'],['groups','Gruppen'],['agents','Agenten']] as const).map(([id,label])=><button key={id} aria-pressed={filter===id} className={filter===id?'on':''} onClick={()=>setFilter(id)}>{label}</button>)}
-   </div>
   </div>
   {!!waiting.length&&<section className="ch-waiting" aria-label="Wartet auf dich">
    <button className="ch-waiting-head" aria-expanded={openWaiting} onClick={()=>setOpenWaiting(v=>!v)}>
     <span className="ch-waiting-count">{waiting.length}</span>
-    <span className="ch-row-text"><strong>Wartet auf dich</strong><span>{waiting[0].title}{waiting.length>1?' und '+(waiting.length-1)+' weitere':''}</span></span>
+    <span className="ch-row-text"><strong>Wartet auf dich</strong><span>{waiting[0].title}</span><small>{waiting[0].detail}{waiting.length>1?' · und '+(waiting.length-1)+' weitere':''}</small></span>
     <ChevronDown size={18} aria-hidden className={openWaiting?'turned':''}/>
    </button>
    {openWaiting&&<ul>{waiting.map(w=><li key={w.id}><button onClick={w.open}><span><strong>{w.title}</strong><small>{w.detail}</small></span><ChevronRight size={16} aria-hidden/></button></li>)}</ul>}
   </section>}
   <ul className="ch-list" aria-label="Chats">
-   {filter!=='agents'&&(!q||'team allgemein'.includes(q))&&<li><button className="ch-row" onClick={onGeneral}>
+   {(!q||'team allgemein'.includes(q))&&<li><button className="ch-row" onClick={onGeneral}>
     <span className="ch-group-mark ch-team" aria-hidden><Users size={22}/></span>
     <span className="ch-row-text"><span className="ch-row-top"><strong>Team</strong></span><span className="ch-row-sub">Allgemeines Gespräch, nicht an ein Projekt gebunden</span></span>
    </button></li>}
@@ -119,7 +115,6 @@ export function ChatsHome({rooms,waiting,greeting,onOpen,onGeneral,onCreateProje
    </ul>
   </section>)}
   {!rooms.length&&<div className="ch-empty"><p>Noch kein Projekt. Ein Projekt ist eine Gruppe mit Menschen und Agenten.</p><button className="rw-button lime" onClick={onCreateProject}><Plus size={16}/>Erstes Projekt anlegen</button></div>}
-  {!!rooms.length&&filter==='agents'&&loaded&&!entries.length&&<div className="ch-empty"><p>Noch keine Agenten. Du stellst sie in einer Projektgruppe an.</p><button className="rw-button" onClick={onAgents}><Bot size={16}/>Zu den Agenten</button></div>}
   <div className="ch-fab-wrap">
    {newMenu&&<div className="ch-new-menu" role="menu">
     <button role="menuitem" onClick={()=>{setNewMenu(false);onCreateProject();}}><MessageSquare size={17}/>Neues Projekt (Gruppe)</button>
@@ -135,7 +130,7 @@ export function AgentsPage({rooms,onOpen,onCreateProject}:{rooms:Room[];onOpen:(
  const {entries,loaded}=useAllAgents(rooms);
  return <div className="rw-page team-page ch-agents">
   <h1>Agenten</h1>
-  <p className="studio-page-intro">Agenten arbeiten in Projektgruppen. Ihre Antworten laufen über das ChatGPT-Konto, das du unter Mein Konto verbindest.</p>
+  <p className="studio-page-intro">Agenten gehören zu einem Projekt. Wer sie fragt, nutzt den eigenen KI-Zugang.</p>
   {!loaded&&<p className="rw-muted">Wird geladen …</p>}
   {rooms.map(r=>{const list=entries.filter(e=>e.project.id===r.id);return <section key={r.id} aria-labelledby={'ag-'+r.id}>
    <h2 id={'ag-'+r.id}>{r.title}</h2>

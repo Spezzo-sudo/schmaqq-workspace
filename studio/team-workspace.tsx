@@ -24,6 +24,7 @@ import ProjectOverview,{type TaskPane} from './project-overview';
 import TeamKnowledge from './team-knowledge';
 import RoomAssistant from './room-assistant';
 import CodexAccount from './codex-account';
+import AgentAccess from './agent-access';
 import {ChatsHome,AgentsPage,type WaitingItem} from './chats-home';
 import MessengerProjectNavigation from './messenger-project-nav';
 import {ProjectFiles} from './messenger-detail';
@@ -117,13 +118,14 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
     <section className="studio-account-profile" aria-label="Dein Profil"><span className="rw-avatar">{initials(user.displayName)}</span><div><strong>{user.displayName}</strong><small>{owner?'Inhaber':'Mitglied'} im Team · Anmeldung mit „{user.email}“</small></div><button className="rw-button studio-signout" onClick={()=>void logout()}><LogOut size={17}/>Abmelden</button></section>
     <button className="team-work-card studio-guide-link" onClick={()=>goPage('guide')}><CircleHelp size={18}/><span><strong>So funktioniert Studio</strong><small>Der ganze Weg, was wann erscheint, Übungsrunde</small></span><ChevronRight size={17}/></button>
     <button className="team-work-card" onClick={()=>goPage('team')}><Users size={18}/><span><strong>Team & Einladungen</strong><small>Wer mitarbeitet und wie du jemanden dazuholst</small></span><ChevronRight size={17}/></button>
-    <CodexAccount/>
-    <ChatgptConnect/>
-    <PluginGrants/>
+    <AgentAccess/>
     <section className="studio-account-login"><ProviderLogin link/></section>
     <ChangePassword/>
     <DownloadAll/>
     <details className="team-secondary team-developer"><summary>Für Entwickler</summary>
+     <CodexAccount/>
+     <ChatgptConnect/>
+     <PluginGrants/>
      <Connections resources={resources} userId={user.userId} onDevelopment={()=>navigate({page:'rooms',room:rooms[0]?.id??'',tab:'connect',task:''})} developer/>
      <p><a className="rw-link" href="/?legacy=1">Frühere Ansicht öffnen</a></p>
     </details>

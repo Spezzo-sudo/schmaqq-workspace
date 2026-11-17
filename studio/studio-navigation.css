@@ -144,6 +144,8 @@
 .studio-scroll-hint button:focus-visible{outline:3px solid var(--schmaqq-acid);outline-offset:2px}
 @keyframes studio-hint{0%,70%,100%{transform:translateY(0)}80%{transform:translateY(3px)}}
 @media (max-width:650px){.studio-scroll-hint{bottom:calc(67px + env(safe-area-inset-bottom,0px))}}
+/* Room below the last entry, so the hint never covers it. */
+.team-shell .ch-home,.team-shell .rw-page{padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))}
 @media(prefers-reduced-motion:reduce){.studio-scroll-hint button{animation:none}}
 /* Timeline: a short visible word under each symbol. */
 .task-timeline-track>li{position:relative}

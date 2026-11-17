@@ -20,20 +20,20 @@ export default function CodexAccount(){
  // Poll only while a step is running; the sign-in link appears within seconds.
  useEffect(()=>{if(!state?.pending)return;const t=setInterval(()=>void load(),3000);return ()=>clearInterval(t);},[state?.pending,load]);
  async function act(action:'connect'|'check'|'disconnect'){
-  if(action==='disconnect'&&!confirm('ChatGPT-Anmeldung vom Server entfernen? Deine Agenten können danach erst wieder arbeiten, wenn du neu verbindest.'))return;
+  if(action==='disconnect'&&!confirm('ChatGPT-Anmeldung vom Server entfernen? Programmierläufe auf dem Server starten danach erst wieder, wenn du neu verbindest.'))return;
   setBusy(true);setError('');setCopied(false);
   try{await roomRequest('/api/codex-account',{action});await load();}catch(e){setError((e as Error).message);}finally{setBusy(false);}
  }
  const pending=state?.pending,login=pending?.login;
  return <section className="codex-account" aria-labelledby="codex-account-title">
-  <h2 id="codex-account-title">Dein ChatGPT für deine Agenten</h2>
-  <p>Deine Agenten arbeiten mit <strong>deinem</strong> ChatGPT-Abo auf dem Server – auch wenn dein Laptop aus ist. Du meldest dich einmal an, auch vom Handy aus.</p>
+  <h3 id="codex-account-title">Anmeldung für Programmierläufe</h3>
+  <p>Deine eigene ChatGPT-Anmeldung auf dem Server, für Code-Aufgaben, die die Werkstatt dort ausführt. Für die Antworten deiner Agenten brauchst du sie nicht.</p>
   <p className="codex-account-private"><ShieldCheck size={16} aria-hidden/>Nur du siehst und nutzt diese Anmeldung. Andere im Team können sie weder sehen noch für sich verwenden.</p>
   {!state&&!error?<p className="rw-muted">Wird geladen …</p>:null}
   {state&&!state.places.length?<p className="codex-account-note">Noch kein Server-Worker verfügbar. Er wird in einem Projekt als Team-Werkstatt eingerichtet.</p>:null}
   {state&&state.places.length&&!pending?<div className="codex-account-status" data-state={state.connected?'on':'off'}>
    {state.connected?<><CheckCircle2 size={20} aria-hidden/><span><strong>Verbunden</strong><small>{state.checked?'Zuletzt bestätigt '+when(state.checked):''}</small></span></>
-    :<><Link2 size={20} aria-hidden/><span><strong>Nicht verbunden</strong><small>Deine Agenten können noch nicht antworten.</small></span></>}
+    :<><Link2 size={20} aria-hidden/><span><strong>Nicht verbunden</strong><small>Programmierläufe auf dem Server können für dich noch nicht starten.</small></span></>}
   </div>:null}
   {pending?<div className="codex-account-pending" aria-live="polite">
    {pending.mode==='login'&&login?<>
