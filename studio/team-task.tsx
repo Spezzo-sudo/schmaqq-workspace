@@ -1,7 +1,8 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {ArrowLeft,ArrowUpRight,Code2,MessageSquare,Pencil,ShieldCheck,Sparkles,X} from 'lucide-react';
 import Development from '../app/development';
-import TaskDiscussion,{type TaskComment} from '../app/task-discussion';
+import TaskConversation,{type TaskComment,type ThreadMessage} from './task-conversation';
+import './task-conversation.css';
 import {statuses} from '../app/workspace-model';
 import RoomAssistant from './room-assistant';
 import ExternalAssistant from './external-assistant';
@@ -13,7 +14,7 @@ import TaskTimeline from './task-timeline';
 import {roomRequest,saveDraft,storedDraft,operationId,type RoomState,type Resource,type TeamTask,type TaskContract,type TaskResult} from './room-model';
 type Copy={id:string;owner:string;device:string;title:string;scope:string;revision:number;status:string;deviceName:string;changed?:boolean;behind?:number};
 type Failure={id:string;action:string;owner:string;ownerName:string;at:number;interrupted:boolean;text:string;detail:string};
-type Detail={lastFailure?:Failure|null;source?:{id:string;body:string;authorName:string;created:number}|null;activeJobs?:{id:string;action:string;status:string;ownerName:string;behind?:string}[];task:TeamTask;brief:{revision:number};comments:TaskComment[];reviews:{id:string;owner:string;ownerName:string;commit:string;state:string;created?:number;dropped?:string[];mergeWait?:{reason:string;at:number}|null}[];workspaces:Copy[];changes:{workspace:string;review?:{id:string;changedAfter?:boolean}}[]};
+type Detail={lastFailure?:Failure|null;source?:{id:string;body:string;authorName:string;created:number}|null;activeJobs?:{id:string;action:string;status:string;ownerName:string;behind?:string}[];task:TeamTask;brief:{revision:number};comments:TaskComment[];thread?:ThreadMessage[];reviews:{id:string;owner:string;ownerName:string;commit:string;state:string;created?:number;dropped?:string[];mergeWait?:{reason:string;at:number}|null}[];workspaces:Copy[];changes:{workspace:string;review?:{id:string;changedAfter?:boolean}}[]};
 type Pane='conversation'|'work'|'review';
 export default function TeamTaskView({taskId,room,resources,userId,onClose,onRefresh,onConnect}:{taskId:string;room:RoomState;resources:Resource[];userId:string;onClose:()=>void;onRefresh:()=>Promise<void>;onConnect:()=>void}){
  const access=useProjectAccess(room.project.id,userId);
@@ -32,13 +33,14 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
  const [generalHistory,setGeneralHistory]=useState<TaskResult[]>([]),[selectedGeneral,setSelectedGeneral]=useState('');
  const [utility,setUtility]=useState<''|'takeover'|'block'|'cancel'>(''),[utilityText,setUtilityText]=useState('');
  const [title,setTitle]=useState(''),[description,setDescription]=useState(''),[criteria,setCriteria]=useState(''),[kind,setKind]=useState<'general'|'code'>('general'),[peer,setPeer]=useState(false),[editRevision,setEditRevision]=useState(0),[briefRevision,setBriefRevision]=useState(0);
- const commentKey='room-comment:'+userId+':'+taskId,resultKey='room-result:'+userId+':'+taskId;
- const [draft,setDraft]=useState(()=>storedDraft(commentKey)),[resultDraft,setResultDraft]=useState(()=>storedDraft(resultKey)),[reply,setReply]=useState('');
+ const resultKey='room-result:'+userId+':'+taskId;
+ const [resultDraft,setResultDraft]=useState(()=>storedDraft(resultKey)),[reply,setReply]=useState('');
  const resultAttempt=useRef({body:'',id:''}),panel=useRef<HTMLElement|null>(null);
  const briefKey='room-brief:'+userId+':'+taskId;
  useEffect(()=>{const stored=storedDraft(briefKey);if(stored){try{const v=JSON.parse(stored);setTitle(v.title);setDescription(v.description);setCriteria(v.criteria);setKind(v.kind);setPeer(v.peer);setEditRevision(v.editRevision);setBriefRevision(v.briefRevision);setEditing(true);}catch{}}},[briefKey]);
  useEffect(()=>{if(editing)saveDraft(briefKey,JSON.stringify({title,description,criteria,kind,peer,editRevision,briefRevision}));},[editing,title,description,criteria,kind,peer,editRevision,briefRevision,briefKey]);
  const refresh=useCallback(async()=>{try{setDetail(await roomRequest<Detail>('/api/collaboration/task?id='+encodeURIComponent(taskId)));}catch(e){setError((e as Error).message);}},[taskId]);
+ const refreshAll=useCallback(async()=>{await Promise.all([refresh(),onRefresh()]);},[refresh,onRefresh]);
  useEffect(()=>{let pending=false;const tick=async()=>{if(pending||document.hidden)return;pending=true;try{await refresh();}finally{pending=false;}};void tick();const timer=setInterval(tick,5000);return()=>clearInterval(timer);},[refresh]);
  useEffect(()=>{const previous=document.activeElement as HTMLElement;panel.current?.querySelector<HTMLButtonElement>('button')?.focus();const key=(e:KeyboardEvent)=>{if(document.querySelector('body > .modal-backdrop'))return;if(e.key==='Escape'&&!editing){onClose();return;}if(e.key!=='Tab')return;const items=[...panel.current!.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),a[href]')].filter(n=>n.getClientRects().length);if(e.shiftKey&&document.activeElement===items[0]){e.preventDefault();items.at(-1)?.focus();}else if(!e.shiftKey&&document.activeElement===items.at(-1)){e.preventDefault();items[0]?.focus();}};document.addEventListener('keydown',key);return()=>{document.removeEventListener('keydown',key);if(previous?.isConnected)previous.focus();};},[onClose,editing]);
  const task=detail?.task,contract=task?.contract,own=task?.assignee===userId,person=room.members.find(m=>m.id===task?.assignee),myCopy=detail?.workspaces.find(w=>w.owner===userId),currentResult=task?.completion.result;
@@ -134,7 +136,8 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
      {utility&&<form className="team-form team-callout" onSubmit={utilitySubmit}><label>{utility==='takeover'?'Warum übernimmst du die Aufgabe?':utility==='block'?'Woran hängt es?':'Warum wird die Aufgabe abgebrochen?'}<textarea aria-label="Begründung der Aufgabenaktion" value={utilityText} required maxLength={2000} onChange={e=>setUtilityText(e.target.value)}/></label>{utility==='takeover'&&<p>Was bisher geteilt wurde, bleibt erhalten. Du machst vom letzten geteilten Stand aus weiter.</p>}<div className="rw-row-actions"><button className="rw-button" disabled={busy||!utilityText.trim()}>{utility==='takeover'?'Übernahme bestätigen':utility==='block'?'Speichern':'Aufgabe abbrechen'}</button><button type="button" className="rw-button subtle" onClick={()=>setUtility('')}>Zurück</button></div></form>}</details>
     </section>
     <nav ref={tabs} className="team-task-tabs" aria-label="Bereiche der Aufgabe">{([['conversation','Gespräch',MessageSquare],['work','Ändern',Code2],['review','Anschauen',ShieldCheck]] as const).map(([id,label,Icon])=><button key={id} className={pane===id?'active':''} aria-current={pane===id?'page':undefined} onClick={()=>changePane(id)}><Icon size={16}/>{label}</button>)}</nav>
-    <section className="team-task-pane task-discussion" hidden={pane!=='conversation'}><TaskDiscussion taskId={taskId} comments={detail?.comments??[]} draft={draft} onDraft={v=>{setDraft(v);saveDraft(commentKey,v);}} onPosted={refresh}/></section>
+    <section className="team-task-pane task-chat" hidden={pane!=='conversation'}><TaskConversation taskId={taskId} room={room} userId={userId} comments={detail?.comments??[]} thread={detail?.thread??[]} onRefresh={refreshAll} onOpenTask={()=>changePane('conversation')}
+     onUseAsResult={own&&contract.kind==='general'&&task.status!=='done'?text=>{setResultDraft(text);saveDraft(resultKey,text);openResultForm();}:undefined}/></section>
     <section className="team-task-pane" hidden={pane!=='work'}>
      {task.status==='done'?<p>Die Aufgabe ist abgeschlossen. Ergebnis und Rückmeldungen findest du unter „Anschauen“.</p>
       :!own?<p>{(person?.name??'Die verantwortliche Person')+' arbeitet daran. Sobald es etwas anzuschauen gibt, findest du es unter „Anschauen“.'}</p>
