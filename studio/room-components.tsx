@@ -561,7 +561,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
      <form className="rw-composer" onSubmit={e=>{e.preventDefault();void send();}}>
       <button type="button" className="r3-compose-plus r3-icon-button" aria-label="Nachrichtenoptionen" aria-expanded={composerOptions} aria-controls="r3-compose-options" onClick={()=>setComposerOptions(!composerOptions)}><Plus size={20}/></button>
       <label className="rw-sr" htmlFor="rw-message">Nachricht an den Projektraum</label>
-      <textarea ref={composerInput} id="rw-message" rows={1} enterKeyHint="send" value={text} maxLength={4000} disabled={busy} onChange={e=>{setText(e.target.value);saveDraft(draftKey,e.target.value);}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void send();}}} placeholder={recipient?'Nachricht an '+targetName+' …':'Nachricht an alle …'}/>
+      <textarea ref={composerInput} id="rw-message" rows={1} enterKeyHint="send" value={text} maxLength={4000} disabled={busy} onChange={e=>{setText(e.target.value);saveDraft(draftKey,e.target.value);}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void send();}}} placeholder={recipient?'Nachricht an '+targetName+' …':teamAgents.length?'Nachricht … (@Name holt einen Agenten)':'Nachricht an alle …'}/>
       <button className="rw-send" disabled={busy||!text.trim()} aria-label="Nachricht senden"><Send size={18}/></button>
      </form>
     </div>

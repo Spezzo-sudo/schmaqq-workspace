@@ -5,7 +5,7 @@ import {
  type AvatarFilterKind,type AvatarPreset
 } from './avatar-catalog';
 import {
- agentRoleLabels,agentCapabilityLabels,agentContextSourceLabels,agentPermissionLabels,
+ agentRoleLabels,agentContextSourceLabels,agentPermissionLabels,
  agentEffectivePermissions,agentExecutionStatus,time,
  type RoomAgent,type RoomAgentPermissions,type RoomState,type Resource,type HermesAvailability
 } from './room-model';
@@ -346,14 +346,21 @@ export function AgentProfileView({
      </div>
     </div>
 
+    {/* Honest: only what the server really grants today (agent-run-http: read context, propose task, lead plans). */}
     <div className="rw-fg-subsection">
-     <strong>Fähigkeiten & Werkzeuge</strong>
-     <div className="rw-fg-tag-row">
-      {(agent.capabilities??[]).map(cap=>(
-       <span key={cap} className="rw-cap-pill">{agentCapabilityLabels[cap]??cap}</span>
-      ))}
-      <span className="rw-cap-pill muted" title="Nicht unterstützt">Kein autonomer Merge/Deploy (gesperrt)</span>
-     </div>
+     <strong>Kann</strong>
+     <ul className="rw-fg-can">
+      {perms.readProject&&perms.writeMessages?<li className="yes">Projekt lesen und antworten, wenn man ihn holt (@Name, Direktchat, in einer Aufgabe)</li>:<li className="no">Antwortet gerade nicht (Lesen oder Schreiben gesperrt)</li>}
+      {(agent.lead===true||perms.manageTasks)&&<li className="yes">Aufgaben vorschlagen – du entscheidest</li>}
+      {agent.lead===true&&<li className="yes">Pläne aus wenigen Aufgaben vorschlagen</li>}
+     </ul>
+     <strong>Kann noch nicht</strong>
+     <ul className="rw-fg-can">
+      <li className="no">Code ändern oder Programmierläufe starten</li>
+      <li className="no">Im Web recherchieren</li>
+      <li className="no">Arbeit an andere Agenten weitergeben</li>
+      <li className="no">Zusammenführen oder live stellen</li>
+     </ul>
     </div>
    </article>
 
