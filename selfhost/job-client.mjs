@@ -44,9 +44,9 @@ export function launcherCommand(launcher,argv,cwd,{timeout=600000,signal,onOutpu
 }
 /** ChatGPT sign-in of one member on the server worker: fixed Codex commands in that member's own folder.
  * `member` must be the Studio job's owner; the launcher derives the folder from it and mounts nothing else. */
-export function launcherCodex(launcher,{member,mode},{signal,onOutput}={}){
- const timeout=mode==='login'?900000:30000;
- return launcherStream(launcher,'/codex',{member,mode},{timeout,signal,onOutput});
+export function launcherCodex(launcher,{member,mode,dir,prompt},{signal,onOutput}={}){
+ const timeout=mode==='login'?900000:mode==='exec'?1800000:30000;
+ return launcherStream(launcher,'/codex',{member,mode,...(mode==='exec'?{dir,prompt}:{})},{timeout,signal,onOutput});
 }
 function launcherStream(launcher,pathname,body,{timeout,signal,onOutput}){
  const {target,key}=launcherTarget(launcher);

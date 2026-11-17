@@ -24,7 +24,14 @@ const fail=(status,message)=>Object.assign(new Error(message),{status});
  * member id the worker passes (taken by Studio from the job's owner, never from user input), binds exactly
  * that folder into the unit and nothing else. The binary is the worker's own pinned copy, not /usr/bin/codex. */
 export const CODEX_ROOT='/var/lib/schmaqq-worker/codex',CODEX_BIN='/usr/local/lib/schmaqq-worker/codex/codex';
-export const codexModes=Object.freeze({login:{args:['login','--device-auth'],timeoutMs:900000},status:{args:['login','status'],timeoutMs:30000}});
+export const codexModes=Object.freeze({login:{args:['login','--device-auth'],timeoutMs:900000},status:{args:['login','status'],timeoutMs:30000},exec:{args:null,timeoutMs:1800000}});
+/** A code run with the member's own sign-in: fixed arguments, the prompt is the last argument. Codex's own sandbox
+ * needs namespaces that this unit forbids; the unit itself is the sandbox (only this copy and the member's folder,
+ * network only through the egress proxy). */
+export function codexExecArgv(bin,dir,prompt){
+ if(typeof prompt!=='string'||!prompt.trim()||prompt.length>16000||prompt.includes('\0'))throw fail(400,'invalid prompt');
+ return [bin,'exec','-c','forced_login_method="chatgpt"','-c','approval_policy="never"','-c','sandbox_mode="danger-full-access"','--skip-git-repo-check','--json','-C',dir,prompt];
+}
 export function codexHome(root,member){
  if(typeof member!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(member))throw fail(400,'invalid member');
  const home=path.join(root,member);
@@ -60,7 +67,9 @@ export const LIVE_HOST='127.0.0.70',LIVE_SOURCE='127.0.0.71';
  * With `serve`, the unit keeps running (no --wait) as a live preview on LIVE_HOST:port.
  * network 'private' (tests, builds): an own network namespace with only its own loopback,
  * so test servers on 127.0.0.1 work while Studio, the proxy and the internet stay unreachable. */
-export function jobUnitArgs({unit,dir,argv,timeoutMs,serve,network='proxy',codexHome:home}){
+export function jobUnitArgs({unit,dir,argv,timeoutMs,serve,network='proxy',codexHome:home,workDir}){
+ // A code run binds two places: the member's sign-in folder and the job copy it works in.
+ const binds=[...new Set([home,workDir??(home?null:dir)].filter(Boolean))];
  const seconds=Math.max(1,Math.min(Math.ceil(timeoutMs/1000),3600));
  const isolated=network==='private'&&!serve;
  const net=isolated?['PrivateNetwork=yes']:['IPAddressDeny=any',serve?`IPAddressAllow=127.0.0.60/32 ${LIVE_SOURCE}/32`:'IPAddressAllow=127.0.0.60/32'];
@@ -73,14 +82,14 @@ export function jobUnitArgs({unit,dir,argv,timeoutMs,serve,network='proxy',codex
   // Everything below /var/lib (including all worker data) and /etc/schmaqq-worker is replaced by empty
   // read-only tmpfs; then only this one copy is bound back in, writable.
   'TemporaryFileSystem=/opt:ro /srv:ro /var/lib:ro /var/backups:ro /mnt:ro /media:ro /run:ro /etc/schmaqq-worker:ro',
-  `BindPaths=${home??dir}`,`ReadWritePaths=${home??dir}`,
+  `BindPaths=${binds.join(' ')}`,`ReadWritePaths=${binds.join(' ')}`,
   'RestrictAddressFamilies=AF_INET AF_INET6',...net,
   'MemoryMax=2G','MemorySwapMax=0','CPUQuota=150%','TasksMax=256',`RuntimeMaxSec=${seconds}`
  ];
  const proxy=isolated?['NO_PROXY=*']:[`HTTPS_PROXY=${PROXY}`,`HTTP_PROXY=${PROXY}`,`https_proxy=${PROXY}`,`http_proxy=${PROXY}`,'NODE_USE_ENV_PROXY=1'];
  const env=[`HOME=/tmp`,`PATH=${NODE_DIR}:/usr/bin:/bin`,'NODE_ENV=production',...proxy,'npm_config_cache=/tmp/.npm',
   ...(serve?[`HOST=${LIVE_HOST}`,`PORT=${serve.port}`,`NO_PROXY=${LIVE_HOST}`]:[]),...(home?[`CODEX_HOME=${home}`]:[])];
- return [...(serve?['--quiet','--collect']:['--wait','--pipe','--quiet','--collect']),`--unit=${unit}`,...p.flatMap(x=>['-p',x]),...env.flatMap(x=>['-E',x]),`--working-directory=${home??dir}`,'--',...argv];
+ return [...(serve?['--quiet','--collect']:['--wait','--pipe','--quiet','--collect']),`--unit=${unit}`,...p.flatMap(x=>['-p',x]),...env.flatMap(x=>['-E',x]),`--working-directory=${workDir??home??dir}`,'--',...argv];
 }
 const waitForPort=(port,ms,alive)=>new Promise(resolve=>{
  const until=Date.now()+ms;
@@ -139,7 +148,7 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
     try{reply(200,await serve(dir,argv,body.port,ttl));}catch(e){if(e.output!==undefined){reply(e.status,{error:e.message,output:e.output});return;}throw e;}
     return;
    }
-   let dir,argv,timeoutMs,network,home;
+   let dir,argv,timeoutMs,network,home,workDir;
    if(req.url==='/codex'){
     // Only these fixed commands, only the member's own folder. Never a job copy, never another member.
     home=codexHome(codexRoot,body.member);
@@ -152,8 +161,15 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
     if(!mode)throw fail(400,'invalid codex mode');
     if(!exists(codexBin))throw fail(503,'codex is not installed on this worker');
     if(busy)throw fail(409,'another job is running');
-    if(!exists(home))makeHome(home);
-    argv=[codexBin,...mode.args];timeoutMs=mode.timeoutMs;network='proxy';
+    if(body.mode==='exec'){
+     // Only a member who signed in runs code, and only in a copy of the job area.
+     if(!exists(home))throw fail(409,'not signed in');
+     workDir=checkJobDirectory(root,body.dir);argv=codexExecArgv(codexBin,workDir,body.prompt);
+    }else{
+     if(!exists(home))makeHome(home);
+     argv=[codexBin,...mode.args];
+    }
+    timeoutMs=mode.timeoutMs;network='proxy';
    }else{
     dir=checkJobDirectory(root,body.dir);argv=checkArgv(body.argv);
     timeoutMs=Number.isInteger(body.timeoutMs)?Math.min(Math.max(body.timeoutMs,1000),3600000):600000;
@@ -165,10 +181,10 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
    if(busy)throw fail(409,'another job is running');
    busy=true;
    const unit='schmaqq-job-'+randomBytes(8).toString('hex');
-   try{await prepare(home??dir);}catch(e){busy=false;throw fail(500,'could not prepare copy');}
-   dir=home??dir;
+   try{await prepare(workDir??home??dir);}catch(e){busy=false;throw fail(500,'could not prepare copy');}
+   dir=workDir??home??dir;
    res.writeHead(200,{'Content-Type':'application/x-ndjson'});
-   const child=run('systemd-run',jobUnitArgs({unit,dir,argv,timeoutMs,network,...(home?{codexHome:home}:{})}));
+   const child=run('systemd-run',jobUnitArgs({unit,dir,argv,timeoutMs,network,...(home?{codexHome:home}:{}),...(workDir?{workDir}:{})}));
    const send=obj=>{if(!res.writableEnded)res.write(JSON.stringify(obj)+'\n');};
    child.stdout.on('data',d=>send({type:'output',text:String(d)}));child.stderr.on('data',d=>send({type:'output',text:String(d)}));
    let finished=false;
