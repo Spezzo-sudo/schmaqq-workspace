@@ -346,6 +346,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
  }
 
  const query=(search+' '+localSearch).trim();
+ const openCards=room.tasks.filter(t=>t.status!=='done').slice(0,6);
  const visible=filterMessengerMessages(messages,filter,query);
  const markOf=new Map<string,{color:number;agent:string}>();
  for(const m of messages)for(const id of m.marked??[])markOf.set(id,{color:m.markColor??0,agent:(room.agents??[]).find(a=>a.id===m.recipient)?.name??'Agent'});
@@ -442,7 +443,9 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
     {mainContent??<>
     <div className="rw-chat-stream" ref={stream} onScroll={()=>{if(stream.current)followLatest.current=stream.current.scrollHeight-stream.current.scrollTop-stream.current.clientHeight<80;}}>
      {more&&messages.length>0&&<button className="rw-button subtle" disabled={busy} onClick={()=>void loadOlder()}>Ältere Nachrichten laden</button>}
-     {!messages.length&&<div className="rw-room-welcome"><span className="rw-welcome-icon"><MessageSquare size={30}/></span><span className="rw-eyebrow">DER ANFANG IST EIN GESPRÄCH</span><h2>Ein Raum für eure nächste Idee.</h2><p>Teilt Gedanken, stellt Fragen, adressiert Teammitglieder oder KI-Agenten und verknüpft Nachrichten direkt mit Aufgaben.</p><div><button onClick={()=>{setText('Unser Ziel für dieses Projekt: ');saveDraft(draftKey,'Unser Ziel für dieses Projekt: ');}}>Ziel festhalten</button><button onClick={()=>{setText('Was müssen wir zuerst herausfinden?');saveDraft(draftKey,'Was müssen wir zuerst herausfinden?');}}>Offene Fragen sammeln</button></div></div>}
+     {/* No messages yet, but work exists: the open tasks are the cards of this chat. */}
+     {!messages.length&&openCards.length>0&&<>{openCards.map(t=><button key={t.id} className="r7-card" onClick={()=>onTask(t.id)}><ListChecks size={18} aria-hidden/><span className="r7-card-body"><span className="r7-card-kind">Aufgabe · {t.status==='review'?'wartet auf Prüfung':t.status==='doing'?'in Arbeit':'offen'}</span><strong>{t.title}</strong></span><ArrowRight size={16} aria-hidden/></button>)}<p className="rw-muted r7-hint">Schreib etwas – mit @Name holst du einen Agenten dazu.</p></>}
+     {!messages.length&&!openCards.length&&<div className="rw-room-welcome"><span className="rw-welcome-icon"><MessageSquare size={30}/></span><span className="rw-eyebrow">DER ANFANG IST EIN GESPRÄCH</span><h2>Ein Raum für eure nächste Idee.</h2><p>Teilt Gedanken und stellt Fragen. Agenten antworten nur, wenn ihr sie mit @Name holt.</p><div><button onClick={()=>{setText('Unser Ziel für dieses Projekt: ');saveDraft(draftKey,'Unser Ziel für dieses Projekt: ');}}>Ziel festhalten</button><button onClick={()=>{setText('Was müssen wir zuerst herausfinden?');saveDraft(draftKey,'Was müssen wir zuerst herausfinden?');}}>Offene Fragen sammeln</button></div></div>}
      {visible.map((message,index)=>{
       const person=room.members.find(m=>m.id===message.author);
       const sAgent=message.senderAgent?activeAgents.find(a=>a.id===message.senderAgent)??(room.agents??[]).find(a=>a.id===message.senderAgent):null;
@@ -477,8 +480,8 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
        const from=(room.agents??[]).find(a=>a.id===message.card!.agent);
        return <div key={message.id} className="r7-card" id={'message-'+message.id} role="group" aria-label="Neue Arbeit aus einem Direktchat">
         {from?<AgentAvatar agent={from} size="sm"/>:<ListChecks size={18} aria-hidden/>}
-        <span className="r7-card-body"><span className="r7-card-kind">{message.card.tasks.length>1?'Plan':'Aufgabe'} aus einem Direktchat · {time(message.created)}</span><strong>{message.body}</strong>
-         {message.card.tasks.slice(0,6).map((t,i)=><button key={t} className="rw-link" onClick={()=>onTask(t)}>{message.card!.titles[i]??'Aufgabe öffnen'} →</button>)}</span>
+        <span className="r7-card-body"><span className="r7-card-kind">{message.card.from==='direct'?(message.card.tasks.length>1?'Plan':'Aufgabe')+' aus einem Direktchat':'Neu angelegt'} · {time(message.created)}</span><strong>{message.body}</strong>
+         {message.card.tasks.slice(0,6).map((t,i)=><button key={t} className="rw-link" onClick={()=>onTask(t)}>{message.card!.tasks.length>1?message.card!.titles[i]??'Aufgabe öffnen':'Öffnen'} →</button>)}</span>
        </div>;
       }
 
@@ -592,7 +595,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
      <form className="rw-composer" onSubmit={e=>{e.preventDefault();void send();}}>
       <button type="button" className="r3-compose-plus r3-icon-button" aria-label="Nachrichtenoptionen" aria-expanded={composerOptions} aria-controls="r3-compose-options" onClick={()=>setComposerOptions(!composerOptions)}><Plus size={20}/></button>
       <label className="rw-sr" htmlFor="rw-message">Nachricht an den Projektraum</label>
-      <textarea ref={composerInput} id="rw-message" rows={1} enterKeyHint="send" value={text} maxLength={4000} disabled={busy} onChange={e=>{setText(e.target.value);saveDraft(draftKey,e.target.value);}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void send();}}} placeholder={recipient?'Nachricht an '+targetName+' …':teamAgents.length?'Nachricht … (@Name holt einen Agenten)':'Nachricht an alle …'}/>
+      <textarea ref={composerInput} id="rw-message" rows={1} enterKeyHint="send" value={text} maxLength={4000} disabled={busy} onChange={e=>{setText(e.target.value);saveDraft(draftKey,e.target.value);}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void send();}}} placeholder={recipient?'Nachricht an '+targetName+' …':'Nachricht …'}/>
       <button className="rw-send" disabled={busy||!text.trim()} aria-label="Nachricht senden"><Send size={18}/></button>
      </form>
     </div>

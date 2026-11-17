@@ -107,7 +107,7 @@ export default function TaskConversation({taskId,room,userId,comments,thread,onR
   </div>}
   {!configured&&agents.length>0&&<p className="tc-note"><Bot size={13}/> Für dich ist noch kein KI-Zugang verbunden. Nachrichten an Agenten bleiben stehen, bis er eingerichtet ist.</p>}
   <form className="tc-composer" onSubmit={e=>{e.preventDefault();void send();}}>
-   <textarea ref={input} aria-label="Nachricht zur Aufgabe" value={text} maxLength={4000} disabled={busy} placeholder="Nachricht … (@Name fragt einen Agenten)"
+   <textarea ref={input} aria-label="Nachricht zur Aufgabe" value={text} maxLength={4000} disabled={busy} placeholder="Nachricht …"
     onChange={e=>{setText(e.target.value);saveDraft(draftKey,e.target.value);}}
     onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing&&matchMedia('(pointer:fine)').matches){e.preventDefault();void send();}}}/>
    <button className="rw-send" aria-label="Senden" disabled={busy||!text.trim()}><Send size={18}/></button>

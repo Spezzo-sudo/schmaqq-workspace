@@ -89,7 +89,7 @@ export function taskNextStep(t:TaskStepInput):TaskStep{
 export type TaskSummaryInput={status:string;assignee:string|null;awaitingLive?:boolean;contract:{kind:'general'|'code';blocked:string;cancelled:boolean;requiresReview:boolean};
  completion:{ready:boolean;result:{owner:string;state:string;shared?:boolean;integrated?:boolean;workflow?:string}|null}};
 export type TaskSummary={text:string;mine:boolean;group:'mine'|'open'|'others'|'done'};
-export function taskSummary(t:TaskSummaryInput,me:string,name:(id:string)=>string):TaskSummary{
+export function taskSummary(t:TaskSummaryInput,me:string,name:(id:string)=>string,{selfApprove=false}:{selfApprove?:boolean}={}):TaskSummary{
  if(t.contract.cancelled)return {text:'Abgebrochen',mine:false,group:'done'};
  if(t.awaitingLive)return {text:'Zusammengeführt – noch nicht live',mine:t.assignee===me,group:t.assignee===me?'mine':'others'};
  if(t.status==='done')return {text:'Erledigt',mine:false,group:'done'};
@@ -98,7 +98,7 @@ export function taskSummary(t:TaskSummaryInput,me:string,name:(id:string)=>strin
  if(t.contract.blocked)return {text:'Hängt fest: '+t.contract.blocked,mine:own,group:own?'mine':'others'};
  const waiting=r&&(t.contract.kind==='code'?r.shared&&!r.integrated:t.contract.requiresReview)&&r.state!=='approved';
  if(r&&waiting&&r.state==='changes_requested')return r.owner===me?{text:'Änderung gewünscht – bitte überarbeiten',mine:true,group:'mine'}:{text:who+' überarbeitet es',mine:false,group:'others'};
- if(r&&waiting)return r.owner===me?{text:'Wartet darauf, dass jemand es anschaut',mine:false,group:'others'}:{text:'Bitte anschauen und freigeben',mine:true,group:'mine'};
+ if(r&&waiting)return r.owner===me?(selfApprove?{text:'Selbst anschauen und freigeben',mine:true,group:'mine'}:{text:'Wartet darauf, dass jemand es anschaut',mine:false,group:'others'}):{text:'Bitte anschauen und freigeben',mine:true,group:'mine'};
  if(t.completion.ready)return own?{text:'Fertig – bitte abschliessen',mine:true,group:'mine'}:{text:who+' kann abschliessen',mine:false,group:'others'};
  if(r&&t.contract.kind==='code'&&r.state==='approved'&&!r.integrated)return r.owner===me?{text:'Freigegeben – bitte zusammenführen',mine:true,group:'mine'}:{text:'Freigegeben – '+who+' führt zusammen',mine:false,group:'others'};
  if(own)return {text:t.status==='todo'?'Du bist dran – noch nicht begonnen':'Du bist dran',mine:true,group:'mine'};

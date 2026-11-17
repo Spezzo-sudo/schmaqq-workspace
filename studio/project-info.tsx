@@ -37,11 +37,11 @@ export default function ProjectInfo({room,tasks,userId,onTab,onChat,onMemberChat
  const agents=(room.agents??[]).filter(a=>a.active!==false).sort((a,b)=>Number(isProjectLead(b))-Number(isProjectLead(a))||a.name.localeCompare(b.name));
  const name=(id:string)=>people.find(m=>m.id===id)?.name??'Jemand';
  const open=tasks.filter(t=>t.status!=='done');
- const mine=open.filter(t=>taskSummary(t,userId,name).group==='mine').length;
+ const mine=open.filter(t=>taskSummary(t,userId,name,{selfApprove:access.selfApprove}).group==='mine').length;
  const inReview=open.filter(t=>t.status==='review');
  const preview=inReview[0];
  const canHire=access.develop;
- const roleText=(m:typeof people[number])=>m.role==='owner'?'Inhaber':(m.projectRoles?.length?m.projectRoles.map(r=>roleLabels[r]??r).join(', '):'Mitglied');
+ const roleText=(m:typeof people[number])=>m.role==='owner'?'Inhaber':(['admin','developer','reviewer','viewer'].map(r=>m.projectRoles?.includes(r)?roleLabels[r]:null).find(Boolean)??'Mitglied');
  async function archive(){setMenu(false);setError('');try{if(await archiveProject(room.project.id,room.project.title))onArchived();}catch(e){setError((e as Error).message);}}
  return <div className="pi">
   <section className="pi-hero">
@@ -83,11 +83,8 @@ export default function ProjectInfo({room,tasks,userId,onTab,onChat,onMemberChat
      <span><strong>{a.name}{isProjectLead(a)&&<Crown className="r5-crown" size={14} aria-label="Projektleitung"/>}</strong><small>{isProjectLead(a)?'Projektleitung':agentRoleLabels[a.role]} · Agent</small></span>
      <ChevronRight size={16} aria-hidden/>
     </button></li>)}
-    {people.map(m=><li key={m.id}><button disabled={m.id===userId} onClick={()=>onMemberChat(m.id)}>
-     <span className="rw-avatar">{initials(m.name)}</span>
-     <span><strong>{m.name}{m.id===userId?' (du)':''}</strong><small>{roleText(m)}</small></span>
-     {m.id!==userId&&<ChevronRight size={16} aria-hidden/>}
-    </button></li>)}
+    {people.map(m=>{const body=<><span className="rw-avatar">{initials(m.name)}</span><span><strong>{m.name}{m.id===userId?' (du)':''}</strong><small>{roleText(m)}</small></span></>;
+     return <li key={m.id}>{m.id===userId?<div className="pi-self">{body}</div>:<button onClick={()=>onMemberChat(m.id)}>{body}<ChevronRight size={16} aria-hidden/></button>}</li>;})}
    </ul>
   </section>
   <nav className="pi-areas" aria-label="Projektbereiche">

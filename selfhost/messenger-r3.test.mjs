@@ -119,7 +119,9 @@ test('R3 real SQLite: messages, replies, profiles and task references survive re
  assert.equal((await f.post({action:'message',id:'r3-reply',project,body:'Reply from another account',replyTo:payload.id},bob.cookie)).status,200);
  await f.restart();
  const result=await f.get('/api/room?project='+project,bob.cookie);
- assert.equal(result.status,200);assert.equal(result.data.messages.length,2);
+ assert.equal(result.status,200);
+ // The new task's card, the message and the reply.
+ assert.deepEqual(result.data.messages.map(m=>m.kind),['card','human','human']);
  assert.equal(result.data.messages.find(m=>m.id===payload.id).recipient,agent.data.agentId);
  assert.equal(result.data.messages.find(m=>m.id===payload.id).topicTask,task.data.task);
  assert.equal(result.data.messages.find(m=>m.id==='r3-reply').replyTo,payload.id);

@@ -29,3 +29,6 @@
 .pi-back{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 10px;border:0;background:transparent;font:700 14px/1 var(--schmaqq-sans,inherit);color:inherit;cursor:pointer}
 .pi-members .rw-fg-avatar{flex:none!important;width:40px!important;height:40px!important}
 .pi-members button>span:not(.rw-fg-avatar):not(.rw-avatar){flex:1}
+
+.pi-members .pi-self{display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 12px;border:1px solid var(--schmaqq-rule);border-radius:12px;background:var(--schmaqq-paper-light)}
+.pi-members .pi-self>span:nth-child(2){display:grid;flex:1;min-width:0}

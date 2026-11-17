@@ -484,6 +484,8 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null})
    }
    if(value.action==='task'){
     const created=insertRoomTask(db,member,value,now());
+    // A task made without a message still shows up in the project chat, as a card.
+    if(!created.reused&&!value.source){const card=randomUUID();db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(card,value.project,member.id,`Neue Aufgabe „${value.title}“`,now());putMeta(db,key('message',card),{kind:'card',origin:'human',replyTo:null,card:{from:'project',tasks:[created.task],titles:[value.title]}});}
     return remember(db,member,value,{ok:true,task:created.task,...(created.reused?{reused:true}:{})});
    }
    if(value.action==='note'){
