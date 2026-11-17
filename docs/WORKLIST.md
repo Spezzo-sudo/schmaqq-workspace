@@ -18,7 +18,7 @@ Etappen und Entscheide: [PLAN.md](PLAN.md). Iststand mit Nachweisen: [STATUS.jso
 Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, schreibt sich unter „In Arbeit“ ein
 (z. B. „Claude Code – Aufräumen“ oder „Codex – Messenger-Feinschliff“).
 
-**In Arbeit:** Claude Code – Release-Kandidat `feat/guru-plans-20261117` abschliessen (übernimmt die Konsolidierung von Codex aus #90): Prüfung, Pilot nachziehen, Pull Request nach `main`. Übergabe und Skalierungsgrenzen: [HANDOFF-AGENTS.md](HANDOFF-AGENTS.md).
+**In Arbeit:** nichts. Zuletzt live am 17.11.2026: Agenten im Messenger, private Chats, Gruppenchat mit @Name, Projektleitung plant (#91, `ce5a50a`); Agenten in Produktion für Marco eingeschaltet. Nächste Schritte: [HANDOFF-AGENTS.md](HANDOFF-AGENTS.md).
 
 **Gemeinsame Grundlage:** Der Guru-Branch enthält den Gesprächs-/Team-Branch (GitHub-Vergleich: vier Commits voraus, keiner zurück). Frühere Messenger-Arbeitsaufträge sind daher keine parallelen Bauaufträge. Vor dem Schliessen älterer PRs deren Einbeziehung einzeln prüfen.
 
@@ -41,7 +41,7 @@ Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, sch
 6. [ ] Freigabekarten und Studio-Werkzeuge für Agenten.
 7. [ ] Agent ↔ Agent als mitlesbarer Chat mit Rundenlimit und Stopp.
 
-Bereits live am 16.11.2026: Messenger R3 (`ac65a05`), ChatGPT-Anmeldung pro Person (`3c6ee6c`), Chats als Startseite (`cdb7bd5`).
+Live am 17.11.2026: Agenten im Messenger und Gespräche (#91, `ce5a50a`). Bereits live am 16.11.2026: Messenger R3 (`ac65a05`), ChatGPT-Anmeldung pro Person (`3c6ee6c`), Chats als Startseite (`cdb7bd5`).
 
 ## Neustart 29.10.2026 abends
 
