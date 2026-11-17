@@ -16,7 +16,7 @@ const MAX_TOOL_CALLS = 6;
 const MAX_TOOL_LINE = 16384;
 const CLAIM_WAIT_S = 20; // Studio holds the request open this long, so new work starts at once
 const DIAGNOSTIC_CHARS = 600;
-const allowedModels = /^[a-zA-Z0-9_.-]{1,100}$/;
+const allowedModels = /^[a-zA-Z0-9][a-zA-Z0-9_.:\/-]{0,99}$/; // also "vendor/model:variant"
 const MAX_TOOLS = 8;
 const TOOL_ID = /^[a-z]+\.[a-z_]{2,40}$/, TOOL_NAME = /^studio_[a-z_]{3,48}$/;
 

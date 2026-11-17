@@ -11,7 +11,8 @@
       "Live signals over /api/live (no content), regular refresh stays as a safety net and relaxes only while heartbeats arrive",
       "Planning: the lead turns a goal into two to six tasks with a checkable result and an owner in one run; accepting creates exactly those tasks once",
       "Tools are one list in Studio; worker and adapter take descriptions per run",
-      "Only usable models are offered (STUDIO_AGENT_MODELS); an unusable profile model falls back to the default; a provider refusal is a failed run, never a posted answer"
+      "Only usable models are offered (STUDIO_AGENT_MODELS); an unusable profile model falls back to the default; a provider refusal is a failed run, never a posted answer",
+      "Model names may take the routed form 'vendor/model:variant' (e.g. OpenRouter), in Studio and in the worker"
     ],
     "verification": {
       "regression": "npm run studio:verify under Node 24.22.0",
@@ -23,7 +24,8 @@
       "The pilot's quick tunnel holds the live connection back; behind the production proxy it is unverified",
       "Message search left the side list and is not back elsewhere yet",
       "Agents are off in production until a worker is bound there",
-      "No real Android keyboard test"
+      "No real Android keyboard test",
+      "Scaling, not built yet: workers connect only from the same machine (no laptop worker), one worker per person from a server file, one server-wide model list; providers via API key or OpenRouter need per-worker model lists (see docs/HANDOFF-AGENTS.md)"
     ],
     "production_changed": false,
     "main_changed": false

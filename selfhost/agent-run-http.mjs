@@ -130,8 +130,9 @@ const LOOPBACK = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
 const PROXY_HEADERS = ['x-forwarded-for', 'x-real-ip', 'forwarded', 'cf-connecting-ip', 'cf-ray'];
 
 // Models an agent can be set to, best general choice first. An agent whose profile names something else
-// (older profiles, typing errors) answers with the first one instead of failing.
-const MODEL_ID = /^[a-zA-Z0-9_.-]{1,100}$/;
+// (older profiles, typing errors) answers with the first one instead of failing. Router-style names such as
+// "vendor/model:variant" are allowed, so other providers fit in without a schema change.
+const MODEL_ID = /^[a-zA-Z0-9][a-zA-Z0-9_.:\/-]{0,99}$/;
 export function agentModels(setting = process.env.STUDIO_AGENT_MODELS) {
   const models = String(setting ?? 'gpt-5.6-sol,gpt-5.6-terra,gpt-5.6-luna').split(',').map(m => m.trim()).filter(m => MODEL_ID.test(m));
   return models.length ? [...new Set(models)].slice(0, 12) : ['gpt-5.6-sol'];

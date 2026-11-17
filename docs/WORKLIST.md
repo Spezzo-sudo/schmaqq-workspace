@@ -18,7 +18,7 @@ Etappen und Entscheide: [PLAN.md](PLAN.md). Iststand mit Nachweisen: [STATUS.jso
 Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, schreibt sich unter „In Arbeit“ ein
 (z. B. „Claude Code – Aufräumen“ oder „Codex – Messenger-Feinschliff“).
 
-**In Arbeit:** Codex – Konsolidierung und Qualitätsprüfung auf Basis von `feat/guru-plans-20261117`. Korrekturen liegen auf dem abhängigen Review-Branch `fix/studio-consolidation-20261117`; dieser ist keine zweite Produktimplementierung.
+**In Arbeit:** Claude Code – Release-Kandidat `feat/guru-plans-20261117` abschliessen (übernimmt die Konsolidierung von Codex aus #90): Prüfung, Pilot nachziehen, Pull Request nach `main`. Übergabe und Skalierungsgrenzen: [HANDOFF-AGENTS.md](HANDOFF-AGENTS.md).
 
 **Gemeinsame Grundlage:** Der Guru-Branch enthält den Gesprächs-/Team-Branch (GitHub-Vergleich: vier Commits voraus, keiner zurück). Frühere Messenger-Arbeitsaufträge sind daher keine parallelen Bauaufträge. Vor dem Schliessen älterer PRs deren Einbeziehung einzeln prüfen.
 

@@ -318,4 +318,6 @@ test('models: an agent set to a model nobody can use answers with the default on
  const {agentModels}=await import('./agent-run-http.mjs');
  assert.deepEqual(agentModels('a-1, b.2 ,bad model,,a-1'),['a-1','b.2']);
  assert.deepEqual(agentModels(''),['gpt-5.6-sol']);
+ // Names of routed providers carry a vendor and a variant; paths and options still do not pass.
+ assert.deepEqual(agentModels('openai/gpt-5.6-sol,meta-llama/llama-4:free,/etc/x,-x,a b'),['openai/gpt-5.6-sol','meta-llama/llama-4:free']);
 });

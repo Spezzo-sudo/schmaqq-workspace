@@ -1,5 +1,6 @@
 # Übergabe – Stand 08.11.2026 (nach Livegang 9f21c9c) (für Marco, ChatGPT/Codex, Claude)
 
+**Neuester Stand zu Agenten und Messenger: [HANDOFF-AGENTS.md](HANDOFF-AGENTS.md) (17.11.2026).**
 Aktueller Ablauf und Rollen (ab 16.11.2026): `docs/WORKFLOW.md`; Reihenfolge: `docs/WORKLIST.md`. Diese Übergabe ist der Stand vom 08.11.
 Lies danach diese Datei, dann `docs/PLAN.md` (Etappen), `docs/OPERATIONS.md` (Livegang) und `docs/SECURITY.md`.
 Arbeitsweise: Änderungen nur per Branch und Pull Request nach `main`; zusammenführen nur nach
