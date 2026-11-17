@@ -40,7 +40,7 @@ und verteilt, ist aber kein Pflicht-Umweg.
    dieses Gespräch plus Projektstand; an einer Karte deren Gespräch. Nie den ganzen Verlauf.
 7. **Kein Motor- oder Modellname** in der Oberfläche (nur unter „Erweitert“ im Agentenprofil).
 8. **Ehrlich, was ein Agent kann:** Das Profil zeigt unter „Kann“ nur, was wirklich freigeschaltet ist
-   (heute: Projekt lesen, Aufgaben vorschlagen, Pläne vorschlagen für die Projektleitung, in einer Aufgabe einen anderen Agenten fragen).
+   (heute: Projekt lesen, Aufgaben vorschlagen, Pläne vorschlagen für die Projektleitung, in einer Aufgabe einen anderen Agenten fragen; mit Freigabe: Code in der eigenen Arbeitskopie ändern, öffentliche Webseiten lesen).
 
 ## Bildschirme
 
@@ -84,7 +84,7 @@ Jeder Schritt: eigener Pull Request, Prüfung auf dem Pilot (Handy und Desktop),
    „Im Projekt teilen“.
 4. ✅ live · **Markieren und Weitergabe:** Nachrichten markieren → „Agent fragen“; Agent ↔ Agent an der Karte mit Grenzen,
    Zähler und Stopp.
-5. **Agenten machen wirklich etwas:** ✅ live: Zuständigkeitsbereiche pro Projekt mit Warnung. Offen: dann Programmierläufe mit
+5. ✅ live · **Agenten machen wirklich etwas:** zuerst Zuständigkeitsbereiche pro Projekt mit Warnung; dann Programmierläufe mit
    persönlicher Anmeldung über den Launcher (eigener Sicherheits-PR) und Webrecherche als Werkzeug für Agenten.
 
 ## Später (nicht im laufenden Bau)

@@ -10,7 +10,12 @@ Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis 
 - **Agent ↔ Agent:** Werkzeug „anderen Agenten fragen“ nur in Aufgaben, nur für Agenten mit Freigabe „Delegieren“,
   B gibt nicht weiter, B's Antwort geht nicht automatisch an A zurück. „Weitermachen“ erlaubt 6 weitere Antworten ab dem aktuellen Stand.
 - **Zuständigkeitsbereich** legt nur der Projekt-Admin fest; Studio warnt beim Anschauen, blockiert aber nicht.
-- **Offen (eigener Sicherheits-PR):** Programmierläufe durch Agenten und Webrecherche als Werkzeug (Schritt 5b/5c).
+- **Programmierläufe durch Agenten** (#105): nur mit Berechtigung „Code bearbeiten“, nur in Code-Aufgaben, nur in der eigenen
+  Arbeitskopie der fragenden Person mit ihrer Anmeldung für Programmierläufe; die systemd-Unit des Job-Starters ist die Sandbox.
+  Der Agent teilt, prüft und führt nichts zusammen.
+- **Webrecherche** (#105): nur öffentliche https-Seiten, alle Adressen geprüft, höchstens 3 pro Antwort; Berechtigung
+  „Im Web recherchieren“, für die Projektleitung an.
+- **Konzept Fassung 2 vollständig gebaut und live** (17.11.2026), danach Aufräumen (#106). Bewertet wird das Endergebnis.
 
 ## 17.11.2026
 - **Jeder Bauschritt geht nach bestandener Prüfung direkt live** (Owner, 17.11.2026), nicht erst das ganze Konzept.
