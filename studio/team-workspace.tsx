@@ -98,8 +98,10 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
   onOpen={id=>openChat(id,'all')} onInfo={id=>navigate({room:id,tab:'overview',task:'',page:'rooms'})} onArchive={archive}
   onMemberChat={(project,member)=>openChat(project,'member:'+member)} onGeneral={()=>goPage('conversations')} onCreateProject={()=>setModal({kind:'room'})}/>;
  // Wide screens keep the project info open beside the chat until it is closed.
- const showInfo=tab==='overview'||tab==='activity'||(wide&&tab==='talk'&&!infoHidden);
- const detailTab=tab==='talk'&&showInfo?'overview':tab;
+ // Chat and Aufgaben are tabs of the project itself; only the project areas open as a panel.
+ const inline=tab==='talk'||tab==='tasks';
+ const showInfo=tab==='overview'||tab==='activity'||(wide&&inline&&!infoHidden);
+ const detailTab=inline?(showInfo?'overview':'talk'):tab;
  return <div className={'rw-shell team-shell r3-shell'+(route.room&&route.page==='rooms'?' r3-project':'')}>
   <aside className="rw-sidebar" aria-label="Workspace-Navigation">
    <div className="rw-brand"><StudioBrand compact onHome={()=>goPage('rooms')}/></div>
@@ -158,15 +160,15 @@ export default function TeamWorkspace({user,demoMode=false}:{user:ChatGPTUser;de
     <div className={'team-project-content r3-project-content'+(rooms.find(r=>r.id===route.room)?.practice?' studio-practice':'')}>
      <Conversation key={room.project.id} onInfo={()=>{setInfoHidden(false);navigate({tab:'overview'});}} room={room} resources={resources} userId={user.userId} search="" refresh={refresh} onTask={id=>navigate({task:id})} onConvert={(kind,source)=>setModal({kind,source})} onBack={()=>goPage('rooms')}
       rail={<div className="r6-rail"><div className="r6-rail-head"><button className="studio-menu-button" aria-label="Menü öffnen" onClick={()=>setMenuOpen(true)}>{initials(user.displayName)}</button><StudioBrand compact onHome={()=>goPage('rooms')}/></div><div className="r6-rail-scroll">{projectList(true)}</div></div>}
+      mainContent={tab==='tasks'?<div className="r6-tasks"><div className="r3-panel-actions"><button className="rw-button lime" onClick={()=>setModal({kind:'task'})}><Plus size={16}/>Aufgabe</button></div><TaskList tasks={projectTasks} userId={user.userId} name={name} search={search} onSearch={setSearch} onOpen={openTask}/></div>:undefined}
       subHeader={<div className="r6-tabs" role="tablist" aria-label="Projekt"><button role="tab" aria-selected={tab!=='tasks'} className={tab!=='tasks'?'on':''} onClick={()=>navigate({tab:'talk'})}>Chat</button><button role="tab" aria-selected={tab==='tasks'} className={tab==='tasks'?'on':''} onClick={()=>navigate({tab:'tasks'})}>Aufgaben{projectTasks.filter(t=>t.status!=='done').length?' ('+projectTasks.filter(t=>t.status!=='done').length+')':''}</button></div>}
       tools={<div className="r3-chat-tools">
-       <button className="r3-icon-button" aria-label="Projektinfo" title="Projektinfo" aria-pressed={showInfo} onClick={()=>{if(showInfo){setInfoHidden(true);navigate({tab:'talk'});}else{setInfoHidden(false);navigate({tab:'overview'});}}}><Info size={19}/></button>
+       <button className="r3-icon-button" aria-label="Projektinfo" title="Projektinfo" aria-pressed={showInfo} onClick={()=>{if(showInfo){setInfoHidden(true);if(!inline)navigate({tab:'talk'});}else{setInfoHidden(false);navigate({tab:'overview'});}}}><Info size={19}/></button>
       </div>}
-      detailKey={detailTab} detailTitle={detailTitles[detailTab]} onCloseDetail={()=>{if(showInfo)setInfoHidden(true);navigate({tab:'talk'});}} onFiles={()=>navigate({tab:'files'})}
+      detailKey={detailTab} detailTitle={detailTitles[detailTab]} onCloseDetail={()=>{if(showInfo)setInfoHidden(true);if(!inline)navigate({tab:'talk'});}} onFiles={()=>navigate({tab:'files'})}
       detailNavigation={detailTab==='overview'||detailTab==='activity'?undefined:<button className="pi-back" onClick={()=>navigate({tab:'overview'})}><ChevronLeft size={18}/>Projektinfo</button>}
       detail={detailTab==='talk'?undefined:<>
        {(detailTab==='overview'||detailTab==='activity')&&<ProjectInfo room={room} tasks={projectTasks} userId={user.userId} onTab={t=>navigate({tab:t,task:''})} onChat={()=>{if(wide)document.querySelector<HTMLTextAreaElement>('#rw-message')?.focus();else navigate({tab:'talk'});}} onMemberChat={m=>openChat(room.project.id,'member:'+m)} onOpenTask={(t,pane)=>openTask(t,pane)} onNewTask={()=>setModal({kind:'task'})} onInvite={()=>goPage('team')} onArchived={()=>{goPage('rooms');void refresh();}}/>}
-       {tab==='tasks'&&<><div className="r3-panel-actions"><button className="rw-button lime" onClick={()=>setModal({kind:'task'})}><Plus size={16}/>Aufgabe</button></div><TaskList tasks={projectTasks} userId={user.userId} name={name} search={search} onSearch={setSearch} onOpen={openTask}/></>}
        {tab==='files'&&!route.task&&<ProjectFiles key={room.project.id} room={room} userId={user.userId} onTask={id=>navigate({task:id})} onTasks={()=>navigate({tab:'tasks'})} onSetup={()=>navigate({tab:'connect'})}/>}
        {tab==='knowledge'&&<><TeamKnowledge room={room} search="" refresh={refresh} onNew={kind=>setModal({kind})} onSource={source=>{navigate({tab:'talk'});requestAnimationFrame(()=>document.getElementById('message-'+source)?.scrollIntoView({block:'center'}));}}/><ProjectBriefing room={room} tasks={projectTasks}/></>}
               {tab==='connect'&&<ProjectSettings room={room} resources={resources} userId={user.userId} refresh={refresh} onRepository={()=>setModal({kind:'repository'})} onArchived={()=>{goPage('rooms');void refresh();}}/>}
