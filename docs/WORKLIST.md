@@ -18,9 +18,17 @@ Etappen und Entscheide: [PLAN.md](PLAN.md). Iststand mit Nachweisen: [STATUS.jso
 Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, schreibt sich unter „In Arbeit“ ein
 (z. B. „Claude Code – Aufräumen“ oder „Codex – Messenger-Feinschliff“).
 
-**In Arbeit:** Claude Code – Agenten-Fundament und Messenger-Feinschliff (`feat/agent-messenger-foundation-20261116`, baut auf #87 auf): eigene Tabellen für Agentenläufe, Warteschlange, Arbeitszeile mit Schritten, ruhigere Sprechblasen. Vor Owner-Abnahme kein Merge und kein Livegang.
+**In Arbeit:** Codex – Konsolidierung und Qualitätsprüfung auf Basis von `feat/guru-plans-20261117`. Korrekturen liegen auf dem abhängigen Review-Branch `fix/studio-consolidation-20261117`; dieser ist keine zweite Produktimplementierung.
 
-**Ebenfalls offen:** ChatGPT/Codex – Messenger R4 und mobile UX (Issue #84, `feat/studio-mobile-messenger-r4-20261116`). Vor Owner-Abnahme kein Merge und kein Livegang.
+**Gemeinsame Grundlage:** Der Guru-Branch enthält den Gesprächs-/Team-Branch (GitHub-Vergleich: vier Commits voraus, keiner zurück). Frühere Messenger-Arbeitsaufträge sind daher keine parallelen Bauaufträge. Vor dem Schliessen älterer PRs deren Einbeziehung einzeln prüfen.
+
+**Nächste Schritte:**
+- Widersprüche zwischen Arbeitsliste, Workflow und STATUS.json bereinigen; historische Evidence als solche erhalten.
+- Backend prüfen: private Chats, Auftraggeber/Kontingent, Freigaben, wiederholte Planannahme, Abbruch und Fehlerzustände.
+- Danach Messenger am Handy und Desktop prüfen und konkrete Befunde beheben.
+- Einen konsolidierten Release-Kandidaten mit gültigen Prüfbelegen zur Owner-Abnahme vorlegen.
+
+**Abgrenzung:** Der Pilot ist nicht automatisch der aktuelle GitHub-Stand. Laufende Dienste erst anhand aktueller Evidence zuordnen; keine Vorschau ohne Zuordnung stoppen. Merge und Livegang folgen weiterhin WORKFLOW.md/OPERATIONS.md.
 
 1. [ ] Aufräumen: Probeprojekt (TEST-UX-Reste) entfernen, Klimafinder frisch starten (Owner-Ja nötig, nicht umkehrbar).
 2. [ ] GitHub-Prüfung stabil: restliche feste Test-Ports (44xxx) durch vom System vergebene Ports ersetzen.
