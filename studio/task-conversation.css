@@ -30,3 +30,6 @@
 .r7-shared{font-size:11px;color:var(--schmaqq-muted)}
 .tc details>summary::after,.tc details>summary::before{display:none!important;content:none!important}
 .tc .r5-run{margin:2px 0 2px 42px}
+.tc-chain{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;border-radius:12px;background:#eef4ff;border:1px solid #c9dafa;font-size:13px}
+.tc-chain span{flex:1}.tc-chain.halted{background:#fff4e5;border-color:#f1d2a4}
+.tc-chain button{min-height:34px;padding:0 14px;border-radius:17px;border:1px solid currentColor;background:#fff;font-weight:700;cursor:pointer}

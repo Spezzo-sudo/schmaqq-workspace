@@ -1,9 +1,9 @@
 import {Fragment,useEffect,useRef,useState,type ReactNode} from 'react';
-import {ArrowRight,Bot,CheckCheck,ListChecks,Crown,ExternalLink,Hash,Link2,MessageSquare,Monitor,Pin,Plus,Reply,Search,Send,Shield,Sparkles,UserCircle,Users,X,ChevronLeft,MoreHorizontal,FolderOpen} from 'lucide-react';
+import {ArrowRight,Bot,CheckCheck,ListChecks,Highlighter,Crown,ExternalLink,Hash,Link2,MessageSquare,Monitor,Pin,Plus,Reply,Search,Send,Shield,Sparkles,UserCircle,Users,X,ChevronLeft,MoreHorizontal,FolderOpen} from 'lucide-react';
 import {
  roomRequest,operationId,time,initials,storedDraft,saveDraft,taskTitleFrom,
  agentRoleLabels,agentCapabilityLabels,agentContextSourceLabels,agentPermissionLabels,
- agentDepartments,agentDepartment,agentEffectivePermissions,agentExecutionStatus,agentLiveActivity,agentRunActive,isProjectLead,PROJECT_LEAD_PRESET,memberRoleSummary,filterMessengerMessages,
+ agentDepartments,agentDepartment,agentEffectivePermissions,agentExecutionStatus,agentLiveActivity,agentRunActive,isProjectLead,MARK_COLORS,PROJECT_LEAD_PRESET,memberRoleSummary,filterMessengerMessages,
  type RoomState,type RoomMember,type RoomMessage,type RoomAgent,type RoomAgentRole,type HermesAgentRun,
  type RoomAgentCapability,type RoomAgentContextSource,type RoomAgentPermissions,type Resource,type MessengerFilter
 } from './room-model';
@@ -70,6 +70,19 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
   setHermesBusy(true);setError('');
   try{await roomRequest('/api/agent-runs',{project:room.project.id,agent:agentId,message:messageId,...(retry?{retry:true}:{})});await loadAgentRuns();followLatest.current=true;}
   catch(e){setError((e as Error).message);}finally{setHermesBusy(false);}
+ }
+ // Marking: choose messages, then ask one agent about exactly those.
+ const [marking,setMarking]=useState<string[]|null>(null),[markAgent,setMarkAgent]=useState(''),[markText,setMarkText]=useState('');
+ function toggleMark(id:string){if(!markAgent)setMarkAgent(teamAgents.find(a=>canAnswer(a))?.id??'');setMarking(list=>list?(list.includes(id)?list.filter(x=>x!==id):[...list,id].slice(0,20)):[id]);}
+ async function sendMarked(){
+  if(!marking?.length||!markAgent||!markText.trim()||busy)return;
+  setBusy(true);setError('');
+  try{
+   const id=operationId();
+   const sent=await roomRequest<{ask?:string|null}>('/api/room',{action:'message',project:room.project.id,id,body:markText.trim(),recipient:markAgent,marked:marking});
+   if(hermesConfigured&&sent.ask)void requestAgentRun(id,sent.ask);
+   setMarking(null);setMarkText('');await refresh();
+  }catch(e){setError((e as Error).message);}finally{setBusy(false);}
  }
  async function shareInProject(message:RoomMessage){
   setError('');
@@ -334,6 +347,8 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
 
  const query=(search+' '+localSearch).trim();
  const visible=filterMessengerMessages(messages,filter,query);
+ const markOf=new Map<string,{color:number;agent:string}>();
+ for(const m of messages)for(const id of m.marked??[])markOf.set(id,{color:m.markColor??0,agent:(room.agents??[]).find(a=>a.id===m.recipient)?.name??'Agent'});
 
  const activeFilterTitle=(()=>{
   if(filter.kind==='member')return 'Adressiert im Raum: '+(activeMembers.find(m=>m.id===filter.id)?.name??'Teammitglied');
@@ -467,8 +482,12 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
        </div>;
       }
 
+      const mark=markOf.get(message.id),selected=marking?.includes(message.id);
       return <Fragment key={message.id}>
-       <article className={'rw-message'+(isOwn?' r3-own':'')+(isAgentMsg?' ai':'')+(message.handoff?' handoff':'')} aria-label={isOwn?'Deine Nachricht':undefined} id={'message-'+message.id}>
+       <article className={'rw-message'+(isOwn?' r3-own':'')+(isAgentMsg?' ai':'')+(message.handoff?' handoff':'')+(mark?' r7-marked r7-mark-'+mark.color:'')+(selected?' r7-selected':'')+(marking?' r7-marking':'')} aria-label={isOwn?'Deine Nachricht':undefined} id={'message-'+message.id}
+        onClickCapture={marking&&filter.kind==='all'?e=>{e.preventDefault();e.stopPropagation();toggleMark(message.id);}:undefined}
+        onContextMenu={filter.kind==='all'&&!marking?e=>{e.preventDefault();toggleMark(message.id);}:undefined}
+        aria-pressed={marking?Boolean(selected):undefined}>
        {sAgent
         ?<button type="button" className="rw-avatar-btn" onClick={()=>openProfile(sAgent.id)} title={`Profil von ${sAgent.name} öffnen`}>
          <AgentAvatar agent={sAgent} size="md"/>
@@ -483,6 +502,8 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
            ?<button type="button" className="rw-link rw-msg-agent-name" onClick={()=>openProfile(sAgent.id)}>{sAgent.name}{sAgent.nickname?` „${sAgent.nickname}“`:''}</button>
            :message.kind==='ai-shared'?message.model:person?.name??'Mitglied'}
          </strong>
+         {mark&&<span className={'r7-mark-label r7-mark-'+mark.color}>{MARK_COLORS[mark.color]} markiert · für {mark.agent}</span>}
+         {!!message.marked?.length&&<span className={'r7-mark-label r7-mark-'+(message.markColor??0)}>fragt zu {message.marked.length} {MARK_COLORS[message.markColor??0]} markierten</span>}
          {message.sharedBy&&<span className="r7-shared">geteilt von {room.members.find(m=>m.id===message.sharedBy)?.name??'Mitglied'}</span>}
          {sAgent&&!isVerifiedRun&&<span className="rw-origin-badge manual" title={'Von '+(person?.name??'einem Mitglied')+' eingetragen; keine Antwort des Agenten'}>Manuell protokolliert</span>}
          {!sAgent&&message.kind==='ai-shared'&&<span className="rw-badge">KI-Antwort · geteilt von {person?.name}</span>}
@@ -522,6 +543,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
          <button onClick={e=>{closeMenu(e);setReply(message);setTopicTask(linkedTaskId??'');setRecipient(sAgent?.id??(message.author!==userId?message.author:message.recipient??''));setSenderAgent('');setHandoffTo('');setHandoffSummary('');composerInput.current?.focus();}}><Reply size={14}/>Antworten</button>
          <button onClick={e=>{closeMenu(e);linkedTaskId?onTask(linkedTaskId):onConvert('task',message);}}><CheckCheck size={14}/>{linkedTaskId?'Aufgabe':'Als Aufgabe'}</button>
          <button onClick={e=>{closeMenu(e);onConvert('decision',message);}}><Pin size={14}/>Festhalten</button>
+         {filter.kind==='all'&&<button onClick={e=>{closeMenu(e);toggleMark(message.id);}}><Highlighter size={14}/>Markieren · Agent fragen</button>}
          {linkedTaskId&&filter.kind!=='topic'&&<button onClick={e=>{closeMenu(e);selectFilter({kind:'topic',taskId:linkedTaskId});}}><Hash size={14}/>Nur dieses Thema</button>}
          {filter.kind==='agent'&&sAgent&&isVerifiedRun&&message.author===userId&&<button onClick={e=>{closeMenu(e);void shareInProject(message);}}><Users size={14}/>Im Projekt teilen</button>}
          {isAgentMsg&&<p className="r5-menu-note">{isVerifiedRun
@@ -540,7 +562,16 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
      <div ref={end}/>
     </div>
 
-    <div className="rw-composer-wrap">
+    {marking&&<div className="r7-markbar" role="region" aria-label="Markierte Nachrichten">
+     {error&&<p role="alert" className="rw-error">{error}</p>}
+     <div className="r7-markbar-head"><strong>{marking.length} markiert</strong><span>Tippe weitere Nachrichten an. Der Agent liest nur diese.</span><button className="rw-icon" aria-label="Markieren beenden" onClick={()=>setMarking(null)}><X size={16}/></button></div>
+     <div className="r7-markbar-agents" role="radiogroup" aria-label="Agent wählen">{teamAgents.filter(a=>canAnswer(a)).map(a=><button key={a.id} role="radio" aria-checked={markAgent===a.id} className={markAgent===a.id?'on':''} onClick={()=>setMarkAgent(a.id)}><AgentAvatar agent={a} size="xs"/>{a.name}</button>)}</div>
+     <form className="r7-markbar-ask" onSubmit={e=>{e.preventDefault();void sendMarked();}}>
+      <input aria-label="Was soll der Agent damit tun?" placeholder="Was soll der Agent damit tun?" value={markText} maxLength={4000} onChange={e=>setMarkText(e.target.value)}/>
+      <button className="rw-send" disabled={busy||!marking.length||!markAgent||!markText.trim()} aria-label="Agent fragen"><Send size={18}/></button>
+     </form>
+    </div>}
+    <div className="rw-composer-wrap" hidden={Boolean(marking)}>
      {error&&<p role="alert" className="rw-error">{error}</p>}
      {reply&&<div className="rw-reply-bar"><Reply size={14}/><span>Antwort auf: {reply.body.slice(0,140)}</span><button className="rw-icon" onClick={()=>setReply(null)} aria-label="Antwortbezug entfernen"><X size={14}/></button></div>}
      {(topicTask||senderAgent||recipient&&!(directView&&recipient===messengerComposerTarget(filter).recipient))&&<div className="r3-composer-scope" aria-live="polite">{recipient&&<span>An {targetName} · im Projekt</span>}{topicTask&&<span><Hash size={12}/>{room.tasks.find(t=>t.id===topicTask)?.title??'Aufgabe'}</span>}{senderAgent&&<span className="r3-manual-scope">Manuell für {selectedSenderAgent?.name??'Agent'}</span>}<button className="rw-icon" aria-label="Zusatzangaben zurücksetzen" onClick={resetComposer}><X size={13}/></button></div>}

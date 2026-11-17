@@ -416,3 +416,18 @@
 .rw-fg-can{list-style:none;margin:6px 0 12px;padding:0;display:grid;gap:6px;font-size:14px;line-height:1.45}
 .rw-fg-can li{display:flex;gap:8px}.rw-fg-can li::before{flex-shrink:0;font-weight:700}
 .rw-fg-can .yes::before{content:"✓";color:#4f7a1f}.rw-fg-can .no{color:var(--schmaqq-muted)}.rw-fg-can .no::before{content:"–"}
+/* Marking: a coloured edge per request ("check alle blauen"), selection while choosing. */
+.r7-marked{border-left:4px solid var(--mark);padding-left:10px!important;border-radius:4px}
+.r7-mark-0{--mark:#2f6fdb}.r7-mark-1{--mark:#3c9a3c}.r7-mark-2{--mark:#e08a1e}.r7-mark-3{--mark:#8a4fd1}
+.r7-mark-label{font-size:11px;font-weight:600;color:var(--mark);white-space:nowrap}
+.r7-marking{cursor:pointer;border-radius:10px}
+.r7-selected{outline:3px solid #2f6fdb;outline-offset:2px;background:#eef4ff}
+.r7-markbar{flex-shrink:0;display:grid;gap:8px;padding:10px 14px calc(12px + env(safe-area-inset-bottom));background:#f6f6f1;border-top:1px solid var(--schmaqq-rule,#dde3d2)}
+.r7-markbar-head{display:flex;gap:10px;align-items:center}.r7-markbar-head span{flex:1;font-size:12px;color:var(--schmaqq-muted)}
+.r7-markbar-agents{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.r7-markbar-agents button{display:inline-flex;gap:6px;align-items:center;flex-shrink:0;min-height:36px;padding:0 10px 0 4px;border:1px solid var(--schmaqq-rule,#dde3d2);border-radius:18px;background:#fffefa;font-size:13px;cursor:pointer}
+.r7-markbar-agents button.on{border-color:#2f6fdb;background:#eef4ff;font-weight:700}
+.r7-markbar-ask{display:flex;gap:8px;align-items:center;border:1px solid #d5dccb;border-radius:22px;background:#fffefa;padding:4px 4px 4px 14px}
+.r7-markbar-ask input{flex:1;border:0!important;background:transparent!important;box-shadow:none!important;outline:none;font-size:15px;min-height:40px}
+.r7-markbar-ask .rw-send{width:40px;height:40px;border-radius:50%}
+.r7-markbar-ask .rw-send:disabled{opacity:.45}

@@ -353,12 +353,13 @@ export function AgentProfileView({
       {perms.readProject&&perms.writeMessages?<li className="yes">Projekt lesen und antworten, wenn man ihn holt (@Name, Direktchat, in einer Aufgabe)</li>:<li className="no">Antwortet gerade nicht (Lesen oder Schreiben gesperrt)</li>}
       {(agent.lead===true||perms.manageTasks)&&<li className="yes">Aufgaben vorschlagen – du entscheidest</li>}
       {agent.lead===true&&<li className="yes">Pläne aus wenigen Aufgaben vorschlagen</li>}
+      {perms.delegateAgents&&<li className="yes">In einer Aufgabe ein anderes Teammitglied fragen (sichtbar, höchstens 6 Antworten, dann fragt Studio)</li>}
      </ul>
      <strong>Kann noch nicht</strong>
      <ul className="rw-fg-can">
       <li className="no">Code ändern oder Programmierläufe starten</li>
       <li className="no">Im Web recherchieren</li>
-      <li className="no">Arbeit an andere Agenten weitergeben</li>
+      {!perms.delegateAgents&&<li className="no">Andere Agenten fragen</li>}
       <li className="no">Zusammenführen oder live stellen</li>
      </ul>
     </div>

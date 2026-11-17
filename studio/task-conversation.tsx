@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {Bot,ClipboardCheck,Send} from 'lucide-react';
+import {Bot,ClipboardCheck,Send,Users} from 'lucide-react';
 import {AgentAvatar} from './agent-avatar';
 import {AgentRunLine,ProposalCard} from './agent-activity';
 import {RichText} from './rich-text';
@@ -66,6 +66,11 @@ export default function TaskConversation({taskId,room,userId,comments,thread,onR
  }
  async function stop(run:string){try{await roomRequest('/api/agent-runs/cancel',{run});await loadRuns();}catch(e){setError((e as Error).message);}}
  async function retry(run:HermesAgentRun){try{await roomRequest('/api/agent-runs',{project:room.project.id,agent:run.agent,message:run.message,retry:true});await loadRuns();}catch(e){setError((e as Error).message);}}
+ // The latest chain of agents talking to each other in this task: counter, Stopp, "Weitermachen?".
+ const threadIds=new Set(thread.map(m=>m.id));
+ const chainRun=runs.filter(r=>r.chain&&threadIds.has(r.message)).sort((a,b)=>b.created-a.created)[0];
+ const chain=chainRun?.chain??null;
+ async function steer(action:'stop'|'continue'){if(!chainRun)return;try{await roomRequest('/api/agent-chains',{run:chainRun.id,action});await loadRuns();}catch(e){setError((e as Error).message);}}
  function mention(agent:RoomAgent){const next=('@'+agent.name+' '+text.replace(/^@\S+(\s\S+)?\s/,'')).trimStart();setText(next);saveDraft(draftKey,next);input.current?.focus();}
 
  return <div className="tc">
@@ -89,6 +94,12 @@ export default function TaskConversation({taskId,room,userId,comments,thread,onR
    })}
    <div ref={end}/>
   </div>
+  {chain&&<div className={'tc-chain'+(chain.full||chain.stopped?' halted':'')} role="status">
+   <Users size={15} aria-hidden/>
+   <span>{chain.stopped?'Agenten-Kette gestoppt':chain.full?'Grenze erreicht – weitermachen?':'Agenten sprechen miteinander'} · <strong>{chain.used} von {chain.limit}</strong></span>
+   {chain.active&&!chain.stopped&&<button type="button" onClick={()=>void steer('stop')}>Stopp</button>}
+   {(chain.full||chain.stopped)&&<button type="button" onClick={()=>void steer('continue')}>Weitermachen</button>}
+  </div>}
   {error&&<p className="rw-error" role="alert">{error}</p>}
   {agents.length>0&&<div className="tc-agents" role="group" aria-label="Agenten fragen">
    <span>Fragen:</span>

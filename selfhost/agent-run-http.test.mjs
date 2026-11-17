@@ -372,3 +372,63 @@ test('cards: work from a direct chat appears as a card in the project chat; an a
  const shared=(await room(bob)).messages.find(m=>m.id===shareId);
  assert.deepEqual([shared.body,shared.senderAgent,shared.sharedBy,shared.scope],['Vorschlag steht.',lead.id,alice.id,'group']);
 });
+
+test('marking: the agent reads exactly the marked messages; marks only go to one agent',async t=>{
+ const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Markieren',description:''},{cookie:alice.cookie})).data.project;
+ const lead=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.agents[0];
+ const ids=[];
+ for(const [who,body] of [[bob,'Farbe Blau gefällt mir nicht.'],[alice,'Was anderes.'],[bob,'Lieber Grün.']]){const id=randomUUID();ids.push(id);await f.post('/api/room',{action:'message',id,project,body},{cookie:who.cookie});}
+ assert.equal((await f.post('/api/room',{action:'message',id:randomUUID(),project,body:'Fass zusammen',marked:[ids[0]]},{cookie:alice.cookie})).status,400,'marks need an agent');
+ const ask=randomUUID();
+ const sent=await f.post('/api/room',{action:'message',id:ask,project,recipient:lead.id,body:'Fass zusammen, was gewünscht ist.',marked:[ids[0],ids[2]]},{cookie:alice.cookie});
+ assert.equal(sent.status,200);assert.equal(sent.data.ask,lead.id);
+ const msg=(await f.get('/api/room?project='+project,{cookie:bob.cookie})).data.messages.find(m=>m.id===ask);
+ assert.deepEqual([msg.marked,msg.markColor],[[ids[0],ids[2]],0],'everyone sees which messages were marked, in which colour');
+ await f.post('/api/agent-runs',{project,agent:lead.id,message:ask},{cookie:alice.cookie});
+ const job=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ assert.equal(job.place,'marked');
+ assert.deepEqual(job.history.map(h=>h.body),['Farbe Blau gefällt mir nicht.','Lieber Grün.']);
+});
+
+test('agent ↔ agent: only in a task, one level, counted, stoppable, and paid by whoever started',async t=>{
+ const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Kette',description:''},{cookie:alice.cookie})).data.project;
+ const room=async(member=alice)=>(await f.get('/api/room?project='+project,{cookie:member.cookie})).data;
+ const lead=(await room()).agents[0];
+ const perms={readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:true};
+ const mara=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Mara',role:'frontend',avatarPresetId:'mara',model:'x',permissions:perms},{cookie:alice.cookie})).data.agentId;
+ const task=(await f.post('/api/room',{action:'task',id:randomUUID(),project,title:'Farben',description:'',kind:'general'},{cookie:alice.cookie})).data.task;
+ const call=(job,tool,args)=>f.post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool,args},w);
+ // In the project chat (no task) there is no asking other agents.
+ const plain=randomUUID();await f.post('/api/room',{action:'message',id:plain,project,body:'@Herr Grau Hallo'},{cookie:alice.cookie});
+ await f.post('/api/agent-runs',{project,agent:lead.id,message:plain},{cookie:alice.cookie});
+ const j0=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ assert.ok(!j0.toolPolicy.allowed.includes('agent.ask'));
+ await f.post('/api/agent-worker/finish',{run:j0.run,lease:j0.lease,status:'completed',output:'Hallo.'},w);
+ // In a task the lead may ask Mara.
+ const q=randomUUID();await f.post('/api/room',{action:'message',id:q,project,topicTask:task,body:'@Herr Grau welche Farbe?'},{cookie:alice.cookie});
+ await f.post('/api/agent-runs',{project,agent:lead.id,message:q},{cookie:alice.cookie});
+ const a=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ assert.ok(a.toolPolicy.allowed.includes('agent.ask'));
+ assert.equal((await call(a,'agent.ask',{agent:'Herr Grau',question:'Selbst?'})).status,400,'not itself');
+ assert.equal((await call(a,'agent.ask',{agent:'mara',question:'Welche Farbe passt zum Logo?'})).status,200);
+ await f.post('/api/agent-worker/finish',{run:a.run,lease:a.lease,status:'completed',output:'Ich habe Mara gefragt.'},w);
+ const thread=(await f.get('/api/collaboration/task?id='+task,{cookie:bob.cookie})).data.thread;
+ assert.deepEqual(thread.map(m=>[m.body,m.senderAgent]).slice(-2),[['@Mara Welche Farbe passt zum Logo?',lead.id],['Ich habe Mara gefragt.',lead.id]],'the question is readable for everyone in the task');
+ const b=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ assert.equal(b.agent,mara);assert.equal(b.owner,alice.id,'whoever started pays for the passed-on step');
+ assert.equal(b.place,'task');
+ assert.ok(!b.toolPolicy.allowed.includes('agent.ask'),'B does not pass on (two levels at most)');
+ const runs=(await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data.runs;
+ const chain=runs.find(r=>r.id===b.run).chain;
+ assert.deepEqual([chain.used,chain.limit,chain.depth,chain.active],[2,6,1,true],'counter "2 von 6"');
+ // Stop: the whole chain ends, a late answer is not posted.
+ assert.equal((await f.post('/api/agent-chains',{run:b.run,action:'stop'},{cookie:bob.cookie})).status,404);
+ assert.equal((await f.post('/api/agent-chains',{run:b.run,action:'stop'},{cookie:alice.cookie})).data.stopped,true);
+ const late=await f.post('/api/agent-worker/finish',{run:b.run,lease:b.lease,status:'completed',output:'Grün.'},w);
+ assert.equal(late.data.status,'cancelled');
+ const after=(await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data.runs.find(r=>r.id===a.run).chain;
+ assert.equal(after.stopped,true);
+ assert.equal((await f.post('/api/agent-chains',{run:a.run,action:'continue'},{cookie:alice.cookie})).data.limit,7,'"Weitermachen?" opens another round');
+});

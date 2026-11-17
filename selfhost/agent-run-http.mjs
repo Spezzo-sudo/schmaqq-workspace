@@ -19,6 +19,8 @@ const SILENCE_TIMEOUT_MS = 2 * 60 * 1000; // worker stopped sending heartbeats
 const WORKER_ONLINE_MS = 45 * 1000; // last contact that still counts as "reachable"
 const MAX_CLAIM_WAIT_S = 25;
 const HISTORY_MESSAGES = 10;
+const CHAIN_LIMIT = 6; // agent answers per request a person started, before the chain asks "Weitermachen?"
+const MARKED_MESSAGES = 20;
 
 // ---- Tools --------------------------------------------------------------------------------------------
 // The complete list of what an agent run can ever do in Studio. The project is bound to the run and is
@@ -26,7 +28,7 @@ const HISTORY_MESSAGES = 10;
 // needs no new worker. "guidance" is the one rule the model is given for the tool.
 const text = (max, min = 0) => ({ type: 'string', ...(min ? { minLength: min } : {}), maxLength: max });
 const PLAN_TASKS = 6;
-const TOOLS = Object.freeze({
+const BASE_TOOLS = Object.freeze({
   'project.read_context': {
     limit: 3,
     name: 'studio_project_read_context',
@@ -100,6 +102,17 @@ const TOOLS = Object.freeze({
     }).strict()
   }
 });
+const TOOLS = Object.freeze({ ...BASE_TOOLS, 'agent.ask': {
+  limit: 2,
+  inTaskOnly: true, // agents talk to each other only in a task's conversation, readable for everyone
+  name: 'studio_agent_ask',
+  description: 'Fragt ein anderes Mitglied des Agententeams im Gespräch dieser Aufgabe. Es antwortet danach dort, für alle lesbar. Du bekommst die Antwort nicht zurück.',
+  parameters: { type: 'object', properties: { agent: text(80, 1), question: text(600, 1) }, required: ['agent', 'question'], additionalProperties: false },
+  guidance: 'Brauchst du für diese Aufgabe die Sicht eines anderen Agenten aus dem Team, rufe studio_agent_ask mit seinem Namen '
+    + 'und einer konkreten Frage auf. Er antwortet danach im Gespräch der Aufgabe. Frage nur, wenn es wirklich weiterhilft, '
+    + 'und beantworte deinen eigenen Teil trotzdem selbst.',
+  args: z.object({ agent: z.string().trim().min(1).max(80), question: z.string().trim().min(1).max(600) }).strict()
+} });
 const TOOL_IDS = Object.keys(TOOLS);
 
 // ---- Request shapes ---------------------------------------------------------------------------------
@@ -120,11 +133,12 @@ const toolCall = workRun.extend({
   args: z.record(z.string(), z.unknown()).default({})
 }).strict();
 const decideProposal = z.object({ proposal: id, decision: z.enum(['accept', 'reject']) }).strict();
+const chainRequest = z.object({ run: id, action: z.enum(['stop', 'continue']) }).strict();
 
 const WORKER_ROUTES = ['claim', 'heartbeat', 'tool', 'finish'];
 // '/api/hermes-worker/' is the path the first pilot worker was installed with; it stays as an alias.
 const WORKER_PREFIXES = ['/api/agent-worker/', '/api/hermes-worker/'];
-const MEMBER_ROUTES = ['/api/agent-runs', '/api/agent-runs/cancel', '/api/agent-proposals/decide'];
+const MEMBER_ROUTES = ['/api/agent-runs', '/api/agent-runs/cancel', '/api/agent-proposals/decide', '/api/agent-chains'];
 const LOOPBACK = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
 // A reverse proxy or tunnel on this machine also connects from loopback. These headers give it away.
 const PROXY_HEADERS = ['x-forwarded-for', 'x-real-ip', 'forwarded', 'cf-connecting-ip', 'cf-ray'];
@@ -175,6 +189,20 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
   const memberRow = memberId => db.prepare('SELECT * FROM members WHERE id=?').get(memberId);
   const activeAgent = (project, agent) => agentsFor(db, project).find(a => a.id === agent && a.active !== false);
 
+  // ---- Chains: one request of a person, plus what agents asked each other for it -----------------------
+  const metaGet = k => { const row = db.prepare('SELECT value FROM workspace_meta WHERE key=?').get(k); return row ? JSON.parse(row.value) : null; };
+  const metaPut = (k, v) => db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(k, JSON.stringify(v));
+  const chainOf = runId => metaGet('room:v1:chain:' + runId) ?? { root: runId, depth: 0 };
+  const chainRuns = root => [root, ...db.prepare("SELECT substr(key, 15) AS run FROM workspace_meta WHERE key LIKE 'room:v1:chain:%' AND json_extract(value,'$.root')=?").all(root).map(r => r.run)]
+    .map(id => store.run(id)).filter(Boolean);
+  const chainState = root => metaGet('room:v1:chain-state:' + root) ?? { limit: CHAIN_LIMIT, stopped: false };
+  function chainSummary(run) {
+    const { root, depth } = chainOf(run.id), runs = chainRuns(root);
+    if (runs.length < 2) return null;
+    const state = chainState(root), used = runs.filter(r => !['failed', 'cancelled'].includes(r.status)).length;
+    return { root, depth, used, limit: state.limit, stopped: state.stopped, full: used >= state.limit, active: runs.some(r => ['queued', 'running', 'cancelling'].includes(r.status)) };
+  }
+
   // ---- Worker identity ------------------------------------------------------------------------------
   function authenticate(req) {
     const bearer = req.headers.authorization?.match(/^Bearer ([a-zA-Z0-9_-]{43})$/)?.[1];
@@ -212,7 +240,8 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       status: run.status, created: run.created, updated: run.updated, model: run.model,
       started: run.claimed ?? null, finished: run.finished ?? null, position,
       steps: store.steps(run.id).map(step => ({ tool: step.tool, at: step.created })),
-      completedMessage: run.completed_message ?? null, errorCode: run.error_code ?? null
+      completedMessage: run.completed_message ?? null, errorCode: run.error_code ?? null,
+      chain: chainSummary(run)
     };
   }
 
@@ -302,10 +331,15 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
    * Tools are granted per run at claim time: only to agents explicitly allowed to plan tasks, asked by a
    * person who may develop. The lead additionally gets the planning tool.
    */
-  function policyFor(member, agent, project) {
-    const mayPlan = plans(agent) && can(db, member, project, 'develop');
-    if (!mayPlan) return { mode: 'no-tools', allowed: [] };
-    const allowed = TOOL_IDS.filter(id => !TOOLS[id].leadOnly || agent.lead === true);
+  function policyFor(member, agent, project, run, topic) {
+    const develops = can(db, member, project, 'develop');
+    const mayPlan = plans(agent) && develops;
+    // Asking another agent: only in a task, only the first level (A → B, B does not pass on), only with permission.
+    const mayAsk = develops && Boolean(topic) && chainOf(run.id).depth === 0 && agent.permissions?.delegateAgents === true
+      && agentsFor(db, project).some(a => a.id !== agent.id && a.active !== false);
+    const allowed = TOOL_IDS.filter(id => id === 'agent.ask' ? mayAsk
+      : mayPlan && (!TOOLS[id].leadOnly || agent.lead === true));
+    if (!allowed.length) return { mode: 'no-tools', allowed: [] };
     return {
       mode: 'studio-tools-r2', allowed,
       tools: allowed.map(id => ({
@@ -340,6 +374,19 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
     }));
   }
 
+  /** Marked messages are all the agent reads of the chat: exactly those, in order (sparing and precise). */
+  function markedHistory(run, source) {
+    const ids = messageMeta(source.id).marked;
+    if (!Array.isArray(ids) || !ids.length) return null;
+    const agents = new Map(agentsFor(db, run.project).map(a => [a.id, a.name]));
+    return ids.slice(0, MARKED_MESSAGES).map(mid => {
+      const row = db.prepare('SELECT m.body, n.name FROM messages m JOIN members n ON n.id=m.author WHERE m.id=? AND m.channel=?').get(mid, run.project);
+      if (!row || privateScope(db, mid)) return null;
+      const sender = messageMeta(mid).senderAgent;
+      return { from: sender === run.agent ? 'agent' : 'person', name: sender ? agents.get(sender) ?? 'Agent' : row.name, body: row.body.slice(0, 1200) };
+    }).filter(Boolean);
+  }
+
   function claim(owner, now) {
     return transaction(db, () => {
       expire(now);
@@ -359,8 +406,9 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       }
 
       const leaseToken = token();
-      const toolPolicy = policyFor(member, agent, run.project);
       const topic = taskTopic(run.project, source.id);
+      const toolPolicy = policyFor(member, agent, run.project, run, topic);
+      const marked = markedHistory(run, source);
       store.updateRun(run.id, {
         status: 'running', lease_hash: digest(leaseToken), claimed: now, heartbeat: now, updated: now,
         tool_policy: toolPolicy.allowed
@@ -369,8 +417,8 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
         run: run.id, lease: leaseToken, owner, project: run.project, agent: run.agent, model: run.model,
         prompt: source.body, replyTo: source.id,
         context: buildRoomContext(db, run.project, topic ?? undefined).text,
-        history: dialogue(run, source, topic),
-        place: privateScope(db, source.id) ? 'direct' : topic ? 'task' : 'group',
+        history: marked ?? dialogue(run, source, topic),
+        place: privateScope(db, source.id) ? 'direct' : marked ? 'marked' : topic ? 'task' : 'group',
         team: agentsFor(db, run.project).filter(a => a.active !== false).map(a => ({ name: a.name, role: a.role, lead: a.lead === true })).slice(0, 20),
         profile: {
           name: agent.name, role: agent.role, purpose: agent.purpose,
@@ -429,7 +477,9 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
     if (!stillAllowed) throw fail(403, 'Agent oder Projektberechtigung wurde widerrufen.');
 
     let result, proposal = null;
-    if (request.tool === 'project.read_context') {
+    if (request.tool === 'agent.ask') {
+      result = askAgent(run, member, agent, args, now);
+    } else if (request.tool === 'project.read_context') {
       const openTasks = listRoomTasks(db, run.project).tasks.slice(0, 20).map(t => ({ title: t.title, status: t.status }));
       result = { trust: 'untrusted-project-data', context: buildRoomContext(db, run.project).text, openTasks };
     } else {
@@ -459,6 +509,49 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       store.updateRun(run.id, { heartbeat: now, updated: now });
     }
     return { ok: true, result };
+  }
+
+  /** A → B inside a task: B's question is posted in the task conversation and queued for the same person (who pays). */
+  function askAgent(run, member, agent, args, now) {
+    const topic = taskTopic(run.project, run.source_message);
+    const { root, depth } = chainOf(run.id);
+    if (!topic || depth !== 0) throw fail(403, 'Andere Agenten fragen geht nur im Gespräch einer Aufgabe und nicht weiter als eine Ebene.');
+    if (agent.permissions?.delegateAgents !== true || !can(db, member, run.project, 'develop')) throw fail(403, 'Weitergeben ist für diesen Agenten nicht freigegeben.');
+    const target = agentsFor(db, run.project).find(a => a.active !== false && a.name.toLowerCase() === args.agent.toLowerCase());
+    if (!target || target.id === agent.id || target.permissions?.readProject === false || target.permissions?.writeMessages === false) {
+      throw fail(400, 'Diesen Agenten gibt es im Team nicht oder er kann gerade nicht antworten.');
+    }
+    const state = chainState(root), used = chainRuns(root).filter(r => !['failed', 'cancelled'].includes(r.status)).length;
+    if (state.stopped) throw fail(409, 'Die Kette wurde gestoppt.');
+    if (used >= state.limit) throw fail(429, `Grenze erreicht (${used} von ${state.limit}). Die Person entscheidet, ob es weitergeht.`);
+    if (store.activeRuns(run.owner).length >= QUEUE_LIMIT) throw fail(409, 'Es warten schon mehrere Aufträge.');
+    const messageId = randomUUID(), next = randomUUID();
+    db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(messageId, run.project, run.owner, '@' + target.name + ' ' + args.question, now);
+    db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?)').run('room:v1:message:' + messageId, JSON.stringify({
+      kind: 'agent', origin: 'verified-run', senderAgent: agent.id, model: run.model, replyTo: run.source_message,
+      recipient: target.id, recipientKind: 'agent', topicTask: topic, runId: run.id, chain: root
+    }));
+    store.insertRun({ id: next, owner: run.owner, project: run.project, agent: target.id, source_message: messageId, model: modelFor(target), status: 'queued', created: now });
+    metaPut('room:v1:chain:' + next, { root, depth: 1, from: run.id });
+    return { asked: target.name, status: 'queued', note: 'Die Antwort erscheint im Gespräch der Aufgabe, für alle lesbar.' };
+  }
+
+  /** The person who started a chain stops it (everything still waiting or running) or lets it go on for another round. */
+  function steerChain(member, request, now) {
+    const run = ownRun(request.run, member.id);
+    const { root } = chainOf(run.id), state = chainState(root), runs = chainRuns(root);
+    if (request.action === 'continue') {
+      const used = runs.filter(r => !['failed', 'cancelled'].includes(r.status)).length;
+      // Another round: up to six more agent answers from where the chain stands now.
+      metaPut('room:v1:chain-state:' + root, { ...state, stopped: false, limit: used + CHAIN_LIMIT });
+      return { ok: true, limit: used + CHAIN_LIMIT };
+    }
+    metaPut('room:v1:chain-state:' + root, { ...state, stopped: true });
+    for (const r of runs) {
+      if (r.status === 'queued') store.updateRun(r.id, { status: 'cancelled', error_code: 'cancelled', updated: now, finished: now });
+      if (r.status === 'running') store.updateRun(r.id, { status: 'cancelling', updated: now });
+    }
+    return { ok: true, stopped: true };
   }
 
   // ---- The worker reports the end of a run ------------------------------------------------------------
@@ -605,6 +698,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       const request = parse(toolCall, await readJSON(req, 12000));
       send(transaction(db, () => runTool(owner, request, Date.now())));
       runMoved(owner, store.run(request.run).project);
+      if (request.tool === 'agent.ask') live?.publish({ type: 'room', project: store.run(request.run).project }); // a question in the task, for everyone
       return;
     }
     if (action === 'heartbeat') {
@@ -649,6 +743,12 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       const decided = store.proposal(body.proposal);
       if (outcome.task) live?.publish({ type: 'room', project: decided.project }); // a new task concerns everyone
       else answerPosted(member.id, decided.project, decided.source_message);
+      return;
+    }
+    if (route === '/api/agent-chains') {
+      const body = parse(chainRequest, await readJSON(req, 1024));
+      send(transaction(db, () => steerChain(member, body, now)));
+      runMoved(member.id, store.run(body.run).project);
       return;
     }
     if (route === '/api/agent-runs/cancel') {
