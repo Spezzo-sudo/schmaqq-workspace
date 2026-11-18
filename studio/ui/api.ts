@@ -20,7 +20,7 @@ export type RoomState={project:Project;meta:{revision:number;repository:string|n
 export type Chain={root:string;depth:number;used:number;limit:number;stopped:boolean;full:boolean;active:boolean};
 export type Run={id:string;owner:string;project:string;agent:string;message:string;status:'queued'|'running'|'cancelling'|'completed'|'failed'|'cancelled';
  created:number;updated:number;started?:number|null;position?:number|null;steps?:{tool:string;at:number}[];completedMessage:string|null;errorCode:string|null;chain?:Chain|null};
-export type Runs={configured:boolean;online?:boolean;runs:Run[]};
+export type Runs={configured:boolean;online?:boolean;models?:string[];runs:Run[]};
 export type Contract={kind:'general'|'code';criteria:string;requiresReview:boolean;blocked:string;cancelled:boolean;revision:number};
 export type Result={id:string;owner:string;body?:string;commit?:string;state:string;created:number;shared?:boolean;integrated?:boolean;changedAfter?:boolean;
  contractRevision?:number;workflow?:string};

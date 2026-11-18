@@ -222,3 +222,18 @@ li.ok>.ui-step{background:var(--acid)}
 .ui-login-card h1{margin:8px 0 0;font-size:26px}
 .ui-btn.wide{width:100%;justify-content:center}
 .ui-check{display:flex;gap:8px;align-items:center;font-size:14px}.ui-check input{width:auto}
+
+/* Start: greeting and project cards */
+.ui-greeting{padding:8px 18px 4px}
+.ui-greeting h1{font-size:28px;line-height:1.15;margin:6px 0 4px}
+.ui-greeting p{margin:0;color:var(--muted)}
+.ui-row.card{background:var(--card);border:1px solid var(--line);margin-bottom:10px;padding:12px;align-items:flex-start}
+.ui-row.card:hover{background:#fff}
+.ui-chips.small{margin:6px 0 0;gap:4px}
+.ui-pill{font-size:12px;border-radius:999px;padding:2px 8px;background:var(--deep);color:var(--ink)}
+.ui-pill.approve{background:#dde7fb;color:#24489a}.ui-pill.quiet{color:var(--muted)}
+.ui-team-member.me{opacity:.9}
+.ui-advanced{margin:10px 0;border-top:1px solid var(--line);padding-top:8px}
+.ui-advanced summary{cursor:pointer;color:var(--muted);font-weight:700;font-size:14px;margin-bottom:8px}
+.ui-tip{margin:8px 18px;padding:14px 16px;border-radius:var(--r);background:var(--acid);border:1.5px solid var(--ink)}
+.ui-tip p{margin:4px 0 6px}.ui-tip .ui-link{color:var(--ink)}

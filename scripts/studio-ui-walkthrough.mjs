@@ -53,6 +53,7 @@ try{
  expect(await screen('07-info','/?p='+project+'&info=1',390),'Mit GitHub verbinden');
  expect(await screen('08-account','/?page=account',390),'Einmal verbinden, dann kann jeder Agent');
  expect(await screen('09-guide','/?page=guide',390),'Herr Grau plant');
+ expect(await screen('11-start-with-projects','/',390),'Café Sonne');
  expect(await screen('10-desktop','/?p='+project+'&tab=tasks',1440),'Café Sonne');
  if(errors.length)throw new Error('Fehler auf der Seite:\n'+errors.join('\n'));
  console.log('WALKTHROUGH=PASS ('+out+')');

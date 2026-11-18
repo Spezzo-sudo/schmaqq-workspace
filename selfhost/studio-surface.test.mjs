@@ -38,7 +38,9 @@ test('no words the screen list forbids: engines, models, technical setup terms',
  const forbidden=/Arbeitskopie|Werkstatt|Worker|Runner|Deploy-Key|Deploy-Schlüssel|Connector|Pull Request|Branch|Commit|Field Guild|Legacy|Bisherige Ansicht|gpt-\d|\bCodex\b|\bHermes\b|Modellzugang|\bModell\b|studio\.project\.json(?! an)/;
  for(const f of files(studio).filter(f=>/\.tsx$/.test(f)||f==='ui/next-step.ts'||f==='ui/model.ts')){
   const text=visibleText(readFileSync(path.join(studio,f),'utf8'));
-  const hit=text.split('\n').find(line=>forbidden.test(line));
+  // The concept allows the model only under "Erweitert" in the agent profile.
+  const allowed=f==='ui/people.tsx'?/^KI-Modell$/:null;
+  const hit=text.split('\n').find(line=>forbidden.test(line)&&!(allowed&&allowed.test(line.trim())));
   assert.equal(hit,undefined,f+': '+hit);
  }
 });

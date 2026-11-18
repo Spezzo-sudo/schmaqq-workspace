@@ -16,6 +16,8 @@ export function StartScreen({studio,compact=false}:{studio:Studio;compact?:boole
    <button className="ui-me" aria-label={'Menü öffnen ('+me.name+')'} onClick={studio.openMenu}><Face name={me.name} size={36}/></button>
    <span className="ui-brand">SCHMAQQ<b>STUDIO</b></span>
   </header>
+  {!compact&&<div className="ui-greeting"><h1>{greeting()}, {me.name.split(' ')[0]}.</h1>
+   <p>{waiting.length?`${waiting.length===1?'Eine Sache wartet':waiting.length+' Sachen warten'} auf dich.`:projects.length?'Gerade wartet nichts auf dich. Dein Team arbeitet in den Projekten.':'Leg dein erstes Projekt an und sag Herrn Grau, was du vorhast.'}</p></div>}
   {waiting.length>0&&<div className="ui-block">
    <h2 className="ui-label">Wartet auf dich</h2>
    {waiting.slice(0,5).map(t=><button key={t.id} className="ui-row" onClick={()=>go({page:'project',project:t.project,task:t.id})}>
@@ -28,16 +30,22 @@ export function StartScreen({studio,compact=false}:{studio:Studio;compact?:boole
     <p>Noch kein Projekt. Ein Projekt ist ein Chat mit deinem Team aus Menschen und Agenten.</p>
     <button className="ui-btn primary" onClick={()=>setCreating(true)}><Plus/> Projekt anlegen</button>
    </div>}
-   {projects.map(p=><button key={p.id} className={'ui-row project'+(route.project===p.id?' current':'')} onClick={()=>go({page:'project',project:p.id})}>
+   {projects.map(p=>{const tasks=team.tasks.filter(t=>t.project===p.id&&t.status!=='done'),approve=tasks.filter(t=>taskState(t).tone==='approve').length;
+    return <button key={p.id} className={'ui-row project'+(compact?'':' card')+(route.project===p.id?' current':'')} onClick={()=>go({page:'project',project:p.id})}>
     <span className="ui-tile" style={{background:tileColor(p.title)}}>{p.title.slice(0,2).toUpperCase()}</span>
-    <span className="ui-row-text"><b>{p.title}</b><small>{p.lastExcerpt||p.description||'Noch keine Nachricht'}</small></span>
+    <span className="ui-row-text"><b>{p.title}</b><small>{p.lastExcerpt||p.description||'Noch keine Nachricht'}</small>
+     {!compact&&<span className="ui-chips small">{tasks.length?<span className="ui-pill">{tasks.length} offen</span>:<span className="ui-pill quiet">keine offenen Aufgaben</span>}{approve>0&&<span className="ui-pill approve">{approve} zum Freigeben</span>}</span>}</span>
     <span className="ui-row-end">{p.lastMessage?<small>{when(p.lastMessage)}</small>:null}{(p.unread??0)>0&&<b className="ui-count">{p.unread}</b>}</span>
-   </button>)}
+   </button>;})}
   </div>
+  {!compact&&projects.length>0&&<div className="ui-tip"><b>So geht es weiter</b><p>Öffne ein Projekt und schreib „@Herr Grau“ und dein Ziel. Er macht einen Plan, verteilt die Arbeit und du gibst am Ende frei.</p>
+   <button className="ui-link" onClick={()=>go({page:'guide'})}>So funktioniert Studio ›</button></div>}
   {projects.length>0&&<button className="ui-fab" aria-label="Projekt anlegen" onClick={()=>setCreating(true)}><Plus/></button>}
   {creating&&<NewProject studio={studio} onClose={()=>setCreating(false)}/>}
  </section>;
 }
+
+function greeting(){const h=new Date().getHours();return h<11?'Guten Morgen':h<18?'Hallo':'Guten Abend';}
 
 export function tileColor(title:string){
  const colors=['#2f6f5e','#3b4a8c','#8c4a3b','#5e3b8c','#6f6a2f','#2f5f6f'];

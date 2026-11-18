@@ -52,10 +52,12 @@ export function ProfileDialog({studio,agentId,onClose}:{studio:Studio;agentId:st
  const {room,go,roles}=studio;
  const agent=(room!.agents??[]).find(a=>a.id===agentId);
  const [name,setName]=useState(agent?.name??''),[personality,setPersonality]=useState(agent?.personality??''),[face,setFace]=useState(agent?.avatarPresetId??'');
+ const models=studio.runs.models??[];
+ const [model,setModel]=useState(agent?.model??'');
  const [picking,setPicking]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  if(!agent)return null;
  const job=jobOf(agent),admin=roles?.mine.includes('admin')??false;
- const changed=name.trim()!==agent.name||personality.trim()!==(agent.personality??'')||face!==(agent.avatarPresetId??'');
+ const changed=name.trim()!==agent.name||personality.trim()!==(agent.personality??'')||face!==(agent.avatarPresetId??'')||model!==(agent.model??'');
  async function save(changes:Partial<Agent>,close=false){
   setBusy(true);setError('');
   try{await api('/api/room',agentPayload(agent!,changes));await studio.reload();if(close)onClose();}catch(e){setError((e as Error).message);}finally{setBusy(false);}
@@ -67,12 +69,16 @@ export function ProfileDialog({studio,agentId,onClose}:{studio:Studio;agentId:st
    <p className="ui-job-line"><b>{job.title}</b> · {job.does}</p>
   </div>
   <Field label="Name"><input value={name} onChange={e=>setName(e.target.value)} maxLength={80}/></Field>
-  <Field label="Persönlichkeit" hint="Ein Satz, wie er schreibt."><input value={personality} onChange={e=>setPersonality(e.target.value)} maxLength={300}/></Field>
+  <Field label="Persönlichkeit" hint="Wie er schreibt und auftritt."><textarea rows={3} value={personality} onChange={e=>setPersonality(e.target.value)} maxLength={600}/></Field>
+  {models.length>0&&<details className="ui-advanced"><summary>Erweitert</summary>
+   <Field label="KI-Modell" hint={models.length<2?'Im Moment ist nur eines freigeschaltet.':'Größere denken gründlicher, kosten aber mehr von deinem Kontingent.'}>
+    <select value={models.includes(model)?model:models[0]} onChange={e=>setModel(e.target.value)} disabled={models.length<2}>{models.map(m=><option key={m} value={m}>{m}</option>)}</select></Field>
+  </details>}
   <ErrorLine text={error}/>
   <div className="ui-actions">
    {admin&&!agent.lead&&<button className="ui-btn danger" disabled={busy} onClick={()=>{if(confirm(agent.name+' kündigen? Das Gespräch bleibt lesbar.'))void save({active:false},true);}}>Kündigen</button>}
    <button className="ui-btn" onClick={()=>{onClose();go({chat:'agent:'+agent.id});}}>Privat schreiben</button>
-   <button className="ui-btn primary" disabled={busy||!changed||!name.trim()} onClick={()=>void save({name:name.trim(),personality:personality.trim(),avatarPresetId:face})}>Speichern</button>
+   <button className="ui-btn primary" disabled={busy||!changed||!name.trim()} onClick={()=>void save({name:name.trim(),personality:personality.trim(),avatarPresetId:face,...(model?{model}:{})})}>Speichern</button>
   </div>
  </Dialog>;
 }

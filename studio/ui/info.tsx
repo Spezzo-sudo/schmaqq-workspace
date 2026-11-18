@@ -132,8 +132,9 @@ function CodeSetup({studio,admin}:{studio:Studio;admin:boolean}){
   <ol className="ui-checklist">
    {item(code,1,'Mit GitHub verbinden',code?<p className="ui-muted">Studio arbeitet mit {github?.access.repository??meta.repository?.replace('https://github.com/','')}.</p>
     :!admin?<p className="ui-muted">Macht der Projekt-Admin.</p>
-    :!meta.repository?<form className="ui-inline" onSubmit={e=>{e.preventDefault();void step('repo',()=>api('/api/room',{action:'repository',project,url:repo.trim(),revision:meta.revision}));}}>
+    :!meta.repository?<><form className="ui-inline" onSubmit={e=>{e.preventDefault();void step('repo',()=>api('/api/room',{action:'repository',project,url:repo.trim(),revision:meta.revision}));}}>
       <input value={repo} onChange={e=>setRepo(e.target.value)} placeholder="https://github.com/name/projekt" aria-label="Adresse des Codes auf GitHub"/><button className="ui-btn primary" disabled={!!busy||!repo.trim()}>Verbinden</button></form>
+      <p className="ui-muted">Noch kein Code? <a href="https://github.com/new" target="_blank" rel="noreferrer">Leg auf GitHub ein leeres Repository an</a> (privat, mit README) und trag die Adresse hier ein.</p></>
     :github?.app.configured?<><p className="ui-muted">GitHub muss Studio einmal Zugriff auf {meta.repository.replace('https://github.com/','')} geben.</p><button className="ui-btn primary" disabled={!!busy} onClick={()=>void step('gh',()=>github_('install'))}>Zugriff bei GitHub erlauben</button></>
     :github?.app.canCreate?<><p className="ui-muted">Einmalig meldet sich Studio bei GitHub an. GitHub zeigt dir vorher, was Studio darf.</p><button className="ui-btn primary" disabled={!!busy} onClick={()=>void step('gh',()=>github_('create'))}>Mit GitHub verbinden</button></>
     :<p className="ui-muted">Der Inhaber verbindet Studio einmal mit GitHub.</p>)}
