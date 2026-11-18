@@ -34,7 +34,7 @@ export const HIRABLE = Object.freeze({
 export function jobOf(agent) {
   if (isLead(agent)) return 'leitet, verteilt Arbeit, stellt ein';
   if (ROLE_JOBS.code.includes(agent.role)) return 'ändert Code';
-  if (ROLE_JOBS.web.includes(agent.role)) return 'recherchiert im Web';
+  if (ROLE_JOBS.web.includes(agent.role)) return 'sucht und liest im Web';
   if (ROLE_JOBS.review.includes(agent.role)) return 'prüft Änderungen';
   return 'berät im Gespräch';
 }

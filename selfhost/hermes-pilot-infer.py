@@ -197,6 +197,28 @@ def use_effort(effort):
     run_agent.AIAgent.__init__ = init
 
 
+def use_web_search():
+    """ChatGPT's own web search, as in ChatGPT: the model searches and reads on OpenAI's side with the same sign-in.
+    Hermes builds every Codex request in one place; the built-in search tool is added there."""
+    try:
+        from agent.transports.codex import ResponsesApiTransport
+    except ImportError:  # a stand-in engine (tests) has no transport to extend
+        return
+
+    original = ResponsesApiTransport.build_kwargs
+
+    def build_kwargs(self, *args, **kwargs):
+        request = original(self, *args, **kwargs)
+        tools = list(request.get("tools") or [])
+        if not any(isinstance(t, dict) and t.get("type") == "web_search" for t in tools):
+            tools.append({"type": "web_search"})
+        request["tools"] = tools
+        request.setdefault("tool_choice", "auto")
+        return request
+
+    ResponsesApiTransport.build_kwargs = build_kwargs
+
+
 def valid_model(model):
     return isinstance(model, str) and 0 < len(model) <= 100 and all(c.isascii() and (c.isalnum() or c in "-_.") for c in model)
 
@@ -228,6 +250,7 @@ def main():
         prompt = job["prompt"]
         tools = job.get("tools", [])
         effort = job.get("effort", "medium")
+        search = job.get("search", False) is True
     except (ValueError, KeyError, TypeError, AttributeError):
         print("Hermes input is invalid.", file=sys.stderr)
         return 3
@@ -256,6 +279,8 @@ def main():
         print(str(error), file=sys.stderr)
         return 3
     use_effort(effort)
+    if search:
+        use_web_search()
     from hermes_cli.oneshot import run_oneshot
 
     return run_oneshot(prompt=prompt, model=model, provider="openai-codex", toolsets=[toolset], skills=[])

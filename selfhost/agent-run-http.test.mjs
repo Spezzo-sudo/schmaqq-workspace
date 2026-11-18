@@ -567,6 +567,8 @@ test('web research: only public https pages, every address checked, redirects to
  await f.post('/api/agent-worker/finish',{run:lj.run,lease:lj.lease,status:'completed',output:'ok'},w);
  const job=await ask(eule,'lies nach');
  assert.ok(job.toolPolicy.allowed.includes('web.read'));
+ assert.equal(job.search,true,'the researcher searches the web like ChatGPT');
+ assert.equal(lj.search,false,'the lead does not');
  const local=await f.post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool:'web.read',args:{url:'https://localhost/admin'}},w);
  assert.equal(local.status,200);assert.match(local.data.result.error,/öffentliche Webseiten/,'refusal reaches the model as data');
  const mara=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Mara',role:'frontend',avatarPresetId:'mara',model:'x',permissions:perms},{cookie:alice.cookie})).data.agentId;

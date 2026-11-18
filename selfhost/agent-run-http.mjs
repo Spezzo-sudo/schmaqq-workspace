@@ -473,6 +473,8 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       });
       return {
         run: run.id, lease: leaseToken, owner, project: run.project, agent: run.agent, model: run.model, effort,
+        // Research is the researcher's job: ChatGPT's own web search, with the asking person's access.
+        search: canResearch(agent),
         prompt: source.body, replyTo: source.id,
         context: buildRoomContext(db, run.project, topic ?? undefined).text,
         history: marked ?? dialogue(run, source, topic),

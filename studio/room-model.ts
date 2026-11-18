@@ -346,6 +346,6 @@ export type AgentJob={code:boolean;web:boolean;review:boolean;lead:boolean;text:
 export function agentJob(agent:Pick<RoomAgent,'role'>&{lead?:boolean}):AgentJob{
  const lead=agent.lead===true,has=(list:readonly string[])=>!lead&&list.includes(agent.role);
  const code=has(ROLE_JOBS.code),web=has(ROLE_JOBS.web),review=has(ROLE_JOBS.review);
- return {code,web,review,lead,text:lead?'leitet, verteilt Arbeit, stellt ein':code?'ändert Code':web?'recherchiert im Web':review?'prüft Änderungen':'berät im Gespräch'};
+ return {code,web,review,lead,text:lead?'leitet, verteilt Arbeit, stellt ein':code?'ändert Code':web?'sucht und liest im Web':review?'prüft Änderungen':'berät im Gespräch'};
 }
 export const hireRoleLabels:Record<string,string>={developer:'Entwicklung',frontend:'Oberflächen',researcher:'Recherche',reviewer:'Prüfung',security:'Sicherheit',strategy:'Strategie',creative:'Gestaltung und Text',support:'Kundendienst'};
