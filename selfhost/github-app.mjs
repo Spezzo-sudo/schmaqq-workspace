@@ -4,6 +4,7 @@ import path from 'node:path';
 import {SignJWT} from 'jose';
 import {token,digest} from './store.mjs';
 import {metadata,storeMetadata} from './team-model.mjs';
+import {can} from './project-roles.mjs';
 
 // One GitHub App per Studio instance. The owner creates it with GitHub's manifest flow
 // (one click, no copying of keys), then installs it on chosen repositories. Studio uses
@@ -180,7 +181,24 @@ export function createGithubApp({db,origin,credentialsFile,api='https://api.gith
   let isProtected=null;try{isProtected=await branchProtected(repository,base);}catch{/* unknown stays null */}
   return {repository,base,configured:true,access:true,protected:isProtected};
  }
- return {status,projectAccess,startCreation,startInstallation,finishCreation,finishInstallation,repositories,repositoryToken,branchProtected,configured:()=>!!credentials()};
+ /**
+  * "Neu anfangen" with a brand-new, completely empty repository: write a first README so the shared branch exists.
+  * Only the project admin, only for the project's own repository, and only while the repository has no branch at all.
+  */
+ async function startEmptyRepository(member,project){
+  if(!/^[\w-]{1,100}$/.test(project??''))throw fail(400,'Projekt ungültig.');
+  if(!can(db,member,project,'admin'))throw fail(403,'Das macht der Projekt-Admin.');
+  const meta=metadata(db,'room:v1:project:'+project),repository=/^https:\/\/github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)$/.exec(meta?.repository??'')?.[1];
+  if(!repository)throw fail(409,'Zuerst den Code des Projekts angeben.');
+  const bearer=await repositoryToken(repository);
+  let branches=[];
+  try{branches=await call('GET',`/repos/${repository}/branches?per_page=1`,{bearer});}catch(e){if(e.githubStatus!==409)throw e;} // 409: "repository is empty"
+  if(Array.isArray(branches)&&branches.length)return {started:false};
+  const title=db.prepare('SELECT title FROM projects WHERE id=?').get(project)?.title??'Projekt';
+  await call('PUT',`/repos/${repository}/contents/README.md`,{bearer,body:{message:'Projekt angelegt mit SCHMAQQ Studio',content:Buffer.from('# '+title+'\n').toString('base64')}});
+  return {started:true};
+ }
+ return {status,projectAccess,startCreation,startInstallation,finishCreation,finishInstallation,repositories,repositoryToken,branchProtected,startEmptyRepository,configured:()=>!!credentials()};
 }
 
 export function createGithubAppRoutes({app,user,sessionCookie,secure,readJSON}){
@@ -197,6 +215,7 @@ export function createGithubAppRoutes({app,user,sessionCookie,secure,readJSON}){
   if(route==='/api/github-app/install'&&method==='POST'){const member=user(req);const {browser,url:target}=app.startInstallation(member,await returnOf(req));res.setHeader('Set-Cookie',binding(browser,600));send({url:target});return true;}
   if(route==='/api/github-app/repositories'&&method==='GET'){user(req);send({repositories:await app.repositories()});return true;}
   if(route==='/api/github-app/access'&&method==='GET'){user(req);send(await app.projectAccess(url.searchParams.get('project')));return true;}
+  if(route==='/api/github-app/start'&&method==='POST'){const member=user(req),body=await readJSON(req,2000);send(await app.startEmptyRepository(member,body?.project));return true;}
   if(route==='/api/github-app/created'&&method==='GET'){
    let destination;
    try{const done=await app.finishCreation(url.searchParams.get('state'),cookie(req),url.searchParams.get('code'));destination=withNotice(done.returnTo,'github_app','created');}

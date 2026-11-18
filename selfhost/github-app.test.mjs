@@ -16,7 +16,7 @@ const pem=privateKey.export({type:'pkcs1',format:'pem'});
 
 function fakeGithub(){
  const calls=[],installations={4242:'Spezzo-sudo',5555:'stranger'},repoInstallation={'spezzo-sudo/klimafinder-ch':4242,'stranger/evil':5555};
- let issued=0;
+ let issued=0,empty=true;
  const server=http.createServer(async(req,res)=>{
   let body='';for await(const part of req)body+=part;
   const url=new URL(req.url,'http://x'),auth=req.headers.authorization??'';
@@ -47,6 +47,15 @@ function fakeGithub(){
   if(req.method==='GET'&&(m=url.pathname.match(/^\/repos\/([^/]+\/[^/]+)\/branches\/(.+)$/))){
    if(!auth.startsWith('Bearer ghs_fixture_'))return json(401,{});
    return json(200,{name:decodeURIComponent(m[2]),protected:m[2]==='main'});
+  }
+  // A brand-new repository: no branch until the first file is written.
+  if(req.method==='GET'&&(m=url.pathname.match(/^\/repos\/([^/]+\/[^/]+)\/branches$/))){
+   if(!auth.startsWith('Bearer ghs_fixture_'))return json(401,{});
+   return json(200,empty?[]:[{name:'main'}]);
+  }
+  if(req.method==='PUT'&&(m=url.pathname.match(/^\/repos\/([^/]+\/[^/]+)\/contents\/README\.md$/))){
+   if(!auth.startsWith('Bearer ghs_fixture_'))return json(401,{});
+   empty=false;return json(201,{content:{path:'README.md'}});
   }
   json(404,{});
  });
@@ -163,6 +172,13 @@ test('GitHub App: owner creates and installs it; redirects are single-use and br
   assert.deepEqual(await (await request('/api/github-app/access?project=website',null,member)).json(),{repository:'Spezzo-sudo/Klimafinder-CH',base:'main',configured:true,access:true,protected:true});
   assert.deepEqual(await (await request('/api/github-app/access?project=other',null,member)).json(),{repository:'Spezzo-sudo/other',base:'main',configured:true,access:false,protected:null});
   assert.equal((await request('/api/github-app/access?project=../x',null,member)).status,400);
+
+  // "Neu anfangen" with a completely empty repository: the admin's Studio writes a first README, only while it is empty.
+  assert.equal((await request('/api/github-app/start',{project:'website'},member)).status,403,'only the project admin');
+  assert.deepEqual(await (await request('/api/github-app/start',{project:'website'},owner)).json(),{started:true});
+  const readme=github.calls.find(c=>c.method==='PUT'&&c.path==='/repos/Spezzo-sudo/Klimafinder-CH/contents/README.md');
+  assert.equal(readme.body.message,'Projekt angelegt mit SCHMAQQ Studio');assert.match(Buffer.from(readme.body.content,'base64').toString(),/^# /);
+  assert.deepEqual(await (await request('/api/github-app/start',{project:'website'},owner)).json(),{started:false},'never twice, never on existing code');
  }finally{
   app?.server.closeAllConnections?.();app?.server.close();app?.previewServer?.close();app?.db?.close();github.server.closeAllConnections?.();github.server.close();rmSync(dir,{recursive:true,force:true});
  }
