@@ -18,7 +18,7 @@ Die alte Oberfläche wurde nicht umgebaut, sondern gelöscht; der Test `studio-s
 - **Code läuft auf dem Server.** Wo gearbeitet wird, ist eine Angabe des Projekts („Wo arbeitet das Team: Server“), damit
   später ein eigener PC als zweiter Ort dazukommen kann, ohne die Oberfläche umzubauen.
 
-- Das SCHMAQQ-Zeichen führt zu Start. Die Originalform liegt in `studio/ui/brand-paths.ts`. Beim Antippen breitet sich die rote Welle vom Berührungspunkt über das Originalzeichen aus, wenn Animationen erlaubt sind.
+- Das SCHMAQQ-Zeichen führt zu Start. In schmalen Bildschirmköpfen ist es kompakter, damit Titel lesbar bleiben. Lange Titel können umbrechen. Die Originalform liegt in `studio/ui/brand-paths.ts`. Beim Antippen breitet sich die rote Welle vom Berührungspunkt über das Originalzeichen aus, wenn Animationen erlaubt sind.
 - In Projektinfo, Mein Konto und Anleitung zeigt „Weiter nach unten“ bei weiterem Inhalt den Weg nach unten. Beim Schreiben und am Seitenende ist der Pfeil weg.
 
 ## Bildschirme
