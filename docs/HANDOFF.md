@@ -1,56 +1,53 @@
-# Übergabe – Stand 08.11.2026 (nach Livegang 9f21c9c) (für Marco, ChatGPT/Codex, Claude)
+# Übergabe – Stand 18.11.2026 (für Marco, ChatGPT/Codex, Claude)
 
-**Neuester Stand zu Agenten und Messenger: [HANDOFF-AGENTS.md](HANDOFF-AGENTS.md) (17.11.2026).**
-Aktueller Ablauf und Rollen (ab 16.11.2026): `docs/WORKFLOW.md`; Reihenfolge: `docs/WORKLIST.md`. Diese Übergabe ist der Stand vom 08.11.
-Lies danach diese Datei, dann `docs/PLAN.md` (Etappen), `docs/OPERATIONS.md` (Livegang) und `docs/SECURITY.md`.
-Arbeitsweise: Änderungen nur per Branch und Pull Request nach `main`; zusammenführen nur nach
-Marcos ausdrücklichem „Ja“; live nur nach „JA LIVE <kurz>“ über Hermes.
+Zuerst lesen: dieses Dokument, dann [OBERFLAECHE.md](OBERFLAECHE.md) (jeder Bildschirm, verbindlich),
+[CONCEPT_MESSENGER.md](CONCEPT_MESSENGER.md) (Konzept und „Später“), [DECISIONS.md](DECISIONS.md) (neueste oben),
+[ANLEITUNG.md](ANLEITUNG.md) (wie man Studio benutzt). Ältere Übergaben liegen in `docs/archive/`.
 
-## 1. Was live ist
+## Was Studio jetzt ist
 
-- Live auf studio.schmaqq.com: `cf875d2` (09.11.2026, PR #68, `release` PASS, Worker neu installiert, NRestarts 0,
-  Backup `predeploy-cf875d2-20261109T011646Z.sqlite`, Rückweg `releases/6367121…`).
-- Livegang: Marco „JA LIVE <kurz>“ einmal, Hermes `studio-deploy.sh release <voller main-Commit>` (OPERATIONS.md).
+Eine **Firma im Messenger**. Ein Projekt ist ein Chat für Menschen und Agenten. Agenten sind Angestellte mit einem Job
+(Entwicklung ändert Code, Recherche sucht im Internet, Prüfung prüft). **Herr Grau** leitet: plant, verteilt, stellt ein
+(höchstens 6 im Team, pro Job einer). **Menschen reden und geben frei**; Code ändern die Agenten.
 
-## 2. Offen und als Nächstes (in dieser Reihenfolge)
+Ablauf: Ziel an Herrn Grau → Plan annehmen → die Genannten legen los → Otto meldet im Gespräch der Aufgabe, was er
+geändert hat → Frau Kern wird automatisch gefragt → Mensch: „Ansehen“ → „Freigeben“ → „Übernehmen“ → Ergebnis
+„bei uns ansehen“ (feste Adresse) oder selbst online stellen.
 
-1. **Team-Werkstatt + Einstellungen – PR offen.** Sols 2. Lauf (09.11.): Übung bis „Fertig“ ok; Code-Kette blockiert,
-   weil nur der Besitzer einer Werkstatt darauf arbeiten durfte (betraf jedes Mitglied ausser Marco). Marco: „Ja“ zur
-   Team-Werkstatt. Gebaut: `selfhost/team-workshop.mjs` – Server-Worker eines Projekt-Admins ist für Entwickler des
-   Projekts nutzbar, nur für dort eingerichtete Projekte, PCs bleiben privat, Admin kann es pro Projekt abschalten
-   („Werkstatt fürs Team“ unter „Wer darf was“); `resolveDevice` nutzt `usableExecutors`; `/api/ai` und
-   `/api/development` liefern die Team-Werkstatt; Test `team-workshop.test.mjs`. Einstellungen: Name/Ziel nur Admin,
-   „Gemeinsames Repository“ (veraltet), „Repository anlegen“ (live nicht funktionsfähig), „Import auf eigenem PC“ und
-   „Projekt einrichten“-Doppelweg entfernt; Startklar mit „Anderes Repository wählen“ / „Einrichtung ändern“;
-   „Eigener PC (optional)“ unter Für Entwickler; „Direkt durch die Werkstatt“ nur ohne GitHub. Begriffe
-   „Diese Fassung freigeben“ statt „Passt“. `selfhost/layout-check.mjs` (lokal mit Playwright) prüft gequetschte
-   und überlaufende Texte, seitliches Scrollen, doppelte Navigation – vor jedem Paket laufen lassen.
-   Danach: Sol 3. Lauf (komplette Code-Kette), dann Testkonto entfernen.
-   Offen aus Sols Lauf: selbst prüfbare Aufgabe unter „Bei dir“, Ladeanzeige „Aktueller Stand“ vs. „wird geladen“,
-   allgemeines Gespräch erklärt, warum es keine Aufgaben-Umwandlung gibt.
-2. **Markus einladen** (Team → Jemanden einladen), ohne Erklärung testen lassen: Aufgabe finden,
-   Vorschau ansehen, „Passt“, ein eigenes privates Repo verbinden. Das schliesst Etappe 1 ab.
-3. **Etappe 3 „KI im Raum“** (siehe PLAN.md): erst klären, ob der ChatGPT-Business-Workspace die
-   Codex-Anmeldung auf dem Server erlaubt. „Selbst bearbeiten“ bleibt immer als Weg ohne KI.
-4. Etappe 0 Rest: Zugänge zum VPS auflisten (Hermes hat Root über Telegram – Risiko), Fehler
-   „hunderte gleiche Aufgaben“ über den ChatGPT-Connector untersuchen.
+## Was live ist (studio.schmaqq.com)
 
-## 3. Wichtige Dateien
+- Oberfläche neu aus `docs/OBERFLAECHE.md` gebaut (`studio/ui/`), alte Oberfläche gelöscht. Ein Stylesheet.
+- Firmenmodell mit Rollen, Einstellen, Übergabe, Code-Läufen der Agenten mit Bericht im Gespräch und automatischer Prüfung.
+- Agenten: günstigstes Modell, niedrige Stufe; Recherche mit eingebauter Websuche. Modell im Profil unter „Erweitert“
+  (derzeit nur ein Modell freigeschaltet).
+- Code einrichten: nur die Frage „Wo liegt euer Code?“, den Arbeitsplatz richtet Studio selbst ein; ohne Tests „So anfangen“.
+- „Bei uns ansehen“: nach jedem Übernehmen unter `studio-preview.schmaqq.com/ansehen/<name>-<schlüssel>/`.
+- Deploy: `bash /opt/schmaqq-studio/current/selfhost/deploy/studio-deploy.sh release <main-Commit>` (Sicherung, Probe,
+  Rückweg; installiert Worker und Agenten-Dienst mit).
 
-- Seitenrahmen, Menü, Meine Arbeit, Team, Einstellungen, Aufgabenliste: `studio/team-workspace.tsx`
-- Aufgabe: `studio/team-task.tsx`, Zeitstrahl `studio/task-timeline.tsx`, Anschauen `studio/task-review-diff.tsx`
-- Ein Wortlaut für Stand/Schritte/Etappen: `studio/task-next-step.ts` (Tests `selfhost/task-next-step.test.mjs`)
-- Verlauf in Alltagssprache: `humanEvent` in `studio/project-overview-model.ts`
-- Startklar und Live-Weg: `studio/project-ready.tsx`; Live-Schritt Server: `went-live` in `selfhost/team-http.mjs`
-- Selbst bearbeiten (Editor, Auto-Vorbereitung): `app/development.tsx` (`autoStart`), `app/source-editor.tsx`, `app/work-actions.tsx`
-- Stil: `studio/team-workflow.css` (Markenfarben als Variablen unten)
-- Prüfen lokal: `PATH=/opt/node24/bin:$PATH node selfhost/verify.mjs --local` (alle Tests, Typen, Build);
-  Demo zum Durchklicken: `node selfhost/demo.mjs` (Port 4320, Zugangsdaten in `.studio/local-demo/LOKAL-TESTEN.md`).
+## Noch nie echt durchgelaufen (zuerst testen)
 
-## 4. Regeln für jede Seite (vereinbart)
+1. Ein echter Programmierlauf von Otto (braucht einmal „Mit ChatGPT verbinden“, wird in der Aufgabe gefragt).
+2. Ansehen → Freigeben → Übernehmen mit echtem Code.
+3. Automatisches Einrichten des Arbeitsplatzes auf dem echten Server, auch mit leerem Repository („So anfangen“).
+4. „Bei uns ansehen“ mit einem echten Projekt.
 
-Ein nächster Schritt oben · nichts doppelt · Alltagssprache (Fachwörter nur unter „Für Entwickler“) ·
-nur zeigen, was funktioniert · leere Abschnitte weglassen · Werkzeuge eingeklappt · Verlauf in
-Menschensprache · Handy zuerst · jedes Warten sagt was und wie lange · jeder Fehler hat einen nächsten
-Knopf · Einrichter vs. Mitmacher · es gibt immer einen Weg ohne KI · Markenfarben Tinte/Papier/Lime,
-keine Emojis als Symbole.
+Rundgang auf einem Wegwerf-Server (Handy und Desktop): `node scripts/studio-ui-walkthrough.mjs <ordner>`.
+
+## Später (vereinbart, nicht im Bau)
+
+- **GitHub-Organisation** (Owner: „Weg 1 find ich gut, machen wir später“): Studio-App in einer Organisation mit
+  „Repositories verwalten“ installieren; dann legt „Neu anfangen“ das Repository selbst an. Erst Klick-Anleitung für
+  Marco, dann der Teil in Studio.
+- Eigener Hoster (z. B. Hostinger) als Ergebnis-Ort.
+- Hilfe-Bot auf jeder Seite (siehe CONCEPT_MESSENGER.md).
+- Weitere Modelle freischalten (Terra, Sol) – nur auf Wunsch, Kosten.
+- Agenten-Zugang für Markus.
+- Eigener PC als zweiter Arbeitsort.
+
+## Regeln für die Arbeit am Code
+
+- Neue Bildschirme, Knöpfe oder Begriffe zuerst in `docs/OBERFLAECHE.md`, dann bauen. Nie Neues über Altes legen:
+  Altes ersetzen und löschen. `selfhost/studio-surface.test.mjs` erlaubt nur die Dateien der Liste und verbietet alte Begriffe.
+- Branch → Pull Request → grüne Prüfung → zusammenführen → Deploy. `node selfhost/verify.mjs` vorher lokal (Node ≥ 24.15).
+- Keine Modell- oder Motornamen in der Oberfläche (außer „Erweitert“ im Agentenprofil); „online“ statt „live“.

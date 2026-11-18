@@ -70,7 +70,7 @@
       "The pilot's quick tunnel holds the live connection back; behind the production proxy it is unverified",
       "Message search left the side list and is not back elsewhere yet",
       "No real Android keyboard test",
-      "Scaling, not built yet: workers connect only from the same machine (no laptop worker), one worker per person from a server file, one server-wide model list; providers via API key or OpenRouter need per-worker model lists (see docs/HANDOFF-AGENTS.md)"
+      "Scaling, not built yet: workers connect only from the same machine (no laptop worker), one worker per person from a server file, one server-wide model list; providers via API key or OpenRouter need per-worker model lists (see docs/archive/HANDOFF-AGENTS-20261117.md)"
     ],
     "production_changed": true,
     "main_changed": true,
