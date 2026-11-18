@@ -209,6 +209,18 @@ def get_tool_definitions(enabled_toolsets=None, disabled_toolsets=None, quiet_mo
         defs = [d for d in defs if d["function"]["name"] in CORE] + [{"type": "function", "function": {"name": n}} for n in BRIDGE_TOOL_NAMES]
     return defs
 `,
+ 'run_agent.py':`
+class AIAgent:
+    def __init__(self, reasoning_config=None):
+        self.reasoning_config = reasoning_config
+`,
+ 'agent/__init__.py':'',
+ 'agent/transports/__init__.py':'',
+ 'agent/transports/codex.py':`
+class ResponsesApiTransport:
+    def build_kwargs(self):
+        return {"tools": []}
+`,
  'hermes_cli/__init__.py':'',
  'hermes_cli/oneshot.py':`
 import json, os
@@ -222,6 +234,11 @@ def run_oneshot(prompt, model, provider, toolsets, skills):
             log.append("rejected:" + call["name"])
             continue
         log.append(registry.get_entry(call["name"]).handler(call["args"], task_id="x"))
+    import run_agent
+    from agent.transports.codex import ResponsesApiTransport
+    effort = (run_agent.AIAgent().reasoning_config or {}).get("effort", "-")
+    search = any(t.get("type") == "web_search" for t in ResponsesApiTransport().build_kwargs()["tools"])
+    log.append("effort=" + effort + " search=" + ("yes" if search else "no"))
     print("Mock-Antwort. " + " | ".join(log)[:1500])
     return 0
 `
@@ -246,6 +263,20 @@ test('python adapter: --check proves zero toolset and exactly two Studio tools o
  assert.equal(probe.stdout.trim(),'tool_search,tool_describe,tool_call',probe.stderr);
  const badGrant=spawnSync('python3',[adapter],{env,cwd:dir,encoding:'utf8',input:JSON.stringify({model:'m',prompt:'p',tools:['terminal']})});
  assert.equal(badGrant.status,3,'adapter refuses unknown tool grants');
+});
+
+test('python adapter: effort and web search reach the engine; without the engine hooks it fails loudly',t=>{
+ const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-hermes-hooks-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const env=pythonEnv(dir);
+ const run=job=>spawnSync('python3',[adapter],{env,cwd:dir,encoding:'utf8',input:JSON.stringify({model:'gpt-5.6-luna',prompt:'p',tools:[],...job})});
+ assert.match(run({effort:'low',search:true}).stdout,/effort=low search=yes/);
+ assert.match(run({effort:'medium'}).stdout,/effort=medium search=no/);
+ // A Hermes update that moves the hooks: the start check and every run stop with a clear error.
+ rmSync(path.join(dir,'hermes-stub','agent'),{recursive:true,force:true});
+ const check=spawnSync('python3',[adapter,'--check'],{env,cwd:dir,encoding:'utf8'});
+ assert.equal(check.status,3);assert.match(check.stderr,/engine hooks missing/);
+ const broken=run({effort:'low',search:true});
+ assert.equal(broken.status,3);assert.match(broken.stderr,/engine hooks missing/);
 });
 
 test('end to end with mock model: worker bridge -> python adapter -> proposal -> approval -> one task',async t=>{

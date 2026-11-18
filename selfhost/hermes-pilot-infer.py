@@ -179,32 +179,38 @@ def register_zero_toolset():
 EFFORTS = ("minimal", "low", "medium", "high")
 
 
+def engine_hooks():
+    """The two places in Hermes that Studio extends (reasoning effort, built-in web search). An update of Hermes can
+    move them; then agents must stop with a clear error instead of silently running without search or effort."""
+    try:
+        import run_agent
+        from agent.transports.codex import ResponsesApiTransport
+    except ImportError as error:
+        raise RuntimeError("Hermes engine hooks missing: " + str(error)) from error
+    agent = getattr(run_agent, "AIAgent", None)
+    if not callable(getattr(agent, "__init__", None)) or not callable(getattr(ResponsesApiTransport, "build_kwargs", None)):
+        raise RuntimeError("Hermes engine hooks missing: AIAgent.__init__ or ResponsesApiTransport.build_kwargs")
+    return {"agent": agent, "transport": ResponsesApiTransport}
+
+
 def use_effort(effort):
     """How long the model thinks. The one-shot entry point offers no setting for it, so the agent it builds
     gets Studio's choice as its reasoning setting (an explicit setting given by Hermes itself wins)."""
-    try:
-        import run_agent
-    except ImportError:  # a stand-in engine (tests) has no agent class to tune
-        return
-
-    original = run_agent.AIAgent.__init__
+    agent = engine_hooks()["agent"]
+    original = agent.__init__
 
     def init(self, *args, **kwargs):
         if kwargs.get("reasoning_config") is None:
             kwargs["reasoning_config"] = {"enabled": True, "effort": effort}
         original(self, *args, **kwargs)
 
-    run_agent.AIAgent.__init__ = init
+    agent.__init__ = init
 
 
 def use_web_search():
     """ChatGPT's own web search, as in ChatGPT: the model searches and reads on OpenAI's side with the same sign-in.
     Hermes builds every Codex request in one place; the built-in search tool is added there."""
-    try:
-        from agent.transports.codex import ResponsesApiTransport
-    except ImportError:  # a stand-in engine (tests) has no transport to extend
-        return
-
+    ResponsesApiTransport = engine_hooks()["transport"]
     original = ResponsesApiTransport.build_kwargs
 
     def build_kwargs(self, *args, **kwargs):
@@ -232,6 +238,7 @@ def main():
         try:
             register_zero_toolset()
             register_studio_tools(list(STUDIO_TOOLS.values()), rpc=None)
+            engine_hooks()
         except RuntimeError as error:
             print(str(error), file=sys.stderr)
             return 3
@@ -278,9 +285,13 @@ def main():
     except RuntimeError as error:
         print(str(error), file=sys.stderr)
         return 3
-    use_effort(effort)
-    if search:
-        use_web_search()
+    try:
+        use_effort(effort)
+        if search:
+            use_web_search()
+    except RuntimeError as error:
+        print(str(error), file=sys.stderr)
+        return 3
     from hermes_cli.oneshot import run_oneshot
 
     return run_oneshot(prompt=prompt, model=model, provider="openai-codex", toolsets=[toolset], skills=[])

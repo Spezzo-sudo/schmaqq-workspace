@@ -289,14 +289,30 @@ export class LocalRunner{
    };
    const result=await runCodex({executable:'codex',cwd:w.dir,prompt:job.payload.prompt,sessionFile:path.join(this.state,`codex-${job.id}.session`),signal,onEvent:control.onEvent,execute});
    rmSync(path.join(this.state,`codex-${job.id}.session`),{force:true});
-   return {...result,branch:w.branch,status:await this.git(w.dir,'status','--short')};
+   return {...result,...await this.changeOf(w.dir)};
   }
   if(job.action==='codex'){
    if(!p.allowCodex)throw new Error('Codex für dieses lokale Projekt noch nicht freigegeben.');
    const result=await runCodex({executable:this.config.codex??'codex',cwd:w.dir,prompt:job.payload.prompt,sessionFile:path.join(this.state,`codex-${job.project}-${w.key}.session`),signal:control.signal,onEvent:control.onEvent});
-   return {...result,branch:w.branch,status:await this.git(w.dir,'status','--short')};
+   return {...result,...await this.changeOf(w.dir)};
   }
   throw new Error('Unbekannter Auftrag.');
+ }
+ // What a code run changed in the copy: the file list and the diff (new files included), for the person and a reviewer.
+ async changeOf(dir){
+  const status=await this.git(dir,'status','--short');
+  const added=(await this.git(dir,'ls-files','--others','--exclude-standard')).split('\n').filter(Boolean).slice(0,20);
+  let diff=await this.git(dir,'diff','--no-ext-diff','--no-textconv','--no-color','HEAD','--');
+  for(const f of added){
+   // New files are not in git diff yet: shown as additions, only plain text files inside the copy.
+   const full=path.resolve(dir,f);if(!full.startsWith(path.resolve(dir)+path.sep))continue;
+   let stat;try{stat=lstatSync(full);}catch{continue;}
+   if(!stat.isFile()||stat.size>100000)continue;
+   const text=readFileSync(full,'utf8');if(text.includes('\0'))continue;
+   const lines=text.replace(/\n$/,'').split('\n');
+   diff+=`${diff?'\n':''}diff --git a/${f} b/${f}\nnew file mode 100644\n--- /dev/null\n+++ b/${f}\n@@ -0,0 +1,${lines.length} @@\n`+lines.map(l=>'+'+l).join('\n');
+  }
+  return {status,diff:diff.slice(0,50000),diffTruncated:diff.length>50000};
  }
  // How many commits of the shared main state this copy does not contain yet (as of the last fetch).
  async behind(dir,p){try{return Number(await this.git(dir,'rev-list','--count',`HEAD..origin/${p.base}`))||0;}catch{return 0;}}

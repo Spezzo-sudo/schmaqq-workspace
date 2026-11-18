@@ -627,8 +627,8 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
   /** The change of a task that was last handed in for review: what a reviewer agent reads. */
   function latestChange(task) {
     const job = task && db.prepare(`SELECT j.result FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree')
-      WHERE w.task=? AND j.status='completed' AND j.action IN ('review','submit') ORDER BY j.created DESC LIMIT 1`).get(task);
-    if (!job) return { change: null, note: 'Noch keine Änderung zur Prüfung gegeben.' };
+      WHERE w.task=? AND j.status='completed' AND j.action IN ('codex','review','submit') ORDER BY j.created DESC LIMIT 1`).get(task);
+    if (!job) return { change: null, note: 'Noch keine Änderung in dieser Aufgabe.' };
     let result = {}; try { result = JSON.parse(job.result ?? '{}') ?? {}; } catch { /* unreadable result */ }
     const diff = typeof result.diff === 'string' ? result.diff : '';
     return { change: diff.slice(0, 20000), truncated: diff.length > 20000 || result.diffTruncated === true,
@@ -655,21 +655,86 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
     return id;
   }
 
-  /** The lead named who takes the task: that colleague starts in the task's conversation, paid by whoever accepted. */
-  function handOver(member, p, task, now) {
-    const who = metaGet('room:v1:proposal-who:' + p.id)?.agent;
-    const target = who && agentsFor(db, p.project).find(a => a.id === who && a.active !== false);
-    const lead = activeAgent(p.project, p.agent);
+  /**
+   * The lead named who takes a task: that colleague starts in the task's conversation, paid by whoever accepted.
+   * Each task is its own chain (the colleague, then a reviewer), so Stopp and the limit count per task.
+   */
+  function handOver(member, { project, lead: leadId, title, description, target: targetId }, task, now) {
+    const target = targetId && agentsFor(db, project).find(a => a.id === targetId && a.active !== false && !a.lead);
+    const lead = activeAgent(project, leadId);
     if (!target || !lead || store.activeRuns(member.id).length >= QUEUE_LIMIT) return null;
     const messageId = randomUUID(), next = randomUUID();
-    const body = '@' + target.name + ' bitte übernimm: ' + p.title + (p.description ? '\n' + p.description.slice(0, 800) : '');
-    db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(messageId, p.project, member.id, body, now);
+    const body = '@' + target.name + ' bitte übernimm: ' + title + (description ? '\n' + description.slice(0, 800) : '');
+    db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(messageId, project, member.id, body, now);
     db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?)').run('room:v1:message:' + messageId, JSON.stringify({
-      kind: 'agent', origin: 'verified-run', senderAgent: lead.id, replyTo: null, recipient: target.id, recipientKind: 'agent', topicTask: task, chain: p.run
+      kind: 'agent', origin: 'verified-run', senderAgent: lead.id, replyTo: null, recipient: target.id, recipientKind: 'agent', topicTask: task, chain: next
     }));
-    store.insertRun({ id: next, owner: member.id, project: p.project, agent: target.id, source_message: messageId, model: modelFor(target), status: 'queued', created: now });
-    metaPut('room:v1:chain:' + next, { root: p.run, depth: 1, from: p.run });
+    store.insertRun({ id: next, owner: member.id, project, agent: target.id, source_message: messageId, model: modelFor(target), status: 'queued', created: now });
     return next;
+  }
+
+  /**
+   * An agent's code run ended (done, failed, stopped): the agent says so in the task's conversation, with what it
+   * changed. If it changed something and the team has a reviewer, the reviewer is asked right away, in the same chain.
+   * Reported once per code run.
+   */
+  function reportCodeRun(job, now) {
+    const key = 'room:v1:code-reported:' + job.id;
+    if (metaGet(key)) return null;
+    metaPut(key, { at: now });
+    let payload = {}, result = {};
+    try { payload = JSON.parse(job.payload) ?? {}; } catch { /* unreadable payload */ }
+    try { result = JSON.parse(job.result ?? '{}') ?? {}; } catch { /* unreadable result */ }
+    const run = payload.agent?.run && store.run(payload.agent.run), agent = run && activeAgent(job.project, payload.agent.id);
+    const task = payload.worktree && db.prepare('SELECT t.* FROM tasks t JOIN workspaces w ON w.task=t.id WHERE w.job=?').get(payload.worktree);
+    if (!run || !agent || !task) return null;
+    const files = String(result.status ?? '').split('\n').map(line => line.slice(3).trim()).filter(Boolean);
+    const said = String(result.output ?? '').trim().slice(0, 1500);
+    const { root, depth } = chainOf(run.id), state = chainState(root);
+    const used = chainRuns(root).filter(r => !['failed', 'cancelled'].includes(r.status)).length;
+    const member = memberRow(job.owner);
+    const reviewer = job.status === 'completed' && files.length && member && can(db, member, job.project, 'develop')
+      && !state.stopped && used < state.limit && store.activeRuns(job.owner).length < QUEUE_LIMIT
+      ? agentsFor(db, job.project).find(a => a.id !== agent.id && canReview(a)) : null;
+    let body;
+    if (job.status === 'completed' && files.length) {
+      body = 'Fertig mit „' + task.title + '“.' + (said ? '\n\n' + said : '')
+        + '\n\nGeändert: ' + files.slice(0, 8).join(', ') + (files.length > 8 ? ` und ${files.length - 8} weitere` : '')
+        + (reviewer ? '\n\n@' + reviewer.name + ' bitte prüf die Änderung.' : '\n\nDu siehst sie unter „Prüfen“ und gibst sie frei.');
+    } else if (job.status === 'completed') {
+      body = 'Ich habe nichts geändert.' + (said ? '\n\n' + said : '');
+    } else if (job.status === 'cancelled') {
+      body = 'Abgebrochen. Was schon geändert war, bleibt in der Arbeitskopie.';
+    } else {
+      body = 'Das hat nicht geklappt: ' + String(result.error ?? 'Der Lauf wurde unterbrochen.').trim().slice(0, 400);
+    }
+    const messageId = randomUUID();
+    db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(messageId, job.project, job.owner, body, now);
+    db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?)').run('room:v1:message:' + messageId, JSON.stringify({
+      kind: 'agent', origin: 'verified-run', senderAgent: agent.id, replyTo: run.source_message,
+      recipient: reviewer ? reviewer.id : job.owner, recipientKind: reviewer ? 'agent' : 'member', topicTask: task.id, runId: run.id, chain: root
+    }));
+    if (reviewer) {
+      const next = randomUUID();
+      store.insertRun({ id: next, owner: job.owner, project: job.project, agent: reviewer.id, source_message: messageId, model: modelFor(reviewer), status: 'queued', created: now });
+      metaPut('room:v1:chain:' + next, { root, depth: depth + 1, from: run.id });
+    }
+    return { owner: job.owner, project: job.project, review: Boolean(reviewer) };
+  }
+
+  /** Code runs of agents that ended and were not reported yet (the worker's report, a lost worker, a cancel). */
+  function reportCodeRuns(now = Date.now()) {
+    if (!enabled) return;
+    const ended = db.prepare(`SELECT j.* FROM jobs j WHERE j.action='codex' AND j.status IN ('completed','failed','cancelled','interrupted')
+      AND json_extract(j.payload,'$.agent.run') IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM workspace_meta m WHERE m.key='room:v1:code-reported:'||j.id) ORDER BY j.created LIMIT 20`).all();
+    for (const job of ended) {
+      const done = transaction(db, () => reportCodeRun(job, now));
+      if (!done) continue;
+      live?.publish({ type: 'room', project: done.project });
+      runMoved(done.owner, done.project);
+      if (done.review) waiting.get(done.owner)?.();
+    }
   }
 
   /** A → B inside a task: B's question is posted in the task conversation and queued for the same person (who pays). */
@@ -823,24 +888,26 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
           project: p.project, title: item.title, description: item.done_when ? 'Fertig, wenn: ' + item.done_when : '',
           kind: item.kind, criteria: item.done_when
         }, now);
-        // Who the lead had in mind. A hint for the team, not a permission.
-        const who = team.find(a => a.name.toLowerCase() === item.who.toLowerCase());
-        if (who) {
-          db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value')
-            .run('room:v1:task-agent:' + created.task, JSON.stringify({ agent: who.id, plan: p.id }));
-        }
-        return created.task;
+        const who = team.find(a => !a.lead && a.name.toLowerCase() === item.who.toLowerCase());
+        return { task: created.task, who, item };
       });
-      store.updateProposal(p.id, { status: 'accepted', task: JSON.stringify(tasks), decided_by: member.id, decided: now, updated: now });
-      announce(member, p, agent, tasks, now);
-      return { ok: true, status: 'accepted', task: tasks[0], tasks };
+      // The colleague the lead named for a task starts on it, as with a single task. "Mensch" or nobody: the task waits.
+      const started = tasks.map(({ task, who, item }) => who
+        ? handOver(member, { project: p.project, lead: p.agent, title: item.title, description: item.done_when ? 'Fertig, wenn: ' + item.done_when : '', target: who.id }, task, now)
+        : null).filter(Boolean);
+      const ids = tasks.map(t => t.task);
+      store.updateProposal(p.id, { status: 'accepted', task: JSON.stringify(ids), decided_by: member.id, decided: now, updated: now });
+      announce(member, p, agent, ids, now);
+      return { ok: true, status: 'accepted', task: ids[0], tasks: ids, ...(started.length ? { started } : {}) };
     }
     const created = insertRoomTask(db, member, {
       project: p.project, title: p.title, description: p.description, kind: p.kind, source: p.message
     }, now);
     store.updateProposal(p.id, { status: 'accepted', task: created.task, decided_by: member.id, decided: now, updated: now });
     announce(member, p, agent, [created.task], now);
-    const started = created.reused ? null : handOver(member, p, created.task, now);
+    const who = metaGet('room:v1:proposal-who:' + p.id)?.agent;
+    const started = created.reused || !who ? null
+      : handOver(member, { project: p.project, lead: p.agent, title: p.title, description: p.description, target: who }, created.task, now);
     return { ok: true, status: 'accepted', task: created.task, ...(started ? { started } : {}) };
   }
 
@@ -934,7 +1001,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
     if (!outcome.reused) waiting.get(member.id)?.(); // hand the request to a waiting worker right away
   }
 
-  return async function agentRunRoute(context) {
+  async function agentRunRoute(context) {
     const { route } = context;
     const prefix = WORKER_PREFIXES.find(p => route.startsWith(p));
     if (prefix && WORKER_ROUTES.includes(route.slice(prefix.length))) {
@@ -946,5 +1013,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       return true;
     }
     return false;
-  };
+  }
+  agentRunRoute.reportCodeRuns = reportCodeRuns;
+  return agentRunRoute;
 }
