@@ -93,3 +93,8 @@ Jeder Schritt: eigener Pull Request, Prüfung auf dem Pilot (Handy und Desktop),
 - Projektakte (dauerhaftes Projektwissen).
 - Antworten Wort für Wort.
 - Dauerhafte Vorschau des gemeinsamen Stands pro Projekt.
+- **Hilfe-Bot** (Owner, 18.11.2026): eine Blase „Fragen?“ auf jeder Seite. Kennt Konzept, Anleitung, Entscheidungen und die
+  offene Seite (Ist-Zustand aus den Dokumenten im Repository, also mit jedem Update aktuell), erklärt Wege und Gründe,
+  arbeitet nicht mit (keine Aufgaben, kein Code). Läuft über den vorhandenen KI-Zugang der Person, keine eigene Anmeldung.
+- **Ein Schlüssel pro Person** (Owner, 18.11.2026): Programmierläufe leihen sich eine kurzlebige Kopie des vorhandenen
+  Zugangs statt einer zweiten Anmeldung (Test mit echtem Login steht aus).
