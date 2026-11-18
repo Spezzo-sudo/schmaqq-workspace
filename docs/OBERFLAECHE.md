@@ -44,7 +44,7 @@ Darunter der Zustand des KI-Zugangs (bereit / nicht erreichbar).
 ### Projekt
 - **Kopf**: Zurück, Projektname (tippen öffnet Projektinfo), darunter „2 Menschen · 3 Agenten“.
 - **Team-Leiste**: rundes Bild je Agent mit Namen und Job darunter (Herr Grau: „Leitung“), danach die Menschen (du als „Du“). Tippen öffnet den Direktchat,
-  grüner Punkt = arbeitet gerade, Zähler = ungelesen. Am Ende „+ Einstellen“.
+  grüner Punkt = arbeitet gerade, Zähler = ungelesen. Am Ende „+ Team erweitern“.
 - **Reiter**: Chat · Aufgaben.
 - **Chat**: Nachrichten, Karten, Markierungen. Eingabe „Nachricht … (@Name holt einen Agenten)“.
   Leerer Chat: Herr Grau stellt sich vor: „Ich bin Herr Grau, eure Projektleitung. Sagt mir, was ihr erreichen wollt:
@@ -77,8 +77,8 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
 
 ### Projektinfo
 - Name, Ziel, Bild. Zahlen: Offen · Bei dir · Zum Freigeben. „Vorschau öffnen“, nur wenn eine läuft.
-- **Team**: Agenten (Name, Job) und Menschen (Name, Rolle). Tippen: Profil bzw. „Privat schreiben“. „+ Einstellen“ für Mitwirkende und Leitung.
-  - Die Projektleitung wählt über „+ Mensch dazunehmen“ ein vorhandenes Studio-Konto oder erstellt über „Ins Projekt einladen“ → „Einladungslink erstellen“ einen einmaligen Link für ein neues Konto. Die Person kommt beim Annehmen direkt in dieses Projekt. Der Link gilt wie bisher 24 Stunden. Offene Links lassen sich hier ansehen und über „Zurücknehmen“ sperren.
+- **Team**: Agenten (Name, Job) und Menschen (Name, Rolle). Tippen: Profil bzw. „Privat schreiben“. „+ Team erweitern“ öffnet wie im Projektchat denselben Dialog. Wenn du Personen einladen darfst, öffnet sich die Personenauswahl direkt. Falls du auch Agenten einstellen darfst, kannst du im selben Fenster zu „Agent einstellen“ wechseln.
+  - Die Projektleitung wählt über „Team erweitern“ → „Person einladen“ ein vorhandenes Studio-Konto oder erstellt über „Ins Projekt einladen“ → „Einladungslink erstellen“ einen einmaligen Link für ein neues Konto. Die Person kommt beim Annehmen direkt in dieses Projekt. Der Link gilt wie bisher 24 Stunden. Offene Links lassen sich hier ansehen und über „Zurücknehmen“ sperren.
   - Pro Person eine Rolle. „Leitet das Projekt“, „Macht mit“ oder „Schaut nur zu“ (mitlesen). Die Projektleitung kann über „Ändern“ Rollen ändern und „Aus dem Projekt nehmen“. Mindestens eine Person leitet das Projekt. Wer bisher dabei ist, bleibt dabei.
   - „Du siehst Chat, Aufgaben mit Gesprächen, Wissen und Team in deinen Projekten, während andere Projekte und fremde private Chats mit Menschen oder Agenten verborgen bleiben.“
 - **Code**: „GitHub einrichten“ (Projekt-Admin). Ein Feld „Link zu deinem Projekt auf GitHub“ mit der Erklärung „Öffne dein Projekt auf GitHub und kopiere den Link aus der Browserzeile.“
@@ -99,7 +99,7 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
 - **Wer darf was**: Nur die Freigaberegel „Zweite Person gibt frei“ oder „Projektleitung darf allein freigeben“.
 - ⋯ : Projekt umbenennen, Archivieren.
 
-### Agent einstellen (+ Einstellen)
+### Agent einstellen (Team erweitern)
 Ein Schritt: **Job wählen** (Entwicklung, Oberflächen, Recherche, Prüfung, Sicherheit, Strategie, Gestaltung und Text,
 Kundendienst), jeder mit einem Satz, was er tut. Name ist vorgeschlagen, änderbar. „Einstellen“. Belegte Jobs sind
 ausgegraut („Otto macht das schon“), bei 6 im Team: „Das Team ist voll.“

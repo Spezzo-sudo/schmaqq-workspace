@@ -41,7 +41,7 @@ try{
  }),'Wer ist dabei?');
  const project=(await post('/api/room',{action:'create',id:randomUUID(),title:'Café Sonne',description:'Eine Website'})).project;
  expect(await screen('02-project','/?p='+project,390),'Ich bin Herr Grau, eure Projektleitung');
- expect(await screen('03-hire','/?p='+project,390,p=>p.getByText('Einstellen',{exact:true}).first().click()),'Kundendienst');
+ expect(await screen('03-hire','/?p='+project,390,async p=>{await p.getByRole('button',{name:'Team erweitern',exact:true}).click();await p.getByRole('button',{name:'Agent einstellen',exact:true}).click();}),'Kundendienst');
  for(const [name,role,face] of [['Otto','developer','otto'],['Frau Kern','reviewer','frau-kern']])
   await post('/api/room',{action:'agent',id:randomUUID(),project,name,role,avatarPresetId:face,model:'x',permissions:{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false}});
  const room=await (await fetch(host+'/api/room?project='+project,{headers:{Cookie:'studio_session='+session}})).json(),lead=room.agents.find(a=>a.lead);
@@ -80,12 +80,14 @@ try{
  await team.addCookies([{name:'studio_session',value:session,url:host}]);
  const leadPage=await team.newPage();leadPage.on('pageerror',e=>errors.push('Projektteam: '+e.message));
  await leadPage.goto(host+'/?p='+project+'&info=1');
- await leadPage.getByRole('button',{name:'+ Mensch dazunehmen'}).click();
+ await leadPage.getByRole('button',{name:'+ Team erweitern',exact:true}).click();
  const dialog=leadPage.getByRole('dialog');
+ await dialog.getByLabel('Studio-Konto').waitFor();
+ await leadPage.screenshot({path:path.join(out,'team-erweitern-390.png')});
  await dialog.getByLabel('Studio-Konto').selectOption(colleague);
  await dialog.getByRole('button',{name:'Dazunehmen',exact:true}).click();
  await leadPage.getByText('Lena Weber',{exact:true}).waitFor();
- await leadPage.getByRole('button',{name:'+ Mensch dazunehmen'}).click();
+ await leadPage.getByRole('button',{name:'+ Team erweitern',exact:true}).click();
  await dialog.getByLabel('E-Mail',{exact:true}).fill('fruehschicht@fixture.invalid');
  await dialog.getByRole('button',{name:'Einladungslink erstellen'}).click();
  const inviteField=dialog.getByLabel('Einladungslink');
