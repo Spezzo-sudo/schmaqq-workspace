@@ -2,6 +2,10 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 18.11.2026 (Datenauszug und Navigation)
+- Mitglieder sehen beim Auswählen von Studio-Konten deren Namen. E-Mail-Adressen anderer Konten sieht im Datenauszug nur der Inhaber.
+- Das Handymenü hat einen Schließen-Knopf. Alte Links zu archivierten Projekten öffnen den Archivhinweis.
+
 ## 18.11.2026 (Projekteinladungen)
 - Studio-Konto und Teilnahme an Projekten sind getrennt. Beim Anlegen ist nur die Person dabei, die das Projekt anlegt, plus die ausgewählten Studio-Konten.
 - In der Projektinfo kann die Projektleitung Menschen dazunehmen, Rollen ändern, Menschen herausnehmen und ein neues Konto direkt für ihr Projekt einladen. Der Inhaber kann unter Mein Konto auch ohne Projekt oder für mehrere Projekte einladen. Die Einladung schaltet die ausgewählten Projekte beim Annehmen frei. Bisherige Projektmitglieder bleiben dabei.

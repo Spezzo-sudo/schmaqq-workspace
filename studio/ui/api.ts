@@ -15,7 +15,7 @@ export type Message={id:string;channel:string;author:string;authorName?:string;b
 export type Task={id:string;project:string;title:string;description:string;status:string;priority?:string;assignee:string|null};
 export type Note={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';archived?:boolean};
 export type Showcase={url:string|null;at:number|null;building:boolean;error:string|null};
-export type RoomState={project:Project;meta:{revision:number;repository:string|null;base?:string;workflow?:string;scope?:string[];live?:'merge'|'manual'|'show';liveHow?:string};showcase?:Showcase|null;
+export type RoomState={project:Project;meta:{revision:number;archived?:boolean;repository:string|null;base?:string;workflow?:string;scope?:string[];live?:'merge'|'manual'|'show';liveHow?:string};showcase?:Showcase|null;
  neighbours?:{id:string;title:string;scope:string[]}[];messages:Message[];more:boolean;tasks:Task[];notes:Note[];members:Member[];agents?:Agent[];
  unread?:Record<string,number>};
 export type Chain={root:string;depth:number;used:number;limit:number;stopped:boolean;full:boolean;active:boolean};

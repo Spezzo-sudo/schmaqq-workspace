@@ -96,6 +96,7 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .ui-sheet-backdrop:has(.ui-sheet.left){align-items:stretch;justify-content:flex-start}
 .ui-sheet-head{display:flex;gap:12px;align-items:center;padding:8px 4px 16px;border-bottom:1px solid var(--line);margin-bottom:8px}
 .ui-sheet-head span{display:flex;flex-direction:column}.ui-sheet-head small{color:var(--muted)}
+.ui-sheet-head .ui-icon{margin-left:auto;flex:none}
 .ui-sheet>button{text-align:left;padding:12px 8px;border-radius:10px;font-size:16px}.ui-sheet>button:hover{background:var(--deep)}
 .ui-sheet-foot{margin-top:auto;color:var(--muted);font-size:14px;display:flex;align-items:center}
 .ui-dialog{background:var(--card);width:100%;max-width:520px;max-height:92dvh;border-radius:20px 20px 0 0;display:flex;flex-direction:column}

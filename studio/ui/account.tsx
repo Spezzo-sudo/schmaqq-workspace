@@ -20,7 +20,7 @@ export function AccountScreen({studio}:{studio:Studio}){
   <CodeSignIn studio={studio}/>
   {owner&&<TeamAccess studio={studio}/>}
   <Password/>
-  <Section title="Deine Daten"><p className="ui-muted">Alle Projekte, Aufgaben, Gespräche und Dokumente als eine Datei.</p><button className="ui-btn" onClick={()=>void download()}>Alles herunterladen</button></Section>
+  <Section title="Deine Daten"><p className="ui-muted">Deine sichtbaren Projekte, Aufgaben und Dokumente sowie bis zu 500 Nachrichten.</p><button className="ui-btn" onClick={()=>void download()}>Datenauszug herunterladen</button></Section>
  </section>;
 }
 async function download(){

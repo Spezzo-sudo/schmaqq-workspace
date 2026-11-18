@@ -30,10 +30,11 @@ Anmeldung, Einladung annehmen, Passwort vergessen. Nach dem Anlegen des Kontos �
 - **Projekte**: eine Karte pro Projekt (Name, letzte Nachricht, offene Aufgaben, zum Freigeben, Zähler ungelesen). Tippen öffnet den Projektchat.
 - Darunter ein Tipp „So geht es weiter“ mit Link zur Anleitung.
 - Private Nachrichten mit Menschen gehören zum Projekt (Projektinfo → Person antippen); ihre Zähler stehen in der Projektzeile.
-- Leer: „Noch kein Projekt. Ein Projekt ist ein Chat mit deinem Team aus Menschen und Agenten.“ Knopf „Projekt anlegen“.
+- Leer: „Keine aktiven Projekte.“ Knöpfe „Projekt anlegen“ und „Archiv öffnen“, wenn keine aktiven Projekte da sind.
 - **Projekt anlegen**: Name, Ziel, optional „Wer ist dabei?“ mit den Studio-Konten. Ohne Auswahl ist nur die Person dabei, die das Projekt anlegt. Herr Grau ist automatisch dabei.
 
 ### Menü (hinter dem Avatar)
+„Schließen“, die Zurück-Taste und Escape schliessen das Menü.
 Mein Konto · Projekt anlegen · Jemanden einladen (Inhaber) · Projekte und Archiv · So funktioniert Studio · Abmelden.
 Darunter der Zustand des KI-Zugangs (bereit / nicht erreichbar).
 
@@ -111,10 +112,10 @@ Bild, Name, Job mit Satz „Was er tut“, Persönlichkeit (änderbar), „Priva
 - **KI-Zugang**: bereit / nicht erreichbar, ein Satz Erklärung („Fragst du einen Agenten, arbeitet er mit deinem Zugang“).
 - **ChatGPT fürs Programmieren**: verbunden / verbinden (einmal, gilt für alle Agenten). Wird sonst erst gefragt, wenn es gebraucht wird.
 - **Team** (Inhaber): Wer im Studio ist, „Entfernen“, „Neues Passwort“ und offene Einladungen mit „Zurücknehmen“. Beim „Einladen“ sind unter „Für welche Projekte?“ die aktiven Projekte, die der Inhaber leitet, einzeln auswählbar. Ohne Auswahl ist es eine Einladung ins Studio und die Person kann eigene Projekte anlegen. Der Link wird kopiert und direkt an die Person geschickt. Offene Vorschläge kann der Inhaber über „Auswählen“ mit Projektauswahl einladen oder über „Ablehnen“ ablehnen.
-- **Deine Daten**: Alles herunterladen.
+- **Deine Daten**: „Datenauszug herunterladen“ mit sichtbaren Projekten, Aufgaben, Dokumenten und bis zu 500 Nachrichten.
 
 ### Projekte und Archiv
-Aktive und archivierte Projekte, Wiederherstellen.
+Aktive und archivierte Projekte, Wiederherstellen. Ein alter Link oder Browser-Zurück zeigt „Dieses Projekt ist archiviert“ mit „Archiv öffnen“.
 
 ### So funktioniert Studio
 Vier Schritte mit Bildern: 1. Ziel sagen → 2. Herr Grau plant und verteilt → 3. Das Team arbeitet, du siehst alles im

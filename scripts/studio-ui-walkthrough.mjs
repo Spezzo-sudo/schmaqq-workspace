@@ -34,7 +34,7 @@ async function screen(name,url,width,act=async()=>{}){
 }
 const expect=(text,what)=>{if(!text.includes(what))throw new Error('Nicht gefunden: '+what);};
 try{
- expect(await screen('01-start','/',390),'Noch kein Projekt');
+ expect(await screen('01-start','/',390),'Keine aktiven Projekte');
  expect(await screen('01b-project-create','/',390,async page=>{
   await page.getByRole('button',{name:'Projekt anlegen',exact:true}).click();
   if(await page.getByRole('checkbox',{name:'Lena Weber'}).isChecked())throw new Error('Studio-Konto war vorausgewählt.');
@@ -104,7 +104,7 @@ try{
  const afterRemoval=await guestPage.request.get(host+'/api/room?project='+project);
  if(afterRemoval.status()!==403)throw new Error('Projekt bleibt nach dem Herausnehmen sichtbar.');
  await guestPage.waitForURL(host+'/');
- await guestPage.getByText('Noch kein Projekt',{exact:false}).first().waitFor();
+ await guestPage.getByText('Keine aktiven Projekte',{exact:false}).first().waitFor();
  await guest.close();await team.close();
 
  for(const width of [390,1440]){
@@ -123,6 +123,20 @@ try{
  expect(await screen('09-guide','/?page=guide',390),'Herr Grau plant');
  expect(await screen('11-start-with-projects','/',390),'Café Sonne');
  expect(await screen('10-desktop','/?p='+project+'&tab=tasks',1440),'Café Sonne');
+ expect(await screen('12-navigation','/',390,async page=>{
+  const open=page.getByRole('button',{name:/Menü öffnen/}),menu=page.getByRole('navigation',{name:'Menü',exact:true});
+  await open.click();await menu.getByRole('button',{name:'Schließen',exact:true}).click();await menu.waitFor({state:'hidden'});
+  await open.click();await page.goBack();await menu.waitFor({state:'hidden'});
+  await open.click();await page.keyboard.press('Escape');await menu.waitFor({state:'hidden'});
+  await page.getByRole('button',{name:/Internes Projekt/}).first().click();
+  await page.getByRole('button',{name:'Projektinfo',exact:true}).click();
+  await page.getByRole('button',{name:'Mehr',exact:true}).click();
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'Archivieren',exact:true}).click();
+  await page.waitForURL(host+'/');
+  await page.goBack();
+  await page.getByText('Dieses Projekt ist archiviert.',{exact:true}).waitFor();
+ }),'Archiv öffnen');
  if(errors.length)throw new Error('Fehler auf der Seite:\n'+errors.join('\n'));
  console.log('WALKTHROUGH=PASS ('+out+')');
 }finally{await browser.close();app.server.close();app.previewServer.close();rmSync(dir,{recursive:true,force:true});}

@@ -20,7 +20,7 @@ export function InfoScreen({studio}:{studio:Studio}){
  async function saveProject(changes:{title?:string;description?:string;archived?:boolean;scope?:string[]}){
   setError('');
   try{await api('/api/team',{action:'project',project:room!.project.id,revision:room!.meta.revision,title:room!.project.title,description:room!.project.description,archived:false,
-   base:room!.meta.base??'main',workflow:room!.meta.workflow??'pull-request',...changes});await studio.reload();if(changes.archived)go({page:'start',project:''});}
+   base:room!.meta.base??'main',workflow:room!.meta.workflow??'pull-request',...changes});await studio.reload();if(changes.archived)go({page:'start',project:''},true);}
   catch(e){setError((e as Error).message);}
  }
  return <section className="ui-screen info">

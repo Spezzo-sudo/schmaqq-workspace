@@ -39,6 +39,12 @@ test('Studio is invitation-only: owner invites, members propose, removed members
   const people = (await call('GET','/api/workspace',undefined,owner.cookie)).body.members;
   const memberRow = people.find(p=>p.name==='Member'),ownerRow = people.find(p=>p.name==='Owner');
   assert.equal(memberRow.invitedBy,ownerRow.id);
+  assert.equal(memberRow.email,'member@fixture.invalid');
+  const memberView=(await call('GET','/api/workspace',undefined,member.cookie)).body.members;
+  assert.equal(memberView.find(p=>p.id===memberRow.id).email,'member@fixture.invalid');
+  assert.equal(memberView.find(p=>p.id===ownerRow.id).name,'Owner');
+  assert.equal(Object.hasOwn(memberView.find(p=>p.id===ownerRow.id),'email'),false);
+
 
   // General invitations create a Studio account with an empty project list.
   const create = async (title,cookie) => {

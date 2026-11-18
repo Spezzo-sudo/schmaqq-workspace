@@ -1,4 +1,9 @@
 {
+  "navigation_and_data_export_20261118": {
+    "summary": "Mitglieder sehen im Studio-Verzeichnis die Namen sowie ihre eigene E-Mail-Adresse. Der Inhaber sieht die E-Mail-Adressen der Studio-Konten.",
+    "navigation": "Das Handymenü schliesst per Knopf, Browser-Zurück und Escape. Links zu archivierten Projekten führen zu einem Hinweis mit Weg ins Archiv.",
+    "download": "Datenauszug mit bis zu 500 Nachrichten sowie sichtbaren Projekten, Aufgaben und Dokumenten."
+  },
   "project_memberships_20261118": {
     "summary": "Projektteilnahme bei der Erstellung, beim Dazunehmen und in Einladungen ausdrücklich wählen. Allgemeine Einladungen öffnen ein Studio-Konto ohne bestehende Projekte.",
     "compatibility": "Bisherige Projektrollen bleiben erhalten. Bei früheren Projekten ohne eigene Rollenliste wird der bisherige Zugriff einmalig gespeichert.",

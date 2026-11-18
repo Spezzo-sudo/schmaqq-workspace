@@ -1,9 +1,9 @@
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import type {Studio} from './app';
 import {api,newId,when} from './api';
 import {Face} from './avatar';
 import {taskState} from './model';
-import {Checklist,Dialog,Field,Plus} from './parts';
+import {Close,Checklist,Dialog,Field,Plus} from './parts';
 
 /** Start: what waits for you, then the projects. On the desktop it is the left column. */
 export function StartScreen({studio,compact=false}:{studio:Studio;compact?:boolean}){
@@ -27,8 +27,9 @@ export function StartScreen({studio,compact=false}:{studio:Studio;compact?:boole
   <div className="ui-block">
    <h2 className="ui-label">Projekte</h2>
    {projects.length===0&&<div className="ui-hello">
-    <p>Noch kein Projekt. Ein Projekt ist ein Chat mit deinem Team aus Menschen und Agenten.</p>
+    <p>Keine aktiven Projekte.</p>
     <button className="ui-btn primary" onClick={()=>setCreating(true)}><Plus/> Projekt anlegen</button>
+    <button className="ui-btn" onClick={()=>go({page:'archive'})}>Archiv öffnen</button>
    </div>}
    {projects.map(p=>{const tasks=team.tasks.filter(t=>t.project===p.id&&t.status!=='done'),approve=tasks.filter(t=>taskState(t).tone==='approve').length;
     return <button key={p.id} className={'ui-row project'+(compact?'':' card')+(route.project===p.id?' current':'')} onClick={()=>go({page:'project',project:p.id})}>
@@ -76,11 +77,15 @@ function NewProject({studio,onClose}:{studio:Studio;onClose:()=>void}){
 export function Menu({studio,onClose}:{studio:Studio;onClose:()=>void}){
  const {me,go,agentsReady}=studio;
  const [creating,setCreating]=useState(false);
+ useEffect(()=>{
+  const closeOnEscape=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!creating)onClose();};
+  addEventListener('keydown',closeOnEscape);return()=>removeEventListener('keydown',closeOnEscape);
+ },[onClose,creating]);
  async function logout(){try{await api('/api/auth/logout',{});}finally{try{sessionStorage.clear();}catch{/* private mode */}location.replace('/');}}
  if(creating)return <NewProject studio={studio} onClose={()=>{setCreating(false);onClose();}}/>;
  return <div className="ui-sheet-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
   <nav className="ui-sheet left" aria-label="Menü">
-   <div className="ui-sheet-head"><Face name={me.name} size={44}/><span><b>{me.name}</b><small>{me.email}</small></span></div>
+   <div className="ui-sheet-head"><Face name={me.name} size={44}/><span><b>{me.name}</b><small>{me.email}</small></span><button className="ui-icon" aria-label="Schließen" onClick={onClose}><Close/></button></div>
    <button onClick={()=>go({page:'account'})}>Mein Konto</button>
    <button onClick={()=>setCreating(true)}>Projekt anlegen</button>
    {studio.members.some(m=>m.id===me.id&&m.role==='owner')&&<button onClick={()=>{go({page:'account'});setTimeout(()=>document.getElementById('invite')?.scrollIntoView({block:'start'}),400);}}>Jemanden einladen</button>}
