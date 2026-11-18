@@ -18,7 +18,7 @@ Etappen und Entscheide: [PLAN.md](PLAN.md). Iststand mit Nachweisen: [STATUS.jso
 Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, schreibt sich unter „In Arbeit“ ein
 (z. B. „Claude Code – Aufräumen“ oder „Codex – Messenger-Feinschliff“).
 
-**In Arbeit:** nichts. Zuletzt live am 17.11.2026: Agenten im Messenger, private Chats, Gruppenchat mit @Name, Projektleitung plant (#91, `ce5a50a`); Agenten in Produktion für Marco eingeschaltet. Nächste Schritte: [HANDOFF-AGENTS.md](HANDOFF-AGENTS.md).
+**In Arbeit:** nichts. Zuletzt live am 17.11.2026: Agenten im Messenger, private Chats, Gruppenchat mit @Name, Projektleitung plant (#91, `ce5a50a`); Agenten in Produktion für Marco eingeschaltet. Nächste Schritte: [HANDOFF-AGENTS.md](archive/HANDOFF-AGENTS-20261117.md).
 
 **Gemeinsame Grundlage:** Der Guru-Branch enthält den Gesprächs-/Team-Branch (GitHub-Vergleich: vier Commits voraus, keiner zurück). Frühere Messenger-Arbeitsaufträge sind daher keine parallelen Bauaufträge. Vor dem Schliessen älterer PRs deren Einbeziehung einzeln prüfen.
 
