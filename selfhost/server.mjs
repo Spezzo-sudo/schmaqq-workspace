@@ -29,6 +29,7 @@ import {createRoomRoute} from './room-http.mjs';
 import {createAgentRunRoute} from './agent-run-http.mjs';
 import {createLiveEvents} from './live-events.mjs';
 import {createTeamRoute} from './team-http.mjs';
+import {queueShowcases,showcasePreview,storeShowcase} from './showcase.mjs';
 import {createPracticeRoute} from './practice.mjs';
 import {createGithubWorkflow,githubMemberTokens} from './github-workflow.mjs';
 import {createGithubApp,createGithubAppRoutes} from './github-app.mjs';
@@ -41,7 +42,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dataDir=path.resolve(process.env.STUDIO_DATA_DIR??path.join(root,'.studio'));
 const uuid=()=>randomUUID(),now=()=>Date.now();
 // Worker jobs whose Git commands reach GitHub (clone, fetch, ls-remote, push).
-const githubJobActions=Object.freeze(['connect-project','inspect','probe','prepare','submit','integrate']);
+const githubJobActions=Object.freeze(['connect-project','inspect','probe','prepare','submit','integrate','showcase']);
 const text=z.string().trim().min(1).max(160),id=z.string().regex(/^[\w-]{1,100}$/);
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function readJSON(req,limit=160000){const parts=[];let size=0;for await(const part of req){size+=part.length;if(size>limit)throw fail(413,'Eingabe zu lang.');parts.push(part);}try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw fail(400,'Ungültiges JSON.');}}
@@ -81,7 +82,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
   const member=db.prepare('SELECT * FROM members WHERE id=?').get(memberId);
   try{return Boolean(member&&can(db,member,project,'view'));}catch{return false;}
  }});
- const roomRoute=createRoomRoute({db,user,readJSON,parse,live});
+ const roomRoute=createRoomRoute({db,user,readJSON,parse,live,previewOrigin});
  // Opt-in only: an operator-owned mode-0600 file binds each Hermes service identity to exactly one Studio member.
  let configuredHermesWorkers=hermesWorkers??[];
  if(hermesWorkersFile){
@@ -117,7 +118,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  let lastExpiry=0;
  const handleRequest=async(req,res)=>{
   // Stale jobs end on the server's clock, not only when the same runner asks again.
-  if(now()-lastExpiry>15000){lastExpiry=now();try{expireStaleJobs(db,now());agentRunRoute.reportCodeRuns();}catch(e){console.error('job expiry failed',e.message);}}
+  if(now()-lastExpiry>15000){lastExpiry=now();try{expireStaleJobs(db,now());agentRunRoute.reportCodeRuns();transaction(db,()=>queueShowcases(db,{now:now()}));}catch(e){console.error('job expiry failed',e.message);}}
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');
   const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
   try{
@@ -248,7 +249,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      send({ok:true,cancel:job.status==='cancelling'||(job.action==='local-ai'&&!aiAccess(db,job))});return;
     }else{
      let result=v.result??{};
-     if(v.ok&&['preview','review','submit'].includes(job.action)&&result.previewBundle){
+     if(v.ok&&['preview','review','submit','showcase'].includes(job.action)&&result.previewBundle){
       // Reject oversized containers before building Zod issue collections.
       const rawBundle=result.previewBundle;
       if(!rawBundle||typeof rawBundle!=='object'||Array.isArray(rawBundle)||Object.keys(rawBundle).length>500)throw fail(413,'Vorschau hat zu viele Dateien.');
@@ -259,6 +260,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
       transaction(db,()=>{db.prepare('INSERT INTO previews VALUES(?,?,?,?)').run(previewId,job.id,now(),JSON.stringify(bundle));});
       const preview={url:`${previewOrigin}/${previewId}/index.html`,scope:'shared',files:entries.length,bytes,source:sourceEvidence(result.source)};
       result=job.action==='preview'?preview:{...result,previewBundle:undefined,preview};
+      if(job.action==='showcase')storeShowcase(db,job,previewId,{now:now(),commit:typeof v.result?.commit==='string'?v.result.commit:null});
      }
      if(v.ok&&job.action==='preview'&&result.live){
       // Live previews exist only on the server worker next to Studio; the app is reached on the fixed live address.
@@ -472,7 +474,15 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  const previewServer=http.createServer((req,res)=>{
   // A different origin prevents project JavaScript from reading Studio sessions.
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Cache-Control','no-store');
-  const requested=new URL(req.url,previewOrigin),pathname=requested.pathname,match=pathname.match(/^\/([\w-]{40,60})\/(.*)$/);
+  const requested=new URL(req.url,previewOrigin),pathname=requested.pathname;let match=pathname.match(/^\/([\w-]{40,60})\/(.*)$/);
+  // "Bei uns ansehen": the project's fixed address points at its latest build of the shared state.
+  const shown=pathname.match(/^\/ansehen\/([a-z0-9-]{3,90})(\/.*)?$/);
+  if(shown){
+   if(!shown[2]){res.writeHead(301,{Location:'/ansehen/'+shown[1]+'/'});res.end();return;}
+   const id=showcasePreview(db,shown[1]);
+   if(!id){res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});res.end('Hier gibt es (noch) nichts zu sehen.');return;}
+   match=[pathname,id,shown[2].slice(1)];
+  }
   // Live preview link: remember it in a cookie and continue at the app's own paths, so absolute links (/api/...) work.
   const cookieOf=(name,value,age=3600)=>`${name}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${age}${previewSecure?'; Secure':''}`;
   if(match&&liveMeta(match[1])){res.writeHead(302,{'Set-Cookie':[cookieOf('schmaqq_live',match[1]),cookieOf('schmaqq_static','',0)],Location:'/'+match[2]+requested.search});res.end();return;}

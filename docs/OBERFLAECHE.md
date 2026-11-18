@@ -60,8 +60,9 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
   - Änderung liegt vor: „Ansehen“ öffnet die Änderung (Dateien, Unterschiede, Vorschau falls eingerichtet), darin
     „Freigeben“ oder „Zurück an Otto“ (mit kurzer Notiz, die als Nachricht im Gespräch landet).
   - Freigegeben: „Übernehmen“ (bringt die Änderung in den gemeinsamen Code). Beim ersten Mal im Projekt fragt Studio
-    vorher **„Wie kommt eine Änderung online?“**: ○ Geht von selbst online · ○ Wir stellen sie selbst online. Danach nie wieder.
-    Bei „Wir stellen sie selbst online“ nach dem Übernehmen: „Ist jetzt online“.
+    vorher **„Wo soll man das Ergebnis sehen?“**: ○ **Bei uns ansehen** (Studio baut nach jedem Übernehmen den
+    aktuellen Stand unter einer festen Adresse) · ○ **Wir stellen es selbst online**. Danach nicht mehr; ändern geht in der Projektinfo.
+    Bei „Wir stellen es selbst online“ nach dem Übernehmen: „Ist jetzt online“. (Eigener Hoster wie Hostinger: später.)
   - Code des Projekts noch nicht da: „Wo liegt euer Code?“ (führt zur Frage in der Projektinfo).
   - Das erste Mal, dass das Team für dich Code ändern soll: „Damit Otto für dich programmieren kann, verbinde einmal
     dein ChatGPT. Gilt danach für alle Agenten.“ Knopf „Mit ChatGPT verbinden“, direkt im Kasten.
@@ -82,6 +83,11 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
   - Findet Studio keine Tests (leerer Code oder unbekannter Aufbau): „Noch keine Tests gefunden. Das Team kann trotzdem
     anfangen; Änderungen schaust du dann selbst an.“ Knopf „So anfangen“. Später „Neu einrichten“, sobald es Tests gibt.
   - Klappt etwas nicht: ein Satz, was los ist, und „Nochmal“.
+  - Darunter immer eine Zeile **„Ergebnis: bei uns ansehen · ändern“** (bzw. „wir stellen es selbst online“ / „noch offen“).
+- **Ansehen**: Bei „Bei uns ansehen“ steht oben in der Projektinfo der Knopf **„Ansehen ›“**. Er öffnet den aktuellen Stand
+  unter der festen Adresse `studio-preview.schmaqq.com/ansehen/<projektname>-<kurzer schlüssel>/`. Eigene Domain, damit
+  der Code der Website nie an Studio-Anmeldungen kommt; der kurze Schlüssel macht die Adresse unerratbar (wer sie hat,
+  kann sie öffnen). „Neuer Link“ macht die alte Adresse ungültig. Während gebaut wird: „Wird gebaut …“.
 - **Bereich** (nur bei mehreren Projekten auf demselben Repository): Pfade + „Gleiches Repository wie …“.
 - **Wissen**: Projektdokumente, die Agenten lesen (Liste, + Dokument).
 - **Wer darf was**: Rollen der Menschen; „Zweite Person gibt frei“ oder „Admin darf allein freigeben“.

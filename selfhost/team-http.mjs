@@ -3,6 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {transaction} from './store.mjs';
 import {requirePermission,selfApproval,can} from './project-roles.mjs';
 import {hiddenPractice} from './practice.mjs';
+import {queueShowcases,renewShowcase} from './showcase.mjs';
 import {metadata,storeMetadata,teamEvent,taskContract,taskView,completion,latestGeneralResult,invalidateTaskResult,teamError,hasCodeChanges,quietJobActions} from './team-model.mjs';
 const id=z.string().regex(/^[\w-]{1,100}$/),revision=z.number().int().min(0);
 const actions=z.discriminatedUnion('action',[
@@ -15,7 +16,8 @@ const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('cancel'),task:id,revision,reason:z.string().trim().min(1).max(2000)}),
  z.object({action:z.literal('reopen'),task:id,revision}),
  z.object({action:z.literal('note'),project:id,note:id,revision,title:z.string().trim().min(1).max(160),body:z.string().trim().min(1).max(12000),archived:z.boolean()}),
- z.object({action:z.literal('live'),project:id,revision,live:z.enum(['merge','manual']),liveHow:z.string().trim().max(300).optional()}),
+ z.object({action:z.literal('live'),project:id,revision,live:z.enum(['merge','manual','show']),liveHow:z.string().trim().max(300).optional()}),
+ z.object({action:z.literal('showcase'),project:id,op:z.enum(['rebuild','renew'])}),
  z.object({action:z.literal('went-live'),task:id}),
  z.object({action:z.literal('project'),project:id,revision,title:z.string().trim().min(1).max(160),description:z.string().trim().max(12000),archived:z.boolean(),base:z.string().regex(/^[\w./-]{1,100}$/).refine(s=>!s.includes('..')&&!s.startsWith('-')).optional(),workflow:z.enum(['direct','pull-request']).optional(),scope:z.array(z.string().trim().regex(/^[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*\/?$/).refine(s=>!s.split('/').includes('..'),'Pfad ohne ..')).max(10).optional()})
 ]);
@@ -76,7 +78,17 @@ export function createTeamRoute({db,user,readJSON,parse}){
     if(meta.revision!==v.revision)throw teamError(409,'Projekteinstellungen inzwischen geändert. Bitte neu laden.');
     if(!can(db,member,v.project,'admin'))throw teamError(403,'Wie das Projekt live geht, legt der Projekt-Admin fest.');
     storeMetadata(db,'room:v1:project:'+v.project,{...meta,live:v.live,...(v.liveHow!==undefined?{liveHow:v.liveHow}:{}),revision:meta.revision+1});
-    teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:v.live==='merge'?'Live-Weg: automatisch beim Übernehmen':'Live-Weg: eigener Schritt nach dem Übernehmen'});return;
+    teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:v.live==='merge'?'Online: automatisch beim Übernehmen':v.live==='show'?'Ergebnis: bei uns ansehen':'Online: eigener Schritt nach dem Übernehmen'});
+    if(v.live==='show')queueShowcases(db); // the first build right away
+    return;
+   }
+   if(v.action==='showcase'){
+    // "Neu bauen" builds the shared state again; "Neuer Link" makes the old address stop working.
+    if(!can(db,member,v.project,'admin'))throw teamError(403,'Das legt der Projekt-Admin fest.');
+    if(metadata(db,'room:v1:project:'+v.project,{}).live!=='show')throw teamError(409,'Dieses Projekt zeigt sein Ergebnis nicht bei uns.');
+    if(v.op==='renew')renewShowcase(db,v.project,db.prepare('SELECT title FROM projects WHERE id=?').get(v.project)?.title??'projekt');
+    else queueShowcases(db,{force:v.project});
+    return;
    }
    if(v.action==='project'){
     const p=db.prepare('SELECT * FROM projects WHERE id=?').get(v.project);if(!p)throw teamError(404,'Projekt fehlt.');

@@ -38,7 +38,12 @@ weitergegebene Schritte.
   Den Arbeitsplatz für das Team richtet Studio danach selbst ein. Findet es noch keine Tests, tippst du „So anfangen“.
 - **Einmal pro Person:** Das erste Mal, wenn Otto für dich programmieren soll, fragt Studio direkt in der Aufgabe nach
   deinem ChatGPT. Gilt danach für alle Agenten (auch unter Mein Konto).
-- **Beim ersten Übernehmen** fragt Studio einmal: Geht eine Änderung von selbst online, oder stellt ihr sie selbst online?
+- **Beim ersten Übernehmen** fragt Studio einmal: **Wo soll man das Ergebnis sehen?**
+  - **Bei uns ansehen:** Studio baut nach jedem Übernehmen den aktuellen Stand und zeigt ihn unter einer festen Adresse
+    (`studio-preview.schmaqq.com/ansehen/<projekt>-<schlüssel>/`). Wer die Adresse hat, kann sie öffnen; „Neuer Link“ in
+    der Projektinfo macht die alte ungültig. Geht für Websites, die sich als Dateien bauen lassen.
+  - **Wir stellen es selbst online:** Jemand macht es von Hand und tippt danach „Ist jetzt online“.
+  Ändern jederzeit in der Projektinfo unter „Code“ → „Ergebnis … ändern“. Eigener Hoster (z. B. Hostinger) kommt später.
 
 ## Wer darf was
 

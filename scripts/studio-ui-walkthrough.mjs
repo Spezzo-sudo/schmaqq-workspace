@@ -11,6 +11,7 @@ import path from 'node:path';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {createStudioServer} from '../selfhost/server.mjs';
 import {openStore,digest,passwordHash} from '../selfhost/store.mjs';
+import {queueShowcases} from '../selfhost/showcase.mjs';
 
 const out=path.resolve(process.argv[2]??'studio-walkthrough');mkdirSync(out,{recursive:true});
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE??'playwright');
@@ -19,7 +20,7 @@ const db=openStore(filename,{seedProjects:false}),me=randomUUID(),session=random
 db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(me,'Neu','neu@fixture.invalid',passwordHash(randomBytes(12).toString('hex')),'owner',Date.now());
 db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(digest(session),me,Date.now()+3600000);db.close();
 const app=createStudioServer({filename,origin:'http://127.0.0.1:4466',previewOrigin:'http://127.0.0.1:4467',resetMailer:null,hermesWorkers:[{owner:me,token:worker}]});
-await new Promise(r=>app.server.listen(4466,'127.0.0.1',r));
+await new Promise(r=>app.server.listen(4466,'127.0.0.1',r));await new Promise(r=>app.previewServer.listen(4467,'127.0.0.1',r));
 const host='http://127.0.0.1:4466',errors=[];
 const post=async(route,body,token)=>{const r=await fetch(host+route,{method:'POST',headers:{Origin:host,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{Cookie:'studio_session='+session})},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(route+': '+d.error);return d;};
 const browser=await chromium.launch({...(process.env.CHROME?{executablePath:process.env.CHROME}:{}),args:['--no-sandbox']});
@@ -53,10 +54,21 @@ try{
  expect(await screen('07-info','/?p='+project+'&info=1',390),'Wo liegt euer Code?');
  expect(await screen('07b-new-code','/?p='+project+'&info=1',390,async p=>{await p.getByText('Neu anfangen').click();await p.locator('.ui-inline input').scrollIntoViewIfNeeded();}),'leeres Repository');
  expect(await screen('06b-task','/?p='+project+'&tab=tasks',390,p=>p.getByText('Startseite mit Öffnungszeiten').first().click()),'braucht das Projekt zuerst seinen Code');
+ // "Bei uns ansehen": a server workplace builds the shared state; the fixed address shows it.
+ const device=randomUUID(),deviceToken=randomUUID();
+ app.db.prepare('INSERT INTO devices(id,owner,name,hash,seen,revoked) VALUES(?,?,?,?,?,0)').run(device,me,'Server',digest(deviceToken),Date.now());
+ app.db.prepare("INSERT INTO jobs(id,owner,device,project,action,payload,status,created,result) VALUES(?,?,?,?,'probe','{}','completed',?,'{}')").run(randomUUID(),me,device,project,Date.now());
+ const meta=(await (await fetch(host+'/api/room?project='+project,{headers:{Cookie:'studio_session='+session}})).json()).meta;
+ await post('/api/team',{action:'live',project,revision:meta.revision,live:'show'});queueShowcases(app.db);
+ const show=(await post('/api/runner/poll',{},deviceToken)).job;
+ await post('/api/runner/report',{id:show.id,lease:show.lease,ok:true,result:{previewBundle:{'index.html':Buffer.from('<!doctype html><meta charset="utf-8"><body style="font-family:sans-serif;padding:40px"><h1>Café Sonne</h1><p>Mo–Fr 7–18 Uhr</p></body>').toString('base64')}}},deviceToken);
+ expect(await screen('07c-ansehen','/?p='+project+'&info=1',390),'Ansehen ›');
+ const url=(await (await fetch(host+'/api/room?project='+project,{headers:{Cookie:'studio_session='+session}})).json()).showcase.url;
+ const page=await browser.newPage();await page.goto(url);expect(await page.locator('body').innerText(),'Mo–Fr 7–18 Uhr');await page.screenshot({path:path.join(out,'07d-seite.png')});await page.close();
  expect(await screen('08-account','/?page=account',390),'Einmal verbinden, dann kann jeder Agent');
  expect(await screen('09-guide','/?page=guide',390),'Herr Grau plant');
  expect(await screen('11-start-with-projects','/',390),'Café Sonne');
  expect(await screen('10-desktop','/?p='+project+'&tab=tasks',1440),'Café Sonne');
  if(errors.length)throw new Error('Fehler auf der Seite:\n'+errors.join('\n'));
  console.log('WALKTHROUGH=PASS ('+out+')');
-}finally{await browser.close();app.server.close();rmSync(dir,{recursive:true,force:true});}
+}finally{await browser.close();app.server.close();app.previewServer.close();rmSync(dir,{recursive:true,force:true});}

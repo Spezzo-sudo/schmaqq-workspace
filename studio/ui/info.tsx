@@ -29,6 +29,7 @@ export function InfoScreen({studio}:{studio:Studio}){
   <div className="ui-info-head"><span className="ui-tile big" style={{background:tileColor(room.project.title)}}>{room.project.title.slice(0,2).toUpperCase()}</span>
    <h2>{room.project.title}</h2>{room.project.description&&<p className="ui-muted">{room.project.description}</p>}</div>
   <ErrorLine text={error}/>
+  {room.showcase?.url&&<div className="ui-center"><a className="ui-btn primary" href={room.showcase.url} target="_blank" rel="noreferrer">Ansehen ›</a>{room.showcase.building&&<small className="ui-muted"> neue Fassung wird gebaut …</small>}</div>}
   <div className="ui-stats">
    <button onClick={()=>go({info:false,tab:'tasks'})}><b>{open.length}</b><small>Offen</small></button>
    <button onClick={()=>go({info:false,tab:'tasks'})}><b>{mine.length}</b><small>Bei dir</small></button>
