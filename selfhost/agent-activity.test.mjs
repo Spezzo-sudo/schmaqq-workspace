@@ -50,3 +50,16 @@ test('a change shows as files with added and removed lines; files outside the pr
  assert.deepEqual(outsideScope(diff,['site/'],[{id:'b',title:'Backend',scope:['api/']}]),[{file:'api/x.js',owner:'Backend'}]);
  assert.deepEqual(outsideScope(diff,[]),[],'without an area nothing is outside');
 });
+
+test('an empty repository: Studio finds no tests, and "So anfangen" sets up a workplace the server accepts',async()=>{
+ const {START_WITHOUT_TESTS}=await import('../studio/ui/model.ts');
+ const {proposeProjectPlan,validateProjectPlan}=await import('./project-plan.mjs');
+ const {mkdtempSync,writeFileSync,rmSync}=await import('node:fs');const {execFileSync}=await import('node:child_process');
+ const dir=mkdtempSync((await import('node:os')).tmpdir()+'/studio-empty-');
+ try{
+  execFileSync('git',['init','-q'],{cwd:dir});writeFileSync(dir+'/README.md','# Neu\n');
+  assert.equal(proposeProjectPlan(dir).state,'needs_configuration');
+  assert.deepEqual(validateProjectPlan(START_WITHOUT_TESTS),START_WITHOUT_TESTS);
+  assert.equal(proposeProjectPlan(dir,{configuration:START_WITHOUT_TESTS}).state,'proposed');
+ }finally{rmSync(dir,{recursive:true,force:true});}
+});

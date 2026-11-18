@@ -3,6 +3,7 @@ import type {Studio} from './app';
 import {accessOf,api,newId,q,type Resource,type TaskDetail} from './api';
 import {Chat} from './chat';
 import {agentOnTask} from './project';
+import {CodeSignIn} from './account';
 import {activeAgents,jobOf,taskState} from './model';
 import {taskNextStep,type TaskStepAction} from './next-step';
 import {Bar,Dialog,ErrorLine,Field,More} from './parts';
@@ -87,12 +88,17 @@ export function TaskScreen({studio}:{studio:Studio}){
    await studio.reloadRuns();
   });
  }
+ // The first take-over in a project asks once how changes go online; never again afterwards.
+ const askOnline=!busy&&step.action==='integrate'&&!meta.live;
+ async function chooseOnline(value:'merge'|'manual'){
+  await run('live',()=>api('/api/team',{action:'live',project:room!.project.id,revision:meta.revision,live:value}));act('integrate');
+ }
  // Code tasks need the project's code connected first; until then that is the one next step.
  const unconnected=contract.kind==='code'&&!server&&!myCopy&&!result&&task.status!=='done';
  // The step text in the words of the company: the team changes code, people look and approve.
- const label=unconnected?'Code verbinden':step.action==='claim'||step.action==='start'||step.action==='edit'?(coder?coder.name+' beauftragen':'Übernehmen')
+ const label=unconnected?(meta.repository?'Projektinfo':'Wo liegt euer Code?'):step.action==='claim'||step.action==='start'||step.action==='edit'?(coder?coder.name+' beauftragen':'Übernehmen')
   :step.action==='submit'||step.action==='resubmit'?'Ansehen':step.action==='look'?'Ansehen':step.label;
-const text=unconnected?`Damit ${coder?.name??'die Entwicklung'} Code ändern kann, verbindet einmal den Code des Projekts (GitHub und Server).`
+const text=unconnected?(meta.repository?'Der Arbeitsplatz des Teams wird noch eingerichtet.':`Damit ${coder?.name??'die Entwicklung'} Code ändern kann, braucht das Projekt zuerst seinen Code. Das ist einmal pro Projekt.`)
   :step.action==='claim'||step.action==='start'||step.action==='edit'
   ?(contract.kind==='code'?(coder?`${coder.name} kann das machen. Oder schreib im Gespräch, wer es machen soll.`:'Noch macht niemand den Code. Stell jemanden für die Entwicklung ein oder frag Herrn Grau.')
    :'Schreib im Gespräch, wer sich darum kümmert, oder kümmere dich selbst.')
@@ -112,7 +118,13 @@ const text=unconnected?`Damit ${coder?.name??'die Entwicklung'} Code ändern kan
   <div className={'ui-now '+state.tone}>
    <span className="ui-label">Jetzt</span>
    <p>{busy?busyText(busy):text}</p>
-   {!busy&&(unconnected||step.action)&&label&&<button className="ui-btn primary" onClick={()=>unconnected?go({info:true,task:''}):act(step.action!)}>{label}</button>}
+   {askOnline?<div className="ui-choice" role="radiogroup" aria-label="Wie kommt eine Änderung online?">
+     <p><b>Vorher einmal: Wie kommt eine Änderung online?</b></p>
+     <button role="radio" aria-checked={false} onClick={()=>void chooseOnline('merge')}><b>Geht von selbst online</b><small>Euer Hoster veröffentlicht jede übernommene Änderung selbst.</small></button>
+     <button role="radio" aria-checked={false} onClick={()=>void chooseOnline('manual')}><b>Wir stellen sie selbst online</b><small>Nach dem Übernehmen macht es jemand aus dem Team und tippt „Ist jetzt online“.</small></button>
+    </div>
+   :!busy&&(unconnected||step.action)&&label&&<button className="ui-btn primary" onClick={()=>unconnected?go({info:true,task:''}):act(step.action!)}>{label}</button>}
+   {contract.kind==='code'&&!!server&&!result&&task.status!=='done'&&<CodeSignIn studio={studio} compact who={coder?.name}/>}
    <ErrorLine text={error}/>
   </div>
   <Chat studio={studio} place={{kind:'task',task:task.id,thread:detail.thread,onChanged:()=>void load()}} key={task.id}/>

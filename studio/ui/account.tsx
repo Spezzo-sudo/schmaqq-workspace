@@ -32,21 +32,21 @@ async function download(){
 type SignIn={connected:boolean;checked:number|null;error:string|null;places:{name:string}[];
  pending:{job:string;mode:'login'|'status'|'logout'|null;status:string;login:{url:string;code:string}|null}|null};
 /** Once per person, for all agents: lets the team change code on the server with your ChatGPT. */
-export function CodeSignIn({studio,compact=false}:{studio:Studio;compact?:boolean}){
+export function CodeSignIn({studio,compact=false,who}:{studio:Studio;compact?:boolean;who?:string}){
  const [state,setState]=useState<SignIn|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[copied,setCopied]=useState(false);
  const load=useCallback(async()=>{try{setState(await api<SignIn>('/api/codex-account'));setError('');}catch(e){setError((e as Error).message);}},[]);
  useEffect(()=>{let alive=true;api<SignIn>('/api/codex-account').then(s=>{if(alive)setState(s);}).catch(e=>{if(alive)setError((e as Error).message);});return()=>{alive=false;};},[]);
  useEffect(()=>{if(!state?.pending)return;const t=setInterval(()=>void load(),3000);return()=>clearInterval(t);},[state?.pending,load]);
  async function act(action:'connect'|'check'|'disconnect'){
-  if(action==='disconnect'&&!confirm('Anmeldung für Programmierläufe trennen? Das Team kann dann für dich keinen Code mehr ändern, bis du neu verbindest.'))return;
+  if(action==='disconnect'&&!confirm('ChatGPT fürs Programmieren trennen? Das Team kann dann für dich keinen Code mehr ändern, bis du neu verbindest.'))return;
   setBusy(true);setError('');try{await api('/api/codex-account',{action});await load();await studio.reload();}catch(e){setError((e as Error).message);}finally{setBusy(false);}
  }
  if(compact&&state?.connected)return null;
  const login=state?.pending?.login;
  const body=<>
   {!compact&&<p className="ui-muted">Einmal verbinden, dann kann jeder Agent in der Entwicklung für dich Code ändern. Gilt für alle Agenten und Projekte. Nur du nutzt diese Anmeldung.</p>}
-  {compact&&<p className="ui-muted">Damit das Team für dich Code ändern kann: einmal mit deinem ChatGPT verbinden.</p>}
-  {state&&!state.places.length&&<p className="ui-muted">Geht, sobald der Server vorbereitet ist.</p>}
+  {compact&&<p className="ui-muted">Damit {who??'das Team'} für dich programmieren kann, verbinde einmal dein ChatGPT. Gilt danach für alle Agenten.</p>}
+  {state&&!state.places.length&&<p className="ui-muted">Geht, sobald ein Projekt seinen Code hat.</p>}
   {state&&state.places.length>0&&!state.pending&&(state.connected
    ?<><p className="ui-fact"><span className="ui-dot ok"/>Verbunden.</p><div className="ui-actions left"><button className="ui-btn" disabled={busy} onClick={()=>void act('check')}>Prüfen</button><button className="ui-btn" disabled={busy} onClick={()=>void act('disconnect')}>Trennen</button></div></>
    :<button className="ui-btn primary" disabled={busy} onClick={()=>void act('connect')}>Mit ChatGPT verbinden</button>)}
@@ -57,7 +57,7 @@ export function CodeSignIn({studio,compact=false}:{studio:Studio;compact?:boolea
   </ol>:<p className="ui-muted" role="status">{state.pending.mode==='logout'?'Wird getrennt …':'Wird vorbereitet …'}</p>)}
   {state?.error&&!state.pending&&<ErrorLine text={state.error}/>}<ErrorLine text={error}/>
  </>;
- return compact?<div className="ui-signin">{body}</div>:<Section title="Anmeldung für Programmierläufe">{body}</Section>;
+ return compact?<div className="ui-signin">{body}</div>:<Section title="ChatGPT fürs Programmieren">{body}</Section>;
 }
 
 type Invite={id:string;email:string;expires:number;invitedBy:string|null};
@@ -134,7 +134,7 @@ export function GuideScreen({studio}:{studio:Studio}){
   ['Ziel sagen','Leg ein Projekt an und schreib Herrn Grau, eurer Projektleitung, was ihr erreichen wollt.'],
   ['Herr Grau plant','Er schlägt einen Plan mit wenigen Aufgaben vor und sagt, wer sie macht. Fehlt jemand, schlägt er vor, wen ihr einstellt. Du nimmst an oder lehnst ab.'],
   ['Das Team arbeitet','Jede Aufgabe hat ihr Gespräch. Dort siehst du, wer gerade was macht: Otto ändert den Code, Eule sucht im Internet, Frau Kern prüft.'],
-  ['Du gibst frei','Ist eine Änderung fertig, tippst du „Ansehen“, schaust sie an und gibst frei oder gibst sie mit einem Satz zurück. Danach „Übernehmen“.']
+  ['Du gibst frei','Ist eine Änderung fertig, tippst du „Ansehen“, schaust sie an und gibst frei oder gibst sie mit einem Satz zurück. Danach „Übernehmen“. Beim ersten Mal fragt Studio, wie eine Änderung online kommt.']
  ];
  return <section className="ui-screen page">
   <Bar onBack={back(studio)} title="So funktioniert Studio"/>
@@ -152,7 +152,7 @@ export function GuideScreen({studio}:{studio:Studio}){
    <p>Wer einen Agenten fragt, zahlt mit dem eigenen KI-Zugang, auch für weitergegebene Schritte.</p>
   </Section>
   <Section title="Damit das Team Code ändern kann">
-   <p>Einmal pro Projekt in der Projektinfo „Code verbinden“ (GitHub, Server, Live-Weg). Einmal pro Person unter Mein Konto „Anmeldung für Programmierläufe“.</p>
+   <p>Einmal pro Projekt beantwortest du in der Projektinfo unter „Code“ die Frage „Wo liegt euer Code?“. Den Rest richtet Studio selbst ein. Das erste Mal, wenn Otto für dich programmieren soll, verbindest du dein ChatGPT, direkt in der Aufgabe.</p>
   </Section>
  </section>;
 }
