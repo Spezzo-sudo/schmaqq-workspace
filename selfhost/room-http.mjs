@@ -66,7 +66,9 @@ function proposalCard(db,proposalId,message,viewer){
   const plan=JSON.parse(p.description),tasks=p.task?JSON.parse(p.task):[];
   return {id:p.id,title:p.title,description:'',kind:'plan',status:p.status,task:tasks[0]??null,tasks,plan,agent:p.agent,owner:p.owner,canDecide:p.status==='pending'&&p.owner===viewer.id&&can(db,viewer,p.project,'develop')};
  }
- return {id:p.id,title:p.title,description:p.description,kind:p.kind,status:p.status,task:p.task??null,agent:p.agent,owner:p.owner,canDecide:p.status==='pending'&&p.owner===viewer.id&&can(db,viewer,p.project,'develop')};
+ if(p.kind==='hire'){const h=JSON.parse(p.description);return {id:p.id,title:p.title,description:h.why,kind:'hire',hire:{role:h.role,agent:readMeta(db,key('proposal-hired',p.id))?.agent??null},status:p.status,task:null,agent:p.agent,owner:p.owner,canDecide:p.status==='pending'&&p.owner===viewer.id&&can(db,viewer,p.project,'develop')};}
+ const who=readMeta(db,key('proposal-who',p.id))?.agent??null;
+ return {id:p.id,title:p.title,description:p.description,kind:p.kind,status:p.status,task:p.task??null,agent:p.agent,owner:p.owner,...(who?{who}:{}),canDecide:p.status==='pending'&&p.owner===viewer.id&&can(db,viewer,p.project,'develop')};
 }
 /**
  * The conversation of a task card: group messages that belong to the task (its source and everything written

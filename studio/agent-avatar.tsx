@@ -1,11 +1,11 @@
 import {useEffect,useState} from 'react';
-import {Check,Cpu,Layers,Lock,MessageSquare,Shield,Sparkles,UserCheck,Wrench,X} from 'lucide-react';
+import {Check,Cpu,Layers,MessageSquare,Sparkles,UserCheck,Wrench,X} from 'lucide-react';
 import {
  FIELD_GUILD_R2_PACK_ID,FIELD_GUILD_R2_PRESETS,filterAvatarPresets,findAvatarPreset,resolveAgentAvatar,
  type AvatarFilterKind,type AvatarPreset
 } from './avatar-catalog';
 import {
- agentRoleLabels,agentContextSourceLabels,agentPermissionLabels,
+ agentRoleLabels,agentContextSourceLabels,agentJob,
  agentEffectivePermissions,agentExecutionStatus,time,
  type RoomAgent,type RoomAgentPermissions,type RoomState,type Resource,type HermesAvailability
 } from './room-model';
@@ -244,6 +244,7 @@ export function AgentProfileView({
 }){
  const preset=findAvatarPreset(agent.avatarPresetId);
  const perms:RoomAgentPermissions=agentEffectivePermissions(agent);
+ const job=agentJob(agent);
  const execStatus=agentExecutionStatus(agent,room,resources,hermes);
  const assignedDevice=agent.modelDevice?resources.find(r=>r.device===agent.modelDevice):null;
 
@@ -348,40 +349,23 @@ export function AgentProfileView({
 
     {/* Honest: only what the server really grants today (agent-run-http: read context, propose task, lead plans). */}
     <div className="rw-fg-subsection">
-     <strong>Kann</strong>
+     <strong>Job im Team: {job.text}</strong>
      <ul className="rw-fg-can">
-      {perms.readProject&&perms.writeMessages?<li className="yes">Projekt lesen und antworten, wenn man ihn holt (@Name, Direktchat, in einer Aufgabe)</li>:<li className="no">Antwortet gerade nicht (Lesen oder Schreiben gesperrt)</li>}
-      {(agent.lead===true||perms.manageTasks)&&<li className="yes">Aufgaben vorschlagen – du entscheidest</li>}
-      {agent.lead===true&&<li className="yes">Pläne aus wenigen Aufgaben vorschlagen</li>}
-      {perms.delegateAgents&&<li className="yes">In einer Aufgabe ein anderes Teammitglied fragen (sichtbar, höchstens 6 Antworten, dann fragt Studio)</li>}
-      {perms.editCode&&<li className="yes">In einer Code-Aufgabe Code in deiner Arbeitskopie ändern – mit deiner Anmeldung für Programmierläufe; du prüfst und gibst ab</li>}
-      {perms.webResearch&&<li className="yes">Öffentliche Webseiten lesen (höchstens drei pro Antwort)</li>}
+      {perms.readProject&&perms.writeMessages?<li className="yes">Antwortet, wenn man ihn holt (@Name, Direktchat, in einer Aufgabe)</li>:<li className="no">Antwortet gerade nicht (im Projekt pausiert)</li>}
+      {job.lead&&<li className="yes">Plant, schlägt Aufgaben vor und gibt sie an das passende Teammitglied</li>}
+      {job.lead&&<li className="yes">Stellt ein, wenn für etwas niemand da ist (höchstens 6 im Team, jede Rolle einmal)</li>}
+      {!job.lead&&perms.manageTasks&&<li className="yes">Schlägt Aufgaben vor</li>}
+      {job.code&&<li className="yes">Ändert Code in deiner Arbeitskopie einer Code-Aufgabe; du prüfst und gibst ab</li>}
+      {job.web&&<li className="yes">Liest öffentliche Webseiten (höchstens drei pro Antwort)</li>}
+      {job.review&&<li className="yes">Liest eingereichte Änderungen und gibt Rückmeldung</li>}
      </ul>
-     <strong>Kann noch nicht</strong>
+     <strong>Nicht sein Job</strong>
      <ul className="rw-fg-can">
-      {!perms.editCode&&<li className="no">Code ändern (in den Berechtigungen einschaltbar)</li>}
-      {!perms.webResearch&&<li className="no">Im Web recherchieren (in den Berechtigungen einschaltbar)</li>}
-      {!perms.delegateAgents&&<li className="no">Andere Agenten fragen</li>}
-      <li className="no">Zusammenführen oder live stellen</li>
+      {!job.code&&<li className="no">Code ändern – das macht die Entwicklung</li>}
+      {!job.web&&<li className="no">Im Web recherchieren – das macht die Recherche</li>}
+      <li className="no">Zusammenführen oder live stellen – das entscheidest du</li>
      </ul>
     </div>
-   </article>
-
-   {/* 3. BERECHTIGUNGEN */}
-   <article className="rw-fg-section-card">
-    <div className="rw-fg-section-head"><Shield size={16}/><h3>Berechtigungen (serverseitig geprüft)</h3></div>
-    <p className="rw-fg-security-note">
-     <Lock size={13}/> Avatar und Persönlichkeit vergeben niemals automatisch Rechte oder überschreiben die fachliche Konfiguration.
-    </p>
-    <ul className="rw-fg-perm-list">
-     {(Object.keys(agentPermissionLabels) as (keyof RoomAgentPermissions)[]).map(key=>{
-      const allowed=perms[key];
-      return <li key={key} className={allowed?'allowed':'denied'}>
-       <span className="rw-fg-perm-indicator">{allowed?'Freigegeben':'Gesperrt'}</span>
-       <span>{agentPermissionLabels[key]}</span>
-      </li>;
-     })}
-    </ul>
    </article>
 
    {/* 4. AKTIVITÄT & ARBEITSSTATUS */}

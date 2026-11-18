@@ -59,7 +59,7 @@ export type AgentHandoff={fromAgent?:string;toAgent:string;task?:string|null;sum
 export type RoomMessage={id:string;channel:string;author:string;body:string;created:number;sequence?:number;replyTo?:string|null;kind?:'human'|'ai-shared'|'agent'|'agent-handoff'|'card';origin?:'human'|'human-authored'|'verified-run';model?:string;taskId?:string|null;topicTask?:string|null;recipient?:string|null;recipientKind?:'member'|'agent'|null;scope?:string;senderAgent?:string|null;handoff?:AgentHandoff|null;proposalCard?:AgentTaskProposal|null;inTask?:string|null;sharedBy?:string|null;marked?:string[];markColor?:number|null;card?:{from:'direct'|'project';agent?:string;tasks:string[];titles:string[]}|null};
 /** Hermes task proposal shown in the chat. Server decides `canDecide`; a proposal is never a task until accepted. */
 export type AgentPlan={tasks:{title:string;done_when:string;kind:'general'|'code';who:string}[];hire:{role:string;why:string}[]};
-export type AgentTaskProposal={id:string;title:string;description:string;kind:'general'|'code'|'plan';status:'pending'|'accepted'|'rejected';task:string|null;tasks?:string[];plan?:AgentPlan;agent:string;owner:string;canDecide:boolean};
+export type AgentTaskProposal={id:string;title:string;description:string;kind:'general'|'code'|'plan'|'hire';hire?:{role:string;agent:string|null};who?:string;status:'pending'|'accepted'|'rejected';task:string|null;tasks?:string[];plan?:AgentPlan;agent:string;owner:string;canDecide:boolean};
 export type RoomNote={id:string;title:string;body:string;author:string;updated:number;revision:number;kind:'note'|'decision';source?:string;archived?:boolean};
 export type RoomLink={id:string;title:string;url:string;kind:'reference'|'chatgpt'|'github'|'result';author:string;created:number};
 export type RoomRun={id:string;agentId?:string|null;owner:string;device:string;deviceName:string;status:string;model:string;output:string|null;error:string|null;sharedMessage:string|null;created:number;updated?:number;task:string|null};
@@ -339,3 +339,13 @@ export function outsideScope(diff:string,scope:string[]=[],neighbours:{id:string
  const inside=(file:string,paths:string[])=>paths.some(p=>file===p.replace(/\/$/,'')||file.startsWith(p));
  return files.filter(f=>!inside(f,scope)).map(file=>({file,owner:neighbours.find(n=>inside(file,n.scope))?.title??null}));
 }
+
+/** Studio is a company: the role decides the job (same table as selfhost/agent-roles.mjs, enforced there). */
+export const ROLE_JOBS={code:['developer','frontend','debugger','infrastructure'],web:['researcher','strategy','knowledge'],review:['reviewer','security']} as const;
+export type AgentJob={code:boolean;web:boolean;review:boolean;lead:boolean;text:string};
+export function agentJob(agent:Pick<RoomAgent,'role'>&{lead?:boolean}):AgentJob{
+ const lead=agent.lead===true,has=(list:readonly string[])=>!lead&&list.includes(agent.role);
+ const code=has(ROLE_JOBS.code),web=has(ROLE_JOBS.web),review=has(ROLE_JOBS.review);
+ return {code,web,review,lead,text:lead?'leitet, verteilt Arbeit, stellt ein':code?'ändert Code':web?'recherchiert im Web':review?'prüft Änderungen':'berät im Gespräch'};
+}
+export const hireRoleLabels:Record<string,string>={developer:'Entwicklung',frontend:'Oberflächen',researcher:'Recherche',reviewer:'Prüfung',security:'Sicherheit',strategy:'Strategie',creative:'Gestaltung und Text',support:'Kundendienst'};

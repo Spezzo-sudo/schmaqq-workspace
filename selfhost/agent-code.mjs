@@ -4,6 +4,7 @@ import {activeJobInCopy} from './job-lifecycle.mjs';
 import {accountState} from './codex-account.mjs';
 import {taskContract,metadata} from './team-model.mjs';
 import {can} from './project-roles.mjs';
+import {canCode} from './agent-roles.mjs';
 
 // Code runs by agents (Schritt 5): an agent asked inside a code task changes code in the asking person's own working
 // copy, with that person's own ChatGPT sign-in, on the project's Werkstatt. Nothing is shared, reviewed or merged by
@@ -14,7 +15,7 @@ const PROMPT_LIMIT=12000;
 
 /** What the agent run is allowed to do here, or why not (shown to the model as a short reason). */
 export function codeRunBlocker(db,{member,task,agent}){
- if(agent.permissions?.editCode!==true)return 'Dieser Agent darf keinen Code ändern.';
+ if(!canCode(agent))return 'Code ändert die Entwicklung im Team, nicht dieser Agent.';
  if(!task)return 'Code ändern geht nur im Gespräch einer Code-Aufgabe.';
  if(taskContract(db,task).kind!=='code')return 'Das ist keine Code-Aufgabe.';
  if(task.status==='done')return 'Die Aufgabe ist abgeschlossen.';

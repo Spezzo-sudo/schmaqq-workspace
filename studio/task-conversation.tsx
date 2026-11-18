@@ -85,7 +85,7 @@ export default function TaskConversation({taskId,room,userId,comments,thread,onR
       <div className="tc-bubble">
        <header><strong>{e.agent?.name??e.authorName}</strong>{e.recipient&&<span className="r5-to">an {e.recipient.name}</span>}{e.source&&<span className="r5-to">Ursprung im Projektchat</span>}<time dateTime={new Date(e.created).toISOString()}>{time(e.created)}</time></header>
        {e.agent?<RichText text={e.body}/>:<p>{e.body}</p>}
-       {e.proposal&&<ProposalCard proposal={e.proposal} busy={busy} onDecide={d=>void decide(e.proposal!.id,d)} onOpenTask={onOpenTask}/>}
+       {e.proposal&&<ProposalCard proposal={e.proposal} whoName={(room.agents??[]).find(a=>a.id===e.proposal!.who)?.name} busy={busy} onDecide={d=>void decide(e.proposal!.id,d)} onOpenTask={onOpenTask}/>}
        {e.agent&&e.answer&&onUseAsResult&&<button className="tc-use" onClick={()=>onUseAsResult(e.body)}><ClipboardCheck size={14}/>Als Ergebnis übernehmen</button>}
       </div>
      </article>

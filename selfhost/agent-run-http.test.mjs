@@ -456,46 +456,89 @@ test('scope areas: two projects on one repository know each other; the area is t
  void bob;
 });
 
-test('code runs: an allowed agent changes code only in the asker\'s own copy of a code task; nothing is shared',async t=>{
+test('company: the developer changes code in the asker\'s own copy; the lead hands work over and does not code himself',async t=>{
  const f=await fixture(t),[alice]=f.members,[worker]=f.secrets,w={token:worker.token};
  const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Code',description:''},{cookie:alice.cookie})).data.project;
  const room=async()=>(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data;
  const lead=(await room()).agents[0];
- const perms=edit=>({readProject:true,writeMessages:true,manageTasks:true,editCode:edit,prepareReviews:false,delegateAgents:true});
- const setLead=async edit=>assert.equal((await f.post('/api/room',{action:'agent',id:randomUUID(),project,agentId:lead.id,name:lead.name,role:'coordinator',avatarPresetId:'herr-grau',model:'x',permissions:perms(edit)},{cookie:alice.cookie})).status,200);
+ const otto=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Otto',role:'developer',avatarPresetId:'otto',model:'x',permissions:{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false}},{cookie:alice.cookie})).data.agentId;
  const task=(await f.post('/api/room',{action:'task',id:randomUUID(),project,title:'Überschrift kürzen',description:'Oben zu lang',kind:'code',criteria:'Passt in zwei Zeilen'},{cookie:alice.cookie})).data.task;
  const general=(await f.post('/api/room',{action:'task',id:randomUUID(),project,title:'Texte sammeln',description:'',kind:'general'},{cookie:alice.cookie})).data.task;
- const ask=async(topic,body)=>{const id=randomUUID();await f.post('/api/room',{action:'message',id,project,topicTask:topic,body:'@Herr Grau '+body},{cookie:alice.cookie});await f.post('/api/agent-runs',{project,agent:lead.id,message:id},{cookie:alice.cookie});return (await f.post('/api/agent-worker/claim',{},w)).data.job;};
+ const ask=async(agent,name,topic,body)=>{const id=randomUUID();await f.post('/api/room',{action:'message',id,project,topicTask:topic,body:'@'+name+' '+body},{cookie:alice.cookie});await f.post('/api/agent-runs',{project,agent,message:id},{cookie:alice.cookie});return (await f.post('/api/agent-worker/claim',{},w)).data.job;};
  const finish=job=>f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'ok'},w);
  const call=(job,args)=>f.post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool:'code.change',args},w);
- // Without the permission, or in a task that is not about code, there is no code tool.
- let job=await ask(task,'Mach die Überschrift kürzer.');assert.ok(!job.toolPolicy.allowed.includes('code.change'));await finish(job);
- await setLead(true);
- job=await ask(general,'Ändere Code.');assert.ok(!job.toolPolicy.allowed.includes('code.change'));await finish(job);
- job=await ask(task,'Mach die Überschrift kürzer.');assert.ok(job.toolPolicy.allowed.includes('code.change'));
- // No Werkstatt for this project: nothing is queued, the agent hears why.
- assert.equal((await call(job,{instruction:'Kürze die Überschrift in site/index.html.'})).status,409);
+ let job=await ask(lead.id,'Herr Grau',task,'Mach die Überschrift kürzer.');
+ assert.ok(!job.toolPolicy.allowed.includes('code.change'),'the lead does not code');
+ assert.ok(job.toolPolicy.allowed.includes('agent.ask'),'he hands it to the team');
+ assert.deepEqual(job.team.map(m=>[m.name,m.job]),[['Herr Grau','leitet, verteilt Arbeit, stellt ein'],['Otto','ändert Code']]);
  await finish(job);
- // A PC runner of Alice that has the project.
+ job=await ask(otto,'Otto',general,'Ändere Code.');assert.ok(!job.toolPolicy.allowed.includes('code.change'),'not in a task without code');await finish(job);
+ job=await ask(otto,'Otto',task,'Mach die Überschrift kürzer.');assert.ok(job.toolPolicy.allowed.includes('code.change'));
+ assert.equal((await call(job,{instruction:'Kürze die Überschrift in site/index.html.'})).status,409,'no Werkstatt yet');
+ await finish(job);
  const device=randomUUID();
  f.app.db.prepare('INSERT INTO devices(id,owner,name,hash,seen,revoked) VALUES(?,?,?,?,?,0)').run(device,alice.id,'Alices PC',randomUUID(),Date.now()+3600000);
  f.app.db.prepare('INSERT INTO runner_project_state(device,projects,updated) VALUES(?,?,?)').run(device,JSON.stringify([{id:project,check:true}]),Date.now());
- job=await ask(task,'Mach die Überschrift kürzer.');
+ job=await ask(otto,'Otto',task,'Mach die Überschrift kürzer.');
  const done=await call(job,{instruction:'Kürze die Überschrift in site/index.html.'});
- assert.equal(done.status,200,JSON.stringify(done.data));
- assert.equal(done.data.result.preparedCopy,true);
+ assert.equal(done.status,200,JSON.stringify(done.data));assert.equal(done.data.result.preparedCopy,true);
  assert.equal((await call(job,{instruction:'Noch mal.'})).status,429,'one code run per answer');
  await finish(job);
  const jobs=f.app.db.prepare('SELECT action,owner,device,payload,status FROM jobs WHERE project=? ORDER BY created').all(project);
  assert.deepEqual(jobs.map(j=>[j.action,j.owner,j.device,j.status]),[['prepare',alice.id,device,'queued'],['codex',alice.id,device,'queued']],'whoever asks pays, in their own copy');
  const payload=JSON.parse(jobs[1].payload);
- assert.equal(payload.worktree,JSON.parse(JSON.stringify(f.app.db.prepare("SELECT id FROM jobs WHERE action='prepare' AND project=?").get(project).id)));
  assert.match(payload.prompt,/Überschrift kürzen[\s\S]*Fertig, wenn: Passt in zwei Zeilen[\s\S]*Kürze die Überschrift in site\/index.html[\s\S]*Committe nicht, pushe nicht/);
- assert.deepEqual(payload.agent.name,'Herr Grau');
+ assert.equal(payload.agent.name,'Otto');
  assert.equal((await room()).tasks.find(t=>t.id===task).assignee,alice.id,'the person who asked takes the task');
- // While the copy is busy, a second code run waits.
- job=await ask(task,'Und noch die Farbe.');
- assert.equal((await call(job,{instruction:'Ändere die Farbe.'})).status,409);
+ job=await ask(otto,'Otto',task,'Und noch die Farbe.');
+ assert.equal((await call(job,{instruction:'Ändere die Farbe.'})).status,409,'the copy is busy');
+ await finish(job);
+});
+
+test('company: the lead proposes a task for a colleague, who starts once it is accepted; the lead hires, capped and without duplicates',async t=>{
+ const f=await fixture(t),[alice]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Firma',description:''},{cookie:alice.cookie})).data.project;
+ const room=async()=>(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data;
+ const lead=(await room()).agents[0];
+ const ask=async body=>{const id=randomUUID();await f.post('/api/room',{action:'message',id,project,body:'@Herr Grau '+body},{cookie:alice.cookie});await f.post('/api/agent-runs',{project,agent:lead.id,message:id},{cookie:alice.cookie});return (await f.post('/api/agent-worker/claim',{},w)).data.job;};
+ const call=(job,tool,args)=>f.post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool,args},w);
+ const finish=async job=>(await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'ok'},w)).data.message;
+ // Hiring: proposed, accepted with one tap, the new colleague has the role's job.
+ let job=await ask('Wir brauchen jemanden, der programmiert.');
+ assert.ok(job.toolPolicy.allowed.includes('team.hire'));
+ assert.equal((await call(job,'team.hire',{role:'developer',name:'Otto',why:'Niemand im Team ändert Code.'})).status,200);
+ let message=await finish(job);
+ const card=(await room()).messages.find(m=>m.id===message).proposalCard;
+ assert.deepEqual([card.kind,card.title,card.hire.role],['hire','Otto','developer']);
+ const hired=await f.post('/api/agent-proposals/decide',{proposal:card.id,decision:'accept'},{cookie:alice.cookie});
+ const otto=(await room()).agents.find(a=>a.id===hired.data.agent);
+ assert.deepEqual([otto.name,otto.role,otto.lead],['Otto','developer',false]);
+ job=await ask('Noch einen Entwickler bitte.');
+ assert.equal((await call(job,'team.hire',{role:'developer',name:'Anna',why:'Mehr Leute.'})).status,409,'one per role');
+ await finish(job);
+ // Handing over: the lead proposes a task for Otto; accepting it starts Otto in the task, paid by Alice.
+ job=await ask('Mach die README besser.');
+ assert.equal((await call(job,'task.propose',{title:'README verbessern',description:'Ein Satz, wofür das Projekt ist.',kind:'code',who:'Otto'})).status,200);
+ message=await finish(job);
+ const proposal=(await room()).messages.find(m=>m.id===message).proposalCard;
+ assert.equal(proposal.who,otto.id);
+ const accepted=await f.post('/api/agent-proposals/decide',{proposal:proposal.id,decision:'accept'},{cookie:alice.cookie});
+ assert.ok(accepted.data.started);
+ const next=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ assert.deepEqual([next.agent,next.owner,next.place],[otto.id,alice.id,'task']);
+ assert.match(next.prompt,/^@Otto bitte übernimm: README verbessern/);
+ assert.ok(!next.toolPolicy.allowed.includes('agent.ask'),'Otto does not pass it on');
+ await finish(next);
+ // The team is capped.
+ for(const [role,name] of [['researcher','Eule'],['reviewer','Kern'],['security','Dachs'],['strategy','Fuchs']]){
+  job=await ask('Stell ein: '+name);
+  const r=await call(job,'team.hire',{role,name,why:'Test'});
+  const m=await finish(job);
+  if(r.status===200){const c=(await room()).messages.find(x=>x.id===m).proposalCard;await f.post('/api/agent-proposals/decide',{proposal:c.id,decision:'accept'},{cookie:alice.cookie});}
+ }
+ assert.equal((await room()).agents.filter(a=>a.active!==false).length,6);
+ job=await ask('Noch jemand?');
+ assert.ok(!job.toolPolicy.allowed.includes('team.hire'),'a full team hires nobody');
  await finish(job);
 });
 
@@ -513,21 +556,29 @@ test('web research: only public https pages, every address checked, redirects to
  assert.deepEqual([ok.title,ok.text,ok.trust],['B','Hallo & Welt','untrusted-web-content']);
  await assert.rejects(readWebPage('https://a.example/',{lookup:lookup({'a.example':['93.184.216.34'],'b.example':['127.0.0.1']}),request:async url=>pages[url.toString()]}),/öffentliche Internet/,'a redirect into the server is refused');
  assert.equal(pageText('<style>x{}</style><b>fett</b>').text,'fett');
- // The tool is offered to the lead (default) and refused for an agent without the setting.
+ // Research is the researcher's job: the lead and a developer do not get the tool.
  const f=await fixture(t),[alice]=f.members,[worker]=f.secrets,w={token:worker.token};
  const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Web',description:''},{cookie:alice.cookie})).data.project;
  const lead=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.agents[0];
- const message=randomUUID();await f.post('/api/room',{action:'message',id:message,project,body:'@Herr Grau lies nach'},{cookie:alice.cookie});
- await f.post('/api/agent-runs',{project,agent:lead.id,message},{cookie:alice.cookie});
- const job=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ const perms={readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false};
+ const eule=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Eule',role:'researcher',avatarPresetId:'eule',model:'x',permissions:perms},{cookie:alice.cookie})).data.agentId;
+ const ask=async(agent,body)=>{const id=randomUUID();await f.post('/api/room',{action:'message',id,project,recipient:agent,body},{cookie:alice.cookie});await f.post('/api/agent-runs',{project,agent,message:id},{cookie:alice.cookie});return (await f.post('/api/agent-worker/claim',{},w)).data.job;};
+ const lj=await ask(lead.id,'lies nach');assert.ok(!lj.toolPolicy.allowed.includes('web.read'),'the lead hands research to the team');
+ await f.post('/api/agent-worker/finish',{run:lj.run,lease:lj.lease,status:'completed',output:'ok'},w);
+ const job=await ask(eule,'lies nach');
  assert.ok(job.toolPolicy.allowed.includes('web.read'));
  const local=await f.post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool:'web.read',args:{url:'https://localhost/admin'}},w);
  assert.equal(local.status,200);assert.match(local.data.result.error,/öffentliche Webseiten/,'refusal reaches the model as data');
- const mara=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Mara',role:'frontend',avatarPresetId:'mara',model:'x',permissions:{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false}},{cookie:alice.cookie})).data.agentId;
+ const mara=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Mara',role:'frontend',avatarPresetId:'mara',model:'x',permissions:perms},{cookie:alice.cookie})).data.agentId;
  await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'ok'},w);
- const m2=randomUUID();await f.post('/api/room',{action:'message',id:m2,project,recipient:mara,body:'lies nach'},{cookie:alice.cookie});
- await f.post('/api/agent-runs',{project,agent:mara,message:m2},{cookie:alice.cookie});
- const j2=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ const j2=await ask(mara,'lies nach');
  assert.ok(!j2.toolPolicy.allowed.includes('web.read'));
  assert.equal((await f.post('/api/agent-worker/tool',{run:j2.run,lease:j2.lease,callId:randomUUID().slice(0,16),tool:'web.read',args:{url:'https://example.com/'}},w)).status,403);
+});
+
+test('company: the app shows the same jobs the server enforces',async()=>{
+ const {ROLE_JOBS:app,agentJob}=await import('../studio/room-model.ts');
+ const {ROLE_JOBS:server,jobOf}=await import('./agent-roles.mjs');
+ assert.deepEqual(JSON.parse(JSON.stringify(app)),JSON.parse(JSON.stringify(server)));
+ for(const role of ['developer','researcher','reviewer','advisor','coordinator'])for(const lead of [false,true])assert.equal(agentJob({role,lead}).text,jobOf({role,lead}),role+lead);
 });
