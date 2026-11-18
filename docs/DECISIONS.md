@@ -2,6 +2,17 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 18.11.2026
+- **Firma statt Rechteliste** (#109): Die Rolle bestimmt den Job (Entwicklung ändert Code, Recherche sucht im Web,
+  Prüfung prüft). Herr Grau plant, verteilt und stellt ein, programmiert und recherchiert nicht selbst. Höchstens 6 im Team, eine Person pro Rolle.
+- **Alle Agenten auf dem günstigsten Modell, niedrige Stufe**; Recherche nutzt die eingebaute Websuche (#111).
+- **Der Ablauf hängt zusammen:** Beim Annehmen eines Plans legt bei jeder Aufgabe der genannte Kollege los („Mensch“ wartet).
+  Jede Aufgabe ist eine eigene Kette. Endet Ottos Programmierlauf, schreibt er ins Gespräch der Aufgabe, was er geändert hat
+  oder warum es nicht ging; hat er etwas geändert und gibt es eine Prüfung im Team, wird sie sofort gefragt und liest genau diese Änderung.
+  Freigeben bleibt beim Menschen.
+- **Agenten-Dienst kommt mit dem Deploy** und prüft beim Start, ob Websuche und Stufe greifen; sonst startet er nicht
+  (alter Stand wird wiederhergestellt). Nichts fällt still weg.
+
 ## 17.11.2026 (Abend)
 - **Reihenfolge:** Schritt 3 (Karten) vor Schritt 2, weil Aufgaben ohne Agenten leer wirkten. Inhalt unverändert.
 - **Gespräch einer Aufgabe = Projektnachrichten mit Aufgabenbezug**; im Projektchat steht dafür **eine** Karte.

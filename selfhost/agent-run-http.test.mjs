@@ -301,8 +301,12 @@ test('planning: the lead proposes a few tasks in one run; accepting the plan cre
  assert.deepEqual(state.tasks.map(t=>t.title).sort(),['Nutzen in drei Punkten festlegen','Überschrift kürzen'],'the tasks belong to the project, whoever asked');
  const accepted=(await room()).messages.find(m=>m.id===done.data.message).proposalCard;
  assert.deepEqual([accepted.status,accepted.tasks.length],['accepted',2]);
- const hint=f.app.db.prepare('SELECT value FROM workspace_meta WHERE key=?').get('room:v1:task-agent:'+state.tasks.find(t=>t.title==='Überschrift kürzen').id);
- assert.equal(JSON.parse(hint.value).agent,mara,'who the lead had in mind is kept with the task');
+ // Herr Grau distributes: the colleague named for a task starts on it; the task for "Mensch" waits for a person.
+ assert.equal(a.data.started.length,1,'one colleague starts, once');
+ const started=f.app.db.prepare('SELECT agent,status FROM agent_runs WHERE id=?').get(a.data.started[0]);
+ assert.deepEqual([started.agent,started.status],[mara,'queued']);
+ const thread=(await f.get('/api/collaboration/task?id='+state.tasks.find(t=>t.title==='Überschrift kürzen').id,{cookie:alice.cookie})).data.thread;
+ assert.ok(thread.some(m=>/^@Mara bitte übernimm: Überschrift kürzen/.test(m.body)),'the hand-over is in the task conversation');
 });
 
 test('models: an agent set to a model nobody can use answers with the default one; the list is offered to the app',async t=>{
@@ -493,6 +497,53 @@ test('company: the developer changes code in the asker\'s own copy; the lead han
  job=await ask(otto,'Otto',task,'Und noch die Farbe.');
  assert.equal((await call(job,{instruction:'Ändere die Farbe.'})).status,409,'the copy is busy');
  await finish(job);
+});
+
+test('company: the developer reports in the task when his code run ends, and the reviewer is asked right away',async t=>{
+ const f=await fixture(t),[alice]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Kette',description:''},{cookie:alice.cookie})).data.project;
+ const hire=(name,role)=>f.post('/api/room',{action:'agent',id:randomUUID(),project,name,role,avatarPresetId:'otto',model:'x',permissions:{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false}},{cookie:alice.cookie}).then(r=>r.data.agentId);
+ const otto=await hire('Otto','developer'),kern=await hire('Frau Kern','reviewer');
+ const task=(await f.post('/api/room',{action:'task',id:randomUUID(),project,title:'Überschrift kürzen',description:'',kind:'code',criteria:'Passt in zwei Zeilen'},{cookie:alice.cookie})).data.task;
+ const devToken=randomUUID(),device=randomUUID();
+ f.app.db.prepare('INSERT INTO devices(id,owner,name,hash,seen,revoked) VALUES(?,?,?,?,?,0)').run(device,alice.id,'Alices PC',digest(devToken),Date.now()+3600000);
+ f.app.db.prepare('INSERT INTO runner_project_state(device,projects,updated) VALUES(?,?,?)').run(device,JSON.stringify([{id:project,check:true}]),Date.now());
+ const thread=async()=>(await f.get('/api/collaboration/task?id='+task,{cookie:alice.cookie})).data.thread;
+ const run=async instruction=>{
+  const id=randomUUID();await f.post('/api/room',{action:'message',id,project,topicTask:task,body:'@Otto '+instruction},{cookie:alice.cookie});
+  await f.post('/api/agent-runs',{project,agent:otto,message:id},{cookie:alice.cookie});
+  const job=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+  assert.equal((await f.post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool:'code.change',args:{instruction}},w)).status,200);
+  await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'Ich lege los.'},w);
+  // The Werkstatt: the copy is ready, then the code run is taken and reported.
+  f.app.db.prepare("UPDATE jobs SET status='completed',result='{}' WHERE project=? AND action='prepare'").run(project);
+  return (await f.post('/api/runner/poll',{},{token:devToken})).data.job;
+ };
+ // A failed run: Otto says why, nobody else is asked.
+ let code=await run('Kürze die Überschrift.');
+ assert.equal(code.action,'codex');
+ await f.post('/api/runner/report',{id:code.id,lease:code.lease,ok:false,result:{error:'Für Programmierläufe zuerst unter Mein Konto die Anmeldung verbinden.'}},{token:devToken});
+ let last=(await thread()).at(-1);
+ assert.deepEqual([last.senderAgent,last.recipient],[otto,alice.id]);
+ assert.match(last.body,/^Das hat nicht geklappt: Für Programmierläufe/);
+ assert.equal((await f.post('/api/agent-worker/claim',{},w)).data.job,null,'no reviewer for a failed run');
+ // A run that changed something: Otto reports what, and Frau Kern is asked in the same task.
+ code=await run('Noch mal bitte.');
+ const diff='diff --git a/site/index.html b/site/index.html\n-<h1>Sehr lange Überschrift</h1>\n+<h1>Kurz</h1>';
+ await f.post('/api/runner/report',{id:code.id,lease:code.lease,ok:true,result:{output:'Überschrift auf ein Wort gekürzt.',status:' M site/index.html',diff,branch:'x'}},{token:devToken});
+ last=(await thread()).at(-1);
+ assert.deepEqual([last.senderAgent,last.recipient],[otto,kern]);
+ assert.match(last.body,/^Fertig mit „Überschrift kürzen“\.\n\nÜberschrift auf ein Wort gekürzt\.\n\nGeändert: site\/index\.html\n\n@Frau Kern bitte prüf die Änderung\.$/);
+ const review=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ assert.deepEqual([review.agent,review.place],[kern,'task']);
+ assert.ok(review.toolPolicy.allowed.includes('change.read'));
+ const read=await f.post('/api/agent-worker/tool',{run:review.run,lease:review.lease,callId:randomUUID().slice(0,16),tool:'change.read',args:{}},w);
+ assert.equal(read.data.result.change,diff,'the reviewer reads exactly what Otto changed');
+ await f.post('/api/agent-worker/finish',{run:review.run,lease:review.lease,status:'completed',output:'Passt, gerne freigeben.'},w);
+ assert.deepEqual((await thread()).at(-1).body,'Passt, gerne freigeben.');
+ // Reported once, however often the server looks again.
+ await f.post('/api/runner/report',{id:code.id,lease:code.lease,ok:true,result:{}},{token:devToken});
+ assert.equal((await thread()).filter(m=>m.body.startsWith('Fertig mit')).length,1);
 });
 
 test('company: the lead proposes a task for a colleague, who starts once it is accepted; the lead hires, capped and without duplicates',async t=>{

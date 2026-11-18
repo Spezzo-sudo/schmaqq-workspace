@@ -122,6 +122,26 @@ prepare(){
  FINISHED=1; finish PASS
 }
 
+# The agent service (Hermes adapter) comes from the same release. Its own start check proves the tool policy and the
+# engine hooks (web search, effort); if a service does not come up, the previous files are restored.
+agents_update(){
+ local HW=${STUDIO_AGENT_WORKER_DIR:-/opt/schmaqq-hermes-pilot/worker} f units u ok=1
+ [ -d "$HW" ] || { note "AGENTS=nicht eingerichtet"; return 0; }
+ if cmp -s "$NEW/selfhost/hermes-agent-worker.mjs" "$HW/hermes-agent-worker.mjs" && cmp -s "$NEW/selfhost/hermes-pilot-infer.py" "$HW/hermes-pilot-infer.py"; then
+  note "AGENTS=unverändert"; return 0
+ fi
+ rm -rf "$HW.previous"; cp -a "$HW" "$HW.previous"
+ for f in hermes-agent-worker.mjs hermes-pilot-infer.py; do install -m 0644 "$NEW/selfhost/$f" "$HW/$f"; done
+ units=$($SYSTEMCTL list-units 'schmaqq-hermes-agent@*' --state=active --no-legend --plain | awk '{print $1}')
+ for u in $units; do $SYSTEMCTL restart "$u" || ok=0; done
+ sleep 5
+ for u in $units; do $SYSTEMCTL is-active --quiet "$u" || ok=0; done
+ if [ $ok = 1 ]; then note "AGENTS=PASS (neu installiert: ${units:-kein Dienst aktiv})"; return 0; fi
+ cp -a "$HW.previous"/. "$HW"/
+ for u in $units; do $SYSTEMCTL restart "$u" || true; done
+ stop "Agenten-Dienst startete mit dem neuen Stand nicht (alter Stand wiederhergestellt)"
+}
+
 live(){
  [ -f "$STATEFILE" ] || stop "nicht vorbereitet: zuerst $0 prepare $SHA"
  # shellcheck disable=SC1090
@@ -156,6 +176,7 @@ live(){
   [ "$SEEN" -gt "$START" ] || stop "Worker meldet sich nicht bei Studio"
   note "WORKER=PASS (neu installiert, Probe ok, meldet sich)"
  else note "WORKER=unverändert"; fi
+ agents_update
  rm -f "$STATEFILE"
  note "BACKUP=$BACKUP"; note "ROLLBACK_RELEASE=$ALT"
  aftercheck

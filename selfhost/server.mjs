@@ -117,7 +117,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  let lastExpiry=0;
  const handleRequest=async(req,res)=>{
   // Stale jobs end on the server's clock, not only when the same runner asks again.
-  if(now()-lastExpiry>15000){lastExpiry=now();try{expireStaleJobs(db,now());}catch(e){console.error('job expiry failed',e.message);}}
+  if(now()-lastExpiry>15000){lastExpiry=now();try{expireStaleJobs(db,now());agentRunRoute.reportCodeRuns();}catch(e){console.error('job expiry failed',e.message);}}
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');
   const send=(data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));};
   try{
@@ -298,6 +298,8 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
        if(task&&completion(db,task).ready){db.prepare("UPDATE tasks SET status='done' WHERE id=?").run(task.id);teamEvent(db,{actor:job.owner,project:job.project,task:task.id,kind:'integrated',body:'Freigegebener Code zusammengeführt · '+task.title});}
       }
      }
+     // An agent's code run ended: the agent reports in the task's conversation (and asks a reviewer).
+     if(job.action==='codex'){try{agentRunRoute.reportCodeRuns();}catch(e){console.error('code run report failed',e.message);}}
     }send({ok:true});return;
    }
    if(route==='/api/development/reviews'){
