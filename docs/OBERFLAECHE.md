@@ -25,8 +25,10 @@ Anmeldung, Einladung annehmen, Passwort vergessen. Sonst nichts.
 
 ### Start
 - Oben links: dein Avatar (öffnet das Menü). Oben rechts: SCHMAQQ Studio.
+- Oben eine Begrüßung mit einem Satz, was gerade ansteht.
 - **Wartet auf dich**: Karten, bei denen du dran bist (Freigeben, Vorschlag annehmen). Nur wenn es welche gibt.
-- **Projekte**: eine Zeile pro Projekt (Name, letzte Nachricht, Zähler ungelesen). Tippen öffnet den Projektchat.
+- **Projekte**: eine Karte pro Projekt (Name, letzte Nachricht, offene Aufgaben, zum Freigeben, Zähler ungelesen). Tippen öffnet den Projektchat.
+- Darunter ein Tipp „So geht es weiter“ mit Link zur Anleitung.
 - Private Nachrichten mit Menschen gehören zum Projekt (Projektinfo → Person antippen); ihre Zähler stehen in der Projektzeile.
 - Leer: „Noch kein Projekt. Ein Projekt ist ein Chat mit deinem Team aus Menschen und Agenten.“ Knopf „Projekt anlegen“.
 - **Projekt anlegen**: Name, Ziel. Fertig. Herr Grau ist automatisch dabei.
@@ -37,7 +39,7 @@ Darunter der Zustand des KI-Zugangs (bereit / nicht erreichbar).
 
 ### Projekt
 - **Kopf**: Zurück, Projektname (tippen öffnet Projektinfo), darunter „2 Menschen · 3 Agenten“.
-- **Team-Leiste**: rundes Bild je Agent mit Namen und Job darunter (Herr Grau: „Leitung“). Tippen öffnet den Direktchat,
+- **Team-Leiste**: rundes Bild je Agent mit Namen und Job darunter (Herr Grau: „Leitung“), danach die Menschen (du als „Du“). Tippen öffnet den Direktchat,
   grüner Punkt = arbeitet gerade, Zähler = ungelesen. Am Ende „+ Einstellen“.
 - **Reiter**: Chat · Aufgaben.
 - **Chat**: Nachrichten, Karten, Markierungen. Eingabe „Nachricht … (@Name holt einen Agenten)“.
@@ -68,7 +70,7 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
 - Name, Ziel, Bild. Zahlen: Offen · Bei dir · Zum Freigeben. „Vorschau öffnen“, nur wenn eine läuft.
 - **Team**: Agenten (Name, Job) und Menschen (Name, Rolle). Tippen: Profil bzw. „Privat schreiben“. „+ Einstellen“, „+ Mensch einladen“.
 - **Code**: Checkliste mit Haken, jeder Schritt ein Knopf:
-  1. „Mit GitHub verbinden“ → Repository wählen.
+  1. „Mit GitHub verbinden“ → Repository wählen. Ohne Code: Hinweis, auf GitHub ein leeres Repository anzulegen.
   2. „Server vorbereiten“: Studio erkennt Testbefehl und Vorschau selbst; Probelauf; bei Fehler Klartext + „Nochmal“.
      Feinheiten (Befehle, Ordner, Bereich) eingeklappt unter „Genauer einstellen“ (nur Admin).
   3. „Anmeldung für Programmierläufe“ (deine eigene, einmal für alle Agenten).
@@ -86,8 +88,8 @@ ausgegraut („Otto macht das schon“), bei 6 im Team: „Das Team ist voll.“
 Alternative oben: „Lieber Herrn Grau fragen“ (öffnet seinen Direktchat).
 
 ### Agentenprofil
-Bild, Name, Job mit Satz „Was er tut“, Persönlichkeit (ein Satz, änderbar), „Privat schreiben“.
-„Bild ändern“. Admin: „Kündigen“ (Herr Grau nicht). Kein Modell, keine Rechte-Häkchen.
+Bild, Name, Job mit Satz „Was er tut“, Persönlichkeit (änderbar), „Privat schreiben“. Unter „Erweitert“ das KI-Modell (nur die freigeschalteten).
+„Bild ändern“. Admin: „Kündigen“ (Herr Grau nicht). Keine Rechte-Häkchen.
 
 ### Mein Konto
 - Name, Anmeldung, Passwort ändern, Abmelden.
@@ -108,5 +110,5 @@ Links schmal: Projekte und Direktnachrichten. Mitte: Projektchat bzw. Direktchat
 
 ## Nicht in der App (bewusst)
 Datei-Editor, Testlauf-Knöpfe, eigenes ChatGPT als Connector, lokale Rechner, Gerätetokens, JSON-Konfiguration,
-Deploy-Keys, Modellwahl, Rechte-Häkchen pro Agent, „Bisherige Ansicht“. Der Server kann vieles davon weiter; es kommt
+Deploy-Keys, Rechte-Häkchen pro Agent, „Bisherige Ansicht“. Der Server kann vieles davon weiter; es kommt
 nur über diese Liste zurück.

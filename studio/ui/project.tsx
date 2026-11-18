@@ -35,6 +35,8 @@ export function ProjectScreen({studio}:{studio:Studio}){
    {agents.map(a=><button key={a.id} className="ui-team-member" onClick={()=>go({chat:'agent:'+a.id})} onContextMenu={e=>{e.preventDefault();setProfile(a.id);}}>
     <Face agent={a} size={48} working={working.has(a.id)} badge={unread('agent:'+a.id)}/><b>{a.name}</b><small>{jobOf(a).title}</small>
    </button>)}
+   {people.map(m=>m.id===studio.me.id?<div key={m.id} className="ui-team-member me"><Face name={m.name} size={48}/><b>Du</b><small>{m.role==='owner'?'Inhaber':'Mensch'}</small></div>
+    :<button key={m.id} className="ui-team-member" onClick={()=>go({chat:'member:'+m.id})}><Face name={m.name} size={48} badge={unread('member:'+m.id)}/><b>{m.name.split(' ')[0]}</b><small>Mensch</small></button>)}
    {agents.length<TEAM_LIMIT&&<button className="ui-team-member add" onClick={()=>setHiring(true)}><span className="ui-face add"><Plus/></span><b>Einstellen</b><small>&nbsp;</small></button>}
   </nav>
   <div className="ui-tabs" role="tablist">
