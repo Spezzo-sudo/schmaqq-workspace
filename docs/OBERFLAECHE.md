@@ -14,7 +14,7 @@ Die alte Oberfläche wurde nicht umgebaut, sondern gelöscht; der Test `studio-s
 - **Einstellungen sind nachrangig**: erreichbar über Projektinfo und Mein Konto, nie im Weg der Arbeit.
 - **Wörter, die es nicht gibt:** Modell- und Motornamen, Arbeitskopie, Worker, Runner, Werkstatt-Probe, Deploy-Key,
   Connector, JSON, Branch, Commit, Pull Request, Field Guild, Legacy. Stattdessen: „Code“, „Änderung“, „Server“, „Vorschau“,
-  „Freigeben“, „Übernehmen“.
+  „Freigeben“, „Übernehmen“, „online“ (nie „live“).
 - **Code läuft auf dem Server.** Wo gearbeitet wird, ist eine Angabe des Projekts („Wo arbeitet das Team: Server“), damit
   später ein eigener PC als zweiter Ort dazukommen kann, ohne die Oberfläche umzubauen.
 
@@ -59,8 +59,12 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
   - Agent arbeitet: „Otto arbeitet daran.“ (Stopp an der Kette)
   - Änderung liegt vor: „Ansehen“ öffnet die Änderung (Dateien, Unterschiede, Vorschau falls eingerichtet), darin
     „Freigeben“ oder „Zurück an Otto“ (mit kurzer Notiz, die als Nachricht im Gespräch landet).
-  - Freigegeben: „Übernehmen“ (bringt die Änderung in den gemeinsamen Code). Bei „Wir schalten selbst live“: „Ist jetzt live“.
-  - Code noch nicht verbunden: „Code verbinden“ (führt zur Checkliste in der Projektinfo).
+  - Freigegeben: „Übernehmen“ (bringt die Änderung in den gemeinsamen Code). Beim ersten Mal im Projekt fragt Studio
+    vorher **„Wie kommt eine Änderung online?“**: ○ Geht von selbst online · ○ Wir stellen sie selbst online. Danach nie wieder.
+    Bei „Wir stellen sie selbst online“ nach dem Übernehmen: „Ist jetzt online“.
+  - Code des Projekts noch nicht da: „Wo liegt euer Code?“ (führt zur Frage in der Projektinfo).
+  - Das erste Mal, dass das Team für dich Code ändern soll: „Damit Otto für dich programmieren kann, verbinde einmal
+    dein ChatGPT. Gilt danach für alle Agenten.“ Knopf „Mit ChatGPT verbinden“, direkt im Kasten.
   - Sonstige Aufgabe: „Erledigt“.
 - Darunter **das Gespräch** inklusive Agent ↔ Agent, Kette mit Zähler, Stopp, Weitermachen.
 - „Worum es geht“ (Beschreibung, Fertig wenn) eingeklappt oben.
@@ -69,13 +73,15 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
 ### Projektinfo
 - Name, Ziel, Bild. Zahlen: Offen · Bei dir · Zum Freigeben. „Vorschau öffnen“, nur wenn eine läuft.
 - **Team**: Agenten (Name, Job) und Menschen (Name, Rolle). Tippen: Profil bzw. „Privat schreiben“. „+ Einstellen“, „+ Mensch einladen“.
-- **Code**: Checkliste mit Haken, jeder Schritt ein Knopf:
-  1. „Mit GitHub verbinden“ → Repository wählen. Ohne Code: Hinweis, auf GitHub ein leeres Repository anzulegen.
-  2. „Server vorbereiten“: Studio erkennt Testbefehl und Vorschau selbst; Probelauf; bei Fehler Klartext + „Nochmal“.
-     Feinheiten (Befehle, Ordner, Bereich) eingeklappt unter „Genauer einstellen“ (nur Admin).
-  3. „Anmeldung für Programmierläufe“ (deine eigene, einmal für alle Agenten).
-  4. „Wie geht es live?“: Von selbst · Wir schalten selbst live (mit Satz, wie).
-  Danach eine Zeile „Code: verbunden mit owner/repo · Server bereit“.
+- **Code**: genau eine Frage, **„Wo liegt euer Code?“** (Projekt-Admin; alle anderen: „Legt der Projekt-Admin fest.“)
+  - ○ **Neu anfangen**: „Leg auf GitHub ein leeres Repository an (privat, mit README) und trag die Adresse ein.“
+  - ○ **Vorhandener Code**: „Trag die GitHub-Adresse ein.“
+  - Braucht GitHub noch eine Erlaubnis, steht dort genau ein Knopf „Zugriff bei GitHub erlauben“.
+  - Danach richtet Studio **von selbst** den Arbeitsplatz ein (Tests und Vorschau erkennen, Probelauf). Zu sehen ist nur
+    eine Zeile: „Code: name/projekt · Arbeitsplatz wird eingerichtet …“, dann „… · bereit“.
+  - Findet Studio keine Tests (leerer Code oder unbekannter Aufbau): „Noch keine Tests gefunden. Das Team kann trotzdem
+    anfangen; Änderungen schaust du dann selbst an.“ Knopf „So anfangen“. Später „Neu einrichten“, sobald es Tests gibt.
+  - Klappt etwas nicht: ein Satz, was los ist, und „Nochmal“.
 - **Bereich** (nur bei mehreren Projekten auf demselben Repository): Pfade + „Gleiches Repository wie …“.
 - **Wissen**: Projektdokumente, die Agenten lesen (Liste, + Dokument).
 - **Wer darf was**: Rollen der Menschen; „Zweite Person gibt frei“ oder „Admin darf allein freigeben“.
@@ -94,7 +100,7 @@ Bild, Name, Job mit Satz „Was er tut“, Persönlichkeit (änderbar), „Priva
 ### Mein Konto
 - Name, Anmeldung, Passwort ändern, Abmelden.
 - **KI-Zugang**: bereit / nicht erreichbar, ein Satz Erklärung („Fragst du einen Agenten, arbeitet er mit deinem Zugang“).
-- **Anmeldung für Programmierläufe**: verbunden / verbinden (einmal, gilt für alle Agenten).
+- **ChatGPT fürs Programmieren**: verbunden / verbinden (einmal, gilt für alle Agenten). Wird sonst erst gefragt, wenn es gebraucht wird.
 - **Team** (Inhaber): Wer dabei ist, Einladungen, Vorschläge.
 - **Deine Daten**: Alles herunterladen.
 

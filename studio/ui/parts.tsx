@@ -38,5 +38,4 @@ export const Plus=icon('M12 5v14M5 12h14');
 export const Send=icon('M4 12l16-8-6 16-3-7-7-1z');
 export const Info=icon('M12 8h.01M11 12h1v5h1M12 3a9 9 0 100 18 9 9 0 000-18z');
 export const More=icon('M5 12h.01M12 12h.01M19 12h.01');
-export const Check=icon('M5 12l5 5 9-10');
 export const Mark=icon('M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4');

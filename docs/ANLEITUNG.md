@@ -11,7 +11,7 @@ Welche Bildschirme und Knöpfe es gibt, steht verbindlich in [OBERFLAECHE.md](OB
 3. **Das Team arbeitet.** Jede Aufgabe hat ihr Gespräch. Dort siehst du, wer gerade was macht: Otto ändert den Code,
    Eule sucht im Internet, Frau Kern prüft. Ist Otto fertig, schreibt er, was er geändert hat, und Frau Kern wird gefragt.
 4. **Du gibst frei.** Ist eine Änderung fertig, tippst du „Ansehen“, schaust sie an und gibst frei oder gibst sie mit
-   einem Satz zurück. Danach „Übernehmen“. Bei „Wir schalten selbst live“ zum Schluss „Ist jetzt live“.
+   einem Satz zurück. Danach „Übernehmen“. Wenn ihr selbst online stellt, zum Schluss „Ist jetzt online“.
 
 ## Agenten holen
 
@@ -33,9 +33,12 @@ weitergegebene Schritte.
 
 ## Damit das Team Code ändern kann
 
-- **Einmal pro Projekt** (Projekt-Admin): Projektinfo → „Code verbinden“: mit GitHub verbinden, Server vorbereiten
-  (Studio erkennt Tests und Vorschau selbst und macht einen Probelauf), festlegen, wie ihr live geht.
-- **Einmal pro Person:** Mein Konto → „Anmeldung für Programmierläufe“ mit dem eigenen ChatGPT. Gilt für alle Agenten.
+- **Einmal pro Projekt** (Projekt-Admin): Projektinfo → „Code“ → **„Wo liegt euer Code?“**. Neu anfangen: auf GitHub ein
+  leeres Repository anlegen (privat, mit README) und die Adresse eintragen. Vorhandener Code: die Adresse eintragen.
+  Den Arbeitsplatz für das Team richtet Studio danach selbst ein. Findet es noch keine Tests, tippst du „So anfangen“.
+- **Einmal pro Person:** Das erste Mal, wenn Otto für dich programmieren soll, fragt Studio direkt in der Aufgabe nach
+  deinem ChatGPT. Gilt danach für alle Agenten (auch unter Mein Konto).
+- **Beim ersten Übernehmen** fragt Studio einmal: Geht eine Änderung von selbst online, oder stellt ihr sie selbst online?
 
 ## Wer darf was
 

@@ -2,6 +2,14 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 18.11.2026 (später Abend)
+- **Einrichtung verschwindet in Fragen** (Owner: „was ist mit Server vorbereiten gemeint?“): Statt einer Checkliste fragt
+  Studio nur „Wo liegt euer Code?“ (Neu anfangen / Vorhandener Code) und richtet den Arbeitsplatz des Teams selbst ein.
+  Ohne Tests (leerer Code): „So anfangen“, später „Neu einrichten“.
+- **Erst fragen, wenn es gebraucht wird:** „Wie kommt eine Änderung online?“ beim ersten Übernehmen; die eigene
+  ChatGPT-Verbindung fürs Programmieren in der Aufgabe, wenn Otto das erste Mal für einen arbeiten soll.
+- **„online“ statt „live“**; „Server vorbereiten“, „Probelauf“, „Programmierläufe“ gibt es in der App nicht mehr.
+
 ## 18.11.2026 (Abend)
 - **Oberfläche neu aus der Liste gebaut** (Owner: „wir haben auf eine alte Oberfläche eine neue aufgedrückt … mach das endlich
   ordentlich“). Verbindlich ist [OBERFLAECHE.md](OBERFLAECHE.md); die alte Oberfläche, ihre 16 Stylesheets und die

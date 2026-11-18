@@ -73,3 +73,7 @@ export function messagesOf(messages:Message[],place:{agent?:string;member?:strin
  return messages.filter(m=>(m.scope??'group')==='group'&&(!m.inTask||latest.get(m.inTask)===m.id)
   &&!(m.kind==='card'&&m.card?.from==='project'&&m.card.tasks.length===1&&latest.has(m.card.tasks[0])));
 }
+
+/** Without tests the team can still start (empty or unknown code): the check only proves the code is there.
+ * Real tests come later with "Neu einrichten". The server validates it like any project setup. */
+export const START_WITHOUT_TESTS={version:1,prepare:[],check:['node','-e','0'],requires:['node'],generated:[]};

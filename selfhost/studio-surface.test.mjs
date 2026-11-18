@@ -11,7 +11,7 @@ const studio=path.join(root,'studio');
 const files=dir=>readdirSync(dir).flatMap(f=>{const p=path.join(dir,f);return statSync(p).isDirectory()?files(p):[path.relative(studio,p).split(path.sep).join('/')];});
 
 const ALLOWED=['env.d.ts','index.html','main.tsx','vite.config.ts',
- 'ui/account.tsx','ui/api.ts','ui/app.tsx','ui/avatar.tsx','ui/avatars.ts','ui/chat.tsx','ui/diff.ts','ui/info.tsx','ui/live.ts','ui/login.tsx',
+ 'ui/account.tsx','ui/api.ts','ui/app.tsx','ui/avatar.tsx','ui/avatars.ts','ui/chat.tsx','ui/code.tsx','ui/diff.ts','ui/info.tsx','ui/live.ts','ui/login.tsx',
  'ui/model.ts','ui/next-step.ts','ui/parts.tsx','ui/people.tsx','ui/project.tsx','ui/rich-text.tsx','ui/start.tsx','ui/task.tsx','ui/ui.css'];
 
 test('the app consists of exactly the files of the screen list; the old interface does not come back',()=>{
@@ -35,7 +35,8 @@ function visibleText(source){
  return strings.join('\n');
 }
 test('no words the screen list forbids: engines, models, technical setup terms',()=>{
- const forbidden=/Arbeitskopie|Werkstatt|Worker|Runner|Deploy-Key|Deploy-Schlüssel|Connector|Pull Request|Branch|Commit|Field Guild|Legacy|Bisherige Ansicht|gpt-\d|\bCodex\b|\bHermes\b|Modellzugang|\bModell\b|studio\.project\.json(?! an)/;
+ // Since 18.11.2026 (owner): no "Server vorbereiten", "Probelauf", "Programmierläufe" or "live"; Studio sets up by itself and says "online".
+ const forbidden=/Arbeitskopie|Werkstatt|Worker|Runner|Deploy-Key|Deploy-Schlüssel|Connector|Pull Request|Branch|Commit|Field Guild|Legacy|Bisherige Ansicht|gpt-\d|\bCodex\b|\bHermes\b|Modellzugang|\bModell\b|studio\.project\.json|Server vorbereiten|Probelauf|Programmierl[äa]uf|\bLive\b|(?:ist jetzt|noch nicht|selbst|schalten|schaltet) live\b/;
  for(const f of files(studio).filter(f=>/\.tsx$/.test(f)||f==='ui/next-step.ts'||f==='ui/model.ts')){
   const text=visibleText(readFileSync(path.join(studio,f),'utf8'));
   // The concept allows the model only under "Erweitert" in the agent profile.

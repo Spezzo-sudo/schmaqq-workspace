@@ -32,7 +32,7 @@ awaitingLive?:boolean;liveHow?:string;
 
 export function taskNextStep(t:TaskStepInput):TaskStep{
  if(t.cancelled)return {text:'Diese Aufgabe wurde abgebrochen.'};
- if(t.awaitingLive)return {text:'Übernommen, aber noch nicht live.'+(t.liveHow?' So geht ihr live: '+t.liveHow:' Schaltet es live und bestätigt es dann hier.'),action:'live',label:'Ist jetzt live'};
+ if(t.awaitingLive)return {text:'Übernommen, aber noch nicht online.'+(t.liveHow?' So geht ihr online: '+t.liveHow:' Stellt sie online und bestätigt es dann hier.'),action:'live',label:'Ist jetzt online'};
  if(t.status==='done')return t.own?{text:'Erledigt.',action:'reopen',label:'Wieder öffnen'}:{text:'Erledigt.'};
  if(t.activeJob&&t.activeBehind)return {waiting:true,text:'Der Server arbeitet gerade an einer Aufgabe von '+t.activeBehind+' beschäftigt. Dieser Schritt ist als Nächstes dran.'};
  if(t.activeJob)return {waiting:true,text:t.activeJob==='submit'?'Die Änderung wird getestet und zur Freigabe gegeben. Das dauert ein paar Minuten.'
@@ -91,7 +91,7 @@ export type TaskSummaryInput={status:string;assignee:string|null;awaitingLive?:b
 export type TaskSummary={text:string;mine:boolean;group:'mine'|'open'|'others'|'done'};
 export function taskSummary(t:TaskSummaryInput,me:string,name:(id:string)=>string,{selfApprove=false}:{selfApprove?:boolean}={}):TaskSummary{
  if(t.contract.cancelled)return {text:'Abgebrochen',mine:false,group:'done'};
- if(t.awaitingLive)return {text:'Übernommen – noch nicht live',mine:t.assignee===me,group:t.assignee===me?'mine':'others'};
+ if(t.awaitingLive)return {text:'Übernommen – noch nicht online',mine:t.assignee===me,group:t.assignee===me?'mine':'others'};
  if(t.status==='done')return {text:'Erledigt',mine:false,group:'done'};
  const own=t.assignee===me,who=t.assignee?name(t.assignee):'',r=t.completion.result;
  if(!t.assignee)return {text:'Noch niemand kümmert sich darum',mine:false,group:'open'};
@@ -126,6 +126,6 @@ export function taskStages(t:StageInput):Stage[]{
   {label:'Ändern',detail:!t.person?'Noch niemand kümmert sich darum':t.own?'Du änderst es – selbst oder mit KI':t.person+' ändert es'},
   {label:'Anschauen',detail:'Jemand anderes schaut es an und tippt „Diese Fassung freigeben“'},
   {label:'Übernehmen',detail:(t.own?'Du drückst':who+' drückt')+' „Übernehmen“'},
-  {label:'Live',detail:t.liveMode==='merge'?'Geht beim Übernehmen von selbst live':t.liveMode==='manual'?(t.liveHow||'Ihr schaltet selbst live')+' – danach „Ist jetzt live“':'Noch nicht festgelegt – unter Einstellungen'}
+  {label:'Online',detail:t.liveMode==='merge'?'Geht beim Übernehmen von selbst online':t.liveMode==='manual'?(t.liveHow||'Ihr stellt sie selbst online')+' – danach „Ist jetzt online“':'Noch nicht festgelegt – unter Einstellungen'}
  ][i]}));
 }
