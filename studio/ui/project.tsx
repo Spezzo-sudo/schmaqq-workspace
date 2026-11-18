@@ -28,7 +28,7 @@ export function ProjectScreen({studio}:{studio:Studio}){
   <Chat studio={studio} place={{kind:'member',member:chatMember}} key={chatMember.id}/>
  </section>;
  return <section className="ui-screen">
-  <Bar onBack={desktop?undefined:()=>go({page:'start',project:''})} title={room.project.title}
+  <Bar onBack={desktop?undefined:()=>go({page:'start',project:''})} title={room.project.title} projectHeading={!desktop}
    sub={plural(people.length,'Mensch','Menschen')+' · '+plural(agents.length,'Agent','Agenten')} onTitle={()=>go({info:true,task:''})}
    end={<button className="ui-icon" aria-label="Projektinfo" onClick={()=>go({info:true,task:''})}><Info/></button>}/>
   <nav className="ui-team" aria-label="Team">
