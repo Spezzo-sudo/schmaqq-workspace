@@ -11,7 +11,7 @@ import {useProjectAccess} from './project-roles';
 import GithubWorkflow from './github-workflow';
 import {taskNextStep,taskStages,type TaskStepAction} from './task-next-step';
 import TaskTimeline from './task-timeline';
-import {roomRequest,saveDraft,storedDraft,operationId,type RoomState,type Resource,type TeamTask,type TaskContract,type TaskResult} from './room-model';
+import {agentJob,roomRequest,saveDraft,storedDraft,operationId,type RoomState,type Resource,type TeamTask,type TaskContract,type TaskResult} from './room-model';
 type Copy={id:string;owner:string;device:string;title:string;scope:string;revision:number;status:string;deviceName:string;changed?:boolean;behind?:number};
 type Failure={id:string;action:string;owner:string;ownerName:string;at:number;interrupted:boolean;text:string;detail:string};
 type Detail={lastFailure?:Failure|null;source?:{id:string;body:string;authorName:string;created:number}|null;activeJobs?:{id:string;action:string;status:string;ownerName:string;behind?:string}[];task:TeamTask;brief:{revision:number};comments:TaskComment[];thread?:ThreadMessage[];reviews:{id:string;owner:string;ownerName:string;commit:string;state:string;created?:number;dropped?:string[];mergeWait?:{reason:string;at:number}|null}[];workspaces:Copy[];changes:{workspace:string;review?:{id:string;changedAfter?:boolean}}[]};
@@ -109,7 +109,7 @@ export default function TeamTaskView({taskId,room,resources,userId,onClose,onRef
   else if(next==='live')void teamAction({action:'went-live'});
  }
  // Agents allowed to change code (Schritt 5): asked in the conversation, they work in the asker's own copy.
- const coders=(room.agents??[]).filter(a=>a.active!==false&&a.permissions?.editCode===true);
+ const coders=(room.agents??[]).filter(a=>a.active!==false&&agentJob(a).code);
  const stepBlocked=(step?.action==='submit'||step?.action==='resubmit'||step?.action==='retry')&&(copyState.dirty||!!contract?.blocked);
  return <div className="rw-drawer-backdrop"><section ref={panel} className={'rw-drawer team-task'+(wide?' expanded':'')} role="dialog" aria-modal="true" aria-label="Gemeinsame Aufgabe">
   <header><button className="rw-icon" aria-label="Zurück zum Projekt" onClick={onClose}><ArrowLeft size={20}/></button><div className="rw-drawer-heading"><small>{room.project.title}</small><h2>{task?.title??'Aufgabe wird geladen …'}</h2></div><button className="rw-icon team-wide" onClick={()=>setWide(!wide)} aria-label={wide?'Kompakte Ansicht':'Breite Arbeitsansicht'}><ArrowUpRight size={17}/></button><button className="rw-icon" aria-label="Aufgabe schließen" onClick={onClose}><X size={20}/></button></header>

@@ -3,7 +3,7 @@ import {BookOpen,ChevronRight,Crown,ExternalLink,FolderOpen,ListChecks,MessageSq
 import {AgentAvatar} from './agent-avatar';
 import {useProjectAccess} from './project-roles';
 import {taskSummary} from './task-next-step';
-import {agentRoleLabels,initials,isProjectLead,roomRequest,type RoomState,type RoomTab,type TeamTask} from './room-model';
+import {agentJob,agentRoleLabels,initials,isProjectLead,roomRequest,type RoomState,type RoomTab,type TeamTask} from './room-model';
 import './project-info.css';
 
 const roleLabels:Record<string,string>={admin:'Admin',developer:'Entwickler',reviewer:'Prüfer',viewer:'Lesen'};
@@ -80,7 +80,7 @@ export default function ProjectInfo({room,tasks,userId,onTab,onChat,onMemberChat
    <ul>
     {agents.map(a=><li key={a.id}><button onClick={()=>openAgentProfile(a.id)}>
      <AgentAvatar agent={a} size="sm"/>
-     <span><strong>{a.name}{isProjectLead(a)&&<Crown className="r5-crown" size={14} aria-label="Projektleitung"/>}</strong><small>{isProjectLead(a)?'Projektleitung':agentRoleLabels[a.role]} · Agent</small></span>
+     <span><strong>{a.name}{isProjectLead(a)&&<Crown className="r5-crown" size={14} aria-label="Projektleitung"/>}</strong><small>{isProjectLead(a)?'Projektleitung':agentRoleLabels[a.role]} · {agentJob(a).text}</small></span>
      <ChevronRight size={16} aria-hidden/>
     </button></li>)}
     {people.map(m=>{const body=<><span className="rw-avatar">{initials(m.name)}</span><span><strong>{m.name}{m.id===userId?' (du)':''}</strong><small>{roleText(m)}</small></span></>;

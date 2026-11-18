@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
-import {Check,ChevronRight,ListChecks,RotateCcw,Square,X} from 'lucide-react';
+import {Check,ChevronRight,ListChecks,RotateCcw,Square,UserPlus,X} from 'lucide-react';
 import {AgentAvatar} from './agent-avatar';
-import {agentLiveActivity,agentRunActive,agentRunSummary,agentStepLabel,time,workDuration,type AgentTaskProposal,type HermesAgentRun,type RoomAgent} from './room-model';
+import {agentLiveActivity,agentRunActive,agentRunSummary,agentStepLabel,time,workDuration,hireRoleLabels,type AgentTaskProposal,type HermesAgentRun,type RoomAgent} from './room-model';
 
 /** Seconds only tick while something is actually running. */
 function useNow(active:boolean){
@@ -76,15 +76,31 @@ function PlanCard({proposal,busy,onDecide,onOpenTask}:{proposal:AgentTaskProposa
 }
 
 /** A proposal is never a task until the person who asked accepts it. */
-export function ProposalCard(props:{proposal:AgentTaskProposal;busy:boolean;onDecide:(decision:'accept'|'reject')=>void;onOpenTask:(task:string)=>void}){
- return props.proposal.kind==='plan'&&props.proposal.plan?<PlanCard {...props}/>:<TaskProposalCard {...props}/>;
+export function ProposalCard(props:{proposal:AgentTaskProposal;busy:boolean;onDecide:(decision:'accept'|'reject')=>void;onOpenTask:(task:string)=>void;whoName?:string}){
+ return props.proposal.kind==='hire'?<HireCard {...props}/>:props.proposal.kind==='plan'&&props.proposal.plan?<PlanCard {...props}/>:<TaskProposalCard {...props}/>;
 }
 
-function TaskProposalCard({proposal,busy,onDecide,onOpenTask}:{proposal:AgentTaskProposal;busy:boolean;onDecide:(decision:'accept'|'reject')=>void;onOpenTask:(task:string)=>void}){
+/** The lead wants to hire: one new colleague with a clear job, one tap to say yes. */
+function HireCard({proposal,busy,onDecide}:{proposal:AgentTaskProposal;busy:boolean;onDecide:(decision:'accept'|'reject')=>void}){
+ const job=hireRoleLabels[proposal.hire?.role??'']??'Team';
+ return <div className={'r5-proposal-card '+proposal.status} role="group" aria-label={'Einstellung: '+proposal.title}>
+  <div className="r5-proposal-head"><UserPlus size={15} aria-hidden="true"/><span>Einstellung vorgeschlagen</span><span className={'r5-proposal-status '+proposal.status}>{proposal.status==='accepted'?'Eingestellt':proposalStatus[proposal.status]}</span></div>
+  <p className="r5-proposal-title">{proposal.title} · {job}</p>
+  {proposal.description&&<p className="r5-proposal-body">{proposal.description}</p>}
+  {proposal.canDecide&&<div className="r5-proposal-actions">
+   <button type="button" className="accept" disabled={busy} onClick={()=>onDecide('accept')}><Check size={15} aria-hidden="true"/>Einstellen</button>
+   <button type="button" disabled={busy} onClick={()=>onDecide('reject')}><X size={15} aria-hidden="true"/>Ablehnen</button>
+  </div>}
+  {proposal.status==='pending'&&!proposal.canDecide&&<small className="rw-muted">Nur die Person, die gefragt hat, entscheidet.</small>}
+ </div>;
+}
+
+function TaskProposalCard({proposal,busy,onDecide,onOpenTask,whoName}:{proposal:AgentTaskProposal;busy:boolean;onDecide:(decision:'accept'|'reject')=>void;onOpenTask:(task:string)=>void;whoName?:string}){
  const [open,setOpen]=useState(false),long=proposal.description.length>170||proposal.description.split('\n').length>3;
  return <div className={'r5-proposal-card '+proposal.status} role="group" aria-label={'Aufgabenvorschlag: '+proposal.title}>
   <div className="r5-proposal-head"><ListChecks size={15} aria-hidden="true"/><span>Aufgabenvorschlag</span><span className={'r5-proposal-status '+proposal.status}>{proposalStatus[proposal.status]}</span></div>
   <p className="r5-proposal-title">{proposal.title}</p>
+  {whoName&&<p className="r5-proposal-who">Übernimmt: <strong>{whoName}</strong>{proposal.status==='pending'?' – legt los, sobald du annimmst':''}</p>}
   {proposal.description&&<p className={'r5-proposal-body'+(long&&!open?' clamped':'')}>{proposal.description}</p>}
   {long&&<button type="button" className="r5-more" aria-expanded={open} onClick={()=>setOpen(!open)}>{open?'weniger':'mehr'}</button>}
   {proposal.canDecide&&<div className="r5-proposal-actions">

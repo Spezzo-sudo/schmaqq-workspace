@@ -2,7 +2,7 @@ import {Fragment,useEffect,useRef,useState,type ReactNode} from 'react';
 import {ArrowRight,Bot,CheckCheck,ListChecks,Highlighter,Crown,ExternalLink,Hash,Link2,MessageSquare,Monitor,Pin,Plus,Reply,Search,Send,Shield,Sparkles,UserCircle,Users,X,ChevronLeft,MoreHorizontal,FolderOpen} from 'lucide-react';
 import {
  roomRequest,operationId,time,initials,storedDraft,saveDraft,taskTitleFrom,
- agentRoleLabels,agentCapabilityLabels,agentContextSourceLabels,agentPermissionLabels,
+ agentRoleLabels,agentCapabilityLabels,agentContextSourceLabels,
  agentDepartments,agentDepartment,agentEffectivePermissions,agentExecutionStatus,agentLiveActivity,agentRunActive,isProjectLead,MARK_COLORS,PROJECT_LEAD_PRESET,memberRoleSummary,filterMessengerMessages,
  type RoomState,type RoomMember,type RoomMessage,type RoomAgent,type RoomAgentRole,type HermesAgentRun,
  type RoomAgentCapability,type RoomAgentContextSource,type RoomAgentPermissions,type Resource,type MessengerFilter
@@ -539,7 +539,7 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
         </div>}
 
         {isAgentMsg?<RichText text={message.body}/>:<p>{message.body}</p>}
-        {message.proposalCard&&<ProposalCard proposal={message.proposalCard} busy={hermesBusy} onDecide={decision=>void decideProposal(message.proposalCard!.id,decision)} onOpenTask={onTask}/>}
+        {message.proposalCard&&<ProposalCard proposal={message.proposalCard} whoName={(room.agents??[]).find(a=>a.id===message.proposalCard!.who)?.name} busy={hermesBusy} onDecide={decision=>void decideProposal(message.proposalCard!.id,decision)} onOpenTask={onTask}/>}
         {message.taskId&&!linkedTask&&<button className="rw-message-task" onClick={()=>onTask(message.taskId!)}><CheckCheck size={14}/>Verknüpfte Aufgabe öffnen<ArrowRight size={13}/></button>}
 
         <details className="r3-message-menu"><summary aria-label="Nachrichtenaktionen" title="Antworten, Aufgabe oder Entscheidung"><MoreHorizontal size={18}/></summary><div className="rw-message-actions">
@@ -715,15 +715,16 @@ export function Conversation({room,resources=[],userId,search,refresh,onTask,onC
        </fieldset>
 
        <fieldset className="rw-fg-fieldset">
-        <legend><Shield size={14}/> Serverseitig geprüfte Berechtigungen</legend>
-        <p className="rw-muted">Die Avatar-Persönlichkeit vergibt niemals automatisch Rechte. Diese Berechtigungen werden bei jeder API-Aktion serverseitig geprüft.</p>
+        <legend><Shield size={14}/> Was dieser Agent darf</legend>
+        <p className="rw-muted">Der Job folgt aus der Rolle: Entwicklung ändert Code, Recherche liest im Web, Prüfung prüft, die Projektleitung verteilt und stellt ein. Hier schaltest du ihn nur im Projekt an oder ab.</p>
         <div className="rw-fg-perm-grid">
-         {(Object.keys(agentPermissionLabels) as (keyof RoomAgentPermissions)[]).map(key=>(
+         {(['readProject','writeMessages'] as const).map(key=>(
           <label key={key} className="rw-cap-check">
            <input type="checkbox" name={'perm-'+key} defaultChecked={editingPerms[key]}/>
-           <span>{agentPermissionLabels[key]}</span>
+           <span>{key==='readProject'?'Liest das Projekt':'Schreibt Nachrichten'}</span>
           </label>
          ))}
+         {(['manageTasks','editCode','prepareReviews','delegateAgents'] as const).map(key=><input key={key} type="checkbox" hidden name={'perm-'+key} defaultChecked={editingPerms[key]}/>)}
         </div>
        </fieldset>
       </div>
