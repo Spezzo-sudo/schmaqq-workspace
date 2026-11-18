@@ -18,6 +18,14 @@ async function waitJob(id:string){
   await new Promise(r=>setTimeout(r,1500));}
  throw new Error('Der Server antwortet nicht. Bitte später nochmal.');
 }
+/** Technical messages from git or the server, said in plain words; unknown ones stay as they are. */
+export function plainError(message:string){
+ if(/Remote branch \S+ not found|repository is empty/i.test(message))return 'Das Repository ist noch ganz leer. Studio konnte die erste Datei nicht anlegen. Leg auf GitHub einmal eine README an und tippe dann „Nochmal“.';
+ if(/Authentication failed|could not read Username|Permission denied|403/i.test(message))return 'Studio darf noch nicht auf diesen Code zugreifen. Prüfe auf GitHub, ob die Studio-App das Repository sehen darf.';
+ if(/not found|Repository not found|404/i.test(message))return 'Diesen Code findet Studio auf GitHub nicht. Stimmt die Adresse?';
+ if(/timeout|timed out|ETIMEDOUT|nicht erreichbar/i.test(message))return 'GitHub oder der Server antwortet gerade nicht. Bitte gleich nochmal.';
+ return message;
+}
 function returnHere(){const url=new URL(location.href);url.searchParams.delete('github_app');url.searchParams.delete('github_app_error');return url.pathname+url.search;}
 function githubReturn(){
  const p=new URLSearchParams(location.search);if(!p.get('github_app')&&!p.get('github_app_error'))return '';
@@ -46,7 +54,7 @@ export function CodeSection({studio,admin}:{studio:Studio;admin:boolean}){
  const configured=resources.find(r=>r.online&&entry(r));
  const probe=configured?entry(configured)?.readiness?.probe:null;
 
- async function setup(configuration?:object){
+ async function setup(configuration?:object,emptyTried=false):Promise<void>{
   if(!server)return;
   setPhase('working');setError('');
   try{
@@ -60,7 +68,14 @@ export function CodeSection({studio,admin}:{studio:Studio;admin:boolean}){
    await studio.reload();
    await waitJob((await api<{id:string}>('/api/development',{action:'job',operation:'probe',device:server.device,project})).id);
    await studio.reload();setPhase('idle');
-  }catch(e){setError((e as Error).message);setPhase('idle');}
+  }catch(e){
+   const message=(e as Error).message;
+   // A brand-new repository without any file has no branch yet: Studio writes a first README and tries once more.
+   if(!emptyTried&&/Remote branch \S+ not found|repository is empty|leer/i.test(message)){
+    try{await api('/api/github-app/start',{project});return setup(configuration,true);}catch(start){setError(plainError((start as Error).message));setPhase('idle');return;}
+   }
+   setError(plainError(message));setPhase('idle');
+  }
  }
  // Once the code is reachable, the admin's own server sets up the workplace without being asked; once per visit.
  const started=useRef(false);
@@ -114,7 +129,7 @@ export function CodeSection({studio,admin}:{studio:Studio;admin:boolean}){
   {working&&<p className="ui-muted">Studio schaut sich euren Code an und richtet ein, wie Änderungen geprüft und angezeigt werden. Das dauert ein paar Minuten.</p>}
   {phase==='no-tests'&&<><p className="ui-muted">Das Team kann trotzdem anfangen; Änderungen schaust du dann selbst an. Sobald es Tests gibt, tippe hier auf „Neu einrichten“.</p>
    <button className="ui-btn primary" onClick={()=>void setup(START_WITHOUT_TESTS)}>So anfangen</button></>}
-  {!working&&!ready&&probe?.state==='failed'&&<><p className="ui-muted">{probe.error??'Beim Einrichten ist etwas schiefgegangen.'}</p>{admin&&server&&<button className="ui-btn" onClick={()=>void setup()}>Nochmal</button>}</>}
+  {!working&&!ready&&!error&&probe?.state==='failed'&&<><p className="ui-muted">{plainError(probe.error??'Beim Einrichten ist etwas schiefgegangen.')}</p>{admin&&server&&<button className="ui-btn" onClick={()=>void setup()}>Nochmal</button>}</>}
   <ErrorLine text={error}/>{error&&admin&&server&&!working&&<button className="ui-btn" onClick={()=>void setup()}>Nochmal</button>}
   <ResultLine studio={studio} admin={admin}/>
  </Section>;
