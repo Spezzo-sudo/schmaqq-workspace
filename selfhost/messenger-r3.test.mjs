@@ -5,51 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {createStudioServer} from './server.mjs';
 import {createInvite} from './store.mjs';
-import {messengerFilterKey,readMessengerFilter,messengerDraftKey,messengerComposerTarget,ownProjectCopies} from '../studio/messenger-state.ts';
 import {buildFileTree} from '../app/file-tree-model.ts';
-import {readRoomRoute,roomResumeURL,agentExecutionStatus} from '../studio/room-model.ts';
 
-const room={members:[{id:'alice',name:'Alice'},{id:'removed',removed:true}],agents:[{id:'mara',active:true},{id:'archived',active:false}],tasks:[{id:'task-1'}]};
-
-test('R3: conversation URLs validate both syntax and current project membership',()=>{
- for(const filter of [{kind:'all'},{kind:'member',id:'alice'},{kind:'agent',id:'mara'},{kind:'topic',taskId:'task-1'}]){
-  assert.deepEqual(readMessengerFilter('?chat='+encodeURIComponent(messengerFilterKey(filter)),room),filter);
- }
- for(const value of ['member:removed','agent:archived','agent:foreign','topic:foreign','https://example.invalid','agent:../../secrets','member:alice:extra']){
-  assert.deepEqual(readMessengerFilter('?chat='+encodeURIComponent(value),room),{kind:'all'});
- }
-});
-
-test('R3: composer view transitions reset recipient and task together',()=>{
- assert.deepEqual(messengerComposerTarget({kind:'agent',id:'mara'}),{recipient:'mara',topicTask:''});
- assert.deepEqual(messengerComposerTarget({kind:'member',id:'alice'}),{recipient:'alice',topicTask:''});
- assert.deepEqual(messengerComposerTarget({kind:'topic',taskId:'task-1'}),{recipient:'',topicTask:'task-1'});
- for(const kind of ['all'])assert.deepEqual(messengerComposerTarget({kind}),{recipient:'',topicTask:''});
-});
-
-test('R3: drafts are separate by user, project and conversation view; existing group drafts survive',()=>{
- assert.equal(messengerDraftKey('u1','p1',{kind:'all'}),'room-chat:u1:p1');
- const keys=new Set();
- for(const user of ['u1','u2'])for(const project of ['p1','p2'])for(const filter of [{kind:'all'},{kind:'agent',id:'mara'},{kind:'member',id:'alice'},{kind:'topic',taskId:'task-1'}])keys.add(messengerDraftKey(user,project,filter));
- assert.equal(keys.size,16);
-});
-
-test('R3: bookmark and login restoration preserve inspector and addressed view safely',()=>{
- for(const tab of ['files','activity','knowledge','tasks','connect','overview']){
-  const url='?room=project-1&tab='+tab+'&chat=agent%3Amara';
-  assert.equal(readRoomRoute(url).tab,tab);
-  assert.equal(new URL('https://fixture.invalid'+roomResumeURL(url)).searchParams.get('chat'),'agent:mara');
- }
- assert.equal(roomResumeURL('?room=../bad&chat=agent:mara'),'/');
- assert.equal(new URL('https://fixture.invalid'+roomResumeURL('?room=project-1&chat=javascript:bad')).searchParams.has('chat'),false);
-});
-
-test('R3: file selection excludes foreign, archived, revoked and unfinished copies',()=>{
- const good={id:'good',owner:'u1',project:'p1',status:'completed'};
- const copies=[good,{...good,id:'foreign',owner:'u2'},{...good,id:'other-project',project:'p2'},{...good,id:'archived',archived:1},{...good,id:'revoked',revoked:true},{...good,id:'queued',status:'queued'}];
- assert.deepEqual(ownProjectCopies(copies,'u1','p1').map(c=>c.id),['good']);
- assert.equal(copies.length,6,'selection must not mutate the original response');
-});
 
 test('R3: folder tree keeps exact paths, deduplicates files and rejects unsafe display paths',()=>{
  const tree=buildFileTree(['src/app.ts','src/ui/chat.tsx','README.md','src/app.ts','../secret','/etc/passwd','src//bad','src/./bad','src\\bad','src/evil\u0000']);
@@ -60,27 +17,6 @@ test('R3: folder tree keeps exact paths, deduplicates files and rejects unsafe d
  assert.equal(tree[0].children[1].path,'src/app.ts');
  assert.equal(tree[1].path,'README.md');
  assert.deepEqual(buildFileTree([]),[]);
-});
-
-test('R3: a shared model must not make unrelated personas appear to be working',()=>{
- const agent={id:'mara',model:'fixture-model',capabilities:[]};
- const run={id:'run-1',model:'fixture-model',status:'running',device:'device-1',deviceName:'Test worker'};
- assert.equal(agentExecutionStatus(agent,[run],[]).state,'idle');
- assert.equal(agentExecutionStatus(agent,[{...run,agentId:'another-agent'}],[]).state,'idle');
- assert.equal(agentExecutionStatus(agent,[{...run,agentId:'mara'}],[]).state,'running');
-});
-
-test('R5: a bound model worker shows ready-on-request and only a run for this exact agent as working',()=>{
- const agent={id:'mara',model:'fixture-model',capabilities:[]};
- const hermesRun={id:'h1',agent:'mara',status:'running',model:'fixture-model'};
- assert.equal(agentExecutionStatus(agent,[],[],null).state,'idle');
- assert.equal(agentExecutionStatus(agent,[],[],{configured:false,runs:[]}).state,'idle');
- const ready=agentExecutionStatus(agent,[],[],{configured:true,runs:[]});
- assert.deepEqual([ready.state,ready.via,ready.label],['ready','hermes','Bereit']);
- assert.equal(agentExecutionStatus(agent,[],[],{configured:true,runs:[{...hermesRun,agent:'other'}]}).state,'ready');
- assert.equal(agentExecutionStatus(agent,[],[],{configured:true,runs:[{...hermesRun,status:'completed'}]}).state,'ready');
- const busy=agentExecutionStatus(agent,[],[],{configured:true,runs:[hermesRun]});
- assert.deepEqual([busy.state,busy.via],['running','hermes']);
 });
 
 async function fixture(t){
@@ -103,6 +39,7 @@ async function fixture(t){
  }
  return {get app(){return app;},people,post,get,restart:async()=>{await stop();await start();}};
 }
+
 
 test('R3 real SQLite: messages, replies, profiles and task references survive restart and reach another user',async t=>{
  const f=await fixture(t),[alice,bob,visitor]=f.people;

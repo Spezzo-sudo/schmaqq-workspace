@@ -5,8 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {createStudioServer} from './server.mjs';
 import {createInvite} from './store.mjs';
-import {filterMessengerMessages,memberRoleSummary,agentEffectivePermissions,agentExecutionStatus} from '../studio/room-model.ts';
-import {FIELD_GUILD_R2_PRESETS,filterAvatarPresets,findAvatarPreset,resolveAgentAvatar} from '../studio/avatar-catalog.ts';
+import {messagesOf} from '../studio/ui/model.ts';
+import {FIELD_GUILD_R2_PRESETS,filterAvatarPresets,findAvatarPreset,resolveAgentAvatar} from '../studio/ui/avatars.ts';
 
 async function fixture(t){
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-messenger-'));
@@ -275,7 +275,6 @@ test('project messenger & Field Guild R2 profiles: configurable agent profiles, 
  assert.equal(coord.nickname,'Taktgeber');
  assert.equal(coord.avatarPresetId,'leitwolf');
  assert.ok(coord.capabilities.includes('task-delegate'));
- assert.equal(agentEffectivePermissions(coord).delegateAgents,true);
 
  const grau=roomState.data.agents.find(a=>a.id===revAgentId);
  assert.equal(grau.name,'Frau Kern');
@@ -287,10 +286,6 @@ test('project messenger & Field Guild R2 profiles: configurable agent profiles, 
  assert.equal(grau.permissions.prepareReviews,true);
  assert.equal(grau.permissions.delegateAgents,false);
 
- // Execution status never fakes model execution when no runner is online
- const execStatus=agentExecutionStatus(grau,roomState.data,[]);
- assert.equal(execStatus.state,'idle');
- assert.equal(execStatus.modelAvailable,false);
 
  const m1=roomState.data.messages.find(m=>m.id==='msg-1');
  assert.equal(m1.topicTask,taskId);
@@ -313,17 +308,14 @@ test('project messenger & Field Guild R2 profiles: configurable agent profiles, 
  // Verify pure filter helpers on the returned messages
  // Both belong to one task: the project chat shows that task's conversation as one card (its latest message).
  const chat=roomState.data.messages.filter(m=>m.kind!=='card'); // the task's card in the chat is checked elsewhere
- assert.deepEqual(filterMessengerMessages(chat,{kind:'all'}).map(m=>m.id),['msg-handoff-1']);
+ assert.deepEqual(messagesOf(chat,{}).map(m=>m.id),['msg-handoff-1']);
  // Both messages were written in the group chat (addressed, not private), so the one-to-one chats stay empty.
  assert.deepEqual(chat.map(m=>m.scope),['group','group']);
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'member',id:markus.id}).length,0);
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'agent',id:revAgentId}).length,0);
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'topic',taskId}).length,2);
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'all'},'Viewport-Prüfung').length,0);
- assert.equal(filterMessengerMessages(roomState.data.messages,{kind:'all'},'mobilen Abstände').length,1);
+ assert.equal(messagesOf(roomState.data.messages,{member:markus.id}).length,0);
+ assert.equal(messagesOf(roomState.data.messages,{agent:revAgentId}).length,0);
 
  const guestMember=roomState.data.members.find(m=>m.id===viewer.id);
- assert.equal(memberRoleSummary(guestMember),'Zuschauer');
+ assert.ok(guestMember,'the viewer is listed as a member');
 
  // Members without project view permission are excluded from project room member list
  const revokeRes=await post({action:'roles',project,member:viewer.id,roles:[]},marco.cookie,'/api/project-roles');

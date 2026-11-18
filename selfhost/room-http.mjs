@@ -266,6 +266,7 @@ const actions=z.discriminatedUnion('action',[
 import {requirePermission,startRoles,can,rolesOf} from './project-roles.mjs';
 import {isRemoved} from './team-access.mjs';
 import {hiddenPractice,practiceOwner} from './practice.mjs';
+import {HIRABLE,TEAM_LIMIT} from './agent-roles.mjs';
 export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null}){
  ensureChatSchema(db);
  return async function roomRoute({route,method,req,url,send}){
@@ -348,6 +349,13 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null})
     const agentId=value.agentId??randomUUID(),agentKey=key('agent',value.project+':'+agentId);
     const existing=readMeta(db,agentKey);
     if(!existing&&agentsFor(db,value.project).length>=20)throw fail(409,'In diesem Projekt sind bereits 20 KI-Teammitglieder eingerichtet.');
+    // The company rule holds for people hiring too: at most six in the team, one colleague per job.
+    if(value.active&&existing?.active===false||!existing){
+     const team=agentsFor(db,value.project).filter(a=>a.active!==false&&a.id!==agentId);
+     if(team.length>=TEAM_LIMIT)throw fail(409,`Das Team ist voll (${TEAM_LIMIT}). Kündige zuerst jemanden.`);
+     const taken=HIRABLE[value.role]&&team.find(a=>!a.lead&&a.role===value.role);
+     if(taken)throw fail(409,taken.name+' macht diesen Job schon.');
+    }
     // The lead is a fixed part of every project. Name, face, character and model are free; leaving is not.
     if(existing?.lead===true&&existing.active!==false&&!value.active)throw fail(409,'Jedes Projekt braucht seine Projektleitung. Du kannst sie bearbeiten, aber nicht entfernen.');
     if(value.modelDevice&&!db.prepare('SELECT id FROM devices WHERE id=? AND revoked=0').get(value.modelDevice))throw fail(400,'Der gewählte Modellzugang ist nicht registriert oder wurde widerrufen.');
