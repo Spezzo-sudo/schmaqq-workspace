@@ -273,3 +273,5 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .ui-scroll-hint button{background:var(--card);border:1px solid var(--line);box-shadow:0 2px 8px #11122520;color:var(--ink);font-size:22px;animation:ui-scroll-cue .65s ease-in-out 2}
 @keyframes ui-scroll-cue{50%{transform:translateY(3px)}}
 @media(prefers-reduced-motion:reduce){.ui-brand.is-playing g,.ui-scroll-hint button{animation:none}}
+
+.ui-team-member.add b{white-space:normal;line-height:1.2}

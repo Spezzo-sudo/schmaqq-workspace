@@ -23,7 +23,7 @@ Welche Bildschirme und Knöpfe es gibt, steht verbindlich in [OBERFLAECHE.md](OB
 ## Das Team
 
 Jeder Agent hat einen Job: Entwicklung ändert Code, Recherche sucht im Internet, Prüfung prüft Änderungen. Herr Grau
-leitet und stellt ein. Höchstens sechs im Team, pro Job einer. Einstellen über „+ Einstellen“ oder Herrn Grau fragen.
+leitet und stellt ein. Höchstens sechs im Team, pro Job einer. Einstellen über „Team erweitern“ → „Agent einstellen“ oder Herrn Grau fragen.
 
 ## Grenzen und Kosten
 
@@ -47,7 +47,7 @@ weitergegebene Schritte.
 ## Wer darf was
 
 Beim Anlegen eines Projekts kannst du unter „Wer ist dabei?“ Menschen mit Studio-Konto auswählen. Ohne Auswahl beginnst du allein.
-Wer das Projekt leitet, kann in **Projektinfo → Team** ein vorhandenes Konto dazunehmen oder einen Link für ein neues Konto erstellen.
+Wer das Projekt leitet, kann über **„Team erweitern“ → „Person einladen“** ein vorhandenes Konto dazunehmen oder einen Link für ein neues Konto erstellen.
 Der Link gilt 24 Stunden und einmal. Sobald die Person ihr Konto anlegt, ist sie im Projekt und kann direkt anfangen.
 Unter **Mein Konto → Team** kann der Inhaber auch mehrere Projekte auswählen oder nur ins Studio einladen. Eine Einladung ohne Projekt erlaubt der Person, eigene Projekte anzulegen.
 

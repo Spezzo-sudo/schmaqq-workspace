@@ -1,10 +1,11 @@
-import {useState} from 'react';
+import {useCallback,useEffect,useState} from 'react';
 import type {Studio} from './app';
-import {api,newId,type Agent} from './api';
+import {api,newId,q,type Agent,type Role} from './api';
 import {Face} from './avatar';
 import {FIELD_GUILD_R2_PRESETS} from './avatars';
 import {activeAgents,jobOf,JOBS,leadOf,TEAM_LIMIT} from './model';
-import {Dialog,ErrorLine,Field} from './parts';
+import {Dialog,ErrorLine,Field,Plus,Section} from './parts';
+import {InviteLink,InviteRows,type Invite} from './account';
 
 /** The fields the server keeps for an agent; a save sends them all so nothing is lost. */
 function agentPayload(agent:Agent,changes:Partial<Agent>){
@@ -15,8 +16,77 @@ function agentPayload(agent:Agent,changes:Partial<Agent>){
   ...(a.permissions?{permissions:a.permissions}:{}),active:a.active!==false};
 }
 
-/** "+ Einstellen": pick a job, the name is suggested. One per job, at most six in the team. */
-export function HireDialog({studio,onClose}:{studio:Studio;onClose:()=>void}){
+export const peopleRoles={lead:{label:'Leitet das Projekt',roles:['admin']},participant:{label:'Macht mit',roles:['developer','reviewer']},viewer:{label:'Schaut nur zu',roles:['viewer']}} satisfies Record<string,{label:string;roles:Role[]}>;
+export type PeopleRole=keyof typeof peopleRoles;
+export function peopleRole(roles:Role[]):PeopleRole{
+ return roles.includes('admin')?'lead':roles.includes('developer')||roles.includes('reviewer')?'participant':'viewer';
+}
+
+export function RoleChoice({role,onChange}:{role:PeopleRole;onChange:(role:PeopleRole)=>void}){
+ return <Field label="Rolle"><select value={role} onChange={e=>onChange(e.target.value as PeopleRole)}>
+  {Object.entries(peopleRoles).map(([id,r])=><option key={id} value={id}>{r.label}</option>)}
+ </select></Field>;
+}
+export async function savePersonRoles(studio:Studio,member:string,roles:Role[]){
+ await api('/api/project-roles',{action:'roles',project:studio.room!.project.id,member,roles});
+ await studio.reload();
+}
+
+export function TeamExpand({studio,inStrip=false}:{studio:Studio;inStrip?:boolean}){
+ const [view,setView]=useState<'person'|'agent'|null>(null);
+ const {roles,room}=studio,project=room?.project.id;
+ if(!project)return null;
+ const canInvite=roles?.mine.includes('admin')&&!studio.projects.some(p=>p.id===project&&p.practice);
+ const canHire=roles?.mine.some(role=>role==='admin'||role==='developer')&&activeAgents(room?.agents).length<TEAM_LIMIT;
+ if(!canInvite&&!canHire)return null;
+ const close=()=>setView(null);
+ const open=()=>setView(canInvite?'person':'agent');
+ const person=canInvite&&(view==='person'||!canHire);
+ return <>
+  {inStrip?<button className="ui-team-member add" onClick={open}><span className="ui-face add"><Plus/></span><b>Team erweitern</b></button>
+   :<button className="ui-link" onClick={open}>+ Team erweitern</button>}
+  {view&&<Dialog title="Team erweitern" onClose={close}>
+   {canInvite&&canHire&&<div className="ui-chips" role="group" aria-label="Team erweitern">
+    <button className={'ui-chip'+(person?' on':'')} aria-pressed={person} onClick={()=>setView('person')}>Person einladen</button>
+    <button className={'ui-chip'+(!person?' on':'')} aria-pressed={!person} onClick={()=>setView('agent')}>Agent einstellen</button>
+   </div>}
+   {person?<InvitePersonForm key={project} project={project} available={roles?.members.filter(m=>!m.roles.length)??[]}
+    onAdd={(member,roles)=>savePersonRoles(studio,member,roles)} onClose={close}/>
+    :<HireForm studio={studio} onClose={close}/>}
+  </Dialog>}
+ </>;
+}
+
+function InvitePersonForm({project,available,onAdd,onClose}:{project:string;available:{id:string;name:string}[];onAdd:(member:string,roles:Role[])=>Promise<void>;onClose:()=>void}){
+ const [member,setMember]=useState(''),[role,setRole]=useState<PeopleRole>('participant'),[email,setEmail]=useState(''),[link,setLink]=useState('');
+ const [invites,setInvites]=useState<Invite[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const load=useCallback(async()=>setInvites((await api<{invites:Invite[]}>('/api/invites?project='+q(project))).invites),[project]);
+ useEffect(()=>{void load().catch(e=>setError(e.message));},[load]);
+ async function act(fn:()=>Promise<void>){setBusy(true);setError('');try{await fn();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+ return <>
+  {available.length>0?<form className="ui-form" onSubmit={e=>{e.preventDefault();void act(async()=>{await onAdd(member,peopleRoles[role].roles);onClose();});}}>
+   <Field label="Studio-Konto"><select value={member} onChange={e=>setMember(e.target.value)} required>
+    <option value="">Person auswählen</option>{available.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+   </select></Field>
+   <RoleChoice role={role} onChange={setRole}/>
+   <div className="ui-actions left"><button className="ui-btn primary" disabled={busy||!member}>Dazunehmen</button></div>
+  </form>:<p className="ui-muted">Alle Studio-Konten sind schon dabei.</p>}
+  <Section title="Ins Projekt einladen">
+   <form className="ui-form" onSubmit={e=>{e.preventDefault();void act(async()=>{
+    const d=await api<{link:string}>('/api/invites',{project,email:email.trim()});setLink(d.link);setEmail('');await load();
+   });}}>
+    <Field label="E-Mail"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none" required/></Field>
+    <div className="ui-actions left"><button className="ui-btn" disabled={busy||!email.trim()}>Einladungslink erstellen</button></div>
+   </form>
+   {link&&<InviteLink key={link} link={link}/>}
+   <InviteRows invites={invites} busy={busy} onWithdraw={id=>void act(async()=>{await api('/api/invites/withdraw',{id,project});setLink('');await load();})}/>
+  </Section>
+  <ErrorLine text={error}/>
+ </>;
+}
+
+/** Agent einstellen: pick a job, the name is suggested. One per job, at most six in the team. */
+function HireForm({studio,onClose}:{studio:Studio;onClose:()=>void}){
  const {room,go}=studio;
  const team=activeAgents(room!.agents),lead=leadOf(room!.agents);
  const [role,setRole]=useState(''),[name,setName]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -30,11 +100,11 @@ export function HireDialog({studio,onClose}:{studio:Studio;onClose:()=>void}){
     avatarPackId:'field-guild-r2',purpose:job.title+' im Team. '+job.does,personality:'Sachlich, freundlich, kommt schnell auf den Punkt.',responsibility:job.title,
     model:lead?.model||'default',capabilities:['chat','context-read'],contextSources:['messages','tasks','decisions'],
     permissions:{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false},active:true});
-   await studio.reload();onClose();if(r.agentId)go({chat:'agent:'+r.agentId});
+   await studio.reload();onClose();if(r.agentId)go({info:false,chat:'agent:'+r.agentId});
   }catch(e){setError((e as Error).message);}finally{setBusy(false);}
  }
- return <Dialog title="Jemanden einstellen" onClose={onClose}>
-  {lead&&<button className="ui-row soft" onClick={()=>{onClose();go({chat:'agent:'+lead.id});}}><Face agent={lead} size={36}/><span className="ui-row-text"><b>Lieber die Leitung fragen</b><small>{lead.name} weiß, wer im Team fehlt, und schlägt jemanden vor.</small></span></button>}
+ return <>
+  {lead&&<button className="ui-row soft" onClick={()=>{onClose();go({info:false,chat:'agent:'+lead.id});}}><Face agent={lead} size={36}/><span className="ui-row-text"><b>Lieber die Leitung fragen</b><small>{lead.name} weiß, wer im Team fehlt, und schlägt jemanden vor.</small></span></button>}
   {full?<p className="ui-muted">Das Team ist voll ({TEAM_LIMIT}). Kündige zuerst jemanden im Profil.</p>:<>
    <h3 className="ui-label">Welcher Job?</h3>
    <div className="ui-jobs">{JOBS.map(j=>{const who=taken(j.role);return <button key={j.role} className={'ui-job'+(role===j.role?' on':'')} disabled={!!who}
@@ -44,7 +114,7 @@ export function HireDialog({studio,onClose}:{studio:Studio;onClose:()=>void}){
    <ErrorLine text={error}/>
    <div className="ui-actions"><button className="ui-btn" onClick={onClose}>Abbrechen</button><button className="ui-btn primary" disabled={busy||!role||!name.trim()} onClick={()=>void hire()}>Einstellen</button></div>
   </>}
- </Dialog>;
+ </>;
 }
 
 /** An agent's profile: picture, name, job, personality. No models, no permission boxes. */

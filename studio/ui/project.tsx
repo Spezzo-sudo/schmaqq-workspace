@@ -3,17 +3,16 @@ import type {Studio} from './app';
 import {api,newId,plural,type TeamTask} from './api';
 import {Face,photoOf} from './avatar';
 import {Chat} from './chat';
-import {activeAgents,jobOf,runActive,taskState,teamOrder,TEAM_LIMIT} from './model';
+import {activeAgents,jobOf,runActive,taskState,teamOrder} from './model';
 import {Bar,Dialog,ErrorLine,Field,Info,Plus} from './parts';
-import {HireDialog,ProfileDialog} from './people';
+import {ProfileDialog,TeamExpand} from './people';
 
 /** A project: its chat (or a private chat with one agent), the team on top, and its tasks. */
 export function ProjectScreen({studio}:{studio:Studio}){
  const {room,route,go,runs,desktop}=studio;
- const [hiring,setHiring]=useState(false),[profile,setProfile]=useState('');
+ const [profile,setProfile]=useState('');
  if(!room)return <div className="ui-loading" role="status">Projekt wird geladen …</div>;
  const agents=teamOrder(room.agents),people=room.members.filter(m=>!m.removed);
- const canDevelop=studio.roles?.mine.some(r=>r==='admin'||r==='developer');
  const chatAgent=route.chat.startsWith('agent:')?agents.find(a=>a.id===route.chat.slice(6))??null:null;
  const chatMember=route.chat.startsWith('member:')?people.find(m=>m.id===route.chat.slice(7))??null:null;
  const working=new Set(runs.runs.filter(runActive).map(r=>r.agent));
@@ -38,14 +37,13 @@ export function ProjectScreen({studio}:{studio:Studio}){
    </button>)}
    {people.map(m=>m.id===studio.me.id?<div key={m.id} className="ui-team-member me"><Face name={m.name} photo={photoOf(m,room.project.id)} size={48}/><b>Du</b><small>{m.role==='owner'?'Inhaber':'Mensch'}</small></div>
     :<button key={m.id} className="ui-team-member" onClick={()=>go({chat:'member:'+m.id})}><Face name={m.name} photo={photoOf(m,room.project.id)} size={48} badge={unread('member:'+m.id)}/><b>{m.name.split(' ')[0]}</b><small>Mensch</small></button>)}
-   {canDevelop&&agents.length<TEAM_LIMIT&&<button className="ui-team-member add" onClick={()=>setHiring(true)}><span className="ui-face add"><Plus/></span><b>Einstellen</b><small>&nbsp;</small></button>}
+   <TeamExpand key={room.project.id} studio={studio} inStrip/>
   </nav>
   <div className="ui-tabs" role="tablist">
    <button role="tab" aria-selected={route.tab==='chat'} onClick={()=>go({tab:'chat'},true)}>Chat</button>
    <button role="tab" aria-selected={route.tab==='tasks'} onClick={()=>go({tab:'tasks'},true)}>Aufgaben{openCount(studio)>0&&<b className="ui-count">{openCount(studio)}</b>}</button>
   </div>
   {route.tab==='tasks'?<TaskList studio={studio}/>:<Chat studio={studio} place={{kind:'group'}} key={room.project.id}/>}
-  {hiring&&<HireDialog studio={studio} onClose={()=>setHiring(false)}/>}
   {profile&&<ProfileDialog studio={studio} agentId={profile} onClose={()=>setProfile('')}/>}
  </section>;
 }

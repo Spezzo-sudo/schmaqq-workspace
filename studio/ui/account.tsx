@@ -233,7 +233,7 @@ export function GuideScreen({studio}:{studio:Studio}){
   </Section>
   <Section title="Das Team">
    <p>Jeder Agent hat einen Job: Entwicklung ändert Code, Recherche sucht im Internet, Prüfung prüft Änderungen. Herr Grau leitet und stellt ein. Höchstens sechs im Team, pro Job einer.</p>
-   <p>Über die Projektinfo kannst du Menschen dazunehmen oder für das Projekt einladen, wenn du es leitest.</p>
+   <p>Über „Team erweitern“ kannst du Personen für dein Projekt einladen, wenn du es leitest.</p>
    <p>{projectVisibility}</p>
   </Section>
   <Section title="Grenzen und Kosten">
