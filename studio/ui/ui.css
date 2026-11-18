@@ -22,6 +22,7 @@ textarea{resize:vertical}
 .ui-banner{background:var(--coral);color:#fff;padding:8px 14px;font-size:14px}.ui-banner button{text-decoration:underline;margin-left:8px}
 
 /* Buttons and links */
+a.ui-btn{text-decoration:none;color:var(--ink)}
 .ui-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ink);border-radius:999px;padding:9px 16px;font-weight:700;font-size:15px;background:var(--card)}
 .ui-btn.primary{background:var(--acid)}
 .ui-btn.danger{border-color:var(--fail);color:var(--fail)}
@@ -235,3 +236,6 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .ui-advanced summary{cursor:pointer;color:var(--muted);font-weight:700;font-size:14px;margin-bottom:8px}
 .ui-tip{margin:8px 18px;padding:14px 16px;border-radius:var(--r);background:var(--acid);border:1.5px solid var(--ink)}
 .ui-tip p{margin:4px 0 6px}.ui-tip .ui-link{color:var(--ink)}
+.ui-result{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+.ui-result .ui-link{margin-left:8px}
+.ui-center{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 16px 8px}

@@ -92,7 +92,8 @@ Jeder Schritt: eigener Pull Request, Prüfung auf dem Pilot (Handy und Desktop),
 - Eigene Rechner als Agenten-Worker; weitere Anbieter (API-Schlüssel, OpenRouter) mit Modellen pro Worker.
 - Projektakte (dauerhaftes Projektwissen).
 - Antworten Wort für Wort.
-- Dauerhafte Vorschau des gemeinsamen Stands pro Projekt.
+- ~~Dauerhafte Vorschau des gemeinsamen Stands pro Projekt~~ → gebaut als „Bei uns ansehen“ (18.11.2026).
+- Eigener Hoster (z. B. Hostinger) als Ergebnis-Ort.
 - **Hilfe-Bot** (Owner, 18.11.2026): eine Blase „Fragen?“ auf jeder Seite. Kennt Konzept, Anleitung, Entscheidungen und die
   offene Seite (Ist-Zustand aus den Dokumenten im Repository, also mit jedem Update aktuell), erklärt Wege und Gründe,
   arbeitet nicht mit (keine Aufgaben, kein Code). Läuft über den vorhandenen KI-Zugang der Person, keine eigene Anmeldung.

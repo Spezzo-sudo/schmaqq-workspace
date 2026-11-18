@@ -170,6 +170,20 @@ export class LocalRunner{
     await this.git(p.repo,'branch','-D',w.branch).catch(()=>{});
    }
   }
+  if(job.action==='showcase'){
+   // "Bei uns ansehen": build the shared state for the project's fixed address; the build copy is removed again.
+   if(!p.preview?.build||!p.preview?.directory)throw new Error('Für dieses Projekt baut Studio noch keine Ansicht. Es braucht einen Build mit Ausgabeordner (zum Beispiel eine Website).');
+   const key='show-'+String(job.id).replace(/[^\w-]/g,'').slice(0,80),inner={...job,payload:{...job.payload,worktree:key}};
+   const w=this.worktree({...inner,action:'preview'},p);mkdirSync(path.dirname(w.dir),{recursive:true});
+   await this.git(p.repo,'fetch','origin');await this.git(p.repo,'worktree','add','-b',w.branch,w.dir,`origin/${p.base}`);
+   try{
+    const built=await this.run({...inner,action:'preview'},control);
+    return {previewBundle:built.previewBundle,source:built.source,commit:await this.git(w.dir,'rev-parse','HEAD')};
+   }finally{
+    await this.git(p.repo,'worktree','remove','--force',w.dir).catch(()=>{});
+    await this.git(p.repo,'branch','-D',w.branch).catch(()=>{});
+   }
+  }
   const w=this.worktree(job,p);mkdirSync(path.dirname(w.dir),{recursive:true});
   if(job.action==='prepare'){
    await this.git(p.repo,'fetch','origin');await this.git(p.repo,'worktree','add','-b',w.branch,w.dir,`origin/${p.base}`);

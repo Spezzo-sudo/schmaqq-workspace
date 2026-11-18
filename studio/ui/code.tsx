@@ -116,5 +116,30 @@ export function CodeSection({studio,admin}:{studio:Studio;admin:boolean}){
    <button className="ui-btn primary" onClick={()=>void setup(START_WITHOUT_TESTS)}>So anfangen</button></>}
   {!working&&!ready&&probe?.state==='failed'&&<><p className="ui-muted">{probe.error??'Beim Einrichten ist etwas schiefgegangen.'}</p>{admin&&server&&<button className="ui-btn" onClick={()=>void setup()}>Nochmal</button>}</>}
   <ErrorLine text={error}/>{error&&admin&&server&&!working&&<button className="ui-btn" onClick={()=>void setup()}>Nochmal</button>}
+  <ResultLine studio={studio} admin={admin}/>
  </Section>;
+}
+
+/** Where the result can be seen: at our place (fixed address) or put online by the team. Changeable at any time. */
+function ResultLine({studio,admin}:{studio:Studio;admin:boolean}){
+ const room=studio.room!,meta=room.meta,show=room.showcase;
+ const [open,setOpen]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ async function call(body:object){setBusy(true);setError('');try{await api('/api/team',body);await studio.reload();setOpen(false);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+ const choose=(live:'show'|'manual')=>call({action:'live',project:room.project.id,revision:meta.revision,live});
+ const text=meta.live==='show'?'bei uns ansehen':meta.live==='manual'?'wir stellen es selbst online':meta.live==='merge'?'geht von selbst online':'noch offen (wird beim ersten Übernehmen gefragt)';
+ return <div className="ui-result">
+  <p className="ui-fact">Ergebnis: {text}{admin&&<button className="ui-link" onClick={()=>setOpen(o=>!o)}>{open?'fertig':'ändern'}</button>}</p>
+  {meta.live==='show'&&<p className="ui-muted">{show?.building?'Wird gebaut …':show?.error?show.error:show?.url?<a href={show.url} target="_blank" rel="noreferrer">{show.url.replace(/^https?:\/\//,'')}</a>:'Kommt nach dem ersten Übernehmen.'}</p>}
+  {open&&<>
+   <div className="ui-choice" role="radiogroup" aria-label="Wo soll man das Ergebnis sehen?">
+    <button role="radio" aria-checked={meta.live==='show'} disabled={busy} onClick={()=>void choose('show')}><b>Bei uns ansehen</b><small>Nach jedem Übernehmen unter einer festen Adresse.</small></button>
+    <button role="radio" aria-checked={meta.live==='manual'} disabled={busy} onClick={()=>void choose('manual')}><b>Wir stellen es selbst online</b><small>Danach tippt jemand „Ist jetzt online“.</small></button>
+   </div>
+   {meta.live==='show'&&<div className="ui-actions left">
+    <button className="ui-btn" disabled={busy||show?.building} onClick={()=>void call({action:'showcase',project:room.project.id,op:'rebuild'})}>Neu bauen</button>
+    <button className="ui-btn" disabled={busy} onClick={()=>{if(confirm('Neue Adresse erzeugen? Die alte funktioniert dann nicht mehr.'))void call({action:'showcase',project:room.project.id,op:'renew'});}}>Neuer Link</button>
+   </div>}
+  </>}
+  <ErrorLine text={error}/>
+ </div>;
 }

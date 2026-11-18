@@ -90,7 +90,7 @@ export function TaskScreen({studio}:{studio:Studio}){
  }
  // The first take-over in a project asks once how changes go online; never again afterwards.
  const askOnline=!busy&&step.action==='integrate'&&!meta.live;
- async function chooseOnline(value:'merge'|'manual'){
+ async function chooseOnline(value:'show'|'manual'){
   await run('live',()=>api('/api/team',{action:'live',project:room!.project.id,revision:meta.revision,live:value}));act('integrate');
  }
  // Code tasks need the project's code connected first; until then that is the one next step.
@@ -118,10 +118,10 @@ const text=unconnected?(meta.repository?'Der Arbeitsplatz des Teams wird noch ei
   <div className={'ui-now '+state.tone}>
    <span className="ui-label">Jetzt</span>
    <p>{busy?busyText(busy):text}</p>
-   {askOnline?<div className="ui-choice" role="radiogroup" aria-label="Wie kommt eine Änderung online?">
-     <p><b>Vorher einmal: Wie kommt eine Änderung online?</b></p>
-     <button role="radio" aria-checked={false} onClick={()=>void chooseOnline('merge')}><b>Geht von selbst online</b><small>Euer Hoster veröffentlicht jede übernommene Änderung selbst.</small></button>
-     <button role="radio" aria-checked={false} onClick={()=>void chooseOnline('manual')}><b>Wir stellen sie selbst online</b><small>Nach dem Übernehmen macht es jemand aus dem Team und tippt „Ist jetzt online“.</small></button>
+   {askOnline?<div className="ui-choice" role="radiogroup" aria-label="Wo soll man das Ergebnis sehen?">
+     <p><b>Vorher einmal: Wo soll man das Ergebnis sehen?</b></p>
+     <button role="radio" aria-checked={false} onClick={()=>void chooseOnline('show')}><b>Bei uns ansehen</b><small>Studio baut nach jedem Übernehmen den aktuellen Stand und zeigt ihn unter einer festen Adresse.</small></button>
+     <button role="radio" aria-checked={false} onClick={()=>void chooseOnline('manual')}><b>Wir stellen es selbst online</b><small>Nach dem Übernehmen macht es jemand aus dem Team und tippt „Ist jetzt online“.</small></button>
     </div>
    :!busy&&(unconnected||step.action)&&label&&<button className="ui-btn primary" onClick={()=>unconnected?go({info:true,task:''}):act(step.action!)}>{label}</button>}
    {contract.kind==='code'&&!!server&&!result&&task.status!=='done'&&<CodeSignIn studio={studio} compact who={coder?.name}/>}

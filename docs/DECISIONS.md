@@ -2,6 +2,12 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 18.11.2026 (Nacht)
+- **„Bei uns ansehen“** (Owner: „erstmal lokal aufm VPS, erreichbar zum Anschauen“): Nach jedem Übernehmen baut Studio
+  den gemeinsamen Stand und zeigt ihn unter `studio-preview.schmaqq.com/ansehen/<name>-<schlüssel>/`. Eigene Domain
+  (kein Zugriff auf Studio-Anmeldungen), Schlüssel macht die Adresse unerratbar, „Neuer Link“ widerruft. Zunächst nur
+  Websites mit Build-Ausgabe. Eigener Hoster (Hostinger u. ä.) ausdrücklich später.
+
 ## 18.11.2026 (später Abend)
 - **Einrichtung verschwindet in Fragen** (Owner: „was ist mit Server vorbereiten gemeint?“): Statt einer Checkliste fragt
   Studio nur „Wo liegt euer Code?“ (Neu anfangen / Vorhandener Code) und richtet den Arbeitsplatz des Teams selbst ein.

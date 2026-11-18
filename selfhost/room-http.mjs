@@ -267,7 +267,8 @@ import {requirePermission,startRoles,can,rolesOf} from './project-roles.mjs';
 import {isRemoved} from './team-access.mjs';
 import {hiddenPractice,practiceOwner} from './practice.mjs';
 import {HIRABLE,TEAM_LIMIT} from './agent-roles.mjs';
-export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null}){
+import {showcaseOf} from './showcase.mjs';
+export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null,previewOrigin=''}){
  ensureChatSchema(db);
  return async function roomRoute({route,method,req,url,send}){
   if(!['/api/rooms','/api/room','/api/room/context','/api/room/tasks'].includes(route))return false;
@@ -307,7 +308,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null})
    const agents=agentsFor(db,project);
    const views=['all',...members.filter(m=>m.id!==member.id).map(m=>'member:'+m.id),...agents.filter(a=>a.active!==false).map(a=>'agent:'+a.id)];
    const unread=Object.fromEntries(views.map(view=>[view,unreadFor(db,project,member.id,view)]));
-   send({project:p,meta:roomMeta(db,project),neighbours:neighboursOf(db,project,member),messages,more,notes:notesFor(db,project),links:linksFor(db,project),tasks:db.prepare('SELECT * FROM tasks WHERE project=? ORDER BY created DESC,id').all(project),members,agents,runs,unread});return true;
+   send({project:p,meta:roomMeta(db,project),showcase:showcaseOf(db,project,previewOrigin),neighbours:neighboursOf(db,project,member),messages,more,notes:notesFor(db,project),links:linksFor(db,project),tasks:db.prepare('SELECT * FROM tasks WHERE project=? ORDER BY created DESC,id').all(project),members,agents,runs,unread});return true;
   }
   if(method!=='POST'||route!=='/api/room')throw fail(405,'Methode nicht erlaubt.');
   const value=parse(actions,await readJSON(req,24000));
