@@ -60,7 +60,9 @@ a.ui-btn{text-decoration:none;color:var(--ink)}
 
 /* Top and bars */
 .ui-top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
-.ui-me{border-radius:50%}
+.ui-me{display:inline-flex;align-items:center;gap:5px;min-height:44px;padding:5px 8px 5px 5px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted)}
+.ui-me .ui-face.person{background:var(--deep);color:var(--ink)}
+.ui-me:hover{border-color:var(--muted);color:var(--ink)}
 .ui-brand{font-weight:900;letter-spacing:.02em}.ui-brand b{background:var(--acid);font:700 10px ui-monospace,monospace;letter-spacing:.2em;padding:3px 6px;margin-left:6px;vertical-align:middle}
 .ui-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--paper);border-bottom:1px solid var(--line);min-height:58px}
 .ui-col-right .ui-bar{background:var(--card)}

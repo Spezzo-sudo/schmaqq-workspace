@@ -174,6 +174,7 @@ try{
  }),'Café Sonne');
  expect(await screen('12-navigation','/',390,async page=>{
   const open=page.getByRole('button',{name:/Menü öffnen/}),menu=page.getByRole('navigation',{name:'Menü',exact:true});
+  if(await open.locator('.ui-face').textContent()!=='N'||!await open.locator('svg').isVisible())throw new Error('Menüknopf zeigt kein eindeutiges Kürzel mit Pfeil.');
   await open.click();await menu.getByRole('button',{name:'Schließen',exact:true}).click();await menu.waitFor({state:'hidden'});
   await open.click();await page.goBack();await menu.waitFor({state:'hidden'});
   await open.click();await page.keyboard.press('Escape');await menu.waitFor({state:'hidden'});

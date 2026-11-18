@@ -27,7 +27,7 @@ Die alte Oberfläche wurde nicht umgebaut, sondern gelöscht; der Test `studio-s
 Anmeldung mit E-Mail-Adresse, Einladung annehmen, Passwort vergessen per E-Mail. Nach dem Anlegen des Kontos öffnet Studio das eingeladene Projekt direkt, wenn genau eines freigeschaltet wurde. Bei mehreren Projekten oder einer Einladung ohne Projekt öffnet sich Start.
 
 ### Start
-- Oben links: dein Avatar (öffnet das Menü). Oben rechts: SCHMAQQ Studio.
+- Oben links: dein Profilbild oder deine Anfangsbuchstaben mit einem kleinen Pfeil. Tippen öffnet das Menü. Bei einem einzelnen Namen steht dort nur sein erster Buchstabe. Oben rechts: SCHMAQQ Studio.
 - Oben eine Begrüßung mit einem Satz, was gerade ansteht.
 - **Wartet auf dich**: Karten, bei denen du dran bist (Freigeben, Vorschlag annehmen). Nur wenn es welche gibt.
 - **Projekte**: eine Karte pro Projekt (Name, letzte Nachricht, offene Aufgaben, zum Freigeben, Zähler ungelesen). Tippen öffnet den Projektchat.

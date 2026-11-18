@@ -9,11 +9,15 @@ import {Brand,Close,Checklist,Dialog,Field,Plus} from './parts';
 export function StartScreen({studio,compact=false}:{studio:Studio;compact?:boolean}){
  const {me,projects,team,go,route}=studio;
  const [creating,setCreating]=useState(false);
+ const menuName=/\s/.test(me.name.trim())?me.name:[...me.name.trim()][0]??'?';
  const titleOf=(id:string)=>projects.find(p=>p.id===id)?.title??'';
  const waiting=team.tasks.filter(t=>projects.some(p=>p.id===t.project)&&t.status!=='done'&&taskState(t).tone==='approve'&&(t.assignee===me.id||t.status==='review'&&t.assignee!==me.id));
  return <section className={'ui-start'+(compact?' compact':'')}>
   <header className="ui-top">
-   <button className="ui-me" aria-label={'Menü öffnen ('+me.name+')'} onClick={studio.openMenu}><Face name={me.name} photo={photoOf(studio.members.find(m=>m.id===me.id))} size={36}/></button>
+   <button className="ui-me" aria-label={'Menü öffnen ('+me.name+')'} onClick={studio.openMenu}>
+    <Face name={menuName} photo={photoOf(studio.members.find(m=>m.id===me.id))} size={30}/>
+    <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12"><path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+   </button>
    <Brand/>
   </header>
   {!compact&&<div className="ui-greeting"><h1>{greeting()}, {me.name.split(' ')[0]}.</h1>
