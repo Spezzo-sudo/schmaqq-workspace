@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {taskNextStep} from '../studio/task-next-step.ts';
+import {taskNextStep} from '../studio/ui/next-step.ts';
 
 const base={kind:'code',status:'doing',own:true,assigned:true,person:'Markus',cancelled:false,blocked:'',ready:false,requiresReview:true,result:null,hasCopy:true,hasWorkshop:true};
 const step=change=>taskNextStep({...base,...change});
@@ -10,7 +10,7 @@ test('a code task names exactly one next step along the whole way',()=>{
  assert.equal(step({status:'todo'}).action,'start');
  assert.equal(step({hasWorkshop:false}).action,'setup');
  assert.equal(step({hasCopy:false}).action,'edit');
- assert.deepEqual(step({}),{text:'Wenn deine Änderung fertig ist, gib sie zur Prüfung. Dann schaut sie sich jemand anderes an.',action:'submit',label:'Zur Prüfung geben'});
+ assert.deepEqual(step({}),{text:'Es gibt eine Änderung. Schau sie an und gib sie frei.',action:'submit',label:'Ansehen'});
  const running=step({activeJob:'submit'});assert.equal(running.waiting,true);assert.equal(running.action,undefined);assert.match(running.text,/ein paar Minuten/);
  assert.equal(step({result:{shared:true,state:'pending',mine:true}}).action,undefined,'own change waits for someone else');
  assert.equal(step({own:false,result:{shared:true,state:'pending',mine:false}}).action,'look');
@@ -46,7 +46,7 @@ test('next steps speak everyday language',()=>{
   assert.doesNotMatch(s.text+' '+(s.label??''),/\b(Commit|Branch|Repository|Prüfstand|Runner|Worker|Merge|Pull Request|PR|Git)\b/,s.text);}
 });
 
-import {taskSummary} from '../studio/task-next-step.ts';
+import {taskSummary} from '../studio/ui/next-step.ts';
 test('lists use one short status per task and sort it to the right person',()=>{
  const t=(change={})=>({status:'doing',assignee:'me',contract:{kind:'code',blocked:'',cancelled:false,requiresReview:true},completion:{ready:false,result:null},...change});
  const s=(task,me='me')=>taskSummary(task,me,id=>id==='me'?'Marco':'Markus');
@@ -58,8 +58,8 @@ test('lists use one short status per task and sort it to the right person',()=>{
  assert.equal(s(t({status:'review',completion:{ready:false,result:shared}})).group,'others','own change waits for the other person');
  assert.deepEqual(s(t({status:'review',completion:{ready:false,result:shared}}),'other'),{text:'Bitte anschauen und freigeben',mine:true,group:'mine'});
  assert.equal(s(t({status:'review',completion:{ready:false,result:{...shared,state:'changes_requested'}}})).text,'Änderung gewünscht – bitte überarbeiten');
- assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved'}}})).text,'Freigegeben – bitte zusammenführen');
- assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved',workflow:'pull-request'}}})).text,'Freigegeben – bitte zusammenführen','GitHub projects merge by the same explicit step');
+ assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved'}}})).text,'Freigegeben – bitte übernehmen');
+ assert.equal(s(t({completion:{ready:false,result:{...shared,state:'approved',workflow:'pull-request'}}})).text,'Freigegeben – bitte übernehmen','GitHub projects merge by the same explicit step');
  assert.equal(s(t({completion:{ready:true,result:{...shared,state:'approved',integrated:true}}})).text,'Fertig – bitte abschliessen');
  assert.equal(s(t({contract:{kind:'code',blocked:'Warte',cancelled:false,requiresReview:true}})).text,'Hängt fest: Warte');
  assert.equal(s(t({status:'done'})).group,'done');
@@ -67,22 +67,12 @@ test('lists use one short status per task and sort it to the right person',()=>{
  assert.equal(s(general,'other').text,'Bitte anschauen und freigeben');
 });
 
-import {humanEvent} from '../studio/project-overview-model.ts';
-test('history keeps what people care about, in everyday words',()=>{
- for(const [kind,body] of [['save-file','Datei gespeichert'],['create-file','Datei erstellt'],['check','Tests abgeschlossen'],['preview','Vorschau erstellt'],['review','Prüfstand erstellt'],['contract','Abschlussbedingungen aktualisiert: X'],['brief','Aufgabe präzisiert · X'],['project','Live-Weg: eigener Schritt nach dem Übernehmen'],['read-file','Bearbeitung aktualisiert'],['github-open','Pull Request erstellt oder zugeordnet']])
-  assert.equal(humanEvent(kind,body),null,kind);
- assert.equal(humanEvent('submit','Code zur Prüfung geteilt'),'Änderung zur Prüfung gegeben');
- assert.equal(humanEvent('review','Prüfstand freigegeben'),'Änderung freigegeben');
- assert.equal(humanEvent('review','Änderungen angefordert'),'Änderung gewünscht');
- assert.equal(humanEvent('integrated','Freigegebener Code zusammengeführt · X'),'Änderung zusammengeführt');
- assert.equal(humanEvent('status','Status: done · X'),'Aufgabe abgeschlossen');
-});
 
-import {taskStages} from '../studio/task-next-step.ts';
+import {taskStages} from '../studio/ui/next-step.ts';
 test('the timeline shows the whole way and where the task stands',()=>{
  const base={kind:'code',status:'doing',requiresReview:true,cancelled:false,own:true,person:'Marco',result:null,liveMode:'manual',liveHow:'Marco startet Hermes.',live:false};
  const states=change=>taskStages({...base,...change}).map(s=>s.state).join(',');
- assert.deepEqual(taskStages(base).map(s=>s.label),['Ändern','Anschauen','Zusammenführen','Live']);
+ assert.deepEqual(taskStages(base).map(s=>s.label),['Ändern','Anschauen','Übernehmen','Live']);
  assert.equal(states({}),'now,next,next,next');
  assert.equal(states({result:{shared:true,state:'pending'}}),'done,now,next,next');
  assert.equal(states({result:{shared:true,state:'changes_requested'}}),'now,next,next,next','a wished change goes back to Ändern');
@@ -97,7 +87,7 @@ test('the timeline shows the whole way and where the task stands',()=>{
 test('a taken-over change that is not live yet asks for the live step',()=>{
  const s=taskNextStep({kind:'code',status:'done',own:false,assigned:true,person:'Markus',cancelled:false,blocked:'',ready:true,requiresReview:true,hasCopy:true,hasWorkshop:true,awaitingLive:true,liveHow:'Marco startet Hermes.'});
  assert.equal(s.action,'live');assert.match(s.text,/Marco startet Hermes/);
- assert.equal(taskSummary({status:'done',assignee:'me',awaitingLive:true,contract:{kind:'code',blocked:'',cancelled:false,requiresReview:true},completion:{ready:true,result:null}},'me',()=>'').text,'Zusammengeführt – noch nicht live');
+ assert.equal(taskSummary({status:'done',assignee:'me',awaitingLive:true,contract:{kind:'code',blocked:'',cancelled:false,requiresReview:true},completion:{ready:true,result:null}},'me',()=>'').text,'Übernommen – noch nicht live');
 });
 
 test('next step follows the project role: self approval in practice, no review button for viewers, setup waits for the admin',()=>{
@@ -118,11 +108,11 @@ test('next step follows the project role: self approval in practice, no review b
 test('a failed step stays the next step until it is retried, and an empty copy cannot be submitted',()=>{
  const failure={action:'submit',text:'Die Änderung konnte nicht zur Prüfung gegeben werden.',detail:'Gebaute Vorschau fehlt.',mine:true};
  const failed=step({failure});assert.equal(failed.action,'retry');assert.match(failed.text,/Gebaute Vorschau fehlt/);
- assert.equal(step({failure:{...failure,action:'integrate'}}).label,'Nochmal zusammenführen');
+ assert.equal(step({failure:{...failure,action:'integrate'}}).label,'Nochmal übernehmen');
  assert.equal(step({failure:{...failure,action:'create-file'}}).action,'edit');
  const other=step({own:false,failure:{...failure,mine:false}});assert.equal(other.action,undefined);assert.match(other.text,/Markus/);
  assert.equal(step({failure,activeJob:'submit'}).waiting,true,'running work wins over an old failure');
- const empty=step({hasChange:false});assert.equal(empty.action,'edit');assert.match(empty.text,/zuerst etwas/);
+ const empty=step({hasChange:false});assert.equal(empty.action,'edit');assert.match(empty.text,/Beauftrage jemanden aus der Entwicklung/);
  assert.equal(step({hasChange:true}).action,'submit');
 });
 

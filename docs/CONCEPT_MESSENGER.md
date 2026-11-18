@@ -3,7 +3,7 @@
 Fassung 2, Stand 17.11.2026. Abgestimmt mit dem Owner. Löst Fassung 1 und PR #95 als Richtung ab.
 **Was hier nicht steht, wird nicht gebaut.** Neue Ideen kommen unter „Später“ und ins
 [Entscheidungsprotokoll](DECISIONS.md), nicht in den laufenden Bau.
-Skizze: [concept/konzept-v2.png](concept/konzept-v2.png).
+Skizze: [concept/konzept-v2.png](concept/konzept-v2.png). Jeder Bildschirm und Knopf im Einzelnen: [OBERFLAECHE.md](OBERFLAECHE.md).
 
 ## Der Kern in einem Satz
 

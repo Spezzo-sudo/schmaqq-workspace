@@ -439,7 +439,7 @@ test('agent ↔ agent: only in a task, one level, counted, stoppable, and paid b
 });
 
 test('scope areas: two projects on one repository know each other; the area is the admin\'s; changes outside are named',async t=>{
- const {outsideScope}=await import('../studio/room-model.ts');
+ const {outsideScope}=await import('../studio/ui/diff.ts');
  const f=await fixture(t),[alice,bob]=f.members;
  const make=async title=>(await f.post('/api/room',{action:'create',id:randomUUID(),title,description:''},{cookie:alice.cookie})).data.project;
  const front=await make('Frontend'),back=await make('Backend');
@@ -630,8 +630,14 @@ test('web research: only public https pages, every address checked, redirects to
 });
 
 test('company: the app shows the same jobs the server enforces',async()=>{
- const {ROLE_JOBS:app,agentJob}=await import('../studio/room-model.ts');
- const {ROLE_JOBS:server,jobOf}=await import('./agent-roles.mjs');
+ const {ROLE_JOBS:app,JOBS,TEAM_LIMIT:appLimit,jobOf:appJob}=await import('../studio/ui/model.ts');
+ const {ROLE_JOBS:server,HIRABLE,TEAM_LIMIT,canCode,canResearch,canReview,canLead}=await import('./agent-roles.mjs');
  assert.deepEqual(JSON.parse(JSON.stringify(app)),JSON.parse(JSON.stringify(server)));
- for(const role of ['developer','researcher','reviewer','advisor','coordinator'])for(const lead of [false,true])assert.equal(agentJob({role,lead}).text,jobOf({role,lead}),role+lead);
+ assert.equal(appLimit,TEAM_LIMIT);
+ assert.deepEqual(JOBS.map(j=>j.role).sort(),Object.keys(HIRABLE).sort(),'the app offers exactly the jobs the lead can hire for');
+ for(const j of JOBS)assert.equal(j.face,HIRABLE[j.role].face,j.role);
+ for(const role of ['developer','frontend','researcher','strategy','reviewer','security','advisor','coordinator'])for(const lead of [false,true]){
+  const agent={role,lead,active:true,permissions:{readProject:true}},job=appJob(agent);
+  assert.deepEqual([job.code,job.web,job.review,job.lead],[canCode(agent),canResearch(agent),canReview(agent),canLead(agent)],role+lead);
+ }
 });

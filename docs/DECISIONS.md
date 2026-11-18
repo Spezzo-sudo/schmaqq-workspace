@@ -2,6 +2,16 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 18.11.2026 (Abend)
+- **Oberfläche neu aus der Liste gebaut** (Owner: „wir haben auf eine alte Oberfläche eine neue aufgedrückt … mach das endlich
+  ordentlich“). Verbindlich ist [OBERFLAECHE.md](OBERFLAECHE.md); die alte Oberfläche, ihre 16 Stylesheets und die
+  „Bisherige Ansicht“ sind gelöscht, nicht versteckt. Der Test `studio-surface.test.mjs` erlaubt nur die Dateien der Liste,
+  ein Stylesheet und keine verbotenen Begriffe.
+- **Menschen reden und geben frei.** Kein Datei-Editor, keine Testknöpfe, kein eigenes ChatGPT als Connector in der App.
+- **Code läuft auf dem Server.** Wo gearbeitet wird, bleibt eine Angabe des Projekts, damit ein eigener PC später dazukommt.
+- **Wissen, Rollen, Daten herunterladen, Archiv** bleiben, in Projektinfo bzw. Mein Konto.
+- **Auch Menschen stellen höchstens sechs ein, pro Job einen** (Server prüft es wie beim Einstellen durch Herrn Grau).
+
 ## 18.11.2026
 - **Firma statt Rechteliste** (#109): Die Rolle bestimmt den Job (Entwicklung ändert Code, Recherche sucht im Web,
   Prüfung prüft). Herr Grau plant, verteilt und stellt ein, programmiert und recherchiert nicht selbst. Höchstens 6 im Team, eine Person pro Rolle.

@@ -1,4 +1,12 @@
 {
+  "ui_rebuild_20261118": {
+    "summary": "Oberfläche neu aus docs/OBERFLAECHE.md gebaut; alte Oberfläche, 16 Stylesheets und 'Bisherige Ansicht' gelöscht. Firma im Messenger: Menschen reden und geben frei, Agenten mit Job, Herr Grau leitet.",
+    "screens": "Anmelden, Start, Menü, Projekt (Team-Leiste, Chat, Aufgaben), Direktchat mit Agent oder Mensch, Aufgabe (Jetzt, Ansehen/Freigeben/Übernehmen, Gespräch), Projektinfo (Team, Code verbinden, Bereich, Wissen, Wer darf was), Einstellen, Profil, Mein Konto, Archiv, Anleitung.",
+    "company_flow": "Plan annehmen startet die genannten Kollegen; Ottos Programmierlauf meldet sich im Gespräch; Prüfung wird automatisch gefragt; Team höchstens 6, pro Job einer (auch beim Einstellen durch Menschen).",
+    "guard": "selfhost/studio-surface.test.mjs: nur die Dateien der Liste, ein Stylesheet, keine verbotenen Begriffe.",
+    "verification": "studio:verify grün; scripts/studio-ui-walkthrough.mjs (Telefon 390 px und Desktop 1440 px, ohne Seitenfehler) auf lokalem Wegwerf-Server.",
+    "not_yet_proven": "Echter Programmierlauf durch Otto mit Freigeben und Übernehmen in Produktion (braucht die Anmeldung für Programmierläufe)."
+  },
   "messenger_steps2to5a_20261117": {
     "state": "live_after_checks",
     "concept": "docs/CONCEPT_MESSENGER.md, Schritte 2, 3, 4, 5a",
