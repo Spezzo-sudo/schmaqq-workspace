@@ -3,21 +3,17 @@ import type {Studio} from './app';
 import {api,newId,signOut,when} from './api';
 import {Face,photoOf} from './avatar';
 import {taskState} from './model';
-import {Brand,Close,Checklist,Dialog,Field,Plus} from './parts';
+import {Brand,Checklist,Dialog,Field,Plus} from './parts';
 
 /** Start: what waits for you, then the projects. On the desktop it is the left column. */
 export function StartScreen({studio,compact=false}:{studio:Studio;compact?:boolean}){
  const {me,projects,team,go,route}=studio;
  const [creating,setCreating]=useState(false);
- const menuName=/\s/.test(me.name.trim())?me.name:[...me.name.trim()][0]??'?';
  const titleOf=(id:string)=>projects.find(p=>p.id===id)?.title??'';
  const waiting=team.tasks.filter(t=>projects.some(p=>p.id===t.project)&&t.status!=='done'&&taskState(t).tone==='approve'&&(t.assignee===me.id||t.status==='review'&&t.assignee!==me.id));
  return <section className={'ui-start'+(compact?' compact':'')}>
   <header className="ui-top">
-   <button className="ui-me" aria-label={'Menü öffnen ('+me.name+')'} onClick={studio.openMenu}>
-    <Face name={menuName} photo={photoOf(studio.members.find(m=>m.id===me.id))} size={30}/>
-    <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12"><path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-   </button>
+   <MenuButton studio={studio} onClick={studio.openMenu}/>
    <Brand/>
   </header>
   {!compact&&<div className="ui-greeting"><h1>{greeting()}, {me.name.split(' ')[0]}.</h1>
@@ -77,6 +73,15 @@ function NewProject({studio,onClose}:{studio:Studio;onClose:()=>void}){
  </Dialog>;
 }
 
+function MenuButton({studio,open=false,onClick}:{studio:Studio;open?:boolean;onClick:()=>void}){
+ const name=studio.me.name.trim();
+ const initialsName=/\s/.test(name)?name:[...name][0]??'?';
+ return <button className="ui-me" aria-label={open?'Schließen':'Menü öffnen ('+studio.me.name+')'} aria-expanded={open} onClick={onClick}>
+  <Face name={initialsName} photo={photoOf(studio.members.find(m=>m.id===studio.me.id))} size={30}/>
+  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12"><path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+ </button>;
+}
+
 /** The menu behind your picture. */
 export function Menu({studio,onClose}:{studio:Studio;onClose:()=>void}){
  const {me,go,agentsReady}=studio;
@@ -88,7 +93,7 @@ export function Menu({studio,onClose}:{studio:Studio;onClose:()=>void}){
  if(creating)return <NewProject studio={studio} onClose={()=>{setCreating(false);onClose();}}/>;
  return <div className="ui-sheet-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
   <nav className="ui-sheet left" aria-label="Menü">
-   <div className="ui-sheet-head"><Face name={me.name} photo={photoOf(studio.members.find(m=>m.id===me.id))} size={44}/><span><b>{me.name}</b><small>{me.email}</small></span><button className="ui-icon" aria-label="Schließen" onClick={onClose}><Close/></button></div>
+   <div className="ui-sheet-head"><MenuButton studio={studio} open onClick={onClose}/><span><b>{me.name}</b><small>{me.email}</small></span></div>
    <button onClick={()=>go({page:'account'})}>Mein Konto</button>
    <button onClick={()=>setCreating(true)}>Projekt anlegen</button>
    {studio.members.some(m=>m.id===me.id&&m.role==='owner')&&<button onClick={()=>{go({page:'account',account:'verwaltung'});}}>Jemanden einladen</button>}

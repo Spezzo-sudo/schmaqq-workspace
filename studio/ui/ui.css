@@ -60,7 +60,9 @@ a.ui-btn{text-decoration:none;color:var(--ink)}
 
 /* Top and bars */
 .ui-top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
-.ui-me{display:inline-flex;align-items:center;gap:5px;min-height:44px;padding:5px 8px 5px 5px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted)}
+.ui-me{display:inline-flex;align-items:center;gap:5px;min-height:44px;padding:5px 8px 5px 5px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);flex:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.ui-me[aria-expanded=true]>svg{transform:rotate(180deg)}
+.ui-me:focus-visible{outline-color:var(--ink)}
 .ui-me .ui-face.person{background:var(--deep);color:var(--ink)}
 .ui-me:hover{border-color:var(--muted);color:var(--ink)}
 .ui-brand{font-weight:900;letter-spacing:.02em}.ui-brand b{background:var(--acid);font:700 10px ui-monospace,monospace;letter-spacing:.2em;padding:3px 6px;margin-left:6px;vertical-align:middle}
@@ -93,12 +95,12 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 
 /* Sheets and dialogs */
 .ui-sheet-backdrop{position:fixed;inset:0;z-index:50;background:rgba(17,18,37,.35);display:flex;align-items:flex-end;justify-content:center}
-.ui-sheet{background:var(--card);width:100%;max-width:420px;height:100%;padding:16px;display:flex;flex-direction:column;gap:2px;overflow:auto}
+.ui-sheet{background:var(--card);width:100%;max-width:420px;height:100%;padding:12px 16px 16px;display:flex;flex-direction:column;gap:2px;overflow:auto}
 .ui-sheet.left{margin-right:auto}
 .ui-sheet-backdrop:has(.ui-sheet.left){align-items:stretch;justify-content:flex-start}
-.ui-sheet-head{display:flex;gap:12px;align-items:center;padding:8px 4px 16px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.ui-sheet-head{display:flex;gap:12px;align-items:center;padding:0 0 12px;border-bottom:1px solid var(--line);margin-bottom:8px}
 .ui-sheet-head span{display:flex;flex-direction:column}.ui-sheet-head small{color:var(--muted)}
-.ui-sheet-head .ui-icon{margin-left:auto;flex:none}
+
 .ui-sheet>button{text-align:left;padding:12px 8px;border-radius:10px;font-size:16px}.ui-sheet>button:hover{background:var(--deep)}
 .ui-sheet-foot{margin-top:auto;color:var(--muted);font-size:14px;display:flex;align-items:center}
 .ui-dialog{background:var(--card);width:100%;max-width:520px;max-height:92dvh;border-radius:20px 20px 0 0;display:flex;flex-direction:column}
