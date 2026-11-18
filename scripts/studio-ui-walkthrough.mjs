@@ -56,12 +56,12 @@ try{
  const accepted=await screen('05-accepted','/?p='+project,390,p=>p.getByText('Plan annehmen').click());
  expect(accepted,'@Otto bitte übernimm: Startseite mit Öffnungszeiten');expect(accepted,'Otto');
  expect(await screen('06-tasks','/?p='+project+'&tab=tasks',390),'Startseite mit Öffnungszeiten');
- expect(await screen('07-info','/?p='+project+'&info=1',390),'Wo liegt euer Code?');
- expect(await screen('07b-new-code','/?p='+project+'&info=1',390,async p=>{await p.getByText('Neu anfangen').click();
-  const input=p.locator('.ui-inline input'),arrow=p.getByRole('button',{name:'Weiter nach unten',exact:true});
+ expect(await screen('07-info','/?p='+project+'&info=1',390),'GitHub einrichten');
+ expect(await screen('07b-new-code','/?p='+project+'&info=1',390,async p=>{
+  const input=p.getByLabel('Link zu deinem Projekt auf GitHub'),arrow=p.getByRole('button',{name:'Weiter nach unten',exact:true});
   await p.locator('.ui-screen.info').evaluate(el=>{el.scrollTop=0;});
   await arrow.waitFor({state:'visible'});await input.focus();await arrow.waitFor({state:'hidden'});
-  await input.scrollIntoViewIfNeeded();}),'leeres Repository');
+  await input.scrollIntoViewIfNeeded();}),'Auf GitHub anlegen');
  expect(await screen('06b-task','/?p='+project+'&tab=tasks',390,p=>p.getByText('Startseite mit Öffnungszeiten').first().click()),'braucht das Projekt zuerst seinen Code');
  // "Bei uns ansehen": a server workplace builds the shared state; the fixed address shows it.
  const device=randomUUID(),deviceToken=randomUUID();

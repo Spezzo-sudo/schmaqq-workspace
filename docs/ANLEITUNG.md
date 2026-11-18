@@ -33,8 +33,7 @@ weitergegebene Schritte.
 
 ## Damit das Team Code ändern kann
 
-- **Einmal pro Projekt** (Projekt-Admin): Projektinfo → „Code“ → **„Wo liegt euer Code?“**. Neu anfangen: auf GitHub ein
-  leeres Repository anlegen (privat, mit README) und die Adresse eintragen. Vorhandener Code: die Adresse eintragen.
+- **Einmal pro Projekt** (Projekt-Admin): Projektinfo → „Code“ → **„GitHub einrichten“**. Öffne dein Projekt auf GitHub und kopiere den Link aus der Browserzeile. Wenn du noch keins hast, wähle „Auf GitHub anlegen“. Füge den Link ein und tippe auf „Verbinden“.
   Den Arbeitsplatz für das Team richtet Studio danach selbst ein. Findet es noch keine Tests, tippst du „So anfangen“.
 - **Einmal pro Person:** Das erste Mal, wenn Otto für dich programmieren soll, fragt Studio direkt in der Aufgabe nach
   deinem ChatGPT. Gilt danach für alle Agenten (auch unter Mein Konto).

@@ -67,7 +67,7 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
     vorher **„Wo soll man das Ergebnis sehen?“**: ○ **Bei uns ansehen** (Studio baut nach jedem Übernehmen den
     aktuellen Stand unter einer festen Adresse) · ○ **Wir stellen es selbst online**. Danach nicht mehr; ändern geht in der Projektinfo.
     Bei „Wir stellen es selbst online“ nach dem Übernehmen: „Ist jetzt online“. (Eigener Hoster wie Hostinger: später.)
-  - Code des Projekts noch nicht da: „Wo liegt euer Code?“ (führt zur Frage in der Projektinfo).
+  - Code des Projekts noch nicht da: „GitHub einrichten“ (führt zur Projektinfo).
   - Das erste Mal, dass das Team für dich Code ändern soll: „Damit Otto für dich programmieren kann, verbinde einmal
     dein ChatGPT. Gilt danach für alle Agenten.“ Knopf „Mit ChatGPT verbinden“, direkt im Kasten.
   - Sonstige Aufgabe: „Erledigt“.
@@ -81,9 +81,8 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
   - Die Projektleitung wählt über „+ Mensch dazunehmen“ ein vorhandenes Studio-Konto oder erstellt über „Ins Projekt einladen“ → „Einladungslink erstellen“ einen einmaligen Link für ein neues Konto. Die Person kommt beim Annehmen direkt in dieses Projekt. Der Link gilt wie bisher 24 Stunden. Offene Links lassen sich hier ansehen und über „Zurücknehmen“ sperren.
   - Pro Person eine Rolle. „Leitet das Projekt“, „Macht mit“ oder „Schaut nur zu“ (mitlesen). Die Projektleitung kann über „Ändern“ Rollen ändern und „Aus dem Projekt nehmen“. Mindestens eine Person leitet das Projekt. Wer bisher dabei ist, bleibt dabei.
   - „Du siehst Chat, Aufgaben mit Gesprächen, Wissen und Team in deinen Projekten, während andere Projekte und fremde private Chats mit Menschen oder Agenten verborgen bleiben.“
-- **Code**: genau eine Frage, **„Wo liegt euer Code?“** (Projekt-Admin; alle anderen: „Legt der Projekt-Admin fest.“)
-  - ○ **Neu anfangen**: „Leg auf GitHub ein leeres Repository an (privat, mit README) und trag die Adresse ein.“
-  - ○ **Vorhandener Code**: „Trag die GitHub-Adresse ein.“
+- **Code**: „GitHub einrichten“ (Projekt-Admin). Ein Feld „Link zu deinem Projekt auf GitHub“ mit der Erklärung „Öffne dein Projekt auf GitHub und kopiere den Link aus der Browserzeile.“
+  - „Noch kein Projekt auf GitHub? Auf GitHub anlegen“. Danach den Link einfügen und „Verbinden“.
   - Braucht GitHub noch eine Erlaubnis, steht dort genau ein Knopf „Zugriff bei GitHub erlauben“.
   - Danach richtet Studio **von selbst** den Arbeitsplatz ein (Tests und Vorschau erkennen, Probelauf). Zu sehen ist nur
     eine Zeile: „Code: name/projekt · Arbeitsplatz wird eingerichtet …“, dann „… · bereit“.
