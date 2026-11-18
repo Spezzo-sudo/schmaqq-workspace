@@ -2,6 +2,10 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 18.11.2026 (Passwort und Wortmarke)
+- Studio-Konten werden nur mit E-Mail eingeladen. Der Inhaber kann Konten einladen und entfernen. Ein neues Passwort setzt die Person selbst über den Link an ihre E-Mail-Adresse.
+- Die SCHMAQQ-Wortmarke verwendet das Originalzeichen und die rote Welle, die sich vom Berührungspunkt ausbreitet.
+
 ## 18.11.2026 (Konto und Orientierung)
 - Das Konto hat eine Übersicht und einzelne Bereiche für Profil, Sicherheit, KI-Zugänge und Daten. Die Teamverwaltung bleibt dem Inhaber vorbehalten.
 - Menschen können ihr eigenes Profilfoto speichern oder entfernen. Studio zeigt es im Team und Chat. Der Server prüft, wer es abrufen darf.

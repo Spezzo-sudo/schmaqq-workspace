@@ -159,6 +159,7 @@ export function createPasswordRecovery({db, origin, mailer = null, now = Date.no
       const serialized = get(tokenKey(hash));
       if (!serialized) return false;
       const claim = JSON.parse(serialized);
+      if (claim.byOwner) return false;
       const saved = get(memberKey(claim.member));
       if (!saved) return false;
       const pointer = JSON.parse(saved);
@@ -169,10 +170,8 @@ export function createPasswordRecovery({db, origin, mailer = null, now = Date.no
       db.prepare('DELETE FROM sessions WHERE member=?').run(account.id);
       // Recovery means a potential credential compromise: revoke unattended
       // runner/API device tokens too; owner must reconnect trusted devices.
-      if (!claim.byOwner) {
-        db.prepare('UPDATE devices SET revoked=1 WHERE owner=?').run(account.id);
-        db.prepare("UPDATE jobs SET status='cancelled' WHERE status='queued' AND (owner=? OR device IN (SELECT id FROM devices WHERE owner=?))").run(account.id,account.id);
-      }
+      db.prepare('UPDATE devices SET revoked=1 WHERE owner=?').run(account.id);
+      db.prepare("UPDATE jobs SET status='cancelled' WHERE status='queued' AND (owner=? OR device IN (SELECT id FROM devices WHERE owner=?))").run(account.id,account.id);
       del(memberKey(account.id));
       del(tokenKey(hash));
       if (mailer?.sendChanged) {
@@ -185,22 +184,9 @@ export function createPasswordRecovery({db, origin, mailer = null, now = Date.no
       return true;
     });
   }
-  /** The owner creates a link to set a new password and hands it over directly (no mail server needed).
-   * Forgetting is not a compromise: connected PCs and servers stay connected. */
-  function issue(memberId, lifetime = 24 * HOUR) {
-    return transaction(db, () => {
-      const old = get(memberKey(memberId));
-      if (old) del(tokenKey(JSON.parse(old).hash));
-      const raw = token(), hash = digest(raw), expires = Number(now()) + lifetime;
-      put(memberKey(memberId), JSON.stringify({hash, expires}));
-      put(tokenKey(hash), JSON.stringify({member: memberId, expires, byOwner: true}));
-      return origin + '/#reset=' + raw;
-    });
-  }
   return Object.freeze({
     available: Boolean(mailer),
     request,
-    confirm,
-    issue
+    confirm
   });
 }

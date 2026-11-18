@@ -18,13 +18,13 @@ Die alte Oberfläche wurde nicht umgebaut, sondern gelöscht; der Test `studio-s
 - **Code läuft auf dem Server.** Wo gearbeitet wird, ist eine Angabe des Projekts („Wo arbeitet das Team: Server“), damit
   später ein eigener PC als zweiter Ort dazukommen kann, ohne die Oberfläche umzubauen.
 
-- Das SCHMAQQ-Zeichen führt zu Start. Das Q bewegt sich beim ersten Öffnen kurz, wenn Animationen erlaubt sind.
+- Das SCHMAQQ-Zeichen führt zu Start. Die Originalform liegt in `studio/ui/brand-paths.ts`. Beim Antippen breitet sich die rote Welle vom Berührungspunkt über das Originalzeichen aus, wenn Animationen erlaubt sind.
 - In Projektinfo, Mein Konto und Anleitung zeigt „Weiter nach unten“ bei weiterem Inhalt den Weg nach unten. Beim Schreiben und am Seitenende ist der Pfeil weg.
 
 ## Bildschirme
 
 ### Anmelden
-Anmeldung, Einladung annehmen, Passwort vergessen. Nach dem Anlegen des Kontos öffnet Studio das eingeladene Projekt direkt, wenn genau eines freigeschaltet wurde. Bei mehreren Projekten oder einer Einladung ohne Projekt öffnet sich Start.
+Anmeldung mit E-Mail-Adresse, Einladung annehmen, Passwort vergessen per E-Mail. Nach dem Anlegen des Kontos öffnet Studio das eingeladene Projekt direkt, wenn genau eines freigeschaltet wurde. Bei mehreren Projekten oder einer Einladung ohne Projekt öffnet sich Start.
 
 ### Start
 - Oben links: dein Avatar (öffnet das Menü). Oben rechts: SCHMAQQ Studio.
@@ -116,7 +116,7 @@ Bild, Name, Job mit Satz „Was er tut“, Persönlichkeit (änderbar), „Priva
 - **Sicherheit**: Passwort ändern und Abmelden.
 - **KI-Zugänge**: KI-Zugang für Gespräche und Recherche und „ChatGPT fürs Programmieren“. Fragst du einen Agenten, arbeitet er mit deinem Zugang. Für Programmierarbeit fragt Studio beim ersten Mal nach der Verbindung, falls sie noch fehlt.
 - **Deine Daten**: „Datenauszug herunterladen“ mit sichtbaren Projekten, Aufgaben, Dokumenten und bis zu 500 Nachrichten.
-- **Studio verwalten** (Inhaber): Team, „Entfernen“, „Neues Passwort“, offene Einladungen mit „Zurücknehmen“ und Vorschläge. Beim „Einladen“ sind unter „Für welche Projekte?“ die aktiven Projekte, die der Inhaber leitet, einzeln auswählbar. Ohne Auswahl ist es eine Einladung ins Studio. Der Link wird kopiert und direkt an die Person geschickt.
+- **Studio verwalten** (Inhaber): Team, „Entfernen“, offene Einladungen mit „Zurücknehmen“ und Vorschläge. Beim „Einladen“ sind unter „Für welche Projekte?“ die aktiven Projekte, die der Inhaber leitet, einzeln auswählbar. Ohne Auswahl ist es eine Einladung ins Studio. Der Link wird kopiert und direkt an die Person geschickt.
 
 ### Projekte und Archiv
 Aktive und archivierte Projekte, Wiederherstellen. Ein alter Link oder Browser-Zurück zeigt „Dieses Projekt ist archiviert“ mit „Archiv öffnen“.

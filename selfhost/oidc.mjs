@@ -1,6 +1,6 @@
 import {randomUUID,createHash} from 'node:crypto';
 import {createRemoteJWKSet,jwtVerify} from 'jose';
-import {token,digest,transaction} from './store.mjs';
+import {accountEmail,token,digest,transaction} from './store.mjs';
 import {consumeInvite} from './team-access.mjs';
 
 const fail=message=>Object.assign(new Error(message),{status:400});
@@ -63,7 +63,7 @@ export function createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,
     }
     if(identity)return {member:identity.member,projects:[]};
     const email=typeof payload.email==='string'?payload.email.toLowerCase():'';
-    if(payload.email_verified!==true||!/^\S+@\S+\.\S+$/.test(email)||email.length>200)throw fail('email');
+    if(payload.email_verified!==true||!accountEmail.safeParse(email).success)throw fail('email');
     // Email matching alone must never link an existing Studio account.
     if(db.prepare('SELECT 1 FROM members WHERE email=?').get(email))throw fail('existing');
     let role,invite;const id=randomUUID();

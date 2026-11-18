@@ -1,3 +1,4 @@
+import {z} from 'zod';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -35,7 +36,9 @@ export function openStore(filename,{seedProjects=true}={}){
  if(seedProjects)for(const p of [['website','Schmaqq Website','Unser Auftritt und unsere Plattform.','sage','Im Aufbau'],['bewertungen','Bewertungen','Unser erster digitaler Service.','sand','Verfügbar'],['automation','Automatisierung','Verlässliche digitale Abläufe.','violet','In Entwicklung'],['firmenscan','Firmenscan','Unternehmenssignale verständlich machen.','blue','In Entwicklung'],['sicherheit','Sicherheit','Technische Grundlagen im Blick.','rose','In Entwicklung']])seed.run(...p,0);
  return db;
 }
+export const accountEmail=z.string().trim().toLowerCase().max(200).email();
 export function createInvite(db,email,role='member'){
- const value=token();db.prepare('INSERT INTO invites VALUES(?,?,?,?)').run(digest(value),email.toLowerCase(),role,Date.now()+24*3600000);return value;
+ const address=accountEmail.parse(email);
+ const value=token();db.prepare('INSERT INTO invites VALUES(?,?,?,?)').run(digest(value),address,role,Date.now()+24*3600000);return value;
 }
 export function transaction(db,fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}

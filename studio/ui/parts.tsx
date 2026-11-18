@@ -1,16 +1,38 @@
-import {useEffect,useRef,useState,type ReactNode} from 'react';
+import {useEffect,useRef,useState,type MouseEvent,type ReactNode} from 'react';
+import {letterPaths} from './brand-paths';
 
 // The few building blocks every screen uses. One look, one place.
 
-let animatedBrand=false;
 export function Brand(){
- const [animate]=useState(()=>{
-  if(animatedBrand)return false;
-  animatedBrand=true;
-  try{if(sessionStorage.getItem('studio-brand-seen'))return false;sessionStorage.setItem('studio-brand-seen','1');}catch{/* tab storage unavailable */}
-  return true;
- });
- return <a href="/" aria-label="SCHMAQQ Studio – Start" className={'ui-brand'+(animate?' intro':'')}>SCHMAQ<span>Q</span><b>STUDIO</b></a>;
+ const mark=useRef<SVGSVGElement>(null),timer=useRef<ReturnType<typeof setTimeout>>(null);
+ const [delays,setDelays]=useState<number[]|null>(null);
+ useEffect(()=>()=>{if(timer.current)clearTimeout(timer.current);},[]);
+ function activate(event:MouseEvent<HTMLAnchorElement>){
+  if(event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches||!mark.current)return;
+  event.preventDefault();
+  if(timer.current)return;
+  const box=mark.current.getBoundingClientRect();
+  const origin=event.detail>0?Math.min(box.right,Math.max(box.left,event.clientX)):box.left;
+  const parts=[...mark.current.querySelectorAll('g')];
+  const wave=parts.map(part=>{
+   const bounds=part.getBoundingClientRect();
+   return Math.round(Math.abs(bounds.left+bounds.width/2-origin)/Math.max(box.width,1)*420);
+  });
+  const goHome=location.pathname!=='/'||location.search||location.hash;
+  setDelays(wave);
+  timer.current=setTimeout(()=>{
+   timer.current=null;setDelays(null);
+   if(goHome)location.assign('/');
+   else window.scrollTo(0,0);
+  },Math.max(...wave,0)+360);
+ }
+ return <a href="/" onClick={activate} aria-label="SCHMAQQ Studio – Start" className={'ui-brand'+(delays?' is-playing':'')}>
+  <svg ref={mark} viewBox="-12 -68 492 92" aria-hidden="true" focusable="false">
+   {letterPaths.map((d,i)=><g key={i} style={{animationDelay:(delays?.[i]??0)+'ms'}}><path d={d}/></g>)}
+   <g style={{animationDelay:(delays?.[letterPaths.length]??0)+'ms'}}><rect x="444.17" y="-15.26" width="15.26" height="15.26"/></g>
+  </svg><b>STUDIO</b>
+ </a>;
 }
 
 export function ScrollHint(){

@@ -1,8 +1,8 @@
 {
   "account_and_orientation_20261118": {
-    "summary": "Konto mit einzeln öffnenden Bereichen, Profilfotos, Start-Link auf der Wortmarke und bedingtem Scroll-Pfeil.",
+    "summary": "Konto mit einzeln öffnenden Bereichen, Profilfotos, Originalwortmarke mit roter Welle und Start-Link sowie bedingtem Scroll-Pfeil.",
     "photo": "Eigenes Foto speichern oder entfernen. Abruf nur im berechtigten Projektteam, fürs eigene Konto oder durch den Inhaber.",
-    "acceptance_remaining": "Menü auf einem echten Android-Gerät mit der System-Zurück-Taste prüfen."
+    "acceptance_remaining": "Menü auf einem echten Android-Gerät mit der System-Zurück-Taste prüfen. Vor Freigabe der Passwort-Änderung muss die Passwort-Mail online eingerichtet und getestet sein."
   },
   "navigation_and_data_export_20261118": {
     "summary": "Mitglieder sehen im Studio-Verzeichnis die Namen sowie ihre eigene E-Mail-Adresse. Der Inhaber sieht die E-Mail-Adressen der Studio-Konten.",

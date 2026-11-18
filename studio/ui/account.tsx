@@ -117,12 +117,12 @@ type Suggestion={id:string;email:string;by:string};
 
 export const projectVisibility='Du siehst Chat, Aufgaben mit Gesprächen, Wissen und Team in deinen Projekten, während andere Projekte und fremde private Chats mit Menschen oder Agenten verborgen bleiben.';
 
-export function InviteLink({link,reset=false}:{link:string;reset?:boolean}){
+export function InviteLink({link}:{link:string}){
  const [copied,setCopied]=useState(false);
  const [error,setError]=useState('');
  return <div className="ui-note">
-  <p>{reset?'Schick den Link für das neue Passwort direkt an die Person.':'Schick den Link direkt an die Person. Er gilt 24 Stunden und nur einmal.'}</p>
-  <div className="ui-inline"><input aria-label={reset?'Link für ein neues Passwort':'Einladungslink'} readOnly value={link} onFocus={e=>e.target.select()}/>
+  <p>Schick den Link direkt an die Person. Er gilt 24 Stunden und nur einmal.</p>
+  <div className="ui-inline"><input aria-label="Einladungslink" readOnly value={link} onFocus={e=>e.target.select()}/>
    <button className="ui-link" type="button" onClick={async()=>{try{await navigator.clipboard.writeText(link);setCopied(true);setError('');}catch{setError('Markiere den Link und kopiere ihn von Hand.');}}}>{copied?'Kopiert':'Kopieren'}</button></div>
   <ErrorLine text={error}/>
  </div>;
@@ -139,7 +139,7 @@ export function InviteRows({invites,busy,onWithdraw,showProjects=false}:{invites
 function TeamAccess({studio}:{studio:Studio}){
  const {members,me}=studio;
  const [invites,setInvites]=useState<Invite[]>([]),[suggestions,setSuggestions]=useState<Suggestion[]>([]),[available,setAvailable]=useState<{id:string;name:string}[]>([]);
- const [link,setLink]=useState<{url:string;reset?:boolean}|null>(null),[notice,setNotice]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const [link,setLink]=useState(''),[notice,setNotice]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const [email,setEmail]=useState(''),[projects,setProjects]=useState<string[]>([]),[suggestion,setSuggestion]=useState('');
  const load=useCallback(async()=>{
   const d=await api<{invites:Invite[];requests:Suggestion[];projects:{id:string;name:string}[]}>('/api/invites');
@@ -153,13 +153,12 @@ function TeamAccess({studio}:{studio:Studio}){
    const d=suggestion
     ?await api<{link:string}>('/api/invites/decide',{id:suggestion,approve:true,projects})
     :await api<{link:string}>('/api/invites',{email:email.trim(),projects});
-   setLink({url:d.link});setEmail('');setProjects([]);setSuggestion('');
+   setLink(d.link);setEmail('');setProjects([]);setSuggestion('');
   });
  }
  return <Section title="Team" id="invite">
   {members.filter(m=>!m.removed).map(m=><div key={m.id} className="ui-row static"><Face name={m.name} photo={photoOf(m)} size={32}/><span className="ui-row-text"><b>{m.name}{m.id===me.id?' (du)':''}</b><small>{m.role==='owner'?'Inhaber':'Mitglied'}</small></span>
    {m.id!==me.id&&<span className="ui-row-end">
-    <button className="ui-link" disabled={busy} onClick={()=>void act(async()=>{const d=await api<{link:string}>('/api/members/reset',{member:m.id});setLink({url:d.link,reset:true});})}>Neues Passwort</button>
     {m.role!=='owner'&&<button className="ui-link danger" disabled={busy} onClick={()=>{if(confirm(m.name+' aus dem Studio entfernen? Nachrichten und Aufgaben bleiben.'))void act(async()=>{await api('/api/members/remove',{member:m.id});setNotice(m.name+' wurde entfernt.');});}}>Entfernen</button>}
    </span>}
   </div>)}
@@ -167,13 +166,13 @@ function TeamAccess({studio}:{studio:Studio}){
    <button className="ui-link" disabled={busy} onClick={()=>{setSuggestion(p.id);setEmail(p.email);}}>Auswählen</button>
    <button className="ui-link" disabled={busy} onClick={()=>void act(async()=>{await api('/api/invites/decide',{id:p.id,approve:false});if(suggestion===p.id){setSuggestion('');setEmail('');}})}>Ablehnen</button></span></div>)}
   <form className="ui-form" onSubmit={invite}>
-   <Field label="Benutzername oder E-Mail"><input value={email} onChange={e=>{setEmail(e.target.value);setSuggestion('');}} autoCapitalize="none" required/></Field>
+   <Field label="E-Mail"><input type="email" value={email} onChange={e=>{setEmail(e.target.value);setSuggestion('');}} autoCapitalize="none" required/></Field>
    <Checklist title="Für welche Projekte?" items={available} selected={projects} onChange={setProjects}/>
    <small className="ui-muted">Ohne Projektauswahl kann die Person eigene Projekte anlegen.</small>
    <div className="ui-actions left"><button className="ui-btn primary" disabled={busy||!email.trim()}>Einladen</button></div>
   </form>
-  {link&&<InviteLink key={link.url} link={link.url} reset={link.reset}/>}
-  <InviteRows invites={invites} busy={busy} showProjects onWithdraw={id=>void act(async()=>{await api('/api/invites/withdraw',{id});setLink(null);})}/>
+  {link&&<InviteLink key={link} link={link}/>}
+  <InviteRows invites={invites} busy={busy} showProjects onWithdraw={id=>void act(async()=>{await api('/api/invites/withdraw',{id});setLink('');})}/>
   {notice&&<p className="ui-muted" role="status">{notice}</p>}<ErrorLine text={error}/>
  </Section>;
 }

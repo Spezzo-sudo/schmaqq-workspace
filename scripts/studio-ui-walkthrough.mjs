@@ -86,7 +86,7 @@ try{
  await dialog.getByRole('button',{name:'Dazunehmen',exact:true}).click();
  await leadPage.getByText('Lena Weber',{exact:true}).waitFor();
  await leadPage.getByRole('button',{name:'+ Mensch dazunehmen'}).click();
- await dialog.getByLabel('Benutzername oder E-Mail').fill('fruehschicht@fixture.invalid');
+ await dialog.getByLabel('E-Mail',{exact:true}).fill('fruehschicht@fixture.invalid');
  await dialog.getByRole('button',{name:'Einladungslink erstellen'}).click();
  const inviteField=dialog.getByLabel('Einladungslink');
  await inviteField.waitFor();
@@ -120,7 +120,7 @@ try{
    const section=p.locator('#invite');
    await section.getByRole('checkbox',{name:'Café Sonne'}).check();
    if(await section.getByRole('checkbox',{name:'Internes Projekt'}).isChecked())throw new Error('Falsches Projekt vorausgewählt.');
-   await section.getByLabel('Benutzername oder E-Mail').fill('neues-mitglied@fixture.invalid');
+   await section.getByLabel('E-Mail',{exact:true}).fill('neues-mitglied@fixture.invalid');
    await section.getByRole('button',{name:'Einladen',exact:true}).scrollIntoViewIfNeeded();
   }),'Für welche Projekte?');
  }
@@ -159,9 +159,18 @@ try{
   await arrow.waitFor({state:'hidden'});
   await p.emulateMedia({reducedMotion:'reduce'});
   const home=p.getByRole('link',{name:'SCHMAQQ Studio – Start'});
-  if(await home.locator('span').evaluate(el=>getComputedStyle(el).animationName)!=='none')throw new Error('Logo bewegt sich trotz reduzierter Bewegung.');
+  if(await home.locator('svg g').first().evaluate(el=>getComputedStyle(el).animationName)!=='none')throw new Error('Logo bewegt sich trotz reduzierter Bewegung.');
   await home.click();
   await p.waitForURL(host+'/');
+ }),'Café Sonne');
+ expect(await screen('15-logo','/',390,async p=>{
+  const logo=p.getByRole('link',{name:'SCHMAQQ Studio – Start'}),mark=logo.locator('svg');
+  const box=await mark.boundingBox();
+  await mark.click({position:{x:box.width-2,y:box.height/2}});
+  const wave=await mark.locator('g').evaluateAll(parts=>parts.map(el=>({name:getComputedStyle(el).animationName,delay:parseFloat(el.style.animationDelay)})));
+  if(wave[0].name!=='ui-mark-wave'||wave[0].delay<=wave.at(-1).delay)throw new Error('Logo-Welle beginnt nicht am rechten Tipp-Punkt.');
+  await p.waitForTimeout(150);
+  await p.screenshot({path:path.join(out,'schmaqq-rote-welle-390.png')});
  }),'Café Sonne');
  expect(await screen('12-navigation','/',390,async page=>{
   const open=page.getByRole('button',{name:/Menü öffnen/}),menu=page.getByRole('navigation',{name:'Menü',exact:true});

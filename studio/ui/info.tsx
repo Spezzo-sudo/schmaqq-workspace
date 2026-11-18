@@ -123,7 +123,7 @@ function AddPerson({project,available,onAdd,onClose}:{project:string;available:{
    <form className="ui-form" onSubmit={e=>{e.preventDefault();void act(async()=>{
     const d=await api<{link:string}>('/api/invites',{project,email:email.trim()});setLink(d.link);setEmail('');await load();
    });}}>
-    <Field label="Benutzername oder E-Mail"><input value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none" required/></Field>
+    <Field label="E-Mail"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none" required/></Field>
     <div className="ui-actions left"><button className="ui-btn" disabled={busy||!email.trim()}>Einladungslink erstellen</button></div>
    </form>
    {link&&<InviteLink key={link} link={link}/>}
