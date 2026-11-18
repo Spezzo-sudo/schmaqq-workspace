@@ -1,4 +1,5 @@
 import {teamDevices} from './team-workshop.mjs';
+import {can,requirePermission} from './project-roles.mjs';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {transaction} from './store.mjs';
@@ -25,13 +26,15 @@ export async function aiRoute({route,method,req,db,user,device,send,readJSON,par
  if(route!=='/api/ai')return false;
  const m=user(req);
  if(method==='GET'){
+  const visible=project=>can(db,m,project,'view');
   const resources=db.prepare('SELECT r.device,r.models,r.status,r.allow_team AS allowTeam,r.projects,r.codex,r.updated,d.owner,d.name,m.name AS ownerName FROM ai_resources r JOIN devices d ON r.device=d.id JOIN members m ON d.owner=m.id WHERE d.revoked=0 AND (d.owner=? OR (r.allow_team=1 AND EXISTS(SELECT 1 FROM ai_grants g WHERE g.device=d.id AND g.member=?)))').all(m.id,m.id).map(r=>({...r,models:JSON.parse(r.models),projects:JSON.parse(r.projects),grants:r.owner===m.id?db.prepare('SELECT member FROM ai_grants WHERE device=?').all(r.device).map(x=>x.member):[],codex:r.owner===m.id?r.codex:'private',online:Date.now()-r.updated<60000}));
-  const jobs=db.prepare("SELECT j.id,j.owner,j.device,j.project,j.status,j.created,json_extract(j.payload,'$.model') AS model FROM jobs j JOIN devices d ON d.id=j.device WHERE j.action='local-ai' AND (j.owner=? OR d.owner=?) ORDER BY j.created DESC LIMIT 30").all(m.id,m.id);
+  const jobs=db.prepare("SELECT j.id,j.owner,j.device,j.project,j.status,j.created,json_extract(j.payload,'$.model') AS model FROM jobs j JOIN devices d ON d.id=j.device WHERE j.action='local-ai' AND (j.owner=? OR d.owner=?) ORDER BY j.created DESC LIMIT 30").all(m.id,m.id).filter(j=>visible(j.project));
   // Team workshop: server workers of project admins appear for developers of those projects, limited to these projects.
   const team=new Map();for(const p of db.prepare('SELECT id FROM projects').all())for(const d of teamDevices(db,m,p.id))team.set(d,[...(team.get(d)??[]),p.id]);
   for(const d of team.keys())if(!resources.some(r=>r.device===d)){const row=db.prepare('SELECT r.device,r.models,r.status,0 AS allowTeam,r.projects,r.codex,r.updated,d.owner,d.name,m.name AS ownerName FROM ai_resources r JOIN devices d ON r.device=d.id JOIN members m ON d.owner=m.id WHERE r.device=? AND d.revoked=0').get(d);if(row)resources.push({...row,models:[],projects:JSON.parse(row.projects),grants:[],codex:'private',online:Date.now()-row.updated<60000});}
   for(const resource of resources){const state=db.prepare('SELECT projects FROM runner_project_state WHERE device=?').get(resource.device);const all=state?JSON.parse(state.projects):[];
-   resource.development=(resource.owner===m.id?all:all.filter(p=>team.get(resource.device)?.includes(p.id))).map(p=>({...p,readiness:workshopReadiness(db,resource.device,p)}));resource.team=resource.owner!==m.id&&team.has(resource.device);}
+   resource.projects=resource.projects.filter(visible);
+   resource.development=all.filter(p=>visible(p.id)&&(resource.owner===m.id||team.get(resource.device)?.includes(p.id))).map(p=>({...p,readiness:workshopReadiness(db,resource.device,p)}));resource.team=resource.owner!==m.id&&team.has(resource.device);}
   send({resources,jobs,members:db.prepare('SELECT id,name FROM members').all()});return true;
  }
  if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');const v=await readJSON(req);
@@ -45,6 +48,7 @@ export async function aiRoute({route,method,req,db,user,device,send,readJSON,par
  }
  const value=parse(z.object({action:z.literal('run'),device:id,project:id,model,prompt:z.string().trim().min(1).max(12000)}),v);
  if(!db.prepare('SELECT id FROM projects WHERE id=?').get(value.project))throw fail(404,'Projekt fehlt.');
+ requirePermission(db,m,value.project,'talk');
  const payload={model:value.model,prompt:value.prompt},job={owner:m.id,device:value.device,project:value.project,payload};
  if(!aiAccess(db,job))throw fail(403,'Dieses Modell ist nicht erreichbar oder nicht für dich freigegeben.');
  if(db.prepare("SELECT COUNT(*) AS n FROM jobs WHERE device=? AND status IN ('queued','running','cancelling')").get(value.device).n>=3)throw fail(409,'Dieser PC hat bereits drei Aufträge. Bitte kurz warten.');

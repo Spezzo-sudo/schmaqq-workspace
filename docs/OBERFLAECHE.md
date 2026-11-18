@@ -21,7 +21,7 @@ Die alte Oberfläche wurde nicht umgebaut, sondern gelöscht; der Test `studio-s
 ## Bildschirme
 
 ### Anmelden
-Anmeldung, Einladung annehmen, Passwort vergessen. Sonst nichts.
+Anmeldung, Einladung annehmen, Passwort vergessen. Nach dem Anlegen des Kontos öffnet Studio das eingeladene Projekt direkt, wenn genau eines freigeschaltet wurde. Bei mehreren Projekten oder einer Einladung ohne Projekt öffnet sich Start.
 
 ### Start
 - Oben links: dein Avatar (öffnet das Menü). Oben rechts: SCHMAQQ Studio.
@@ -31,10 +31,10 @@ Anmeldung, Einladung annehmen, Passwort vergessen. Sonst nichts.
 - Darunter ein Tipp „So geht es weiter“ mit Link zur Anleitung.
 - Private Nachrichten mit Menschen gehören zum Projekt (Projektinfo → Person antippen); ihre Zähler stehen in der Projektzeile.
 - Leer: „Noch kein Projekt. Ein Projekt ist ein Chat mit deinem Team aus Menschen und Agenten.“ Knopf „Projekt anlegen“.
-- **Projekt anlegen**: Name, Ziel. Fertig. Herr Grau ist automatisch dabei.
+- **Projekt anlegen**: Name, Ziel, optional „Wer ist dabei?“ mit den Studio-Konten. Ohne Auswahl ist nur die Person dabei, die das Projekt anlegt. Herr Grau ist automatisch dabei.
 
 ### Menü (hinter dem Avatar)
-Mein Konto · Projekt anlegen · Jemanden einladen · Projekte und Archiv · So funktioniert Studio · Abmelden.
+Mein Konto · Projekt anlegen · Jemanden einladen (Inhaber) · Projekte und Archiv · So funktioniert Studio · Abmelden.
 Darunter der Zustand des KI-Zugangs (bereit / nicht erreichbar).
 
 ### Projekt
@@ -73,7 +73,10 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
 
 ### Projektinfo
 - Name, Ziel, Bild. Zahlen: Offen · Bei dir · Zum Freigeben. „Vorschau öffnen“, nur wenn eine läuft.
-- **Team**: Agenten (Name, Job) und Menschen (Name, Rolle). Tippen: Profil bzw. „Privat schreiben“. „+ Einstellen“, „+ Mensch einladen“.
+- **Team**: Agenten (Name, Job) und Menschen (Name, Rolle). Tippen: Profil bzw. „Privat schreiben“. „+ Einstellen“ für Mitwirkende und Leitung.
+  - Die Projektleitung wählt über „+ Mensch dazunehmen“ ein vorhandenes Studio-Konto oder erstellt über „Ins Projekt einladen“ → „Einladungslink erstellen“ einen einmaligen Link für ein neues Konto. Die Person kommt beim Annehmen direkt in dieses Projekt. Der Link gilt wie bisher 24 Stunden. Offene Links lassen sich hier ansehen und über „Zurücknehmen“ sperren.
+  - Pro Person eine Rolle. „Leitet das Projekt“, „Macht mit“ oder „Schaut nur zu“ (mitlesen). Die Projektleitung kann über „Ändern“ Rollen ändern und „Aus dem Projekt nehmen“. Mindestens eine Person leitet das Projekt. Wer bisher dabei ist, bleibt dabei.
+  - „Du siehst Chat, Aufgaben mit Gesprächen, Wissen und Team in deinen Projekten, während andere Projekte und fremde private Chats mit Menschen oder Agenten verborgen bleiben.“
 - **Code**: genau eine Frage, **„Wo liegt euer Code?“** (Projekt-Admin; alle anderen: „Legt der Projekt-Admin fest.“)
   - ○ **Neu anfangen**: „Leg auf GitHub ein leeres Repository an (privat, mit README) und trag die Adresse ein.“
   - ○ **Vorhandener Code**: „Trag die GitHub-Adresse ein.“
@@ -90,7 +93,7 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
   kann sie öffnen). „Neuer Link“ macht die alte Adresse ungültig. Während gebaut wird: „Wird gebaut …“.
 - **Bereich** (nur bei mehreren Projekten auf demselben Repository): Pfade + „Gleiches Repository wie …“.
 - **Wissen**: Projektdokumente, die Agenten lesen (Liste, + Dokument).
-- **Wer darf was**: Rollen der Menschen; „Zweite Person gibt frei“ oder „Admin darf allein freigeben“.
+- **Wer darf was**: Nur die Freigaberegel „Zweite Person gibt frei“ oder „Projektleitung darf allein freigeben“.
 - ⋯ : Projekt umbenennen, Archivieren.
 
 ### Agent einstellen (+ Einstellen)
@@ -107,7 +110,7 @@ Bild, Name, Job mit Satz „Was er tut“, Persönlichkeit (änderbar), „Priva
 - Name, Anmeldung, Passwort ändern, Abmelden.
 - **KI-Zugang**: bereit / nicht erreichbar, ein Satz Erklärung („Fragst du einen Agenten, arbeitet er mit deinem Zugang“).
 - **ChatGPT fürs Programmieren**: verbunden / verbinden (einmal, gilt für alle Agenten). Wird sonst erst gefragt, wenn es gebraucht wird.
-- **Team** (Inhaber): Wer dabei ist, Einladungen, Vorschläge.
+- **Team** (Inhaber): Wer im Studio ist, „Entfernen“, „Neues Passwort“ und offene Einladungen mit „Zurücknehmen“. Beim „Einladen“ sind unter „Für welche Projekte?“ die aktiven Projekte, die der Inhaber leitet, einzeln auswählbar. Ohne Auswahl ist es eine Einladung ins Studio und die Person kann eigene Projekte anlegen. Der Link wird kopiert und direkt an die Person geschickt. Offene Vorschläge kann der Inhaber über „Auswählen“ mit Projektauswahl einladen oder über „Ablehnen“ ablehnen.
 - **Deine Daten**: Alles herunterladen.
 
 ### Projekte und Archiv
@@ -115,7 +118,7 @@ Aktive und archivierte Projekte, Wiederherstellen.
 
 ### So funktioniert Studio
 Vier Schritte mit Bildern: 1. Ziel sagen → 2. Herr Grau plant und verteilt → 3. Das Team arbeitet, du siehst alles im
-Gespräch → 4. Du gibst frei. Darunter: Agenten holen (@Name, Markieren, Direktchat), Grenzen (Ketten, wer zahlt).
+Gespräch → 4. Du gibst frei. Darunter: Agenten holen (@Name, Markieren, Direktchat), „Das Team“ mit Projekteinladungen und Sichtbarkeit, Grenzen (Ketten, wer zahlt).
 
 ## Desktop
 Links schmal: Projekte und Direktnachrichten. Mitte: Projektchat bzw. Direktchat. Rechts: Projektinfo oder die geöffnete Karte.

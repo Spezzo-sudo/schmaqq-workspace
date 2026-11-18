@@ -16,7 +16,7 @@ test('project archive: admin only, reversible, hidden from lists, not while a jo
  const request=async(route,value,cookie)=>{const r=await fetch(host+route,{method:value?'POST':'GET',headers:{...(value?{Origin:origin,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},...(value?{body:JSON.stringify(value)}:{})});return {status:r.status,data:await r.json().catch(()=>({})),cookie:r.headers.get('set-cookie')?.split(';')[0]};};
  const a=(await request('/api/auth/register',{invite:createInvite(app.db,'a@fixture.invalid','owner'),name:'A',password:'fixture-password-1234'})).cookie;
  const b=(await request('/api/auth/register',{invite:createInvite(app.db,'b@fixture.invalid'),name:'B',password:'fixture-password-1234'})).cookie;
- const project=(await request('/api/room',{action:'create',id:randomUUID(),title:'Probeprojekt',description:''},a)).data.project;
+ const project=(await request('/api/room',{action:'create',id:randomUUID(),title:'Probeprojekt',description:'',members:[app.db.prepare("SELECT id FROM members WHERE name='B'").get().id]},a)).data.project;
  assert.equal((await request('/api/room',{action:'task',id:randomUUID(),project,title:'Offene Testaufgabe'},a)).status,200);
  const state=async()=>(await request('/api/room?project='+project,null,a)).data;
  const archive=async(cookie,archived)=>{const s=await state();return request('/api/team',{action:'project',project,revision:s.meta.revision,title:s.project.title,description:s.project.description,archived,base:'main',workflow:'pull-request'},cookie);};

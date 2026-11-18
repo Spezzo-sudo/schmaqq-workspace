@@ -1,8 +1,8 @@
 import {useCallback,useEffect,useState} from 'react';
 import type {Studio} from './app';
-import {api,q,type Member} from './api';
+import {api,q} from './api';
 import {Face} from './avatar';
-import {Bar,ErrorLine,Field,Section} from './parts';
+import {Bar,Checklist,ErrorLine,Field,Section} from './parts';
 
 const back=(studio:Studio)=>()=>studio.go({page:'start',project:''});
 
@@ -18,7 +18,7 @@ export function AccountScreen({studio}:{studio:Studio}){
    <p className="ui-muted">Fragst du einen Agenten, arbeitet er mit deinem Zugang. Andere im Team nutzen ihren eigenen.</p>
   </Section>
   <CodeSignIn studio={studio}/>
-  <TeamAccess studio={studio} owner={owner}/>
+  {owner&&<TeamAccess studio={studio}/>}
   <Password/>
   <Section title="Deine Daten"><p className="ui-muted">Alle Projekte, Aufgaben, Gespräche und Dokumente als eine Datei.</p><button className="ui-btn" onClick={()=>void download()}>Alles herunterladen</button></Section>
  </section>;
@@ -60,32 +60,68 @@ export function CodeSignIn({studio,compact=false,who}:{studio:Studio;compact?:bo
  return compact?<div className="ui-signin">{body}</div>:<Section title="ChatGPT fürs Programmieren">{body}</Section>;
 }
 
-type Invite={id:string;email:string;expires:number;invitedBy:string|null};
-type Suggestion={id:string;email:string;by:string;created:number};
-function TeamAccess({studio,owner}:{studio:Studio;owner:boolean}){
+export type Invite={id:string;email:string;expires:number;projects:string[];projectCount:number};
+type Suggestion={id:string;email:string;by:string};
+
+export const projectVisibility='Du siehst Chat, Aufgaben mit Gesprächen, Wissen und Team in deinen Projekten, während andere Projekte und fremde private Chats mit Menschen oder Agenten verborgen bleiben.';
+
+export function InviteLink({link,reset=false}:{link:string;reset?:boolean}){
+ const [copied,setCopied]=useState(false);
+ const [error,setError]=useState('');
+ return <div className="ui-note">
+  <p>{reset?'Schick den Link für das neue Passwort direkt an die Person.':'Schick den Link direkt an die Person. Er gilt 24 Stunden und nur einmal.'}</p>
+  <div className="ui-inline"><input aria-label={reset?'Link für ein neues Passwort':'Einladungslink'} readOnly value={link} onFocus={e=>e.target.select()}/>
+   <button className="ui-link" type="button" onClick={async()=>{try{await navigator.clipboard.writeText(link);setCopied(true);setError('');}catch{setError('Markiere den Link und kopiere ihn von Hand.');}}}>{copied?'Kopiert':'Kopieren'}</button></div>
+  <ErrorLine text={error}/>
+ </div>;
+}
+
+export function InviteRows({invites,busy,onWithdraw,showProjects=false}:{invites:Invite[];busy:boolean;onWithdraw:(id:string)=>void;showProjects?:boolean}){
+ return <>{invites.map(i=><div key={i.id} className="ui-row static"><span className="ui-row-text"><b>{i.email}</b>
+  {showProjects&&<small>{i.projectCount?i.projects.join(', ')||'Projekteinladung':'Nur Studio'}</small>}
+  <small>Einladung offen bis {new Date(i.expires).toLocaleString('de-CH',{weekday:'short',hour:'2-digit',minute:'2-digit'})}</small></span>
+  <button className="ui-link" disabled={busy} onClick={()=>onWithdraw(i.id)}>Zurücknehmen</button>
+ </div>)}</>;
+}
+
+function TeamAccess({studio}:{studio:Studio}){
  const {members,me}=studio;
- const [invites,setInvites]=useState<Invite[]>([]),[suggestions,setSuggestions]=useState<Suggestion[]>([]),[link,setLink]=useState(''),[notice,setNotice]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[email,setEmail]=useState('');
- const load=useCallback(async()=>{try{const d=await api<{invites?:Invite[];requests?:Suggestion[]}>('/api/invites');setInvites(d.invites??[]);setSuggestions(d.requests??[]);}catch{/* lists stay */}},[]);
- useEffect(()=>{let alive=true;api<{invites?:Invite[];requests?:Suggestion[]}>('/api/invites').then(d=>{if(alive){setInvites(d.invites??[]);setSuggestions(d.requests??[]);}}).catch(()=>{});return()=>{alive=false;};},[]);
+ const [invites,setInvites]=useState<Invite[]>([]),[suggestions,setSuggestions]=useState<Suggestion[]>([]),[available,setAvailable]=useState<{id:string;name:string}[]>([]);
+ const [link,setLink]=useState<{url:string;reset?:boolean}|null>(null),[notice,setNotice]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const [email,setEmail]=useState(''),[projects,setProjects]=useState<string[]>([]),[suggestion,setSuggestion]=useState('');
+ const load=useCallback(async()=>{
+  const d=await api<{invites:Invite[];requests:Suggestion[];projects:{id:string;name:string}[]}>('/api/invites');
+  setInvites(d.invites);setSuggestions(d.requests);setAvailable(d.projects);
+ },[]);
+ useEffect(()=>{void load().catch(e=>setError(e.message));},[load]);
  async function act(fn:()=>Promise<void>){setBusy(true);setError('');setNotice('');try{await fn();await load();await studio.reload();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- const active=members.filter((m:Member)=>!m.removed);
+ function invite(e:React.FormEvent){
+  e.preventDefault();
+  void act(async()=>{
+   const d=suggestion
+    ?await api<{link:string}>('/api/invites/decide',{id:suggestion,approve:true,projects})
+    :await api<{link:string}>('/api/invites',{email:email.trim(),projects});
+   setLink({url:d.link});setEmail('');setProjects([]);setSuggestion('');
+  });
+ }
  return <Section title="Team" id="invite">
-  {active.map(m=><div key={m.id} className="ui-row static"><Face name={m.name} size={32}/><span className="ui-row-text"><b>{m.name}{m.id===me.id?' (du)':''}</b><small>{m.role==='owner'?'Inhaber':'Mitglied'}</small></span>
-   {owner&&m.id!==me.id&&<span className="ui-row-end">
-    <button className="ui-link" disabled={busy} onClick={()=>void act(async()=>{const d=await api<{link:string}>('/api/members/reset',{member:m.id});setLink(d.link);})}>Neues Passwort</button>
-    {m.role!=='owner'&&<button className="ui-link danger" disabled={busy} onClick={()=>{if(confirm(m.name+' aus dem Team entfernen? Nachrichten und Aufgaben bleiben.'))void act(async()=>{await api('/api/members/remove',{member:m.id});setNotice(m.name+' wurde entfernt.');});}}>Entfernen</button>}
+  {members.filter(m=>!m.removed).map(m=><div key={m.id} className="ui-row static"><Face name={m.name} size={32}/><span className="ui-row-text"><b>{m.name}{m.id===me.id?' (du)':''}</b><small>{m.role==='owner'?'Inhaber':'Mitglied'}</small></span>
+   {m.id!==me.id&&<span className="ui-row-end">
+    <button className="ui-link" disabled={busy} onClick={()=>void act(async()=>{const d=await api<{link:string}>('/api/members/reset',{member:m.id});setLink({url:d.link,reset:true});})}>Neues Passwort</button>
+    {m.role!=='owner'&&<button className="ui-link danger" disabled={busy} onClick={()=>{if(confirm(m.name+' aus dem Studio entfernen? Nachrichten und Aufgaben bleiben.'))void act(async()=>{await api('/api/members/remove',{member:m.id});setNotice(m.name+' wurde entfernt.');});}}>Entfernen</button>}
    </span>}
   </div>)}
-  {owner&&suggestions.map(p=><div key={p.id} className="ui-row static"><span className="ui-row-text"><b>{p.email}</b><small>vorgeschlagen von {p.by}</small></span><span className="ui-row-end">
-   <button className="ui-link" disabled={busy} onClick={()=>void act(async()=>{const d=await api<{link:string}>('/api/invites/decide',{id:p.id,approve:true});setLink(d.link);})}>Einladen</button>
-   <button className="ui-link" disabled={busy} onClick={()=>void act(async()=>{await api('/api/invites/decide',{id:p.id,approve:false});})}>Ablehnen</button></span></div>)}
-  <form className="ui-inline" onSubmit={e=>{e.preventDefault();void act(async()=>{const d=await api<{link?:string}>('/api/invites',{email:email.trim()});if(d.link)setLink(d.link);else setNotice('Vorgeschlagen. Der Inhaber entscheidet.');setEmail('');});}}>
-   <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Benutzername oder E-Mail" aria-label="Wen einladen" autoCapitalize="none" required/>
-   <button className="ui-btn primary" disabled={busy||!email.trim()}>{owner?'Einladen':'Vorschlagen'}</button>
+  {suggestions.map(p=><div key={p.id} className="ui-row static"><span className="ui-row-text"><b>{p.email}</b><small>vorgeschlagen von {p.by}</small></span><span className="ui-row-end">
+   <button className="ui-link" disabled={busy} onClick={()=>{setSuggestion(p.id);setEmail(p.email);}}>Auswählen</button>
+   <button className="ui-link" disabled={busy} onClick={()=>void act(async()=>{await api('/api/invites/decide',{id:p.id,approve:false});if(suggestion===p.id){setSuggestion('');setEmail('');}})}>Ablehnen</button></span></div>)}
+  <form className="ui-form" onSubmit={invite}>
+   <Field label="Benutzername oder E-Mail"><input value={email} onChange={e=>{setEmail(e.target.value);setSuggestion('');}} autoCapitalize="none" required/></Field>
+   <Checklist title="Für welche Projekte?" items={available} selected={projects} onChange={setProjects}/>
+   <small className="ui-muted">Ohne Projektauswahl kann die Person eigene Projekte anlegen.</small>
+   <div className="ui-actions left"><button className="ui-btn primary" disabled={busy||!email.trim()}>Einladen</button></div>
   </form>
-  {link&&<div className="ui-note"><p>Schick diesen Link der Person direkt. Er gilt 24 Stunden und nur einmal.</p><code className="ui-code">{link}</code> <button className="ui-link" onClick={()=>void navigator.clipboard?.writeText(link)}>Kopieren</button></div>}
-  {owner&&invites.map(i=><div key={i.id} className="ui-row static"><span className="ui-row-text"><b>{i.email}</b><small>Einladung offen bis {new Date(i.expires).toLocaleString('de-CH',{weekday:'short',hour:'2-digit',minute:'2-digit'})}</small></span>
-   <button className="ui-link" disabled={busy} onClick={()=>void act(async()=>{await api('/api/invites/withdraw',{id:i.id});})}>Zurücknehmen</button></div>)}
+  {link&&<InviteLink key={link.url} link={link.url} reset={link.reset}/>}
+  <InviteRows invites={invites} busy={busy} showProjects onWithdraw={id=>void act(async()=>{await api('/api/invites/withdraw',{id});setLink(null);})}/>
   {notice&&<p className="ui-muted" role="status">{notice}</p>}<ErrorLine text={error}/>
  </Section>;
 }
@@ -146,6 +182,8 @@ export function GuideScreen({studio}:{studio:Studio}){
   </Section>
   <Section title="Das Team">
    <p>Jeder Agent hat einen Job: Entwicklung ändert Code, Recherche sucht im Internet, Prüfung prüft Änderungen. Herr Grau leitet und stellt ein. Höchstens sechs im Team, pro Job einer.</p>
+   <p>Über die Projektinfo kannst du Menschen dazunehmen oder für das Projekt einladen, wenn du es leitest.</p>
+   <p>{projectVisibility}</p>
   </Section>
   <Section title="Grenzen und Kosten">
    <p>Agenten geben Arbeit höchstens eine Stufe weiter und antworten pro Auftrag höchstens sechsmal, dann fragt Studio „Weitermachen?“. Stopp geht jederzeit.</p>

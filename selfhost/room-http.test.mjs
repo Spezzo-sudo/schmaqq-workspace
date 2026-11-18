@@ -26,7 +26,7 @@ async function fixture(t){
   const member=app.db.prepare('SELECT id FROM members WHERE email=?').get(email);people.push({...member,cookie:result.cookie,name});
  }
  const [marco,markus]=people;
- const create=async(title='Klimafinder.ch')=>{const r=await post({action:'create',id:randomUUID(),title,description:'Gemeinsam eine nutzbare Suche entwickeln.'},marco.cookie);assert.equal(r.status,200);return r.data.project;};
+ const create=async(title='Klimafinder.ch')=>{const r=await post({action:'create',id:randomUUID(),title,description:'Gemeinsam eine nutzbare Suche entwickeln.',members:[markus.id]},marco.cookie);assert.equal(r.status,200);return r.data.project;};
  return {app,post,get,marco,markus,create};
 }
 
@@ -36,7 +36,8 @@ test('room: project can be created from a phone without repo/path/device and ret
  assert.equal(first.status,200);assert.deepEqual(retry.data,first.data);
  assert.equal(f.app.db.prepare('SELECT count(*) AS n FROM projects WHERE title=?').get(request.title).n,1);
  const other=await f.post(request,f.markus.cookie);assert.equal(other.status,409);
- const room=await f.get('/api/room?project='+first.data.project,f.markus.cookie);
+ assert.equal((await f.get('/api/room?project='+first.data.project,f.markus.cookie)).status,403);
+ const room=await f.get('/api/room?project='+first.data.project,f.marco.cookie);
  assert.equal(room.status,200);assert.equal(room.data.meta.repository,null);assert.equal(room.data.messages.length,0);
  assert.equal(f.app.db.prepare('SELECT count(*) AS n FROM devices').get().n,0,'No runner registration');
 });

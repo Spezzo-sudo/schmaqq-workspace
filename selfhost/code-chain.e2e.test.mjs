@@ -26,7 +26,7 @@ test('code chain end to end: probe, copy, empty submit refused, save, submit, ap
  const join=async(email,role,name)=>{const r=await fetch(host+'/api/auth/register',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({invite:createInvite(app.db,email,role),name,password:'fixture-password-1234'})});return r.headers.get('set-cookie').split(';')[0];};
  const marco=await join('marco@fixture.invalid','owner','Marco'),markus=await join('markus@fixture.invalid','member','Markus');
  const id=email=>app.db.prepare('SELECT id FROM members WHERE email=?').get(email).id,marcoId=id('marco@fixture.invalid'),markusId=id('markus@fixture.invalid');
- const project=(await ok('/api/room',{action:'create',id:randomUUID(),title:'Website',description:''},marco)).project;
+ const project=(await ok('/api/room',{action:'create',id:randomUUID(),title:'Website',description:'',members:[markusId]},marco)).project;
 
  // Shared origin and one real runner per person (their own PC), like the real setup.
  const git=(cwd,...args)=>execFileSync('git',['-c','commit.gpgsign=false',...args],{cwd,encoding:'utf8',stdio:'pipe'}).trim();

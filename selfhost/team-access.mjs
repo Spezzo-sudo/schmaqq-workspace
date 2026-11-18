@@ -1,9 +1,11 @@
 import {randomUUID} from 'node:crypto';
-import {metadata,storeMetadata} from './team-model.mjs';
+import {metadata,storeMetadata,teamError} from './team-model.mjs';
+import {can,participantRoles,setRoles} from './project-roles.mjs';
+import {practiceOwner} from './practice.mjs';
 
 /**
  * Invitation-only team access.
- * - Only the owner creates invitation links. Members may propose a person; the owner approves.
+ * - The owner issues Studio invitations. A project admin can issue an invitation for that project.
  * - Every account remembers who invited it.
  * - The owner sees open invitations and can withdraw them.
  * - The owner can remove a member: sessions, AI assistant grants, PCs/servers and ChatGPT sign-in end at once.
@@ -13,21 +15,48 @@ const inviteKey=hash=>'invite:v1:'+hash,invitedKey=member=>'member:v1:invited:'+
 const requestPrefix='invite-request:v1:';
 const hasTable=(db,name)=>!!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name);
 
-export function noteInvite(db,hash,by){storeMetadata(db,inviteKey(hash),{by:by??null,created:Date.now()});}
-/** Call inside the registration transaction, before the invitation row is deleted. */
+export function checkInviteProjects(db,projects,inviter){
+ for(const project of projects){
+  const room=metadata(db,'room:v1:project:'+project);
+  if(!db.prepare('SELECT 1 FROM projects WHERE id=?').get(project)||room?.archived||practiceOwner(db,project)||!can(db,inviter,project,'admin')){
+   throw teamError(403,'Eine Einladung für dieses Projekt ist gerade nicht möglich.');
+  }
+ }
+}
+export function noteInvite(db,hash,by,projects=[],inviter=by){
+ storeMetadata(db,inviteKey(hash),{by:by??null,created:Date.now(),projects,inviter});
+}
+/** Call after inserting the member and before deleting the invitation, inside the registration transaction. */
 export function consumeInvite(db,hash,member){
  const meta=metadata(db,inviteKey(hash));
+ const projects=meta?.projects??[];
+ if(projects.length){
+  const inviter=db.prepare('SELECT id,role FROM members WHERE id=?').get(meta.inviter);
+  checkInviteProjects(db,projects,inviter);
+  for(const project of projects)setRoles(db,project,member,participantRoles);
+ }
  storeMetadata(db,invitedKey(member),{by:meta?.by??null,at:Date.now()});
  db.prepare('DELETE FROM workspace_meta WHERE key=?').run(inviteKey(hash));
+ return projects;
+}
+export function mayManageInvite(db,member,hash,project=null){
+ const meta=metadata(db,inviteKey(hash));
+ if(project)return meta?.projects?.length===1&&meta.projects[0]===project&&can(db,member,project,'admin');
+ return member.role==='owner';
 }
 export const isRemoved=(db,member)=>!!metadata(db,removedKey(member));
 export const invitedBy=(db,member)=>metadata(db,invitedKey(member))?.by??null;
 
-export function openInvites(db){
+export function openInvites(db,member,project){
  const name=id=>id?db.prepare('SELECT name FROM members WHERE id=?').get(id)?.name??null:null;
+ const title=id=>can(db,member,id,'view')?db.prepare('SELECT title FROM projects WHERE id=?').get(id)?.title:null;
  db.prepare('DELETE FROM invites WHERE expires<=?').run(Date.now());
  return db.prepare('SELECT hash,email,role,expires FROM invites ORDER BY expires DESC').all()
-  .map(i=>({id:i.hash,email:i.email,role:i.role,expires:i.expires,invitedBy:name(metadata(db,inviteKey(i.hash))?.by)}));
+  .filter(i=>mayManageInvite(db,member,i.hash,project))
+  .map(i=>{
+   const meta=metadata(db,inviteKey(i.hash)),projects=meta?.projects??[];
+   return {id:i.hash,email:i.email,role:i.role,expires:i.expires,invitedBy:name(meta?.by),projects:projects.map(title).filter(Boolean),projectCount:projects.length};
+  });
 }
 export function withdrawInvite(db,id){
  if(typeof id!=='string'||!/^[a-f0-9]{64}$/.test(id))return false;

@@ -2,8 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { assertAssignment } from './collaboration.mjs';
 import {assertTaskStatus} from './team-model.mjs';
-import {requirePermission,can} from './project-roles.mjs';
+import {requirePermission,can,startRoles} from './project-roles.mjs';
 import {hiddenPractice} from './practice.mjs';
+import {transaction} from './store.mjs';
 
 // The browser and Studio backend share an unchanged workspace JSON contract.
 // Keep authorization, optimistic document revisions and message idempotency
@@ -79,15 +80,19 @@ export function createWorkspaceHttpRoute({
             return { ...x, replyTo: meta('room:v1:message:' + x.id)?.replyTo ?? null, taskId: taskRow && visible(taskRow.project) ? task : null, taskProject: taskRow && visible(taskRow.project) ? taskRow.project : null };
           }),
           documents: db.prepare("SELECT d.*,(SELECT json_extract(m.value,'$.project') FROM workspace_meta m WHERE m.key='room:v1:note:'||d.id) AS project FROM documents d ORDER BY d.updated DESC").all().filter(d => !d.project || visible(d.project)),
-          activities: db.prepare('SELECT * FROM activities ORDER BY created DESC LIMIT 30').all()
+          activities: db.prepare("SELECT * FROM activities WHERE author=? AND body IN ('Projekt aktualisiert','Aufgabe aktualisiert','Dokument aktualisiert','Aufgabenstatus aktualisiert','Ausführungsregel geändert') ORDER BY created DESC LIMIT 30").all(m.id)
         });
         return true;
       }
       const v = parse(actions, await readJSON(req));
       // The former view follows the same project roles as the new one.
       const roleProject = v.action === 'task' ? v.project : v.action === 'status' || v.action === 'assign' ? db.prepare('SELECT project FROM tasks WHERE id=?').get(v.id)?.project : v.action === 'message' && v.channel !== 'general' ? v.channel : null;
-      if (roleProject && db.prepare('SELECT id FROM projects WHERE id=?').get(roleProject)) requirePermission(db, m, roleProject, v.action === 'message' ? 'view' : 'develop');
-      if (v.action === 'project') db.prepare('INSERT INTO projects VALUES(?,?,?,?,?,?)').run(uuid(), v.title, v.description, v.color, v.stage, now());else if (v.action === 'task') {
+      if (roleProject && db.prepare('SELECT id FROM projects WHERE id=?').get(roleProject)) requirePermission(db, m, roleProject, v.action === 'message' ? 'talk' : 'develop');
+      if (v.action === 'project') transaction(db, () => {
+        const project = uuid();
+        db.prepare('INSERT INTO projects VALUES(?,?,?,?,?,?)').run(project, v.title, v.description, v.color, v.stage, now());
+        startRoles(db, project, m.id);
+      });else if (v.action === 'task') {
         if (!db.prepare('SELECT id FROM projects WHERE id=?').get(v.project)) throw fail(404, 'Projekt fehlt.');
         if (v.assignee && !db.prepare('SELECT id FROM members WHERE id=?').get(v.assignee)) throw fail(400, 'Mitglied fehlt.');
         db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?)').run(uuid(), v.project, v.title, v.description, 'todo', v.priority, v.assignee, now());
@@ -106,6 +111,8 @@ export function createWorkspaceHttpRoute({
         const inserted = db.prepare('INSERT OR IGNORE INTO messages VALUES(?,?,?,?,?)').run(v.id, v.channel, m.id, v.body, now()).changes;
         if (inserted && v.replyTo) db.prepare('INSERT OR REPLACE INTO workspace_meta VALUES(?,?)').run('room:v1:message:' + v.id, JSON.stringify({ kind: 'human', replyTo: v.replyTo }));
       } else if (v.id) {
+        const project=db.prepare("SELECT json_extract(value,'$.project') AS project FROM workspace_meta WHERE key=?").get('room:v1:note:'+v.id)?.project;
+        if(project)requirePermission(db,m,project,'develop');
         if (!db.prepare('UPDATE documents SET title=?,body=?,author=?,updated=?,revision=revision+1 WHERE id=? AND revision=?').run(v.title, v.body, m.id, now(), v.id, v.revision ?? 0).changes) throw fail(409, 'Dokument inzwischen geändert. Entwurf kopieren und neu laden.');
       } else db.prepare('INSERT INTO documents VALUES(?,?,?,?,1,?)').run(uuid(), v.title, v.body, m.id, now());
       if (v.action !== 'message') record(m.id, `${v.action === 'project' ? 'Projekt' : v.action === 'task' ? 'Aufgabe' : v.action === 'document' ? 'Dokument' : 'Aufgabenstatus'} aktualisiert`);

@@ -25,6 +25,13 @@ geändert hat → Frau Kern wird automatisch gefragt → Mensch: „Ansehen“ �
 - Deploy: `bash /opt/schmaqq-studio/current/selfhost/deploy/studio-deploy.sh release <main-Commit>` (Sicherung, Probe,
   Rückweg; installiert Worker und Agenten-Dienst mit).
 
+## Projektteilnahme und Einladungen
+
+Beim Anlegen wählst du unter „Wer ist dabei?“ aus, wer außer dir ins Projekt kommt. In Projektinfo → Team kann die Projektleitung
+vorhandene Konten dazunehmen, Rollen einzeln ändern, Menschen herausnehmen und einen Link für ein neues Konto erstellen.
+Unter Mein Konto → Team kann der Inhaber mehrere Projekte auswählen oder nur ins Studio einladen. Eine Person kann die
+Einladung selbst annehmen. Bereits bestehende Projektrollen bleiben erhalten.
+
 ## Noch nie echt durchgelaufen (zuerst testen)
 
 1. Ein echter Programmierlauf von Otto (braucht einmal „Mit ChatGPT verbinden“, wird in der Aufgabe gefragt).

@@ -44,10 +44,6 @@ export default function StudioApp({user}:{user:{userId:string;displayName:string
  },[]);
  useEffect(()=>{const f=()=>setRoute(readRoute());addEventListener('popstate',f);return()=>removeEventListener('popstate',f);},[]);
 
- const reloadRuns=useCallback(async()=>{
-  const project=current.current;
-  try{const r=await api<Runs>('/api/agent-runs'+(project?'?project='+q(project):''));if(project===current.current)setRunState({project,runs:r});return r.runs.some(runActive);}catch{return false;}
- },[]);
  const reload=useCallback(async()=>{
   const project=current.current;
   try{
@@ -57,9 +53,24 @@ export default function StudioApp({user}:{user:{userId:string;displayName:string
    setProjects(p.rooms);setTeam(t);setMembers(m.members);setResources(a.resources);
    if(project===current.current)setProjectData({project,room:r,roles:roleState});
    setError('');
-  }catch(e){setError((e as Error).message);}
+  }catch(e){
+   if(project===current.current){
+    const error=e as Error & {status?:number};
+    if(project&&(error.status===403||error.status===404)){
+     setProjectData({project:'',room:null,roles:null});
+     setProjects(previous=>previous.filter(p=>p.id!==project));
+     go({page:'start',project:''},true);
+    }
+    setError(error.message);
+   }
+  }
   finally{setLoaded(true);}
- },[]);
+ },[go]);
+ const reloadRuns=useCallback(async()=>{
+  const project=current.current;
+  try{const r=await api<Runs>('/api/agent-runs'+(project?'?project='+q(project):''));if(project===current.current)setRunState({project,runs:r});return r.runs.some(runActive);}
+  catch(e){if(project&&project===current.current&&(e as {status?:number}).status===403)void reload();return false;}
+ },[reload]);
  // A different project: load it (until then its screens show "wird geladen").
  useEffect(()=>{let alive=true;Promise.resolve().then(()=>{if(alive){void reload();void reloadRuns();}});return()=>{alive=false;};},[route.project,reload,reloadRuns]);
  // Live: the server says "something changed here"; while agents work, look a bit more often.

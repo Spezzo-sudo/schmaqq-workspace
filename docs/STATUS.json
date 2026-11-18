@@ -1,4 +1,9 @@
 {
+  "project_memberships_20261118": {
+    "summary": "Projektteilnahme bei der Erstellung, beim Dazunehmen und in Einladungen ausdrücklich wählen. Allgemeine Einladungen öffnen ein Studio-Konto ohne bestehende Projekte.",
+    "compatibility": "Bisherige Projektrollen bleiben erhalten. Bei früheren Projekten ohne eigene Rollenliste wird der bisherige Zugriff einmalig gespeichert.",
+    "verification": "Serverprüfungen für Projektauswahl, Einladungen und Zugriffsverlust sowie der Browserrundgang auf 390 px und 1440 px."
+  },
   "ui_rebuild_20261118": {
     "summary": "Oberfläche neu aus docs/OBERFLAECHE.md gebaut; alte Oberfläche, 16 Stylesheets und 'Bisherige Ansicht' gelöscht. Firma im Messenger: Menschen reden und geben frei, Agenten mit Job, Herr Grau leitet.",
     "screens": "Anmelden, Start, Menü, Projekt (Team-Leiste, Chat, Aufgaben), Direktchat mit Agent oder Mensch, Aufgabe (Jetzt, Ansehen/Freigeben/Übernehmen, Gespräch), Projektinfo (Team, Code verbinden, Bereich, Wissen, Wer darf was), Einstellen, Profil, Mein Konto, Archiv, Anleitung.",

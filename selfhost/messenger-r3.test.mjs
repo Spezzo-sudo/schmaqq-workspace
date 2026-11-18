@@ -43,7 +43,7 @@ async function fixture(t){
 
 test('R3 real SQLite: messages, replies, profiles and task references survive restart and reach another user',async t=>{
  const f=await fixture(t),[alice,bob,visitor]=f.people;
- const created=await f.post({action:'create',id:'r3-room',title:'R3 Test',description:'Isolated collaboration'},alice.cookie);
+ const created=await f.post({action:'create',id:'r3-room',title:'R3 Test',description:'Isolated collaboration',members:[bob.id,visitor.id]},alice.cookie);
  assert.equal(created.status,200);const project=created.data.project;
  const task=await f.post({action:'task',id:'r3-task',project,title:'Review the messenger',description:'Fixture'},alice.cookie);
  assert.equal(task.status,200);
@@ -71,7 +71,7 @@ test('R3 real SQLite: messages, replies, profiles and task references survive re
 
 test('R3 real backend: cross-project replies/tasks and conflicting handoff recipients are rejected atomically',async t=>{
  const f=await fixture(t),[alice,bob]=f.people;
- const project=(await f.post({action:'create',id:'r3-p1',title:'First',description:'Fixture'},alice.cookie)).data.project;
+ const project=(await f.post({action:'create',id:'r3-p1',title:'First',description:'Fixture',members:[bob.id]},alice.cookie)).data.project;
  const other=(await f.post({action:'create',id:'r3-p2',title:'Second',description:'Fixture'},alice.cookie)).data.project;
  await f.post({action:'message',id:'r3-other-message',project:other,body:'Other project'},alice.cookie);
  const foreignTask=(await f.post({action:'task',id:'r3-other-task',project:other,title:'Other task',description:'Fixture'},alice.cookie)).data.task;

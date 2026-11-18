@@ -39,7 +39,7 @@ async function fixture(t){
  async function get(route,{cookie}={}){const r=await fetch(host+route,{headers:cookie?{Cookie:cookie}:{}});return {status:r.status,data:await r.json()};}
  async function setup({permissions=fullPermissions}={}){
   const [alice]=members;
-  const project=(await post('/api/room',{action:'create',id:randomUUID(),title:'Pilot',description:'Isolierte Testdaten'},{cookie:alice.cookie})).data.project;
+  const project=(await post('/api/room',{action:'create',id:randomUUID(),title:'Pilot',description:'Isolierte Testdaten',members:[members[1].id]},{cookie:alice.cookie})).data.project;
   const agentResult=await post('/api/room',{action:'agent',id:randomUUID(),project,name:'Mara',role:'frontend',avatarPresetId:'mara',model:'pilot-codex',permissions},{cookie:alice.cookie});
   assert.equal(agentResult.status,200);
   const agent=agentResult.data.agentId,message=randomUUID();
@@ -150,6 +150,7 @@ test('tool bridge: revoked agent permission or project role blocks publishing an
  const finished=await f.post('/api/hermes-worker/finish',{run:second.job.run,lease:second.job.lease,status:'completed',output:'Vorschlag'},{token:f.secrets[0].token});
  const card=(await f.room(second.project)).messages.find(m=>m.id===finished.data.message).proposalCard;
  assert.equal(card.status,'pending');
+ setRoles(f.app.db,second.project,f.members[1].id,['admin']);
  setRoles(f.app.db,second.project,alice.id,['viewer']);
  assert.equal((await f.post('/api/agent-proposals/decide',{proposal:card.id,decision:'accept'},{cookie:alice.cookie})).status,403);
  assert.equal((await f.room(second.project)).tasks.length,0);

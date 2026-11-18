@@ -11,7 +11,8 @@ export type ChatPlace={kind:'group'}|{kind:'agent';agent:Agent}|{kind:'member';m
 const MARK=['blau','grün','orange','lila'];
 
 export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
- const {room,runs,me,go}=studio;
+ const {room,runs,me,go,roles}=studio;
+ const canTalk=roles?.mine.some(r=>r!=='viewer')??false;
  const project=room!.project.id,agents=teamOrder(room!.agents),lead=leadOf(room!.agents);
  const [older,setOlder]=useState<Message[]>([]),[more,setMore]=useState(room!.more);
  const [seed,setSeed]=useState(''),[marking,setMarking]=useState<string[]|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[now,setNow]=useState(()=>Date.now());
@@ -56,11 +57,11 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
   <div className="ui-stream" ref={stream} onScroll={e=>{const el=e.currentTarget;follow.current=el.scrollHeight-el.scrollTop-el.clientHeight<80;}}>
    {more&&place.kind!=='task'&&!empty&&<button className="ui-link center" disabled={busy} onClick={()=>void loadOlder()}>Ältere Nachrichten</button>}
    {empty&&greeter&&<div className="ui-intro"><Face agent={greeter} size={72}/><p>{introOf(greeter)}</p>
-    {place.kind==='group'&&<><button className="ui-chip on" onClick={()=>setSeed('@'+greeter.name+' ')}>@{greeter.name} schreiben</button><p className="ui-muted">Alle im Projekt lesen hier mit. Agenten antworten nur, wenn ihr sie mit @Name holt.</p></>}</div>}
+    {place.kind==='group'&&<>{canTalk&&<button className="ui-chip on" onClick={()=>setSeed('@'+greeter.name+' ')}>@{greeter.name} schreiben</button>}<p className="ui-muted">Alle im Projekt lesen hier mit. Agenten antworten nur, wenn ihr sie mit @Name holt.</p></>}</div>}
    {empty&&place.kind==='task'&&<p className="ui-muted center">Noch kein Gespräch. Hol jemanden aus dem Team mit @Name.</p>}
    {empty&&place.kind==='member'&&<p className="ui-muted center">Nur ihr zwei lest hier.</p>}
    {list.map(m=><Bubble key={m.id} m={m} me={me.id} place={place} agent={agentOf(m.senderAgent)} to={m.recipientKind==='agent'?nameOf(m.recipient):''}
-    marking={marking} onMark={()=>setMarking(x=>x?(x.includes(m.id)?x.filter(i=>i!==m.id):[...x,m.id].slice(0,20)):[m.id])}
+    canTalk={canTalk} marking={marking} onMark={()=>setMarking(x=>x?(x.includes(m.id)?x.filter(i=>i!==m.id):[...x,m.id].slice(0,20)):[m.id])}
     onOpenTask={task=>go({task})} busy={busy}
     onDecide={(p,decision)=>void act(()=>api('/api/agent-proposals/decide',{proposal:p.id,decision}))}
     onShare={()=>void act(()=>api('/api/room',{action:'share',project,id:newId(),message:m.id}))}
@@ -71,14 +72,14 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
   </div>
   {chainRun?.chain&&chainRun.chain.used>1&&<ChainBar run={chainRun} onSteer={action=>void act(()=>api('/api/agent-chains',{run:chainRun.id,action}).then(()=>studio.reloadRuns()))}/>}
   <ErrorLine text={error}/>
-  {marking?<MarkBar count={marking.length} agents={agents} onCancel={()=>setMarking(null)} onSend={(agent,text)=>send(text,agent)}/>
+  {canTalk&&(marking?<MarkBar count={marking.length} agents={agents} onCancel={()=>setMarking(null)} onSend={(agent,text)=>send(text,agent)}/>
    :<Composer key={seed} seed={seed} place={place} agents={agents} draftKey={'ui:'+me.id+':'+project+':'+(view??'task:'+(place.kind==='task'?place.task:''))} onSend={body=>send(body)}
-    placeholder={place.kind==='agent'?'Nachricht an '+place.agent.name+' …':place.kind==='member'?'Nachricht an '+place.member.name+' …':'Nachricht · @Name holt jemanden'} canMark={place.kind==='group'||place.kind==='task'} onMark={()=>setMarking([])}/>}
+    placeholder={place.kind==='agent'?'Nachricht an '+place.agent.name+' …':place.kind==='member'?'Nachricht an '+place.member.name+' …':'Nachricht · @Name holt jemanden'} canMark={place.kind==='group'||place.kind==='task'} onMark={()=>setMarking([])}/>)}
  </div>;
 }
 
-function Bubble({m,me,place,agent,to,marking,onMark,onOpenTask,onDecide,onShare,nameOf,taskTitle,busy}:{m:Message;me:string;place:ChatPlace;agent:Agent|null;to:string;
- marking:string[]|null;onMark:()=>void;onOpenTask:(task:string)=>void;onDecide:(p:Proposal,d:'accept'|'reject')=>void;onShare:()=>void;nameOf:(id:string)=>string;taskTitle:(id:string)=>string;busy:boolean}){
+function Bubble({m,me,place,agent,to,canTalk,marking,onMark,onOpenTask,onDecide,onShare,nameOf,taskTitle,busy}:{m:Message;me:string;place:ChatPlace;agent:Agent|null;to:string;
+ canTalk:boolean;marking:string[]|null;onMark:()=>void;onOpenTask:(task:string)=>void;onDecide:(p:Proposal,d:'accept'|'reject')=>void;onShare:()=>void;nameOf:(id:string)=>string;taskTitle:(id:string)=>string;busy:boolean}){
  const mine=!agent&&m.author===me&&m.kind!=='card';
  const selected=marking?.includes(m.id);
  if(m.kind==='card'&&m.card)return <div className="ui-card-line">
@@ -88,7 +89,7 @@ function Bubble({m,me,place,agent,to,marking,onMark,onOpenTask,onDecide,onShare,
  // In the project chat, a task's conversation shows as one line that opens it.
  const inTask=place.kind==='group'&&m.inTask?m.inTask:null;
  return <div className={'ui-msg'+(mine?' mine':'')+(agent?' agent':'')+(selected?' selected':'')+(marking?' picking':'')}
-  onClick={marking?onMark:undefined} onContextMenu={e=>{if(place.kind==='group'||place.kind==='task'){e.preventDefault();onMark();}}}>
+  onClick={marking?onMark:undefined} onContextMenu={e=>{if(canTalk&&(place.kind==='group'||place.kind==='task')){e.preventDefault();onMark();}}}>
   {!mine&&<Face agent={agent} name={m.authorName??nameOf(m.author)} size={32}/>}
   <div className="ui-msg-body">
    {!mine&&<div className="ui-msg-head"><b>{agent?agent.name:m.authorName??nameOf(m.author)}</b>{to&&<span> an {to}</span>}<small>{clock(m.created)}</small></div>}
@@ -96,7 +97,7 @@ function Bubble({m,me,place,agent,to,marking,onMark,onOpenTask,onDecide,onShare,
    {inTask&&<button className="ui-task-ref" onClick={()=>onOpenTask(inTask)}>In „{taskTitle(inTask)}“ ›</button>}
    <div className="ui-msg-text">{agent?<RichText text={m.body}/>:m.body}</div>
    {m.proposalCard&&<ProposalCard p={m.proposalCard} busy={busy} onDecide={d=>onDecide(m.proposalCard!,d)} onOpenTask={onOpenTask} nameOf={nameOf}/>}
-   {agent&&place.kind==='agent'&&!m.sharedBy&&<button className="ui-link" onClick={onShare}>Im Projekt teilen</button>}
+   {canTalk&&agent&&place.kind==='agent'&&!m.sharedBy&&<button className="ui-link" onClick={onShare}>Im Projekt teilen</button>}
    {m.sharedBy&&<small className="ui-muted">geteilt von {nameOf(m.sharedBy)}</small>}
    {mine&&<small className="ui-msg-time">{clock(m.created)}</small>}
   </div>

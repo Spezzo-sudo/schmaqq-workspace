@@ -4,7 +4,7 @@ import {token,digest,transaction} from './store.mjs';
 import {consumeInvite} from './team-access.mjs';
 
 const fail=message=>Object.assign(new Error(message),{status:400});
-export function createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,provider}){
+export function createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,onJoin=()=>{},provider}){
  const p=provider===undefined?(process.env.STUDIO_CHATGPT_CLIENT_ID?{
   clientId:process.env.STUDIO_CHATGPT_CLIENT_ID,secret:process.env.STUDIO_CHATGPT_CLIENT_SECRET,
   method:process.env.STUDIO_CHATGPT_AUTH_METHOD??'none',issuer:'https://auth.openai.com',
@@ -53,31 +53,34 @@ export function createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,
    if(!r.ok)throw fail('exchange');const tokens=await r.json();if(typeof tokens.id_token!=='string'||tokens.id_token.length>20000)throw fail('token');
    const {payload}=await jwtVerify(tokens.id_token,keys,{issuer:p.issuer,audience:p.clientId,algorithms:['RS256'],requiredClaims:['exp','iat','sub','nonce'],clockTolerance:5});
    if(payload.nonce!==a.nonce||typeof payload.sub!=='string'||!payload.sub||payload.sub.length>500||(payload.azp!==undefined&&payload.azp!==p.clientId)||(Array.isArray(payload.aud)&&payload.aud.length>1&&payload.azp!==p.clientId))throw fail('claims');
-   const member=transaction(db,()=>{
+   const {member,projects}=transaction(db,()=>{
     const identity=db.prepare('SELECT member FROM oidc_identities WHERE issuer=? AND client=? AND subject=?').get(p.issuer,p.clientId,payload.sub);
     if(a.member){
      if(!db.prepare('SELECT 1 FROM sessions WHERE hash=? AND member=? AND expires>?').get(a.sessionHash,a.member,Date.now()))throw fail('session');
      if(identity&&identity.member!==a.member)throw fail('linked');
      if(!identity)db.prepare('INSERT INTO oidc_identities VALUES(?,?,?,?)').run(p.issuer,p.clientId,payload.sub,a.member);
-     return a.member;
+     return {member:a.member,projects:[]};
     }
-    if(identity)return identity.member;
+    if(identity)return {member:identity.member,projects:[]};
     const email=typeof payload.email==='string'?payload.email.toLowerCase():'';
     if(payload.email_verified!==true||!/^\S+@\S+\.\S+$/.test(email)||email.length>200)throw fail('email');
     // Email matching alone must never link an existing Studio account.
     if(db.prepare('SELECT 1 FROM members WHERE email=?').get(email))throw fail('existing');
-    let role;const id=randomUUID();
+    let role,invite;const id=randomUUID();
     if(a.setup&&db.prepare("SELECT value FROM workspace_meta WHERE key='bootstrap'").get()?.value===a.setup&&!db.prepare('SELECT 1 FROM members LIMIT 1').get()){
      role='owner';db.prepare("DELETE FROM workspace_meta WHERE key='bootstrap'").run();
     }else{
-     const invite=a.invite&&db.prepare('SELECT * FROM invites WHERE hash=? AND expires>?').get(a.invite,Date.now());
-     if(!invite||invite.email!==email)throw fail('invite');role=invite.role;consumeInvite(db,a.invite,id);db.prepare('DELETE FROM invites WHERE hash=?').run(a.invite);
+     invite=a.invite&&db.prepare('SELECT * FROM invites WHERE hash=? AND expires>?').get(a.invite,Date.now());
+     if(!invite||invite.email!==email)throw fail('invite');role=invite.role;
     }
     const name=typeof payload.name==='string'?payload.name.slice(0,160):email;
     db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(id,name,email,'external-only',role,Date.now());
-    db.prepare('INSERT INTO oidc_identities VALUES(?,?,?,?)').run(p.issuer,p.clientId,payload.sub,id);return id;
+    const projects=invite?consumeInvite(db,invite.hash,id):[];
+    if(invite)db.prepare('DELETE FROM invites WHERE hash=?').run(invite.hash);
+    db.prepare('INSERT INTO oidc_identities VALUES(?,?,?,?)').run(p.issuer,p.clientId,payload.sub,id);
+    return {member:id,projects};
    });
-   session(res,member);destination='/';
+   session(res,member);onJoin(projects);destination=projects.length===1?'/?p='+encodeURIComponent(projects[0]):'/';
   }catch{/* Never expose codes, tokens or raw provider errors in a URL or log. */}
   const existing=res.getHeader('Set-Cookie');res.setHeader('Set-Cookie',[...(existing?[existing]:[]),bindingCookie('',0)]);
   res.writeHead(303,{Location:destination});res.end();return true;

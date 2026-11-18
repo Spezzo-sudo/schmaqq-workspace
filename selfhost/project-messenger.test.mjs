@@ -81,7 +81,7 @@ test('Field Guild R2 avatar catalog: 12 stable presets, human/animal filters, as
 test('project messenger & Field Guild R2 profiles: configurable agent profiles, server-enforced permissions, and origin honesty',async t=>{
  const {app,post,get,marco,markus,viewer}=await fixture(t);
 
- const created=await post({action:'create',id:'op-room-1',title:'Mobile Messenger',description:'Gemeinsame Projektsteuerung'},marco.cookie);
+ const created=await post({action:'create',id:'op-room-1',title:'Mobile Messenger',description:'Gemeinsame Projektsteuerung',members:[markus.id]},marco.cookie);
  assert.equal(created.status,200);
  const project=created.data.project;
 

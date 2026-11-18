@@ -33,7 +33,7 @@ async function fixture(t,{configured=true}={}){
   const r=await fetch(host+route,{headers:cookie?{Cookie:cookie}:{}});return {status:r.status,data:await r.json()};
  }
  async function createAgentMessage(account=members[0],name='Mara',title='Pilot'){
-  const create=await post('/api/room',{action:'create',id:randomUUID(),title,description:'Nur isolierte Testdaten'},{cookie:account.cookie});assert.equal(create.status,200);
+  const create=await post('/api/room',{action:'create',id:randomUUID(),title,description:'Nur isolierte Testdaten',members:members.filter(m=>m.id!==account.id).map(m=>m.id)},{cookie:account.cookie});assert.equal(create.status,200);
   const project=create.data.project;
   const agentResult=await post('/api/room',{action:'agent',id:randomUUID(),project,name,role:'frontend',avatarPresetId:'mara',model:'pilot-codex',capabilities:['chat']},{cookie:account.cookie});assert.equal(agentResult.status,200);
   const agent=agentResult.data.agentId;
@@ -217,7 +217,7 @@ test('agent queue: a failed or stopped request can be tried again for the same m
 
 test('project lead: every new project starts with one; whoever asks pays with their own access',async t=>{
  const f=await fixture(t),[alice,bob]=f.members,[aWorker,bWorker]=f.secrets;
- const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Neues Projekt',description:''},{cookie:alice.cookie})).data.project;
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Neues Projekt',description:'',members:[bob.id]},{cookie:alice.cookie})).data.project;
  const agents=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.agents;
  assert.equal(agents.length,1);
  const lead=agents[0];
@@ -266,7 +266,7 @@ test('project lead: fully editable but never removed; an older project promotes 
 
 test('planning: the lead proposes a few tasks in one run; accepting the plan creates exactly those, once',async t=>{
  const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets,w={token:worker.token};
- const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Plan',description:''},{cookie:alice.cookie})).data.project;
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Plan',description:'',members:[bob.id]},{cookie:alice.cookie})).data.project;
  const room=async(member=alice)=>(await f.get('/api/room?project='+project,{cookie:member.cookie})).data;
  const lead=(await room()).agents[0];
  const mara=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Mara',role:'frontend',avatarPresetId:'mara',model:'x',permissions:{readProject:true,writeMessages:true,manageTasks:true,editCode:false,prepareReviews:false,delegateAgents:false}},{cookie:alice.cookie})).data.agentId;
@@ -329,7 +329,7 @@ test('models: an agent set to a model nobody can use answers with the default on
 
 test('cards: asked inside a task, the agent works with that task and answers in its conversation',async t=>{
  const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets,w={token:worker.token};
- const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Karten',description:''},{cookie:alice.cookie})).data.project;
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Karten',description:'',members:[bob.id]},{cookie:alice.cookie})).data.project;
  const room=async(member=alice)=>(await f.get('/api/room?project='+project,{cookie:member.cookie})).data;
  const lead=(await room()).agents[0];
  const task=(await f.post('/api/room',{action:'task',id:randomUUID(),project,title:'Startseite kürzen',description:'Weniger Text oben',kind:'general'},{cookie:alice.cookie})).data.task;
@@ -354,7 +354,7 @@ test('cards: asked inside a task, the agent works with that task and answers in 
 
 test('cards: work from a direct chat appears as a card in the project chat; an answer can be shared',async t=>{
  const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets,w={token:worker.token};
- const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Direkt',description:''},{cookie:alice.cookie})).data.project;
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Direkt',description:'',members:[bob.id]},{cookie:alice.cookie})).data.project;
  const room=async(member=alice)=>(await f.get('/api/room?project='+project,{cookie:member.cookie})).data;
  const lead=(await room()).agents[0];
  const ask=async body=>{const message=randomUUID();await f.post('/api/room',{action:'message',id:message,project,recipient:lead.id,direct:true,body},{cookie:alice.cookie});await f.post('/api/agent-runs',{project,agent:lead.id,message},{cookie:alice.cookie});return (await f.post('/api/agent-worker/claim',{},w)).data.job;};
@@ -380,7 +380,7 @@ test('cards: work from a direct chat appears as a card in the project chat; an a
 
 test('marking: the agent reads exactly the marked messages; marks only go to one agent',async t=>{
  const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets,w={token:worker.token};
- const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Markieren',description:''},{cookie:alice.cookie})).data.project;
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Markieren',description:'',members:[bob.id]},{cookie:alice.cookie})).data.project;
  const lead=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.agents[0];
  const ids=[];
  for(const [who,body] of [[bob,'Farbe Blau gefällt mir nicht.'],[alice,'Was anderes.'],[bob,'Lieber Grün.']]){const id=randomUUID();ids.push(id);await f.post('/api/room',{action:'message',id,project,body},{cookie:who.cookie});}
@@ -398,7 +398,7 @@ test('marking: the agent reads exactly the marked messages; marks only go to one
 
 test('agent ↔ agent: only in a task, one level, counted, stoppable, and paid by whoever started',async t=>{
  const f=await fixture(t),[alice,bob]=f.members,[worker]=f.secrets,w={token:worker.token};
- const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Kette',description:''},{cookie:alice.cookie})).data.project;
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Kette',description:'',members:[bob.id]},{cookie:alice.cookie})).data.project;
  const room=async(member=alice)=>(await f.get('/api/room?project='+project,{cookie:member.cookie})).data;
  const lead=(await room()).agents[0];
  const perms={readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:true};

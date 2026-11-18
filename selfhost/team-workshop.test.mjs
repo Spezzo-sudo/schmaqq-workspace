@@ -19,7 +19,7 @@ test('team workshop: developers of a project work on the admin\'s server worker,
  const a=await request('/api/auth/register',{invite:createInvite(app.db,'a@fixture.invalid','owner'),name:'A',password:'fixture-password-1234'});
  const b=await request('/api/auth/register',{invite:createInvite(app.db,'b@fixture.invalid'),name:'B',password:'fixture-password-1234'});
  const bId=app.db.prepare("SELECT id FROM members WHERE email='b@fixture.invalid'").get().id;
- const project=(await request('/api/room',{action:'create',id:randomUUID(),title:'Team',description:''},a.cookie)).data.project;
+ const project=(await request('/api/room',{action:'create',id:randomUUID(),title:'Team',description:'',members:[bId]},a.cookie)).data.project;
  const server=(await request('/api/development',{action:'device',name:'VPS-Worker'},a.cookie)).data;
  const pc=(await request('/api/development',{action:'device',name:'A-PC'},a.cookie)).data;
  assert.equal((await request('/api/runner/capabilities',capabilities('server',[project]),null,server.token)).status,200);

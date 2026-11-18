@@ -4,7 +4,7 @@ import http from 'node:http';
 import {mkdtempSync,rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {generateKeyPair,exportJWK,SignJWT} from 'jose';
 import {createStudioServer} from './server.mjs';
 import {createInvite} from './store.mjs';
@@ -25,7 +25,7 @@ test('OIDC: verified invitations, explicit linking, PKCE, browser binding, repla
  });
  await new Promise(r=>idp.listen(0,'127.0.0.1',r));issuer='http://127.0.0.1:'+idp.address().port;
  const base='http://127.0.0.1:44339';
- const studio=createStudioServer({seedProjects:true,filename:path.join(dir,'db.sqlite'),origin:base,previewOrigin:'http://127.0.0.1:44340',oidcProvider:{issuer,clientId:'studio-fixture',method:'none',authorize:issuer+'/authorize',tokenUrl:issuer+'/token',jwks:issuer+'/jwks'}});
+ const studio=createStudioServer({seedProjects:false,filename:path.join(dir,'db.sqlite'),origin:base,previewOrigin:'http://127.0.0.1:44340',oidcProvider:{issuer,clientId:'studio-fixture',method:'none',authorize:issuer+'/authorize',tokenUrl:issuer+'/token',jwks:issuer+'/jwks'}});
  await new Promise(r=>studio.server.listen(44339,'127.0.0.1',r));
  const request=(route,data,cookie)=>fetch(base+route,{method:data?'POST':'GET',headers:{...(data?{Origin:base,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:data?JSON.stringify(data):undefined,redirect:'manual'});
  async function start(options={},cookie){const r=await request('/api/auth/provider/start',{provider:'chatgpt',purpose:'login',...options},cookie);assert.equal(r.status,200);const url=new URL((await r.json()).url);assert.equal(url.searchParams.get('scope'),'openid profile email');assert.equal(url.searchParams.get('code_challenge_method'),'S256');return {url,cookie:r.headers.get('set-cookie').split(';')[0]};}
@@ -56,6 +56,17 @@ test('OIDC: verified invitations, explicit linking, PKCE, browser binding, repla
   denied(await finish(await start({purpose:'link'},passwordCookie),{email:'new@test.invalid'}));
   const stale=await start({purpose:'link'},passwordCookie);await request('/api/auth/logout',{},passwordCookie);denied(await finish(stale,{email:'password@test.invalid'}));
   assert.equal((await request('/api/auth/login',{email:'new@test.invalid',password:'irrelevant'})).status,401);
+  const create=async title=>(await (await request('/api/room',{action:'create',id:randomUUID(),title},memberCookie)).json()).project;
+  const project=await create('Eingeladenes Projekt');
+  await create('Privates Projekt');
+  const sent=await request('/api/invites',{email:'project@test.invalid',project},memberCookie);
+  assert.equal(sent.status,200);
+  const scoped=new URL((await sent.json()).link).searchParams.get('invite');
+  const landed=await finish(await start({invite:scoped}),{email:'project@test.invalid'});
+  assert.equal(landed.headers.get('location'),'/?p='+project);
+  const scopedCookie=landed.headers.getSetCookie().find(c=>c.startsWith('studio_session=')).split(';')[0];
+  const rooms=await (await request('/api/rooms',null,scopedCookie)).json();
+  assert.deepEqual(rooms.rooms.map(room=>room.id),[project]);
   const csrf=await fetch(base+'/api/auth/provider/start',{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://evil.invalid'},body:'{}'});assert.equal(csrf.status,403);
  }finally{await new Promise(r=>studio.server.close(r));studio.db.close();await new Promise(r=>idp.close(r));rmSync(dir,{recursive:true,force:true});}
 });

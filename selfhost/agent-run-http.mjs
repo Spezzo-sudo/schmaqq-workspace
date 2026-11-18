@@ -316,7 +316,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
     if (!hasWorker(member.id)) {
       throw fail(503, 'Für dich ist noch kein KI-Modellzugang eingerichtet. Keine KI-Antwort gestartet.');
     }
-    requirePermission(db, member, request.project, 'view');
+    requirePermission(db, member, request.project, 'talk');
     const agent = activeAgent(request.project, request.agent);
     const usable = agent && agent.permissions?.readProject !== false && agent.permissions?.writeMessages !== false;
     if (!usable) throw fail(403, 'Dieser Agent kann im Projekt gerade nicht antworten.');

@@ -3,7 +3,7 @@ import type {Studio} from './app';
 import {api,newId,when} from './api';
 import {Face} from './avatar';
 import {taskState} from './model';
-import {Dialog,Field,Plus} from './parts';
+import {Checklist,Dialog,Field,Plus} from './parts';
 
 /** Start: what waits for you, then the projects. On the desktop it is the left column. */
 export function StartScreen({studio,compact=false}:{studio:Studio;compact?:boolean}){
@@ -54,17 +54,18 @@ export function tileColor(title:string){
 
 function NewProject({studio,onClose}:{studio:Studio;onClose:()=>void}){
  const [title,setTitle]=useState(''),[goal,setGoal]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const [id]=useState(newId);
+ const [id]=useState(newId),[members,setMembers]=useState<string[]>([]);
  async function create(e:React.FormEvent){
   e.preventDefault();setBusy(true);setError('');
-  try{const r=await api<{project:string}>('/api/room',{action:'create',id,title:title.trim(),description:goal.trim()});await studio.reload();onClose();studio.go({page:'project',project:r.project});}
+  try{const r=await api<{project:string}>('/api/room',{action:'create',id,title:title.trim(),description:goal.trim(),members});await studio.reload();onClose();studio.go({page:'project',project:r.project});}
   catch(err){setError((err as Error).message);}finally{setBusy(false);}
  }
  return <Dialog title="Projekt anlegen" onClose={onClose}>
   <form onSubmit={create} className="ui-form">
-   <p className="ui-muted">Name und Ziel reichen. Herr Grau, eure Projektleitung, ist automatisch dabei.</p>
+   <p className="ui-muted">Herr Grau ist automatisch dabei.</p>
    <Field label="Name"><input value={title} onChange={e=>setTitle(e.target.value)} required maxLength={120} autoFocus placeholder="z. B. Website Café Sonne"/></Field>
    <Field label="Was wollt ihr erreichen?"><textarea value={goal} onChange={e=>setGoal(e.target.value)} maxLength={1000} rows={3} placeholder="Ein, zwei Sätze"/></Field>
+   <Checklist title="Wer ist dabei?" items={studio.members.filter(m=>!m.removed&&m.id!==studio.me.id)} selected={members} onChange={setMembers}/>
    {error&&<p className="ui-error" role="alert">{error}</p>}
    <div className="ui-actions"><button type="button" className="ui-btn" onClick={onClose}>Abbrechen</button><button className="ui-btn primary" disabled={busy||!title.trim()}>Projekt anlegen</button></div>
   </form>
@@ -82,7 +83,7 @@ export function Menu({studio,onClose}:{studio:Studio;onClose:()=>void}){
    <div className="ui-sheet-head"><Face name={me.name} size={44}/><span><b>{me.name}</b><small>{me.email}</small></span></div>
    <button onClick={()=>go({page:'account'})}>Mein Konto</button>
    <button onClick={()=>setCreating(true)}>Projekt anlegen</button>
-   <button onClick={()=>{go({page:'account'});setTimeout(()=>document.getElementById('invite')?.scrollIntoView({block:'start'}),400);}}>Jemanden einladen</button>
+   {studio.members.some(m=>m.id===me.id&&m.role==='owner')&&<button onClick={()=>{go({page:'account'});setTimeout(()=>document.getElementById('invite')?.scrollIntoView({block:'start'}),400);}}>Jemanden einladen</button>}
    <button onClick={()=>go({page:'archive'})}>Projekte und Archiv</button>
    <button onClick={()=>go({page:'guide'})}>So funktioniert Studio</button>
    <button onClick={()=>void logout()}>Abmelden</button>
