@@ -37,7 +37,7 @@ Anmeldung mit E-Mail-Adresse, Einladung annehmen, Passwort vergessen per E-Mail.
 - **Projekt anlegen**: Name, Ziel, optional „Wer ist dabei?“ mit den Studio-Konten. Ohne Auswahl ist nur die Person dabei, die das Projekt anlegt. Herr Grau ist automatisch dabei.
 
 ### Menü (hinter dem Avatar)
-Der gleiche Profilknopf steht oben links. Sein Pfeil zeigt nach oben, solange das Menü offen ist. Ein erneutes Tippen, die Zurück-Taste oder Escape schliessen das Menü.
+Der Kopf bleibt deckungsgleich mit Start: Profilknopf links, SCHMAQQ Studio rechts. Die Initialen bleiben mittig. Der Pfeil zeigt nach oben, solange das Menü offen ist. Name und E-Mail stehen unter dem Kopf. Ein erneutes Tippen, die Zurück-Taste oder Escape schliessen das Menü.
 Mein Konto · Projekt anlegen · Jemanden einladen (Inhaber) · Projekte und Archiv · So funktioniert Studio · Abmelden.
 Darunter der Zustand des KI-Zugangs (bereit / nicht erreichbar).
 

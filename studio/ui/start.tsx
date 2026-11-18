@@ -12,10 +12,7 @@ export function StartScreen({studio,compact=false}:{studio:Studio;compact?:boole
  const titleOf=(id:string)=>projects.find(p=>p.id===id)?.title??'';
  const waiting=team.tasks.filter(t=>projects.some(p=>p.id===t.project)&&t.status!=='done'&&taskState(t).tone==='approve'&&(t.assignee===me.id||t.status==='review'&&t.assignee!==me.id));
  return <section className={'ui-start'+(compact?' compact':'')}>
-  <header className="ui-top">
-   <MenuButton studio={studio} onClick={studio.openMenu}/>
-   <Brand/>
-  </header>
+  <StudioHeader studio={studio}/>
   {!compact&&<div className="ui-greeting"><h1>{greeting()}, {me.name.split(' ')[0]}.</h1>
    <p>{waiting.length?`${waiting.length===1?'Eine Sache wartet':waiting.length+' Sachen warten'} auf dich.`:projects.length?'Gerade wartet nichts auf dich. Dein Team arbeitet in den Projekten.':'Leg dein erstes Projekt an und sag Herrn Grau, was du vorhast.'}</p></div>}
   {waiting.length>0&&<div className="ui-block">
@@ -73,6 +70,13 @@ function NewProject({studio,onClose}:{studio:Studio;onClose:()=>void}){
  </Dialog>;
 }
 
+function StudioHeader({studio,onClose}:{studio:Studio;onClose?:()=>void}){
+ return <header className="ui-top">
+  <MenuButton studio={studio} open={!!onClose} onClick={onClose??studio.openMenu}/>
+  <Brand onHome={onClose?()=>studio.route.page==='start'?onClose():studio.go({page:'start',project:''}):undefined}/>
+ </header>;
+}
+
 function MenuButton({studio,open=false,onClick}:{studio:Studio;open?:boolean;onClick:()=>void}){
  const name=studio.me.name.trim();
  const initialsName=/\s/.test(name)?name:[...name][0]??'?';
@@ -93,7 +97,8 @@ export function Menu({studio,onClose}:{studio:Studio;onClose:()=>void}){
  if(creating)return <NewProject studio={studio} onClose={()=>{setCreating(false);onClose();}}/>;
  return <div className="ui-sheet-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
   <nav className="ui-sheet left" aria-label="Menü">
-   <div className="ui-sheet-head"><MenuButton studio={studio} open onClick={onClose}/><span><b>{me.name}</b><small>{me.email}</small></span></div>
+   <StudioHeader studio={studio} onClose={onClose}/>
+   <div className="ui-sheet-account"><b>{me.name}</b><small>{me.email}</small></div>
    <button onClick={()=>go({page:'account'})}>Mein Konto</button>
    <button onClick={()=>setCreating(true)}>Projekt anlegen</button>
    {studio.members.some(m=>m.id===me.id&&m.role==='owner')&&<button onClick={()=>{go({page:'account',account:'verwaltung'});}}>Jemanden einladen</button>}

@@ -3,13 +3,16 @@ import {letterPaths} from './brand-paths';
 
 // The few building blocks every screen uses. One look, one place.
 
-export function Brand(){
+export function Brand({onHome}:{onHome?:()=>void}={}){
  const mark=useRef<SVGSVGElement>(null),timer=useRef<ReturnType<typeof setTimeout>>(null);
  const [delays,setDelays]=useState<number[]|null>(null);
  useEffect(()=>()=>{if(timer.current)clearTimeout(timer.current);},[]);
  function activate(event:MouseEvent<HTMLAnchorElement>){
   if(event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches||!mark.current)return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches||!mark.current){
+   if(onHome){event.preventDefault();onHome();}
+   return;
+  }
   event.preventDefault();
   if(timer.current)return;
   const box=mark.current.getBoundingClientRect();
@@ -23,7 +26,8 @@ export function Brand(){
   setDelays(wave);
   timer.current=setTimeout(()=>{
    timer.current=null;setDelays(null);
-   if(goHome)location.assign('/');
+   if(onHome)onHome();
+   else if(goHome)location.assign('/');
    else window.scrollTo(0,0);
   },Math.max(...wave,0)+360);
  }
