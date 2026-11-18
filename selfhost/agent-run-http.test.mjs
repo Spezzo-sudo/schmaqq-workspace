@@ -74,6 +74,7 @@ test('agent queue: explicit project-scoped request, idempotent claim, signed com
  assert.equal(claim.data.job.owner,alice.id);
  assert.equal(claim.data.job.agent,agent);
  assert.equal(claim.data.job.prompt,'Prüfe bitte den mobilen Messenger.');
+ assert.equal(claim.data.job.effort,'low','agents think briefly unless Studio is told otherwise');
  assert.deepEqual(claim.data.job.toolPolicy,{mode:'no-tools',allowed:[]});
  assert.equal((await f.post('/api/hermes-worker/claim',{}, {token:aWorker.token})).data.job,null);
  const run=claim.data.job.run,lease=claim.data.job.lease;

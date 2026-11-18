@@ -191,7 +191,12 @@ function validWorkers(workers) {
   return workers.map(w => ({ owner: w.owner, secret: w.token }));
 }
 
-export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], live = null, models = agentModels() }) {
+/** How long agents think: Studio decides for all of them (STUDIO_AGENT_EFFORT), short by default to save usage. */
+export function agentEffort(setting = process.env.STUDIO_AGENT_EFFORT) {
+  return ['minimal', 'low', 'medium', 'high'].includes(setting) ? setting : 'low';
+}
+
+export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], live = null, models = agentModels(), effort = agentEffort() }) {
   const modelFor = agent => (models.includes(agent.model) ? agent.model : models[0]);
   const registered = validWorkers(workers);
   // Agents are switched on by binding a worker to a person. Until then nothing is stored and nothing runs.
@@ -440,7 +445,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
         tool_policy: toolPolicy.allowed
       });
       return {
-        run: run.id, lease: leaseToken, owner, project: run.project, agent: run.agent, model: run.model,
+        run: run.id, lease: leaseToken, owner, project: run.project, agent: run.agent, model: run.model, effort,
         prompt: source.body, replyTo: source.id,
         context: buildRoomContext(db, run.project, topic ?? undefined).text,
         history: marked ?? dialogue(run, source, topic),

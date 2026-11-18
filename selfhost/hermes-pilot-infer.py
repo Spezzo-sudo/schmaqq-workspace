@@ -176,6 +176,27 @@ def register_zero_toolset():
         raise RuntimeError("Hermes tool policy mismatch: zero-tool configuration required.")
 
 
+EFFORTS = ("minimal", "low", "medium", "high")
+
+
+def use_effort(effort):
+    """How long the model thinks. The one-shot entry point offers no setting for it, so the agent it builds
+    gets Studio's choice as its reasoning setting (an explicit setting given by Hermes itself wins)."""
+    try:
+        import run_agent
+    except ImportError:  # a stand-in engine (tests) has no agent class to tune
+        return
+
+    original = run_agent.AIAgent.__init__
+
+    def init(self, *args, **kwargs):
+        if kwargs.get("reasoning_config") is None:
+            kwargs["reasoning_config"] = {"enabled": True, "effort": effort}
+        original(self, *args, **kwargs)
+
+    run_agent.AIAgent.__init__ = init
+
+
 def valid_model(model):
     return isinstance(model, str) and 0 < len(model) <= 100 and all(c.isascii() and (c.isalnum() or c in "-_.") for c in model)
 
@@ -206,11 +227,15 @@ def main():
         model = job["model"]
         prompt = job["prompt"]
         tools = job.get("tools", [])
+        effort = job.get("effort", "medium")
     except (ValueError, KeyError, TypeError, AttributeError):
         print("Hermes input is invalid.", file=sys.stderr)
         return 3
     if not valid_model(model):
         print("Hermes model identifier is invalid.", file=sys.stderr)
+        return 3
+    if effort not in EFFORTS:
+        print("Hermes reasoning effort is invalid.", file=sys.stderr)
         return 3
     if not isinstance(prompt, str) or not prompt.strip() or len(prompt) > 20000:
         print("Hermes prompt is invalid.", file=sys.stderr)
@@ -230,6 +255,7 @@ def main():
     except RuntimeError as error:
         print(str(error), file=sys.stderr)
         return 3
+    use_effort(effort)
     from hermes_cli.oneshot import run_oneshot
 
     return run_oneshot(prompt=prompt, model=model, provider="openai-codex", toolsets=[toolset], skills=[])
