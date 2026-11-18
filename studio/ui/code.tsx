@@ -3,7 +3,7 @@ import type {Studio} from './app';
 import {api,q,type Resource} from './api';
 import {serverFor} from './task';
 import {ErrorLine,Section} from './parts';
-import {START_WITHOUT_TESTS} from './model';
+import {START_WITHOUT_TESTS,setupRequest} from './model';
 
 // "Code" in the project info: one question, "Wo liegt euer Code?". Everything after it Studio does by itself:
 // it sets up the team's workplace on the server (recognises tests and preview, runs a trial) and only speaks up
@@ -50,12 +50,12 @@ export function CodeSection({studio,admin}:{studio:Studio;admin:boolean}){
   if(!server)return;
   setPhase('working');setError('');
   try{
-   const body={project,device:server.device,workflow:meta.workflow??'pull-request',...(configuration?{automatic:false,configuration}:{automatic:true})};
-   const planned=await waitJob((await api<{id:string}>('/api/team/project-connect',{...body,mode:'plan'})).id) as {setupPlan?:Plan};
+   const base={project,device:server.device,workflow:meta.workflow,configuration};
+   const planned=await waitJob((await api<{id:string}>('/api/team/project-connect',setupRequest({...base,mode:'plan'}))).id) as {setupPlan?:Plan};
    const plan=planned.setupPlan;if(!plan)throw new Error('Der Server kennt diesen Schritt noch nicht.');
    if(plan.state==='needs_configuration'){setPhase('no-tests');return;}
    if(plan.state==='missing_tools')throw new Error('Auf dem Server fehlen Programme: '+plan.tools.filter(t=>!t.available).map(t=>t.program).join(', ')+'.');
-   const applied=await waitJob((await api<{id:string}>('/api/team/project-connect',{...body,mode:'apply',publish:false,allowCodex:false,expectedPlan:plan.revision})).id) as {configured?:boolean};
+   const applied=await waitJob((await api<{id:string}>('/api/team/project-connect',setupRequest({...base,mode:'apply',expectedPlan:plan.revision}))).id) as {configured?:boolean};
    if(applied.configured!==true)throw new Error('Der Server hat die Einrichtung nicht bestätigt.');
    await studio.reload();
    await waitJob((await api<{id:string}>('/api/development',{action:'job',operation:'probe',device:server.device,project})).id);
@@ -108,9 +108,9 @@ export function CodeSection({studio,admin}:{studio:Studio;admin:boolean}){
 
  // 3. The workplace: set up by itself; a person is needed only without tests or after an error.
  const working=phase==='working'||probe?.state==='running';
- const status=ready?'Arbeitsplatz bereit':working?'Arbeitsplatz wird eingerichtet …':phase==='no-tests'?'Noch keine Tests gefunden':probe?.state==='failed'?'Einrichten hat nicht geklappt':!server?'Arbeitsplatz richtet der Inhaber ein':'Arbeitsplatz wird eingerichtet …';
+ const status=ready?'Arbeitsplatz bereit':working?'Arbeitsplatz wird eingerichtet …':phase==='no-tests'?'Noch keine Tests gefunden':error||probe?.state==='failed'?'Einrichten hat nicht geklappt':!server?'Arbeitsplatz richtet der Inhaber ein':'Arbeitsplatz noch nicht eingerichtet';
  return <Section title="Code" end={admin&&ready&&server&&!working?<button className="ui-link" onClick={()=>void setup()}>Neu einrichten</button>:undefined}>
-  <p className="ui-fact"><span className={'ui-dot '+(ready?'ok':working?'work':phase==='no-tests'?'approve':probe?.state==='failed'?'fail':'idle')}/>{name} · {status}</p>
+  <p className="ui-fact"><span className={'ui-dot '+(ready?'ok':working?'work':phase==='no-tests'?'approve':error||probe?.state==='failed'?'fail':'idle')}/>{name} · {status}</p>
   {working&&<p className="ui-muted">Studio schaut sich euren Code an und richtet ein, wie Änderungen geprüft und angezeigt werden. Das dauert ein paar Minuten.</p>}
   {phase==='no-tests'&&<><p className="ui-muted">Das Team kann trotzdem anfangen; Änderungen schaust du dann selbst an. Sobald es Tests gibt, tippe hier auf „Neu einrichten“.</p>
    <button className="ui-btn primary" onClick={()=>void setup(START_WITHOUT_TESTS)}>So anfangen</button></>}

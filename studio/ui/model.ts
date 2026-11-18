@@ -77,3 +77,10 @@ export function messagesOf(messages:Message[],place:{agent?:string;member?:strin
 /** Without tests the team can still start (empty or unknown code): the check only proves the code is there.
  * Real tests come later with "Neu einrichten". The server validates it like any project setup. */
 export const START_WITHOUT_TESTS={version:1,prepare:[],check:['node','-e','0'],requires:['node'],generated:[]};
+
+/** The request that sets up the team's workplace on the server (plan first, then apply the confirmed plan).
+ * Shared by the app and a test that sends it to the real server route. */
+export function setupRequest({project,device,workflow,mode,configuration,expectedPlan}:{project:string;device:string;workflow?:string;mode:'plan'|'apply';configuration?:object;expectedPlan?:string}){
+ return {project,device,mode,workflow:workflow==='direct'?'direct':'pull-request',publish:false,allowCodex:false,
+  ...(configuration?{automatic:false,configuration}:{automatic:true}),...(expectedPlan?{expectedPlan}:{})};
+}

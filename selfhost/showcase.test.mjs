@@ -93,3 +93,25 @@ test('switched on, built after each take-over, shown at the fixed address; a new
  // A task of such a project is done with the take-over; there is no separate "online" step.
  assert.equal(studio.db.prepare("SELECT json_extract(value,'$.live') AS live FROM workspace_meta WHERE key=?").get('room:v1:project:'+project).live,'show');
 });
+
+test('the app\'s request to set up the workplace is accepted by the server route (plan with and without tests)',async t=>{
+ const {setupRequest,START_WITHOUT_TESTS}=await import('../studio/ui/model.ts');
+ const dir=mkdtempSync(path.join(os.tmpdir(),'studio-setupreq-')),filename=path.join(dir,'s.sqlite'),origin='http://127.0.0.1:44641';
+ const store=openStore(filename,{seedProjects:false}),me=randomUUID(),session=randomBytes(32).toString('base64url'),device=randomUUID();
+ store.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(me,'Marco','m@fixture.invalid',passwordHash('fixture-password-not-real'),'owner',Date.now());
+ store.prepare('INSERT INTO sessions VALUES(?,?,?)').run(digest(session),me,Date.now()+600000);
+ store.prepare('INSERT INTO devices(id,owner,name,hash,seen,revoked) VALUES(?,?,?,?,?,0)').run(device,me,'Server',digest(randomUUID()),Date.now());store.close();
+ const studio=createStudioServer({filename,origin,previewOrigin:'http://127.0.0.1:44642',resetMailer:null});
+ await new Promise(r=>studio.server.listen(44641,'127.0.0.1',r));
+ t.after(async()=>{await new Promise(r=>studio.server.close(r));studio.db.close();rmSync(dir,{recursive:true,force:true});});
+ const post=async(route,body)=>{const r=await fetch(origin+route,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:'studio_session='+session},body:JSON.stringify(body)});return {status:r.status,data:await r.json()};};
+ const project=(await post('/api/room',{action:'create',id:randomUUID(),title:'The New World',description:''})).data.project;
+ studio.db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?)').run('executor:v1:host:'+device,JSON.stringify({kind:'server',os:'linux',arch:'x64',node:process.version,setupPlanVersion:1,cpus:2,memoryMb:2048}));
+ const revision=(await (await fetch(origin+'/api/room?project='+project,{headers:{Cookie:'studio_session='+session}})).json()).meta.revision;
+ assert.equal((await post('/api/room',{action:'repository',project,url:'https://github.com/Spezzo-sudo/The-New-World',revision})).status,200);
+ for(const configuration of [undefined,START_WITHOUT_TESTS]){
+  const r=await post('/api/team/project-connect',setupRequest({project,device,mode:'plan',configuration}));
+  assert.equal(r.status,200,JSON.stringify(r.data));assert.ok(r.data.id);
+  studio.db.prepare("UPDATE jobs SET status='completed' WHERE id=?").run(r.data.id);
+ }
+});
