@@ -217,7 +217,8 @@ export async function execute(cfg, job, env, { runtime = python, script = adapte
   child.stderr.on('data', chunk => { errors = (errors + chunk).slice(-4000); });
   child.stdin.on('error', () => {});
   const forModel = tools.map(({ id, name, description, parameters }) => ({ id, name, description, parameters }));
-  child.stdin.end(JSON.stringify({ model: job.model, prompt: jobPrompt(job, tools), ...(tools.length ? { tools: forModel } : {}) }));
+  const effort = ['minimal', 'low', 'medium', 'high'].includes(job.effort) ? job.effort : 'medium';
+  child.stdin.end(JSON.stringify({ model: job.model, effort, prompt: jobPrompt(job, tools), ...(tools.length ? { tools: forModel } : {}) }));
 
   const timer = setTimeout(() => { timedOut = true; stop(); }, maxMs);
   let heartbeatPending = false;
