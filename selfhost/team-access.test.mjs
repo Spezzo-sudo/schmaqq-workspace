@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import {mkdtempSync, rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {randomUUID} from 'node:crypto';
 import {createInvite} from './store.mjs';
 import {createStudioServer} from './server.mjs';
 
 test('Studio is invitation-only: owner invites, members propose, removed members are locked out', async t => {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'studio-team-access-'));
   const origin = 'http://127.0.0.1:44685';
-  const app = createStudioServer({seedProjects:true, filename:path.join(dir,'fixture.sqlite'), origin, previewOrigin:'http://127.0.0.1:44686'});
+  const app = createStudioServer({seedProjects:false, filename:path.join(dir,'fixture.sqlite'), origin, previewOrigin:'http://127.0.0.1:44686'});
   await new Promise((resolve, reject) => {app.server.once('error', reject);app.server.listen(0, '127.0.0.1', resolve);});
   t.after(async () => {await new Promise(resolve => app.server.close(resolve));app.db.close();rmSync(dir,{recursive:true,force:true});});
   const base = 'http://127.0.0.1:' + app.server.address().port;
@@ -38,6 +39,48 @@ test('Studio is invitation-only: owner invites, members propose, removed members
   const people = (await call('GET','/api/workspace',undefined,owner.cookie)).body.members;
   const memberRow = people.find(p=>p.name==='Member'),ownerRow = people.find(p=>p.name==='Owner');
   assert.equal(memberRow.invitedBy,ownerRow.id);
+
+  // General invitations create a Studio account with an empty project list.
+  const create = async (title,cookie) => {
+    const response = await call('POST','/api/room',{action:'create',id:randomUUID(),title},cookie);
+    assert.equal(response.status,200);
+    return response.body.project;
+  };
+  const a=await create('Erstes Projekt',owner.cookie);
+  const b=await create('Zweites Projekt',owner.cookie);
+  const privateProject=await create('Privates Projekt',owner.cookie);
+  const lists=async cookie=>(await call('GET','/api/rooms',undefined,cookie)).body.rooms.map(p=>p.id).sort();
+  assert.deepEqual(await lists(member.cookie),[]);
+  const memberProject=await create('Projekt von Member',member.cookie);
+  assert.deepEqual(await lists(member.cookie),[memberProject]);
+  assert.equal((await call('POST','/api/invites',{email:'forbidden',project:a},member.cookie)).status,403);
+  assert.equal((await call('POST','/api/invites',{email:'forbidden',projects:[memberProject]},member.cookie)).status,403);
+  assert.equal((await call('POST','/api/invites',{email:'forbidden',projects:[memberProject]},owner.cookie)).status,403);
+
+  // The project lead can invite straight into their own project without waiting for the owner.
+  const single=await call('POST','/api/invites',{email:'single',project:memberProject},member.cookie);
+  assert.equal(single.status,200);
+  const joined=await call('POST','/api/auth/register',{invite:token(single.body.link),name:'Single',password});
+  assert.deepEqual(joined.body,{ok:true,project:memberProject});
+  assert.deepEqual(await lists(joined.cookie),[memberProject]);
+  assert.equal((await call('GET','/api/room?project='+privateProject,undefined,joined.cookie)).status,403);
+
+  // The owner chooses multiple projects; duplicate selections give only one membership.
+  const multi=await call('POST','/api/invites',{email:'multi',projects:[a,b,b]},owner.cookie);
+  assert.equal(multi.status,200);
+  const choices=await call('GET','/api/invites',undefined,owner.cookie);
+  assert.deepEqual(choices.body.projects.map(p=>p.id).sort(),[a,b,privateProject].sort());
+  assert.deepEqual(choices.body.invites.find(i=>i.email==='multi').projects,['Erstes Projekt','Zweites Projekt']);
+  const multiJoined=await call('POST','/api/auth/register',{invite:token(multi.body.link),name:'Multi',password});
+  assert.deepEqual(multiJoined.body,{ok:true});
+  assert.deepEqual(await lists(multiJoined.cookie),[a,b].sort());
+
+  const revoked=await call('POST','/api/invites',{email:'revoked',project:memberProject},member.cookie);
+  const scoped=await call('GET','/api/invites?project='+memberProject,undefined,member.cookie);
+  assert.equal(scoped.body.invites.length,1);
+  assert.equal((await call('POST','/api/invites/withdraw',{project:memberProject,id:scoped.body.invites[0].id},joined.cookie)).status,403);
+  assert.equal((await call('POST','/api/invites/withdraw',{project:memberProject,id:scoped.body.invites[0].id},member.cookie)).status,200);
+  assert.equal((await call('POST','/api/auth/register',{invite:token(revoked.body.link),name:'Revoked',password})).status,403);
 
   // A member cannot create links, only propose; the owner decides.
   const proposal = await call('POST','/api/invites',{email:'friend@fixture.invalid'},member.cookie);

@@ -17,7 +17,7 @@ test('project access follows the roles: removed people read nothing, an appointe
  const join=async(email,role)=>(await request('/api/auth/register',{invite:createInvite(app.db,email,role),name:email[0].toUpperCase(),password:'fixture-password-1234'})).cookie;
  const a=await join('a@fixture.invalid','owner'),b=await join('b@fixture.invalid'),c=await join('c@fixture.invalid');
  const id=email=>app.db.prepare('SELECT id FROM members WHERE email=?').get(email).id,aId=id('a@fixture.invalid'),bId=id('b@fixture.invalid'),cId=id('c@fixture.invalid');
- const project=(await request('/api/room',{action:'create',id:randomUUID(),title:'Team',description:''},a)).data.project;
+ const project=(await request('/api/room',{action:'create',id:randomUUID(),title:'Team',description:'',members:[cId]},a)).data.project;
  const roles=(member,list)=>request('/api/project-roles',{action:'roles',project,member,roles:list},a);
  app.db.prepare("INSERT INTO tasks VALUES('task-1',?,'Startseite','','review','Normal',?,0)").run(project,aId);
 
@@ -29,6 +29,10 @@ test('project access follows the roles: removed people read nothing, an appointe
  assert.equal((await request('/api/room/context?project='+project,null,c)).status,403,'also for connected AI assistants');
  assert.equal((await request('/api/collaboration/task?id=task-1',null,c)).status,403);
  assert.ok(!(await request('/api/team',null,c)).data.tasks.some(x=>x.project===project));
+ assert.ok(!(await request('/api/development',null,c)).data.tasks.some(x=>x.project===project));
+ for(const route of ['/api/project-roles','/api/team/knowledge','/api/room/tasks','/api/development/workspaces','/api/executors']){
+  assert.equal((await request(route+'?project='+project,null,c)).status,403,route);
+ }
  app.db.prepare("INSERT INTO messages VALUES('msg-1',?,?,'Nur fürs Projekt',?)").run(project,aId,Date.now());
  const older=(await request('/api/workspace',null,c)).data;
  assert.ok(!older.projects.some(p=>p.id===project)&&!older.tasks.some(x=>x.project===project)&&!older.messages.some(x=>x.channel===project),'the former view follows the same roles');
@@ -69,7 +73,7 @@ test('#Allgemein: answer a message and turn it into a task of a chosen project',
  const request=async(route,value,cookie)=>{const r=await fetch(host+route,{method:value?'POST':'GET',headers:{...(value?{Origin:origin,'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},...(value?{body:JSON.stringify(value)}:{})});return {status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};};
  const a=(await request('/api/auth/register',{invite:createInvite(app.db,'a@fixture.invalid','owner'),name:'A',password:'fixture-password-1234'})).cookie;
  const b=(await request('/api/auth/register',{invite:createInvite(app.db,'b@fixture.invalid'),name:'B',password:'fixture-password-1234'})).cookie;
- const project=(await request('/api/room',{action:'create',id:randomUUID(),title:'Team',description:''},a)).data.project;
+ const project=(await request('/api/room',{action:'create',id:randomUUID(),title:'Team',description:'',members:[app.db.prepare("SELECT id FROM members WHERE name='B'").get().id]},a)).data.project;
  assert.equal((await request('/api/workspace',{action:'message',id:'g1',channel:'general',body:'Wir sollten die Startseite ruhiger gestalten.'},a)).status,200);
  assert.equal((await request('/api/workspace',{action:'message',id:'g2',channel:'general',body:'Gute Idee, ich mache eine Aufgabe daraus.',replyTo:'g1'},b)).status,200);
  app.db.prepare("INSERT INTO messages VALUES('p1',?,(SELECT id FROM members WHERE name='A'),'Projekt',0)").run(project);

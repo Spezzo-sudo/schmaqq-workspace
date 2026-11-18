@@ -16,8 +16,9 @@ import {queueShowcases} from '../selfhost/showcase.mjs';
 const out=path.resolve(process.argv[2]??'studio-walkthrough');mkdirSync(out,{recursive:true});
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE??'playwright');
 const dir=mkdtempSync(path.join(os.tmpdir(),'studio-walkthrough-')),filename=path.join(dir,'s.sqlite');
-const db=openStore(filename,{seedProjects:false}),me=randomUUID(),session=randomBytes(32).toString('base64url'),worker='w'.repeat(43);
+const db=openStore(filename,{seedProjects:false}),me=randomUUID(),colleague=randomUUID(),session=randomBytes(32).toString('base64url'),worker='w'.repeat(43);
 db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(me,'Neu','neu@fixture.invalid',passwordHash(randomBytes(12).toString('hex')),'owner',Date.now());
+db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(colleague,'Lena Weber','lena@fixture.invalid',passwordHash(randomBytes(12).toString('hex')),'member',Date.now());
 db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(digest(session),me,Date.now()+3600000);db.close();
 const app=createStudioServer({filename,origin:'http://127.0.0.1:4466',previewOrigin:'http://127.0.0.1:4467',resetMailer:null,hermesWorkers:[{owner:me,token:worker}]});
 await new Promise(r=>app.server.listen(4466,'127.0.0.1',r));await new Promise(r=>app.previewServer.listen(4467,'127.0.0.1',r));
@@ -34,6 +35,10 @@ async function screen(name,url,width,act=async()=>{}){
 const expect=(text,what)=>{if(!text.includes(what))throw new Error('Nicht gefunden: '+what);};
 try{
  expect(await screen('01-start','/',390),'Noch kein Projekt');
+ expect(await screen('01b-project-create','/',390,async page=>{
+  await page.getByRole('button',{name:'Projekt anlegen',exact:true}).click();
+  if(await page.getByRole('checkbox',{name:'Lena Weber'}).isChecked())throw new Error('Studio-Konto war vorausgewählt.');
+ }),'Wer ist dabei?');
  const project=(await post('/api/room',{action:'create',id:randomUUID(),title:'Café Sonne',description:'Eine Website'})).project;
  expect(await screen('02-project','/?p='+project,390),'Ich bin Herr Grau, eure Projektleitung');
  expect(await screen('03-hire','/?p='+project,390,p=>p.getByText('Einstellen',{exact:true}).first().click()),'Kundendienst');
@@ -66,6 +71,55 @@ try{
  const url=(await (await fetch(host+'/api/room?project='+project,{headers:{Cookie:'studio_session='+session}})).json()).showcase.url;
  const page=await browser.newPage();await page.goto(url);expect(await page.locator('body').innerText(),'Mo–Fr 7–18 Uhr');await page.screenshot({path:path.join(out,'07d-seite.png')});await page.close();
  expect(await screen('08-account','/?page=account',390),'Einmal verbinden, dann kann jeder Agent');
+ await post('/api/room',{action:'create',id:randomUUID(),title:'Internes Projekt',description:'Nur für das eigene Team'});
+ const team=await browser.newContext({viewport:{width:390,height:844}});
+ await team.addCookies([{name:'studio_session',value:session,url:host}]);
+ const leadPage=await team.newPage();leadPage.on('pageerror',e=>errors.push('Projektteam: '+e.message));
+ await leadPage.goto(host+'/?p='+project+'&info=1');
+ await leadPage.getByRole('button',{name:'+ Mensch dazunehmen'}).click();
+ const dialog=leadPage.getByRole('dialog');
+ await dialog.getByLabel('Studio-Konto').selectOption(colleague);
+ await dialog.getByRole('button',{name:'Dazunehmen',exact:true}).click();
+ await leadPage.getByText('Lena Weber',{exact:true}).waitFor();
+ await leadPage.getByRole('button',{name:'+ Mensch dazunehmen'}).click();
+ await dialog.getByLabel('Benutzername oder E-Mail').fill('fruehschicht@fixture.invalid');
+ await dialog.getByRole('button',{name:'Einladungslink erstellen'}).click();
+ const inviteField=dialog.getByLabel('Einladungslink');
+ await inviteField.waitFor();
+ const guest=await browser.newContext({viewport:{width:390,height:844}});
+ const guestPage=await guest.newPage();guestPage.on('pageerror',e=>errors.push('Einladung: '+e.message));
+ await guestPage.goto(await inviteField.inputValue());
+ await guestPage.getByLabel('Dein Name',{exact:true}).fill('Robin Früh');
+ await guestPage.locator('input[name=password]').fill(randomBytes(14).toString('hex'));
+ await guestPage.getByRole('button',{name:'Beitreten'}).click();
+ await guestPage.waitForURL(host+'/?p='+project);
+ await guestPage.getByRole('button',{name:'Projektinfo'}).waitFor();
+ const guestRooms=await guestPage.request.get(host+'/api/rooms').then(r=>r.json());
+ if(guestRooms.rooms.map(r=>r.id).join(',')!==project)throw new Error('Einladung hat andere Projekte geöffnet.');
+ await dialog.getByRole('button',{name:'Schließen'}).click();
+ await leadPage.getByRole('button',{name:'Robin Früh verwalten'}).click();
+ leadPage.once('dialog',d=>d.accept());
+ await dialog.getByRole('button',{name:'Aus dem Projekt nehmen'}).click();
+ await leadPage.getByRole('button',{name:'Robin Früh verwalten'}).waitFor({state:'hidden'});
+ const afterRemoval=await guestPage.request.get(host+'/api/room?project='+project);
+ if(afterRemoval.status()!==403)throw new Error('Projekt bleibt nach dem Herausnehmen sichtbar.');
+ await guestPage.waitForURL(host+'/');
+ await guestPage.getByText('Noch kein Projekt',{exact:false}).first().waitFor();
+ await guest.close();await team.close();
+
+ for(const width of [390,1440]){
+  expect(await screen('projektinfo-'+width,'/?p='+project+'&info=1',width,async p=>{
+   const person=p.getByText('Lena Weber',{exact:true});
+   await person.scrollIntoViewIfNeeded();
+  }),'Macht mit');
+  expect(await screen('mein-konto-team-'+width,'/?page=account',width,async p=>{
+   const section=p.locator('#invite');
+   await section.getByRole('checkbox',{name:'Café Sonne'}).check();
+   if(await section.getByRole('checkbox',{name:'Internes Projekt'}).isChecked())throw new Error('Falsches Projekt vorausgewählt.');
+   await section.getByLabel('Benutzername oder E-Mail').fill('neues-mitglied@fixture.invalid');
+   await section.getByRole('button',{name:'Einladen',exact:true}).scrollIntoViewIfNeeded();
+  }),'Für welche Projekte?');
+ }
  expect(await screen('09-guide','/?page=guide',390),'Herr Grau plant');
  expect(await screen('11-start-with-projects','/',390),'Café Sonne');
  expect(await screen('10-desktop','/?p='+project+'&tab=tasks',1440),'Café Sonne');

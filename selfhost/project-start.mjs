@@ -1,15 +1,16 @@
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {transaction} from './store.mjs';
+import {startRoles} from './project-roles.mjs';
 const fail=(status,message)=>Object.assign(new Error(message),{status});
 /**
  * What each of the member's devices reports per project. `appShares(device,project)` marks projects the
  * server worker shares through Studio's GitHub App; there an older profile without upload no longer blocks
  * (the worker accepts the share with the app token), so the button must not be greyed out either.
  */
-export function projectReadiness(db,member,{appShares=()=>false}={}){
- const reports=db.prepare('SELECT d.id AS device,s.projects,s.updated,r.codex,r.updated AS codexUpdated FROM devices d LEFT JOIN runner_project_state s ON s.device=d.id LEFT JOIN ai_resources r ON r.device=d.id WHERE d.owner=? AND d.revoked=0').all(member).map(r=>{const projects=r.projects?JSON.parse(r.projects):null;return {...r,projects:Array.isArray(projects)?projects.map(p=>p&&p.publish!==true&&appShares(r.device,p.id)?{...p,publish:true}:p):projects};});
- const inspections=db.prepare(`SELECT device,project,status,created,ready FROM (SELECT device,project,status,created,json_extract(result,'$.ready') AS ready,ROW_NUMBER() OVER (PARTITION BY device,project ORDER BY created DESC,rowid DESC) AS n FROM jobs WHERE owner=? AND action='inspect') WHERE n=1`).all(member);
+export function projectReadiness(db,member,{appShares=()=>false,visible=()=>true}={}){
+ const reports=db.prepare('SELECT d.id AS device,s.projects,s.updated,r.codex,r.updated AS codexUpdated FROM devices d LEFT JOIN runner_project_state s ON s.device=d.id LEFT JOIN ai_resources r ON r.device=d.id WHERE d.owner=? AND d.revoked=0').all(member).map(r=>{const projects=r.projects?JSON.parse(r.projects):null;return {...r,projects:Array.isArray(projects)?projects.filter(p=>p&&visible(p.id)).map(p=>p&&p.publish!==true&&appShares(r.device,p.id)?{...p,publish:true}:p):projects};});
+ const inspections=db.prepare(`SELECT device,project,status,created,ready FROM (SELECT device,project,status,created,json_extract(result,'$.ready') AS ready,ROW_NUMBER() OVER (PARTITION BY device,project ORDER BY created DESC,rowid DESC) AS n FROM jobs WHERE owner=? AND action='inspect') WHERE n=1`).all(member).filter(row=>visible(row.project));
  return {reports,inspections};
 }
 export async function projectStartRoute({route,method,req,db,user,send,readJSON,parse}){
@@ -22,6 +23,7 @@ export async function projectStartRoute({route,method,req,db,user,send,readJSON,
   if(existing){if(existing.owner!==member.id||existing.title!==value.title||existing.description!==value.description||existing.mode!==value.mode)throw fail(409,'Dieser Projektstart wurde bereits mit anderen Angaben gespeichert.');project=existing.project;return;}
   project=randomUUID();
   db.prepare('INSERT INTO projects VALUES(?,?,?,?,?,?)').run(project,value.title,value.description,'sage','Im Aufbau',Date.now());
+  startRoles(db,project,member.id);
   db.prepare('INSERT INTO project_starts VALUES(?,?,?,?,?,?)').run(value.id,project,member.id,value.mode,value.title,value.description);
   db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(randomUUID(),member.id,'Projekt vorbereitet: '+value.title,Date.now());
  });send({ok:true,project});return true;

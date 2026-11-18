@@ -25,7 +25,7 @@ async function fixture(t){
   members.push({cookie:r.cookie,...app.db.prepare('SELECT id FROM members WHERE email=?').get(email)});
  }
  const [a,b]=members;
- const project=(await request('/api/room',{action:'create',id:randomUUID(),title:'Gemeinsames Projekt',description:'Zusammen arbeiten'},a.cookie)).body.project;
+ const project=(await request('/api/room',{action:'create',id:randomUUID(),title:'Gemeinsames Projekt',description:'Zusammen arbeiten',members:[b.id]},a.cookie)).body.project;
  const task=async(kind='general')=>(await request('/api/room',{action:'task',id:randomUUID(),project,title:'Ein Ergebnis',description:'Ein konkretes Ziel',kind,criteria:'Das Ergebnis ist nachvollziehbar.'},a.cookie)).body.task;
  const team=(person,action,extra)=>request('/api/team',{action,...extra},person.cookie);
  return {app,request,a,b,project,task,team};

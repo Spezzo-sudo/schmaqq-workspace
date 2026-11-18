@@ -1,7 +1,7 @@
 import http from 'node:http';
 import {isRemoved} from './team-access.mjs';
 import {teamDevices} from './team-workshop.mjs';
-import {requirePermission,selfApproval,can,projectRoles,setRoles,setReviewRule,reviewRule,rolesOf,roleNames} from './project-roles.mjs';
+import {requirePermission,selfApproval,can,projectRoles,setRoles,setReviewRule,reviewRule,rolesOf,roleNames,preserveProjectRoles} from './project-roles.mjs';
 import {expireStaleJobs,activeJobInCopy,HEARTBEAT_LIMIT_MS,lostText} from './job-lifecycle.mjs';
 import {Readable} from 'node:stream';
 import {DatabaseSync} from 'node:sqlite';
@@ -30,7 +30,7 @@ import {createAgentRunRoute} from './agent-run-http.mjs';
 import {createLiveEvents} from './live-events.mjs';
 import {createTeamRoute} from './team-http.mjs';
 import {queueShowcases,showcasePreview,storeShowcase} from './showcase.mjs';
-import {createPracticeRoute} from './practice.mjs';
+import {createPracticeRoute,practiceOwner} from './practice.mjs';
 import {createGithubWorkflow,githubMemberTokens} from './github-workflow.mjs';
 import {createGithubApp,createGithubAppRoutes} from './github-app.mjs';
 import {taskContract,completion,teamEvent,storeMetadata,metadata,jobEventLabels} from './team-model.mjs';
@@ -57,6 +57,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  const configuredMailer=resetMailer===undefined?
    (demoMode?null:createResetMailer({origin})):resetMailer;
  const db=openStore(filename,{seedProjects}),secure=new URL(origin).protocol==='https:';
+ preserveProjectRoles(db,{seedProjects});
  const passwordRecovery=createPasswordRecovery({
   db,origin,mailer:configuredMailer,now:recoveryNow,trustedProxyIps
  });
@@ -65,7 +66,13 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  function device(req){const t=req.headers.authorization?.match(/^Bearer ([\w-]+)$/)?.[1];if(!t)throw fail(401,'Geräteanmeldung fehlt.');const d=db.prepare('SELECT * FROM devices WHERE hash=? AND revoked=0').get(digest(t));if(!d)throw fail(401,'Gerätezugang ungültig.');return d;}
  function session(res,member){const t=token();db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(digest(t),member,now()+7*86400000);res.setHeader('Set-Cookie',`${sessionCookie}=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800${secure?'; Secure':''}`);}
  function record(author,message){db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(uuid(),author,message,now());}
- const oidcRoute=createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,provider:demoMode?null:oidcProvider});
+ // Live signals reach only people who may see the project they are about.
+ const live=createLiveEvents({canSee:(memberId,project)=>{
+  const member=db.prepare('SELECT * FROM members WHERE id=?').get(memberId);
+  try{return Boolean(member&&can(db,member,project,'view'));}catch{return false;}
+ }});
+ const onJoin=projects=>{for(const project of projects)live.publish({type:'room',project});};
+ const oidcRoute=createOidcRoutes({db,origin,sessionCookie,user,session,readJSON,onJoin,provider:demoMode?null:oidcProvider});
  const connectionRoute=createConnectionRoutes({db,origin,sessionCookie,user,provider:demoMode?null:githubProvider});
  // GitHub App (one per Studio): created and installed by the owner; tests pass their own instance.
  const studioGithubApp=githubApp!==undefined?githubApp:(demoMode?null:createGithubApp({db,origin,credentialsFile:path.join(path.dirname(filename),'github-app.private.json')}));
@@ -75,13 +82,8 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
  const githubAppRoute=createGithubAppRoutes({app:studioGithubApp,user,sessionCookie,secure,readJSON});
  // Route modules share the host's request parsing and origin/CSRF boundary.
  const authHttpRoute=createAuthHttpRoute({
-  db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now,loginLimiter,passwordRecovery
+  db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now,loginLimiter,passwordRecovery,onJoin
  });
- // Live signals reach only people who may see the project they are about.
- const live=createLiveEvents({canSee:(memberId,project)=>{
-  const member=db.prepare('SELECT * FROM members WHERE id=?').get(memberId);
-  try{return Boolean(member&&can(db,member,project,'view'));}catch{return false;}
- }});
  const roomRoute=createRoomRoute({db,user,readJSON,parse,live,previewOrigin});
  // Opt-in only: an operator-owned mode-0600 file binds each Hermes service identity to exactly one Studio member.
  let configuredHermesWorkers=hermesWorkers??[];
@@ -160,7 +162,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     const member=user(req);
     if(method==='GET'){
      const job=parse(id,url.searchParams.get('job'));
-     {const target=db.prepare('SELECT owner,project FROM jobs WHERE id=?').get(job);if(target&&target.owner!==member.id)requirePermission(db,member,target.project,'view');}
+     {const target=db.prepare('SELECT project FROM jobs WHERE id=?').get(job);if(target)requirePermission(db,member,target.project,'view');}
      if(githubWorkflow.appMode()){
       // Status checks finish what an earlier attempt could not: open the pull request.
       // Merging stays an explicit step of the author or a project admin.
@@ -185,36 +187,42 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     const member=user(req);
     if(method==='GET'){
      const project=parse(id,url.searchParams.get('project'));if(!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt fehlt.');
-     const people=db.prepare('SELECT id,name,role FROM members ORDER BY name').all().filter(p=>!isRemoved(db,p.id));
-     send({teamWorkshop:metadata(db,'room:v1:project:'+project)?.teamWorkshop!==false,review:reviewRule(db,project),explicit:!!projectRoles(db,project),mine:rolesOf(db,member,project),members:people.map(p=>({id:p.id,name:p.name,owner:p.role==='owner',roles:rolesOf(db,p,project)}))});return;
+     requirePermission(db,member,project,'view');
+     const mine=rolesOf(db,member,project),admin=mine.includes('admin');
+     const people=db.prepare('SELECT id,name,role FROM members ORDER BY name').all().filter(p=>!isRemoved(db,p.id)).map(p=>({id:p.id,name:p.name,owner:p.role==='owner',roles:rolesOf(db,p,project)}));
+     send({teamWorkshop:metadata(db,'room:v1:project:'+project)?.teamWorkshop!==false,review:reviewRule(db,project),explicit:!!projectRoles(db,project),mine,members:people.filter(p=>p.roles.length||admin&&!practiceOwner(db,project))});return;
     }
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     const v=parse(z.discriminatedUnion('action',[z.object({action:z.literal('roles'),project:id,member:id,roles:z.array(z.enum(roleNames)).max(4)}),z.object({action:z.literal('review'),project:id,review:z.enum(['second','admin-alone'])}),z.object({action:z.literal('workshop'),project:id,on:z.boolean()})]),await readJSON(req,4096));
-    requirePermission(db,member,v.project,'admin');
     transaction(db,()=>{
+     if(!db.prepare('SELECT 1 FROM projects WHERE id=?').get(v.project))throw fail(404,'Projekt fehlt.');
+     requirePermission(db,member,v.project,'admin');
      if(v.action==='workshop'){storeMetadata(db,'room:v1:project:'+v.project,{...(metadata(db,'room:v1:project:'+v.project)??{}),teamWorkshop:v.on});teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:v.on?'Team-Werkstatt eingeschaltet':'Team-Werkstatt ausgeschaltet'});return;}
      if(v.action==='review'){setReviewRule(db,v.project,v.review);teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:v.review==='admin-alone'?'Prüfregel: Admin darf allein freigeben':'Prüfregel: zweite Person prüft'});return;}
      const target=db.prepare('SELECT id,role FROM members WHERE id=?').get(v.member);if(!target||isRemoved(db,target.id))throw fail(404,'Mitglied fehlt.');
-     if(target.role==='owner')throw fail(400,'Der Inhaber ist immer Admin.');
+     if(practiceOwner(db,v.project))throw fail(403,'Dieses Übungsprojekt ist privat.');
      setRoles(db,v.project,target.id,[...new Set(v.roles)]);teamEvent(db,{actor:member.id,project:v.project,kind:'project',body:'Rollen angepasst'});
     });
-    send({ok:true});return;
+    send({ok:true});
+    live.publish({type:'room',project:v.project});
+    if(v.action==='roles'&&!v.roles.length)live.publish({type:'room',project:'',only:[v.member]});
+    return;
    }
    if(await projectStartRoute({route,method,req,db,user,send,readJSON,parse}))return;
    if(route==='/api/runner/project-setup-verify'&&method==='POST'){
     const d=device(req),v=parse(z.object({project:id,repository:z.string().max(250).optional(),base:z.string().max(100).optional()}),await readJSON(req));
     const selected=db.prepare('SELECT id FROM projects WHERE id=?').get(v.project);
     const started=db.prepare('SELECT owner FROM project_starts WHERE project=?').get(v.project);
-    const role=db.prepare('SELECT role FROM members WHERE id=?').get(d.owner)?.role;
+    const runnerOwner=db.prepare('SELECT id,role FROM members WHERE id=?').get(d.owner);
     const shared=metadata(db,'room:v1:project:'+v.project)?.teamShared===true;
-    if(!selected||(!shared&&(started?started.owner!==d.owner:role!=='owner')))throw fail(403,'Projekt und persönlicher Runner sind nicht gemeinsam freigegeben.');
+    if(!selected||!can(db,runnerOwner,v.project,'develop')||(!shared&&(started?started.owner!==d.owner:runnerOwner.role!=='owner')))throw fail(403,'Projekt und persönlicher Runner sind nicht gemeinsam freigegeben.');
     const sharedMeta=metadata(db,'room:v1:project:'+v.project);
     if(sharedMeta?.repository&&v.repository){const canonical=s=>s.replace(/^git@github.com:/,'https://github.com/').replace(/\.git$/,'').replace(/\/$/,'').toLowerCase();if(canonical(sharedMeta.repository)!==canonical(v.repository))throw fail(409,'Dieses Repository passt nicht zum gemeinsamen Projekt.');}
     send({ok:true,repository:sharedMeta?.repository??null,base:sharedMeta?.base??'main'});return;
    }
    if(await aiRoute({route,method,req,db,user,device,send,readJSON,parse}))return;
    if(await codexAccountRoute({route,method,req,db,user,send,readJSON,parse}))return;
-   if(await authHttpRoute({route,method,req,res,send}))return;
+   if(await authHttpRoute({route,method,req,url,res,send}))return;
    if(await agentRunRoute({route,method,req,res,url,send}))return;
    if(await roomRoute({route,method,req,res,url,send}))return;
    if(route==='/api/runner/poll'&&method==='POST'){
@@ -307,14 +315,14 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(route==='/api/development/reviews'){
     const m=user(req);
     if(method==='GET'){
-     const jid=parse(id,url.searchParams.get('job')),job=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);if(!job)throw fail(404,'Prüfauftrag fehlt.');if(job.owner!==m.id)requirePermission(db,m,job.project,'view');
+     const jid=parse(id,url.searchParams.get('job')),job=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);if(!job)throw fail(404,'Prüfauftrag fehlt.');requirePermission(db,m,job.project,'view');
      send({state:reviewState(db,job),entries:db.prepare('SELECT code_reviews.id,commit_sha AS commitSha,reviewer,members.name AS name,decision,body,created FROM code_reviews JOIN members ON members.id=reviewer WHERE job=? ORDER BY seq').all(jid)});return;
     }
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     const v=parse(z.object({id,job:id,commit:z.string().regex(/^[a-f0-9]{40,64}$/),decision:z.enum(['approved','changes','comment']),body:z.string().trim().max(4000)}),await readJSON(req));
     const job=db.prepare("SELECT * FROM jobs WHERE id=? AND action IN ('review','submit') AND status='completed'").get(v.job);if(!job)throw fail(409,'Ein abgeschlossener Prüfauftrag wird benötigt.');
     const result=JSON.parse(job.result??'{}');if(result.commit!==v.commit)throw fail(409,'Der angezeigte Code-Stand stimmt nicht mehr. Bitte neu laden.');
-    requirePermission(db,m,job.project,v.decision==='comment'?'view':'review');
+    requirePermission(db,m,job.project,v.decision==='comment'?'talk':'review');
     if(v.decision!=='comment'&&job.owner===m.id&&!selfApproval(db,m.id,job.project))throw fail(403,'Die Prüfung muss die zweite Person übernehmen.');
     if(v.decision==='approved'&&!completeReview(result))throw fail(409,'Dieser Diff ist unvollständig. Für eine Freigabe einen vollständig prüfbaren Stand erstellen.');
     if(v.decision!=='approved'&&!v.body)throw fail(400,'Bitte eine Rückmeldung eingeben.');
@@ -339,30 +347,31 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    }
    if(route==='/api/development/github-pr'){
     if(method!=='GET')throw fail(405,'Methode nicht erlaubt.');
-    user(req);
+    const m=user(req);
     const jid=parse(id,url.searchParams.get('job'));
     const job=db.prepare("SELECT id,owner,project,action,status,result FROM jobs WHERE id=? AND action IN ('review','submit')").get(jid);
     if(!job)throw fail(404,'Prüfauftrag fehlt.');
+    requirePermission(db,m,job.project,'view');
     send(await inspectPullRequest(job));return;
    }
    if(route==='/api/development/job'&&method==='GET'){
     const m=user(req);const jid=parse(id,url.searchParams.get('id'));
     const job=db.prepare('SELECT id,owner,device,project,action,payload,status,created,started,result FROM jobs WHERE id=?').get(jid);
-    if(!job)throw fail(404,'Auftrag fehlt.');if(job.action==='codex-account'&&job.owner!==m.id)throw fail(403,'Die ChatGPT-Anmeldung sieht nur die eigene Person.');if(job.owner!==m.id&&job.action!=='local-ai')requirePermission(db,m,job.project,'view');if(job.action==='local-ai'&&job.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(job.device,m.id))throw fail(403,'KI-Anfrage ist nur für Absender und Rechnerbesitzer sichtbar.');if(['files','read-file','save-file','create-file'].includes(job.action)&&job.owner!==m.id)throw fail(403,'Dateiinhalte sind nur in der eigenen Arbeitskopie verfügbar.');
+    if(!job)throw fail(404,'Auftrag fehlt.');if(job.action==='codex-account'&&job.owner!==m.id)throw fail(403,'Die ChatGPT-Anmeldung sieht nur die eigene Person.');if(job.action!=='codex-account')requirePermission(db,m,job.project,'view');if(job.action==='local-ai'&&job.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(job.device,m.id))throw fail(403,'KI-Anfrage ist nur für Absender und Rechnerbesitzer sichtbar.');if(['files','read-file','save-file','create-file'].includes(job.action)&&job.owner!==m.id)throw fail(403,'Dateiinhalte sind nur in der eigenen Arbeitskopie verfügbar.');
     // Results come from the executor itself; say so, so nobody mistakes them for an independent check.
     const executor=db.prepare('SELECT name FROM devices WHERE id=?').get(job.device),kind=metadata(db,'executor:v1:host:'+job.device)?.kind==='server'?'server':'pc';
     send({job:{...job,payload:JSON.parse(job.payload),result:job.result?JSON.parse(job.result):null,executor:{name:executor?.name??null,kind},resultSource:'Vom Ausführer gemeldet, nicht unabhängig geprüft. Vor einer Veröffentlichung prüft die zweite Person bzw. CI.'}});return;
    }
    if(route==='/api/development/events'&&method==='GET'){
     const m=user(req);const jid=parse(id,url.searchParams.get('job'));
-    const eventJob=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);if(!eventJob)throw fail(404,'Auftrag fehlt.');if(eventJob.action==='codex-account'&&eventJob.owner!==m.id)throw fail(403,'Die ChatGPT-Anmeldung sieht nur die eigene Person.');if(eventJob.owner!==m.id&&eventJob.action!=='local-ai')requirePermission(db,m,eventJob.project,'view');if(eventJob.action==='local-ai'&&eventJob.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(eventJob.device,m.id))throw fail(403,'KI-Auftrag ist privat.');
+    const eventJob=db.prepare('SELECT * FROM jobs WHERE id=?').get(jid);if(!eventJob)throw fail(404,'Auftrag fehlt.');if(eventJob.action==='codex-account'&&eventJob.owner!==m.id)throw fail(403,'Die ChatGPT-Anmeldung sieht nur die eigene Person.');if(eventJob.action!=='codex-account')requirePermission(db,m,eventJob.project,'view');if(eventJob.action==='local-ai'&&eventJob.owner!==m.id&&!db.prepare('SELECT id FROM devices WHERE id=? AND owner=?').get(eventJob.device,m.id))throw fail(403,'KI-Auftrag ist privat.');
     if(['files','read-file','save-file','create-file'].includes(eventJob.action)&&eventJob.owner!==m.id)throw fail(403,'Dateiprotokolle sind nur in der eigenen Arbeitskopie verfügbar.');
     const after=parse(z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER),url.searchParams.get('after')??0);
     send({events:db.prepare('SELECT seq,type,text,created FROM job_events WHERE job=? AND seq>? ORDER BY seq').all(jid,after)});return;
    }
    if(route==='/api/development'){
     const m=user(req);
-    if(method==='GET'){const devices=db.prepare("SELECT d.id,d.owner,d.name,d.seen,d.revoked,CASE WHEN json_extract(h.value,'$.kind')='server' THEN 'server' ELSE 'pc' END AS kind FROM devices d LEFT JOIN workspace_meta h ON h.key='executor:v1:host:'||d.id WHERE d.revoked=0").all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().filter(j=>j.owner===m.id||can(db,m,j.project,'view')).map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));const teamDeviceMap={};for(const p of db.prepare('SELECT id FROM projects').all())for(const d of teamDevices(db,m,p.id))(teamDeviceMap[d]??=[]).push(p.id);send({teamDevices:teamDeviceMap,devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all(),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)})),readiness:projectReadiness(db,m.id,{appShares})});return;}
+    if(method==='GET'){const visible=project=>can(db,m,project,'view');const devices=db.prepare("SELECT d.id,d.owner,d.name,d.seen,d.revoked,CASE WHEN json_extract(h.value,'$.kind')='server' THEN 'server' ELSE 'pc' END AS kind FROM devices d LEFT JOIN workspace_meta h ON h.key='executor:v1:host:'||d.id WHERE d.revoked=0").all();const jobs=db.prepare(`SELECT id,owner,device,project,action,json_object('worktree',json_extract(payload,'$.worktree')) AS payload,status,created,started,CASE WHEN result IS NULL THEN NULL ELSE json_object('branch',json_extract(result,'$.branch'),'commit',json_extract(result,'$.commit'),'url',json_extract(result,'$.url'),'scope',json_extract(result,'$.scope'),'workflow',json_extract(result,'$.workflow')) END AS result FROM jobs ORDER BY created DESC LIMIT 100`).all().filter(j=>j.action==='codex-account'?j.owner===m.id:visible(j.project)).map(j=>({...j,payload:JSON.parse(j.payload),result:j.result?JSON.parse(j.result):null}));const teamDeviceMap={};for(const p of db.prepare('SELECT id FROM projects').all())for(const d of teamDevices(db,m,p.id))(teamDeviceMap[d]??=[]).push(p.id);send({teamDevices:teamDeviceMap,devices,activeDeviceIds:db.prepare("SELECT DISTINCT device FROM jobs WHERE status IN ('queued','running','cancelling')").all().map(j=>j.device),workspaces:listWorkspaces(db).filter(w=>visible(w.project)),tasks:db.prepare("SELECT id,project,title,assignee,status FROM tasks WHERE status!='done' ORDER BY created DESC").all().filter(t=>visible(t.project)),jobs:jobs.map(j=>({...j,reviewState:reviewState(db,j)})),readiness:projectReadiness(db,m.id,{appShares,visible})});return;}
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     // Bound editor payloads by the runner's 64 KiB byte limit and by
     // Zod's 65536-character cap; JSON escaping needs a separate wire limit.
@@ -371,6 +380,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
      const value=parse(z.object({action:z.literal('workspace'),id,revision:z.number().int().min(0),title:text,scope:z.string().max(240).refine(validScope),archived:z.boolean()}),v);
      transaction(db,()=>{
       const current=listWorkspaces(db).find(w=>w.id===value.id&&w.owner===m.id);if(!current)throw fail(404,'Eigene Arbeitskopie fehlt.');
+      requirePermission(db,m,current.project,'develop');
       if(current.revision!==value.revision)throw fail(409,'Arbeitsbereich wurde inzwischen geändert. Bitte neu laden.');
       if(current.status!=='completed'&&current.status!=='interrupted')throw fail(409,'Erstellung zuerst beenden lassen.');
       if(db.prepare("SELECT id FROM jobs WHERE (id=? OR json_extract(payload,'$.worktree')=?) AND status IN ('queued','running','cancelling')").get(value.id,value.id))throw fail(409,'In dieser Arbeitskopie ist noch ein Auftrag aktiv.');
@@ -446,12 +456,13 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
     // Own copies only: code jobs can run only in a copy the member prepared.
     const m=user(req),project=parse(id,url.searchParams.get('project')),archived=url.searchParams.get('archived')==='1';
     if(!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt nicht gefunden.');
+    requirePermission(db,m,project,'view');
     const kinds=new Map(executors(db,m.id).map(e=>[e.id,e]));
     send({workspaces:listWorkspaces(db).filter(w=>w.owner===m.id&&w.project===project&&!w.revoked&&(archived||!w.archived)).map(w=>({id:w.id,title:w.title,status:w.status,created:w.created,branch:w.branch,scope:w.scope,task:w.taskId?{id:w.taskId,title:w.taskTitle}:null,archived:!!w.archived,device:w.device,deviceName:w.deviceName,deviceKind:kinds.get(w.device)?.kind??'pc',deviceOnline:!!kinds.get(w.device)?.online}))});return;
    }
    if(route==='/api/executors'){
     const m=user(req);
-    if(method==='GET'){const project=parse(id,url.searchParams.get('project'));if(!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt nicht gefunden.');send(placementView(db,m,project));return;}
+    if(method==='GET'){const project=parse(id,url.searchParams.get('project'));if(!db.prepare('SELECT id FROM projects WHERE id=?').get(project))throw fail(404,'Projekt nicht gefunden.');requirePermission(db,m,project,'view');send(placementView(db,m,project));return;}
     if(method!=='POST')throw fail(405,'Methode nicht erlaubt.');
     const value=parse(z.object({project:id,mode:z.enum(placementModes)}),await readJSON(req));
     setPlacement(db,{member:m,project:value.project,mode:value.mode});record(m.id,'Ausführungsregel geändert');send(placementView(db,m,value.project));return;

@@ -229,7 +229,7 @@ const agentPermissionsSchema=z.object({
  webResearch:z.boolean().optional()
 });
 const actions=z.discriminatedUnion('action',[
- z.object({action:z.literal('create'),id,title,description:z.string().trim().max(12000).default('')}),
+ z.object({action:z.literal('create'),id,title,description:z.string().trim().max(12000).default(''),members:z.array(id).max(100).optional()}),
  z.object({action:z.literal('share'),id,project:id,message:id}),
  z.object({action:z.literal('message'),id,project:id,body,replyTo:id.optional(),marked:z.array(id).min(1).max(20).optional(),topicTask:id.optional(),recipient:id.optional(),direct:z.boolean().optional(),senderAgent:id.optional(),handoff:z.object({toAgent:id,summary:z.string().trim().min(1).max(600),status:z.enum(['delegated','in_progress','completed','requested','stopped']).default('delegated')}).optional()}),
  z.object({action:z.literal('read'),project:id,view:chatView,messageId:id.optional()}),
@@ -293,7 +293,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null,p
    const beforeMessage=before?db.prepare('SELECT rowid AS sequence,id FROM messages WHERE id=? AND channel=?').get(parse(id,before),project):null;
    if(before&&(!beforeMessage||!mayRead(db,beforeMessage.id,member.id)))throw fail(400,'Die ältere Nachricht gehört nicht zu diesem Raum.');
    const mine=readable(member.id);
-   const messageRows=db.prepare('SELECT m.rowid AS sequence,m.*,s.kind AS scope_kind,s.member AS scope_member,s.peer AS scope_peer FROM messages m LEFT JOIN chat_private s ON s.message=m.id WHERE m.channel=? AND '+mine.sql+(beforeMessage?' AND m.rowid<?':'')+' ORDER BY m.rowid DESC LIMIT 101').all(project,...mine.params,...(beforeMessage?[beforeMessage.sequence]:[]));
+   const messageRows=db.prepare('SELECT m.rowid AS sequence,m.*,a.name AS authorName,s.kind AS scope_kind,s.member AS scope_member,s.peer AS scope_peer FROM messages m JOIN members a ON a.id=m.author LEFT JOIN chat_private s ON s.message=m.id WHERE m.channel=? AND '+mine.sql+(beforeMessage?' AND m.rowid<?':'')+' ORDER BY m.rowid DESC LIMIT 101').all(project,...mine.params,...(beforeMessage?[beforeMessage.sequence]:[]));
    const more=messageRows.length>100;
    const messages=messageRows.slice(0,100).reverse().map(({scope_kind,scope_member,scope_peer,...m})=>{
     const meta=readMeta(db,key('message',m.id))??{},sourceTask=readMeta(db,key('source-task',m.id))?.task??null;
@@ -312,13 +312,17 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null,p
   }
   if(method!=='POST'||route!=='/api/room')throw fail(405,'Methode nicht erlaubt.');
   const value=parse(actions,await readJSON(req,24000));
-  if(value.project)requirePermission(db,member,value.project,value.action==='read'||value.action==='share'||value.action==='message'&&!value.senderAgent&&!value.handoff?'view':value.action==='repository'?'admin':'develop');
+  if(value.project){
+   const talking=value.action==='share'||(value.action==='message'&&!value.senderAgent&&!value.handoff);
+   const permission=value.action==='read'?'view':value.action==='repository'?'admin':talking?'talk':'develop';
+   requirePermission(db,member,value.project,permission);
+  }
   const result=transaction(db,()=>{
    if(value.action==='create'){
     const previous=replay(db,member,value);if(previous)return previous;
     const project=randomUUID();db.prepare('INSERT INTO projects VALUES(?,?,?,?,?,?)').run(project,value.title,value.description,'sage','Im Aufbau',now());
     putMeta(db,key('project',project),{revision:0,repository:null,teamShared:true,createdBy:member.id,base:'main',workflow:'pull-request'});
-    startRoles(db,project,member.id);
+    startRoles(db,project,member.id,value.members);
     const lead=randomUUID();putMeta(db,key('agent',project+':'+lead),{...projectLeadFor(db,project,member,now()),id:lead});
     db.prepare('INSERT INTO activities VALUES(?,?,?,?)').run(randomUUID(),member.id,'Raum eröffnet: '+value.title,now());
     return remember(db,member,value,{ok:true,project});

@@ -47,5 +47,14 @@ weitergegebene Schritte.
 
 ## Wer darf was
 
-In der Projektinfo unter „Wer darf was“: Rollen der Menschen (Admin, Entwickler, Prüfer) und ob eine zweite Person
-freigibt oder der Admin allein freigeben darf. Einladen, neues Passwort und Entfernen macht der Inhaber unter Mein Konto.
+Beim Anlegen eines Projekts kannst du unter „Wer ist dabei?“ Menschen mit Studio-Konto auswählen. Ohne Auswahl beginnst du allein.
+Wer das Projekt leitet, kann in **Projektinfo → Team** ein vorhandenes Konto dazunehmen oder einen Link für ein neues Konto erstellen.
+Der Link gilt 24 Stunden und einmal. Sobald die Person ihr Konto anlegt, ist sie im Projekt und kann direkt anfangen.
+Unter **Mein Konto → Team** kann der Inhaber auch mehrere Projekte auswählen oder nur ins Studio einladen. Eine Einladung ohne Projekt erlaubt der Person, eigene Projekte anzulegen.
+
+Du siehst Chat, Aufgaben mit Gesprächen, Wissen und Team in deinen Projekten, während andere Projekte und fremde private Chats mit Menschen oder Agenten verborgen bleiben.
+
+- **Leitet das Projekt** kann Menschen dazunehmen, ihre Rolle ändern und sie aus dem Projekt nehmen.
+- **Macht mit** kann schreiben, Aufgaben bearbeiten und Änderungen freigeben.
+- **Schaut nur zu** kann mitlesen.
+- Unter **„Wer darf was“** steht die Freigaberegel. Entweder gibt eine zweite Person frei oder die Projektleitung darf allein freigeben.

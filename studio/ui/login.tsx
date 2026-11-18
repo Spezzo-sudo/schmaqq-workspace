@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {resumeURL} from './api';
+import {resumeURL,routeURL} from './api';
 import {ErrorLine,Field} from './parts';
 
 // Signing in, accepting an invitation, setting up Studio, and a forgotten password. Nothing else.
@@ -18,13 +18,14 @@ export function Login({resetToken}:{resetToken:string}){
  const [busy,setBusy]=useState(false),[error,setError]=useState(p.has('auth_error')?'Die Anmeldung über den Anbieter hat nicht geklappt. Bitte nochmal.':''),[show,setShow]=useState(false),[info,setInfo]=useState('');
  const [chatgpt,setChatgpt]=useState(false);
  useEffect(()=>{fetch('/api/auth/providers').then(r=>r.ok?r.json() as Promise<{providers:{id:string;enabled:boolean}[]}>:{providers:[]}).then(d=>setChatgpt(d.providers.some(x=>x.id==='chatgpt'&&x.enabled))).catch(()=>{});},[]);
- async function post(path:string,body:unknown){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json().catch(()=>({})) as {error?:string;message?:string;url?:string};if(!r.ok)throw new Error(d.error??'Das hat nicht geklappt.');return d;}
+ async function post(path:string,body:unknown){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json().catch(()=>({})) as {error?:string;message?:string;url?:string;project?:string};if(!r.ok)throw new Error(d.error??'Das hat nicht geklappt.');return d;}
  async function run(fn:()=>Promise<void>){setBusy(true);setError('');try{await fn();}catch(e){setError((e as Error).message);setBusy(false);}}
  function signIn(e:React.FormEvent<HTMLFormElement>){
   e.preventDefault();const f=new FormData(e.currentTarget);
   void run(async()=>{
    const data=setup?{setup,email:f.get('email'),name:f.get('name'),password:f.get('password')}:invite?{invite,name:f.get('name'),password:f.get('password')}:{email:f.get('email'),password:f.get('password')};
-   await post('/api/auth/'+(setup?'bootstrap':invite?'register':'login'),data);location.replace(joining?'/':resumeURL(location.search));
+   const joined=await post('/api/auth/'+(setup?'bootstrap':invite?'register':'login'),data);
+   location.replace(joining?routeURL({project:joined.project}):resumeURL(location.search));
   });
  }
  return <main className="ui-login">
@@ -32,7 +33,7 @@ export function Login({resetToken}:{resetToken:string}){
    <span className="ui-brand">SCHMAQQ<b>STUDIO</b></span>
    {mode==='login'&&<>
     <h1>{setup?'Studio einrichten':invite?'Willkommen im Team':'Anmelden'}</h1>
-    <p className="ui-muted">{invite?'Leg dein Konto an. Danach bist du in euren Projekten dabei.':'Eure Projekte, euer Team aus Menschen und Agenten.'}</p>
+    <p className="ui-muted">{invite?'Leg dein Konto an. Deine eingeladenen Projekte sind danach sofort für dich da.':'Eure Projekte, euer Team aus Menschen und Agenten.'}</p>
     <form className="ui-form" onSubmit={signIn}>
      {joining&&<Field label="Dein Name"><input name="name" required maxLength={160} autoComplete="name"/></Field>}
      {(!invite||setup)&&<Field label={setup?'E-Mail':'Benutzername oder E-Mail'}><input name="email" type={setup?'email':'text'} autoCapitalize="none" autoCorrect="off" spellCheck={false} required autoComplete="username"/></Field>}

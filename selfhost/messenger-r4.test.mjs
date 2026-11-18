@@ -26,7 +26,7 @@ test('R4: unread counts follow per-chat read positions, not polling or member pr
   assert.equal(response.status,200);people.push({id:app.db.prepare('SELECT id FROM members WHERE email=?').get(email).id,cookie:response.cookie});
  }
  const [owner,other]=people;
- const created=await post({action:'create',id:'r4-create',title:'R4 Probe',description:''},owner.cookie);
+ const created=await post({action:'create',id:'r4-create',title:'R4 Probe',description:'',members:[other.id]},owner.cookie);
  assert.equal(created.status,200);const project=created.data.project;
  const send=async(id,body,extra={})=>post({action:'message',id,project,body,...extra},owner.cookie);
  assert.equal((await send('r4-first','Ältere Nachricht')).status,200);
@@ -52,7 +52,7 @@ test('R4: unread counts follow per-chat read positions, not polling or member pr
  assert.equal((await get('/api/rooms',owner.cookie)).data.rooms.find(r=>r.id===project).unread,0);
  // A brand new project after initial activation has unread messages even for members
  // who have never visited the project, instead of getting a misleading zero.
- const late=await post({action:'create',id:'r4-later-project',title:'Spätere Gruppe',description:''},owner.cookie);
+ const late=await post({action:'create',id:'r4-later-project',title:'Spätere Gruppe',description:'',members:[other.id]},owner.cookie);
  assert.equal(late.status,200);
  assert.equal((await post({action:'message',id:'r4-late-message',project:late.data.project,body:'Neue Projektinfo'},owner.cookie)).status,200);
  assert.equal((await get('/api/rooms',other.cookie)).data.rooms.find(r=>r.id===late.data.project).unread,1);

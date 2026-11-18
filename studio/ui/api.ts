@@ -1,6 +1,6 @@
 // Talking to the Studio server, the data it returns, and where in the app we are. Nothing visual here.
 
-export type Project={id:string;title:string;description:string;color?:string;lastMessage?:number;lastExcerpt?:string;unread?:number;openTasks?:number};
+export type Project={practice?:boolean;id:string;title:string;description:string;color?:string;lastMessage?:number;lastExcerpt?:string;unread?:number;openTasks?:number};
 export type Member={id:string;name:string;role:string;seen:number;removed?:number|boolean;projectRoles?:string[]};
 export type Agent={id:string;project:string;name:string;role:string;avatar:string;avatarPresetId?:string|null;avatarPackId?:string;
  purpose:string;personality?:string;responsibility?:string;active:boolean;lead?:boolean;created:number;updated:number;model?:string;
@@ -38,7 +38,7 @@ export type Access={loaded:boolean;admin:boolean;develop:boolean;review:boolean;
 export function accessOf(roles:Roles|null,me:string):Access{
  if(!roles)return {loaded:false,admin:false,develop:true,review:true,selfApprove:false,reviewers:''};
  const has=(r:Role)=>roles.mine.includes(r),admin=has('admin');
- const reviewers=roles.members.filter(m=>m.id!==me&&(m.owner||m.roles.includes('admin')||m.roles.includes('reviewer'))).map(m=>m.name).join(', ');
+ const reviewers=roles.members.filter(m=>m.id!==me&&(m.roles.includes('admin')||m.roles.includes('reviewer'))).map(m=>m.name).join(', ');
  return {loaded:true,admin,develop:admin||has('developer'),review:admin||has('reviewer'),selfApprove:admin&&roles.review==='admin-alone',reviewers};
 }
 
@@ -46,7 +46,7 @@ export async function api<T>(path:string,body?:unknown):Promise<T>{
  const response=await fetch(path,body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
  let value:unknown;try{value=await response.json();}catch{throw new Error('Die Verbindung ist unterbrochen. Bitte gleich nochmal.');}
  if(response.status===401){location.replace('/');throw new Error('Bitte neu anmelden.');}
- if(!response.ok){const error=value&&typeof value==='object'&&'error' in value&&typeof (value as {error:unknown}).error==='string'?(value as {error:string}).error:'Das hat nicht geklappt.';throw new Error(error);}
+ if(!response.ok){const error=value&&typeof value==='object'&&'error' in value&&typeof (value as {error:unknown}).error==='string'?(value as {error:string}).error:'Das hat nicht geklappt.';throw Object.assign(new Error(error),{status:response.status});}
  return value as T;
 }
 export const newId=()=>crypto.randomUUID();

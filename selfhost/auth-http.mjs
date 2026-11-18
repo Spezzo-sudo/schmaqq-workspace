@@ -1,6 +1,9 @@
 import { z } from 'zod';
+import {can} from './project-roles.mjs';
+import {practiceOwner} from './practice.mjs';
+import {metadata} from './team-model.mjs';
 import { digest, passwordHash, passwordValid, createInvite, transaction } from './store.mjs';
-import { noteInvite, consumeInvite, isRemoved, openInvites, withdrawInvite, proposeInvite, inviteRequests, decideRequest, removeMember } from './team-access.mjs';
+import { noteInvite, consumeInvite, isRemoved, openInvites, checkInviteProjects, mayManageInvite, withdrawInvite, proposeInvite, inviteRequests, decideRequest, removeMember } from './team-access.mjs';
 
 /**
  * Cookie-session and invitation HTTP routes.
@@ -22,9 +25,12 @@ export function createAuthHttpRoute({
   uuid,
   now,
   loginLimiter,
-  passwordRecovery
+  passwordRecovery,
+  onJoin=()=>{}
 }) {
   const text = z.string().trim().min(1).max(160);
+  const projectId = z.string().regex(/^[\w-]{1,100}$/);
+  const projectsInput = z.array(projectId).max(100).default([]);
   // Sign-in name: an e-mail address or a simple user name such as "markus". Stored lower-case in members.email.
   const loginName = z.string().trim().toLowerCase().max(200).refine(v => z.string().email().safeParse(v).success || /^[a-z0-9][a-z0-9._-]{2,39}$/.test(v), 'Benutzername (3–40 Zeichen: a–z, 0–9, Punkt, Strich) oder E-Mail-Adresse angeben.');
   const publicMember = member => ({
@@ -38,6 +44,7 @@ export function createAuthHttpRoute({
     route,
     method,
     req,
+    url,
     res,
     send
   }) {
@@ -98,15 +105,16 @@ export function createAuthHttpRoute({
       if (db.prepare('SELECT id FROM members WHERE email=?').get(invite.email)) throw fail(409, 'Dieses Konto existiert bereits.');
       const memberId = uuid(),
         hash = passwordHash(v.password);
-      transaction(db, () => {
-        consumeInvite(db, invite.hash, memberId);
-        if (!db.prepare('DELETE FROM invites WHERE hash=?').run(invite.hash).changes) throw fail(409, 'Einladung bereits verwendet.');
+      const projects = transaction(db, () => {
+        if (!db.prepare('SELECT 1 FROM invites WHERE hash=? AND expires>?').get(invite.hash, now())) throw fail(403, 'Einladung ungültig oder abgelaufen.');
         db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(memberId, v.name, invite.email, hash, invite.role, now());
+        const projects = consumeInvite(db, invite.hash, memberId);
+        db.prepare('DELETE FROM invites WHERE hash=?').run(invite.hash);
+        return projects;
       });
       session(res, memberId);
-      send({
-        ok: true
-      });
+      send({ok: true, ...(projects.length === 1 ? {project: projects[0]} : {})});
+      onJoin(projects);
       return true;
     }
     if (route === '/api/auth/bootstrap' && method === 'POST') {
@@ -141,52 +149,73 @@ export function createAuthHttpRoute({
       return true;
     }
     if (route === '/api/invites' && method === 'POST') {
-      // Only the owner creates links. A member's request becomes a proposal the owner approves.
+      // A non-owner can only issue links from a project they lead.
       const m = user(req);
       const v = parse(z.object({
-        email: loginName
+        email: loginName,
+        project: projectId.optional(),
+        projects: projectsInput
       }), await readJSON(req));
       const email = v.email;
       if (db.prepare('SELECT 1 FROM members WHERE email=?').get(email)) throw fail(409, 'Diese Person hat schon ein Konto.');
-      if (m.role !== 'owner') {
+      if (v.project && v.projects.length) throw fail(400, 'Wähle die Projekte nur einmal aus.');
+      if (m.role !== 'owner' && !v.project) {
+        if (v.projects.length) throw fail(403, 'Das darf nur der Inhaber.');
         const r = proposeInvite(db, email, m.id);
         if (r.duplicate) throw fail(409, 'Diese Person ist schon vorgeschlagen.');
         if (r.limit) throw fail(429, 'Du hast schon fünf offene Vorschläge. Warte, bis sie entschieden sind.');
         send({ requested: true });
         return true;
       }
-      const value = createInvite(db, email);
-      noteInvite(db, digest(value), m.id);
+      const projects = v.project ? [v.project] : [...new Set(v.projects)];
+      const value = transaction(db, () => {
+        checkInviteProjects(db, projects, m);
+        const value = createInvite(db, email);
+        noteInvite(db, digest(value), m.id, projects);
+        return value;
+      });
       send({ link: `${origin}/?invite=${value}` });
       return true;
     }
     if (route === '/api/invites' && method === 'GET') {
       const m = user(req);
+      const project = url.searchParams.has('project') ? parse(projectId, url.searchParams.get('project')) : null;
+      if (project) {
+        checkInviteProjects(db, [project], m);
+        send({invites: openInvites(db, m, project)});
+        return true;
+      }
       const name = id => db.prepare('SELECT name FROM members WHERE id=?').get(id)?.name ?? 'Jemand';
       const requests = inviteRequests(db).filter(r => r.status === 'pending' && (m.role === 'owner' || r.by === m.id))
         .map(r => ({ id: r.id, email: r.email, by: name(r.by), created: r.created }));
-      send(m.role === 'owner' ? { invites: openInvites(db), requests } : { invites: [], requests });
+      const projects = m.role === 'owner' ? db.prepare('SELECT id,title AS name FROM projects ORDER BY title').all()
+        .filter(p => can(db,m,p.id,'admin') && !practiceOwner(db,p.id) && !metadata(db,'room:v1:project:'+p.id)?.archived) : [];
+      send(m.role === 'owner' ? { invites: openInvites(db, m), requests, projects } : { invites: [], requests });
       return true;
     }
     if (route === '/api/invites/withdraw' && method === 'POST') {
       const m = user(req);
-      if (m.role !== 'owner') throw fail(403, 'Nur der Inhaber kann Einladungen zurücknehmen.');
-      const v = parse(z.object({ id: z.string().max(100) }), await readJSON(req, 2048));
-      if (!withdrawInvite(db, v.id)) throw fail(404, 'Diese Einladung gibt es nicht mehr.');
+      const v = parse(z.object({ id: z.string().max(100), project: projectId.optional() }), await readJSON(req, 2048));
+      transaction(db, () => {
+        if (!mayManageInvite(db, m, v.id, v.project)) throw fail(403, 'Du kannst diese Einladung nicht zurücknehmen.');
+        if (!withdrawInvite(db, v.id)) throw fail(404, 'Diese Einladung gibt es nicht mehr.');
+      });
       send({ ok: true });
       return true;
     }
     if (route === '/api/invites/decide' && method === 'POST') {
       const m = user(req);
       if (m.role !== 'owner') throw fail(403, 'Nur der Inhaber entscheidet über Vorschläge.');
-      const v = parse(z.object({ id: z.string().max(64), approve: z.boolean() }), await readJSON(req, 2048));
+      const v = parse(z.object({ id: z.string().max(64), approve: z.boolean(), projects: projectsInput }), await readJSON(req));
       const result = transaction(db, () => {
         const request = decideRequest(db, v.id, v.approve ? 'approved' : 'declined', m.id);
         if (!request) throw fail(404, 'Dieser Vorschlag ist schon entschieden.');
         if (!v.approve) return {};
         if (db.prepare('SELECT 1 FROM members WHERE email=?').get(request.email)) throw fail(409, 'Diese Person hat schon ein Konto.');
+        const projects = [...new Set(v.projects)];
+        checkInviteProjects(db, projects, m);
         const value = createInvite(db, request.email);
-        noteInvite(db, digest(value), request.by);
+        noteInvite(db, digest(value), request.by, projects, m.id);
         return { link: `${origin}/?invite=${value}`, email: request.email };
       });
       send(result);

@@ -40,7 +40,7 @@ async function fixture(t){
 test('live signals: group news reaches the project, private chats only their participants, nothing carries content',async t=>{
  const f=await fixture(t),[alice,bob,carol]=f.members;
  assert.equal((await fetch(f.host+'/api/live')).status,401,'the live connection needs a login');
- const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Live',description:''},{cookie:alice.cookie})).data.project;
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Live',description:'',members:[bob.id,carol.id]},{cookie:alice.cookie})).data.project;
  const [a,b,c]=await Promise.all([alice,bob,carol].map(f.listen));
  await f.settle();
  await f.post('/api/room',{action:'message',id:randomUUID(),project,body:'An alle'},{cookie:alice.cookie});
@@ -58,7 +58,7 @@ test('live signals: group news reaches the project, private chats only their par
 
 test('live signals: every step of an agent run reaches only the person who asked; the answer follows its conversation',async t=>{
  const f=await fixture(t),[alice,bob]=f.members,w={token:f.worker.token};
- const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Live',description:''},{cookie:alice.cookie})).data.project;
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Live',description:'',members:[bob.id]},{cookie:alice.cookie})).data.project;
  const state=await (await fetch(f.host+'/api/room?project='+project,{headers:{Cookie:alice.cookie}})).json();
  const lead=state.agents[0].id,message=randomUUID();
  await f.post('/api/room',{action:'message',id:message,project,recipient:lead,direct:true,body:'Was nun?'},{cookie:alice.cookie});
