@@ -18,6 +18,9 @@ Die alte Oberfläche wurde nicht umgebaut, sondern gelöscht; der Test `studio-s
 - **Code läuft auf dem Server.** Wo gearbeitet wird, ist eine Angabe des Projekts („Wo arbeitet das Team: Server“), damit
   später ein eigener PC als zweiter Ort dazukommen kann, ohne die Oberfläche umzubauen.
 
+- Das SCHMAQQ-Zeichen führt zu Start. Das Q bewegt sich beim ersten Öffnen kurz, wenn Animationen erlaubt sind.
+- In Projektinfo, Mein Konto und Anleitung zeigt „Weiter nach unten“ bei weiterem Inhalt den Weg nach unten. Beim Schreiben und am Seitenende ist der Pfeil weg.
+
 ## Bildschirme
 
 ### Anmelden
@@ -108,11 +111,12 @@ Bild, Name, Job mit Satz „Was er tut“, Persönlichkeit (änderbar), „Priva
 „Bild ändern“. Admin: „Kündigen“ (Herr Grau nicht). Keine Rechte-Häkchen.
 
 ### Mein Konto
-- Name, Anmeldung, Passwort ändern, Abmelden.
-- **KI-Zugang**: bereit / nicht erreichbar, ein Satz Erklärung („Fragst du einen Agenten, arbeitet er mit deinem Zugang“).
-- **ChatGPT fürs Programmieren**: verbunden / verbinden (einmal, gilt für alle Agenten). Wird sonst erst gefragt, wenn es gebraucht wird.
-- **Team** (Inhaber): Wer im Studio ist, „Entfernen“, „Neues Passwort“ und offene Einladungen mit „Zurücknehmen“. Beim „Einladen“ sind unter „Für welche Projekte?“ die aktiven Projekte, die der Inhaber leitet, einzeln auswählbar. Ohne Auswahl ist es eine Einladung ins Studio und die Person kann eigene Projekte anlegen. Der Link wird kopiert und direkt an die Person geschickt. Offene Vorschläge kann der Inhaber über „Auswählen“ mit Projektauswahl einladen oder über „Ablehnen“ ablehnen.
+- Übersicht mit **Profil**, **Sicherheit**, **KI-Zugänge**, **Deine Daten** und für den Inhaber **Studio verwalten**. Jeder Bereich öffnet sich einzeln. Zurück führt zur Kontoübersicht.
+- **Profil**: Name und Anmeldung, „Foto auswählen“, „Foto speichern“, „Foto entfernen“ und Vorschau. Im Projekt sieht das Team das Foto in Chat und Team. Ohne Foto stehen die Initialen.
+- **Sicherheit**: Passwort ändern und Abmelden.
+- **KI-Zugänge**: KI-Zugang für Gespräche und Recherche und „ChatGPT fürs Programmieren“. Fragst du einen Agenten, arbeitet er mit deinem Zugang. Für Programmierarbeit fragt Studio beim ersten Mal nach der Verbindung, falls sie noch fehlt.
 - **Deine Daten**: „Datenauszug herunterladen“ mit sichtbaren Projekten, Aufgaben, Dokumenten und bis zu 500 Nachrichten.
+- **Studio verwalten** (Inhaber): Team, „Entfernen“, „Neues Passwort“, offene Einladungen mit „Zurücknehmen“ und Vorschläge. Beim „Einladen“ sind unter „Für welche Projekte?“ die aktiven Projekte, die der Inhaber leitet, einzeln auswählbar. Ohne Auswahl ist es eine Einladung ins Studio. Der Link wird kopiert und direkt an die Person geschickt.
 
 ### Projekte und Archiv
 Aktive und archivierte Projekte, Wiederherstellen. Ein alter Link oder Browser-Zurück zeigt „Dieses Projekt ist archiviert“ mit „Archiv öffnen“.

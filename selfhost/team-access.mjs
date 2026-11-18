@@ -12,6 +12,7 @@ import {practiceOwner} from './practice.mjs';
  *   The account row stays so messages and tasks keep their author; it can never sign in again.
  */
 const inviteKey=hash=>'invite:v1:'+hash,invitedKey=member=>'member:v1:invited:'+member,removedKey=member=>'member:v1:removed:'+member;
+export const photoKey=member=>'member:v1:photo:'+member;
 const requestPrefix='invite-request:v1:';
 const hasTable=(db,name)=>!!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name);
 

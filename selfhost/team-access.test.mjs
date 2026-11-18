@@ -88,6 +88,18 @@ test('Studio is invitation-only: owner invites, members propose, removed members
   assert.equal((await call('POST','/api/invites/withdraw',{project:memberProject,id:scoped.body.invites[0].id},member.cookie)).status,200);
   assert.equal((await call('POST','/api/auth/register',{invite:token(revoked.body.link),name:'Revoked',password})).status,403);
 
+  assert.equal((await call('POST','/api/auth/photo',{jpeg:'ZmFrZQ=='},member.cookie)).status,400);
+  const photoMeta='member:v1:photo:'+memberRow.id;
+  app.db.prepare('INSERT INTO workspace_meta VALUES(?,?)').run(photoMeta,JSON.stringify({revision:'fixture',jpeg:'ZmFrZQ=='}));
+  const photoPath='/api/auth/photo?member='+memberRow.id;
+  const getPhoto=(path,cookie)=>fetch(base+path,{headers:{Cookie:cookie}});
+  assert.equal((await getPhoto(photoPath,joined.cookie)).status,404);
+  assert.equal((await getPhoto(photoPath+'&project='+privateProject,joined.cookie)).status,404);
+  assert.equal((await getPhoto(photoPath+'&project='+memberProject,joined.cookie)).headers.get('content-type'),'image/jpeg');
+  assert.equal((await getPhoto(photoPath,member.cookie)).status,200);
+  assert.equal((await call('POST','/api/auth/photo',{jpeg:null},member.cookie)).status,200);
+  assert.equal((await getPhoto(photoPath,member.cookie)).status,404);
+
   // A member cannot create links, only propose; the owner decides.
   const proposal = await call('POST','/api/invites',{email:'friend@fixture.invalid'},member.cookie);
   assert.deepEqual(proposal.body,{requested:true});

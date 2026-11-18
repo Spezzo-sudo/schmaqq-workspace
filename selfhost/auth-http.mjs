@@ -1,9 +1,25 @@
 import { z } from 'zod';
 import {can} from './project-roles.mjs';
 import {practiceOwner} from './practice.mjs';
-import {metadata} from './team-model.mjs';
+import {metadata,storeMetadata} from './team-model.mjs';
 import { digest, passwordHash, passwordValid, createInvite, transaction } from './store.mjs';
-import { noteInvite, consumeInvite, isRemoved, openInvites, checkInviteProjects, mayManageInvite, withdrawInvite, proposeInvite, inviteRequests, decideRequest, removeMember } from './team-access.mjs';
+import { noteInvite, consumeInvite, isRemoved, openInvites, checkInviteProjects, mayManageInvite, photoKey, withdrawInvite, proposeInvite, inviteRequests, decideRequest, removeMember } from './team-access.mjs';
+
+// Studio stores small raster portraits. Validate dimensions before a browser decodes them.
+function smallJpeg(bytes) {
+  if (bytes.length<20 || bytes.readUInt16BE(0)!==0xffd8 || bytes.readUInt16BE(bytes.length-2)!==0xffd9) return false;
+  for(let offset=2;offset+9<bytes.length;){
+    if(bytes[offset]!==0xff)return false;
+    const marker=bytes[offset+1],length=bytes.readUInt16BE(offset+2);
+    if(length<2||offset+2+length>bytes.length||marker===0xda)return false;
+    if(marker===0xc0||marker===0xc2){
+      const height=bytes.readUInt16BE(offset+5),width=bytes.readUInt16BE(offset+7);
+      return length>=11&&height>0&&height<=256&&width>0&&width<=256;
+    }
+    offset+=2+length;
+  }
+  return false;
+}
 
 /**
  * Cookie-session and invitation HTTP routes.
@@ -48,6 +64,27 @@ export function createAuthHttpRoute({
     res,
     send
   }) {
+    if (route === '/api/auth/photo') {
+      const member=user(req);
+      if(method==='POST'){
+        const {jpeg}=parse(z.object({jpeg:z.string().max(110000).regex(/^[A-Za-z0-9+/]+={0,2}$/).nullable()}),await readJSON(req,112000));
+        if(jpeg===null)db.prepare('DELETE FROM workspace_meta WHERE key=?').run(photoKey(member.id));
+        else {
+          if(!smallJpeg(Buffer.from(jpeg,'base64')))throw fail(400,'Bitte ein gültiges Profilfoto auswählen.');
+          storeMetadata(db,photoKey(member.id),{revision:uuid(),jpeg});
+        }
+        send({ok:true});return true;
+      }
+      if(method!=='GET')throw fail(405,'Methode nicht erlaubt.');
+      const target=parse(projectId,url.searchParams.get('member'));
+      const project=url.searchParams.has('project')?parse(projectId,url.searchParams.get('project')):null;
+      const person=db.prepare('SELECT id,role FROM members WHERE id=?').get(target);
+      const teammate=project&&can(db,member,project,'view')&&can(db,person,project,'view')&&db.prepare('SELECT 1 FROM projects WHERE id=?').get(project);
+      const photo=person&&!isRemoved(db,target)&&(target===member.id||member.role==='owner'||teammate)?metadata(db,photoKey(target)):null;
+      if(!photo)throw fail(404,'Profilfoto fehlt.');
+      res.writeHead(200,{'Content-Type':'image/jpeg','Cross-Origin-Resource-Policy':'same-origin'});
+      res.end(Buffer.from(photo.jpeg,'base64'));return true;
+    }
     if (route === '/api/auth/session') {
       send({
         user: publicMember(user(req))

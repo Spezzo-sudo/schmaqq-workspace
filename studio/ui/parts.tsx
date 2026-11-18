@@ -1,6 +1,54 @@
-import {useEffect,type ReactNode} from 'react';
+import {useEffect,useRef,useState,type ReactNode} from 'react';
 
 // The few building blocks every screen uses. One look, one place.
+
+let animatedBrand=false;
+export function Brand(){
+ const [animate]=useState(()=>{
+  if(animatedBrand)return false;
+  animatedBrand=true;
+  try{if(sessionStorage.getItem('studio-brand-seen'))return false;sessionStorage.setItem('studio-brand-seen','1');}catch{/* tab storage unavailable */}
+  return true;
+ });
+ return <a href="/" aria-label="SCHMAQQ Studio – Start" className={'ui-brand'+(animate?' intro':'')}>SCHMAQ<span>Q</span><b>STUDIO</b></a>;
+}
+
+export function ScrollHint(){
+ const anchor=useRef<HTMLDivElement>(null),[show,setShow]=useState(false);
+ useEffect(()=>{
+  const element=anchor.current,screen=element?.parentElement;
+  if(!screen)return;
+  const viewport=window.visualViewport;
+  const update=()=>{
+   const editing=document.activeElement?.matches('input,textarea,[contenteditable=true]');
+   const keyboard=viewport&&window.innerHeight-viewport.height>120;
+   setShow(!editing&&!keyboard&&screen.scrollHeight-screen.clientHeight-screen.scrollTop>28);
+  };
+  let frame=0;
+  const schedule=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(update);};
+  const observer=new ResizeObserver(schedule);
+  const observeContent=()=>{
+   observer.disconnect();observer.observe(screen);
+   for(const child of screen.children)if(child!==element)observer.observe(child);
+   schedule();
+  };
+  const changes=new MutationObserver(observeContent);
+  changes.observe(screen,{childList:true,subtree:true});
+  observeContent();
+  screen.addEventListener('scroll',schedule,{passive:true});
+  document.addEventListener('focusin',schedule);document.addEventListener('focusout',schedule);
+  viewport?.addEventListener('resize',schedule);
+  return ()=>{
+   changes.disconnect();observer.disconnect();cancelAnimationFrame(frame);screen.removeEventListener('scroll',schedule);
+   document.removeEventListener('focusin',schedule);document.removeEventListener('focusout',schedule);
+   viewport?.removeEventListener('resize',schedule);
+  };
+ },[]);
+ return <div className="ui-scroll-hint" ref={anchor}>{show&&<button className="ui-icon" aria-label="Weiter nach unten" onClick={()=>{
+  const screen=anchor.current?.parentElement;
+  screen?.scrollBy({top:screen.clientHeight*.75,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+ }}>⌄</button>}</div>;
+}
 
 export function Dialog({title,onClose,children,wide=false}:{title:string;onClose:()=>void;children:ReactNode;wide?:boolean}){
  useEffect(()=>{const f=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};addEventListener('keydown',f);return()=>removeEventListener('keydown',f);},[onClose]);
@@ -20,7 +68,7 @@ export function Bar({onBack,title,sub,onTitle,end}:{onBack?:()=>void;title:React
  return <header className="ui-bar">
   {onBack&&<button className="ui-icon" aria-label="Zurück" onClick={onBack}><Back/></button>}
   {onTitle?<button className="ui-bar-title" onClick={onTitle}>{head}</button>:<div className="ui-bar-title">{head}</div>}
-  {end}
+  {end}<Brand/>
  </header>;
 }
 export function Section({title,children,id,end}:{title:string;children:ReactNode;id?:string;end?:ReactNode}){

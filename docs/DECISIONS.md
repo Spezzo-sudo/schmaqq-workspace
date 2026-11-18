@@ -2,6 +2,11 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 18.11.2026 (Konto und Orientierung)
+- Das Konto hat eine Übersicht und einzelne Bereiche für Profil, Sicherheit, KI-Zugänge und Daten. Die Teamverwaltung bleibt dem Inhaber vorbehalten.
+- Menschen können ihr eigenes Profilfoto speichern oder entfernen. Studio zeigt es im Team und Chat. Der Server prüft, wer es abrufen darf.
+- Die Wortmarke führt zu Start. Eine kurze Bewegung und der bedingte Scroll-Pfeil helfen bei der Orientierung.
+
 ## 18.11.2026 (Datenauszug und Navigation)
 - Mitglieder sehen beim Auswählen von Studio-Konten deren Namen. E-Mail-Adressen anderer Konten sieht im Datenauszug nur der Inhaber.
 - Das Handymenü hat einen Schließen-Knopf. Alte Links zu archivierten Projekten öffnen den Archivhinweis.

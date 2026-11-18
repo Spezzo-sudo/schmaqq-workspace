@@ -57,7 +57,11 @@ try{
  expect(accepted,'@Otto bitte übernimm: Startseite mit Öffnungszeiten');expect(accepted,'Otto');
  expect(await screen('06-tasks','/?p='+project+'&tab=tasks',390),'Startseite mit Öffnungszeiten');
  expect(await screen('07-info','/?p='+project+'&info=1',390),'Wo liegt euer Code?');
- expect(await screen('07b-new-code','/?p='+project+'&info=1',390,async p=>{await p.getByText('Neu anfangen').click();await p.locator('.ui-inline input').scrollIntoViewIfNeeded();}),'leeres Repository');
+ expect(await screen('07b-new-code','/?p='+project+'&info=1',390,async p=>{await p.getByText('Neu anfangen').click();
+  const input=p.locator('.ui-inline input'),arrow=p.getByRole('button',{name:'Weiter nach unten',exact:true});
+  await p.locator('.ui-screen.info').evaluate(el=>{el.scrollTop=0;});
+  await arrow.waitFor({state:'visible'});await input.focus();await arrow.waitFor({state:'hidden'});
+  await input.scrollIntoViewIfNeeded();}),'leeres Repository');
  expect(await screen('06b-task','/?p='+project+'&tab=tasks',390,p=>p.getByText('Startseite mit Öffnungszeiten').first().click()),'braucht das Projekt zuerst seinen Code');
  // "Bei uns ansehen": a server workplace builds the shared state; the fixed address shows it.
  const device=randomUUID(),deviceToken=randomUUID();
@@ -70,7 +74,7 @@ try{
  expect(await screen('07c-ansehen','/?p='+project+'&info=1',390),'Ansehen ›');
  const url=(await (await fetch(host+'/api/room?project='+project,{headers:{Cookie:'studio_session='+session}})).json()).showcase.url;
  const page=await browser.newPage();await page.goto(url);expect(await page.locator('body').innerText(),'Mo–Fr 7–18 Uhr');await page.screenshot({path:path.join(out,'07d-seite.png')});await page.close();
- expect(await screen('08-account','/?page=account',390),'Einmal verbinden, dann kann jeder Agent');
+ expect(await screen('08-account','/?page=account&bereich=ki',390),'Einmal verbinden, dann kann jeder Agent');
  await post('/api/room',{action:'create',id:randomUUID(),title:'Internes Projekt',description:'Nur für das eigene Team'});
  const team=await browser.newContext({viewport:{width:390,height:844}});
  await team.addCookies([{name:'studio_session',value:session,url:host}]);
@@ -112,7 +116,7 @@ try{
    const person=p.getByText('Lena Weber',{exact:true});
    await person.scrollIntoViewIfNeeded();
   }),'Macht mit');
-  expect(await screen('mein-konto-team-'+width,'/?page=account',width,async p=>{
+  expect(await screen('mein-konto-team-'+width,'/?page=account&bereich=verwaltung',width,async p=>{
    const section=p.locator('#invite');
    await section.getByRole('checkbox',{name:'Café Sonne'}).check();
    if(await section.getByRole('checkbox',{name:'Internes Projekt'}).isChecked())throw new Error('Falsches Projekt vorausgewählt.');
@@ -120,9 +124,45 @@ try{
    await section.getByRole('button',{name:'Einladen',exact:true}).scrollIntoViewIfNeeded();
   }),'Für welche Projekte?');
  }
+ for(const width of [390,1440]){
+  expect(await screen('konto-uebersicht-'+width,'/?page=account',width),'Studio verwalten');
+ }
+ expect(await screen('13-profil','/?page=account',390,async p=>{
+  await p.getByRole('button',{name:'Profil',exact:true}).click();
+  const png=await p.evaluate(()=>{
+   const c=document.createElement('canvas');c.width=c.height=32;
+   const g=c.getContext('2d');g.fillStyle='#305c42';g.fillRect(0,0,32,32);return c.toDataURL().split(',')[1];
+  });
+  await p.locator('input[type=file]').setInputFiles({name:'foto.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
+  await p.getByRole('button',{name:'Foto speichern',exact:true}).click();
+  await p.getByText('Foto gespeichert.',{exact:true}).waitFor();
+  const src=await p.locator('.ui-profile-card img').getAttribute('src');
+  await p.screenshot({path:path.join(out,'profilfoto-390.png')});
+  if(!src||(await p.request.get(host+src)).status()!==200)throw new Error('Profilfoto fehlt.');
+  const anonymous=await browser.newContext();
+  try{if((await anonymous.request.get(host+src)).status()!==401)throw new Error('Profilfoto ist öffentlich.');}finally{await anonymous.close();}
+  await p.getByRole('button',{name:'Foto entfernen',exact:true}).click();
+  await p.getByText('Foto entfernt.',{exact:true}).waitFor();
+  if((await p.request.get(host+src)).status()!==404)throw new Error('Entferntes Profilfoto ist noch abrufbar.');
+  await p.getByRole('button',{name:'Zurück',exact:true}).click();
+  await p.getByRole('navigation',{name:'Mein Konto',exact:true}).waitFor();
+ }),'Mein Konto');
  expect(await screen('09-guide','/?page=guide',390),'Herr Grau plant');
  expect(await screen('11-start-with-projects','/',390),'Café Sonne');
  expect(await screen('10-desktop','/?p='+project+'&tab=tasks',1440),'Café Sonne');
+ expect(await screen('14-scroll','/?page=guide',390,async p=>{
+  const arrow=p.getByRole('button',{name:'Weiter nach unten',exact:true});
+  await arrow.waitFor({state:'visible'});
+  await arrow.click();
+  await p.waitForFunction(()=>document.querySelector('.ui-screen.page').scrollTop>0);
+  await p.locator('.ui-screen.page').evaluate(el=>{el.scrollTop=el.scrollHeight;});
+  await arrow.waitFor({state:'hidden'});
+  await p.emulateMedia({reducedMotion:'reduce'});
+  const home=p.getByRole('link',{name:'SCHMAQQ Studio – Start'});
+  if(await home.locator('span').evaluate(el=>getComputedStyle(el).animationName)!=='none')throw new Error('Logo bewegt sich trotz reduzierter Bewegung.');
+  await home.click();
+  await p.waitForURL(host+'/');
+ }),'Café Sonne');
  expect(await screen('12-navigation','/',390,async page=>{
   const open=page.getByRole('button',{name:/Menü öffnen/}),menu=page.getByRole('navigation',{name:'Menü',exact:true});
   await open.click();await menu.getByRole('button',{name:'Schließen',exact:true}).click();await menu.waitFor({state:'hidden'});

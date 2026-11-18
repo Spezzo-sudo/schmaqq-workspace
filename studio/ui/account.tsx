@@ -1,27 +1,79 @@
 import {useCallback,useEffect,useState} from 'react';
 import type {Studio} from './app';
-import {api,q} from './api';
-import {Face} from './avatar';
-import {Bar,Checklist,ErrorLine,Field,Section} from './parts';
+import {api,q,signOut,type AccountArea} from './api';
+import {Face,photoOf} from './avatar';
+import {Bar,Checklist,ErrorLine,Field,ScrollHint,Section} from './parts';
 
 const back=(studio:Studio)=>()=>studio.go({page:'start',project:''});
 
-/** My account: name, password, AI access, the one sign-in for code changes, the team, my data. */
+const accountLabels:Record<AccountArea,string>={profil:'Profil',sicherheit:'Sicherheit',ki:'KI-Zugänge',daten:'Deine Daten',verwaltung:'Studio verwalten'};
+
 export function AccountScreen({studio}:{studio:Studio}){
- const {me,agentsReady,members}=studio;
- const owner=members.find(m=>m.id===me.id)?.role==='owner';
- return <section className="ui-screen page">
-  <Bar onBack={back(studio)} title="Mein Konto"/>
-  <div className="ui-info-head"><Face name={me.name} size={64}/><h2>{me.name}</h2><p className="ui-muted">Anmeldung mit „{me.email}“ · {owner?'Inhaber':'Mitglied'}</p></div>
-  <Section title="KI-Zugang">
-   <p className="ui-fact"><span className={'ui-dot '+(agentsReady===false?'fail':agentsReady?'ok':'idle')}/>{agentsReady===false?'Gerade nicht erreichbar.':agentsReady?'Bereit.':'Noch nicht eingerichtet.'}</p>
-   <p className="ui-muted">Fragst du einen Agenten, arbeitet er mit deinem Zugang. Andere im Team nutzen ihren eigenen.</p>
-  </Section>
-  <CodeSignIn studio={studio}/>
-  {owner&&<TeamAccess studio={studio}/>}
-  <Password/>
-  <Section title="Deine Daten"><p className="ui-muted">Deine sichtbaren Projekte, Aufgaben und Dokumente sowie bis zu 500 Nachrichten.</p><button className="ui-btn" onClick={()=>void download()}>Datenauszug herunterladen</button></Section>
+ const {me,agentsReady,members,go,route}=studio;
+ const person=members.find(m=>m.id===me.id),owner=person?.role==='owner';
+ const area=route.account==='verwaltung'&&!owner?undefined:route.account;
+ const photo=photoOf(person);
+ const closeArea=()=>history.state?.accountOverview?history.back():go({page:'account'},true);
+ return <section className="ui-screen page account" key={area??'overview'}>
+  <Bar onBack={area?closeArea:back(studio)} title={area?accountLabels[area]:'Mein Konto'}/>
+  {!area&&<>
+   <div className="ui-info-head"><Face name={me.name} photo={photo} size={64}/><h2>{me.name}</h2><p className="ui-muted">{me.email}</p></div>
+   <nav className="ui-account-nav" aria-label="Mein Konto">{Object.entries(accountLabels).filter(([key])=>key!=='verwaltung'||owner).map(([key,label])=>
+    <button className="ui-row" key={key} onClick={()=>go({page:'account',account:key as AccountArea})}><b>{label}</b><span aria-hidden="true">›</span></button>)}</nav>
+  </>}
+  {area==='profil'&&<Profile studio={studio} photo={photo}/>}
+  {area==='sicherheit'&&<><Password/><Section title="Anmeldung"><p>{me.email}</p><button className="ui-btn" onClick={()=>void signOut()}>Abmelden</button></Section></>}
+  {area==='ki'&&<>
+   <Section title="Chat und Recherche">
+    <p className="ui-fact"><span className={'ui-dot '+(agentsReady===false?'fail':agentsReady?'ok':'idle')}/>{agentsReady===false?'Gerade nicht erreichbar.':agentsReady?'Bereit.':'Noch nicht eingerichtet.'}</p>
+    <p className="ui-muted">Fragst du einen Agenten, arbeitet er mit deinem Zugang. Andere im Team nutzen ihren eigenen.</p>
+   </Section>
+   <CodeSignIn studio={studio}/>
+  </>}
+  {area==='verwaltung'&&owner&&<TeamAccess studio={studio}/>}
+  {area==='daten'&&<Section title="Datenauszug"><p className="ui-muted">Deine sichtbaren Projekte, Aufgaben und Dokumente sowie bis zu 500 Nachrichten.</p><button className="ui-btn" onClick={()=>void download()}>Datenauszug herunterladen</button></Section>}
+  <ScrollHint/>
  </section>;
+}
+
+async function portrait(file:File){
+ if(file.size>12*1024*1024)throw new Error('Wähle ein Foto bis 12 MB.');
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Wähle ein Foto im Format JPG, PNG oder WebP.');
+ const photo=await createImageBitmap(file);
+ try{
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=256;
+  const ctx=canvas.getContext('2d');
+  if(!ctx)throw new Error('Das Foto konnte nicht vorbereitet werden.');
+  const side=Math.min(photo.width,photo.height);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,256,256);
+  ctx.drawImage(photo,(photo.width-side)/2,(photo.height-side)/2,side,side,0,0,256,256);
+  return canvas.toDataURL('image/jpeg',.85);
+ }finally{photo.close();}
+}
+
+function Profile({studio,photo}:{studio:Studio;photo?:string}){
+ const [preview,setPreview]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
+ async function select(file:File){
+  setBusy(true);setError('');setPreview('');setNotice('');
+  try{setPreview(await portrait(file));}catch(e){setError(e instanceof Error?e.message:'Das Foto konnte nicht geöffnet werden.');}finally{setBusy(false);}
+ }
+ async function save(jpeg:string|null){
+  setBusy(true);setError('');setNotice('');
+  try{await api('/api/auth/photo',{jpeg});setPreview('');await studio.reload();setNotice(jpeg?'Foto gespeichert.':'Foto entfernt.');}
+  catch(e){setError((e as Error).message);}finally{setBusy(false);}
+ }
+ return <Section title="Profilfoto">
+  <div className="ui-profile-card"><Face name={studio.me.name} photo={preview||photo} size={88}/><div><h2>{studio.me.name}</h2><p className="ui-muted">{studio.me.email}</p></div></div>
+  <p className="ui-muted">Dein Projektteam sieht das Foto im Chat und im Team.</p>
+  <div className="ui-actions left">
+   <label className="ui-btn ui-photo-picker">Foto auswählen<input type="file" aria-label="Foto auswählen" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e=>{
+    const file=e.target.files?.[0];e.target.value='';if(file)void select(file);
+   }}/></label>
+   {preview&&<button className="ui-btn primary" disabled={busy} onClick={()=>void save(preview.slice(preview.indexOf(',')+1))}>Foto speichern</button>}
+   {photo&&!preview&&<button className="ui-btn danger" disabled={busy} onClick={()=>void save(null)}>Foto entfernen</button>}
+  </div>
+  {notice&&<p role="status">{notice}</p>}<ErrorLine text={error}/>
+ </Section>;
 }
 async function download(){
  const r=await fetch('/api/workspace',{cache:'no-store'});if(!r.ok)return;
@@ -105,7 +157,7 @@ function TeamAccess({studio}:{studio:Studio}){
   });
  }
  return <Section title="Team" id="invite">
-  {members.filter(m=>!m.removed).map(m=><div key={m.id} className="ui-row static"><Face name={m.name} size={32}/><span className="ui-row-text"><b>{m.name}{m.id===me.id?' (du)':''}</b><small>{m.role==='owner'?'Inhaber':'Mitglied'}</small></span>
+  {members.filter(m=>!m.removed).map(m=><div key={m.id} className="ui-row static"><Face name={m.name} photo={photoOf(m)} size={32}/><span className="ui-row-text"><b>{m.name}{m.id===me.id?' (du)':''}</b><small>{m.role==='owner'?'Inhaber':'Mitglied'}</small></span>
    {m.id!==me.id&&<span className="ui-row-end">
     <button className="ui-link" disabled={busy} onClick={()=>void act(async()=>{const d=await api<{link:string}>('/api/members/reset',{member:m.id});setLink({url:d.link,reset:true});})}>Neues Passwort</button>
     {m.role!=='owner'&&<button className="ui-link danger" disabled={busy} onClick={()=>{if(confirm(m.name+' aus dem Studio entfernen? Nachrichten und Aufgaben bleiben.'))void act(async()=>{await api('/api/members/remove',{member:m.id});setNotice(m.name+' wurde entfernt.');});}}>Entfernen</button>}
@@ -192,5 +244,6 @@ export function GuideScreen({studio}:{studio:Studio}){
   <Section title="Damit das Team Code ändern kann">
    <p>Einmal pro Projekt beantwortest du in der Projektinfo unter „Code“ die Frage „Wo liegt euer Code?“. Den Rest richtet Studio selbst ein. Das erste Mal, wenn Otto für dich programmieren soll, verbindest du dein ChatGPT, direkt in der Aufgabe.</p>
   </Section>
+  <ScrollHint/>
  </section>;
 }

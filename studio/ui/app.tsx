@@ -40,8 +40,10 @@ export default function StudioApp({user}:{user:{userId:string;displayName:string
  const runs=runState.project===route.project?runState.runs:{configured:runState.runs.configured,online:runState.runs.online,runs:[]};
 
  const go=useCallback((next:Partial<Route>,replace=false)=>{
-  const target=readRoute(routeURL({...(next.project===undefined&&next.page===undefined?readRoute():{}),...next}).slice(1));
-  history[replace||history.state?.studioMenu?'replaceState':'pushState'](null,'',routeURL(target));setRoute(target);setMenu(false);scrollTo(0,0);
+  const before=readRoute();
+  const target=readRoute(routeURL({...(next.project===undefined&&next.page===undefined?before:{}),...next}).slice(1));
+  const accountOverview=before.page==='account'&&!before.account&&target.page==='account'&&!!target.account;
+  history[replace||history.state?.studioMenu?'replaceState':'pushState'](accountOverview?{accountOverview:true}:null,'',routeURL(target));setRoute(target);setMenu(false);scrollTo(0,0);
  },[]);
  useEffect(()=>{const f=()=>{setRoute(readRoute());setMenu(history.state?.studioMenu===true);};addEventListener('popstate',f);return()=>removeEventListener('popstate',f);},[]);
 

@@ -303,7 +303,7 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null,p
     const meta=readMeta(db,key('run',j.id));let result;try{result=JSON.parse(j.result??'null');}catch{result=null;}
     return {...j,result:undefined,output:typeof result?.output==='string'?result.output.slice(0,24000):null,error:typeof result?.error==='string'?result.error.slice(0,1000):null,model:meta.model,task:meta.task,sharedMessage:meta.sharedMessage??null};
    });
-   const members=db.prepare('SELECT id,name,role,seen FROM members ORDER BY name').all().filter(m=>!isRemoved(db,m.id)&&can(db,m,project,'view')).map(m=>({...m,removed:false,projectRoles:rolesOf(db,m,project)}));
+   const members=db.prepare("SELECT id,name,role,seen,(SELECT json_extract(value,'$.revision') FROM workspace_meta WHERE key='member:v1:photo:'||members.id) AS photo FROM members ORDER BY name").all().filter(m=>!isRemoved(db,m.id)&&can(db,m,project,'view')).map(m=>({...m,removed:false,projectRoles:rolesOf(db,m,project)}));
    ensureProjectLead(db,project,member,now());
    const agents=agentsFor(db,project);
    const views=['all',...members.filter(m=>m.id!==member.id).map(m=>'member:'+m.id),...agents.filter(a=>a.active!==false).map(a=>'agent:'+a.id)];

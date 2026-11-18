@@ -1,7 +1,7 @@
 // Talking to the Studio server, the data it returns, and where in the app we are. Nothing visual here.
 
 export type Project={practice?:boolean;id:string;title:string;description:string;color?:string;lastMessage?:number;lastExcerpt?:string;unread?:number;openTasks?:number};
-export type Member={id:string;name:string;role:string;seen:number;removed?:number|boolean;projectRoles?:string[]};
+export type Member={photo?:string|null;id:string;name:string;role:string;seen:number;removed?:number|boolean;projectRoles?:string[]};
 export type Agent={id:string;project:string;name:string;role:string;avatar:string;avatarPresetId?:string|null;avatarPackId?:string;
  purpose:string;personality?:string;responsibility?:string;active:boolean;lead?:boolean;created:number;updated:number;model?:string;
  nickname?:string;permissions?:Record<string,boolean>;capabilities?:string[];contextSources?:string[]};
@@ -49,23 +49,32 @@ export async function api<T>(path:string,body?:unknown):Promise<T>{
  if(!response.ok){const error=value&&typeof value==='object'&&'error' in value&&typeof (value as {error:unknown}).error==='string'?(value as {error:string}).error:'Das hat nicht geklappt.';throw Object.assign(new Error(error),{status:response.status});}
  return value as T;
 }
+export async function signOut(){
+ try{await api('/api/auth/logout',{});}finally{
+  try{sessionStorage.clear();}catch{/* tab storage unavailable */}
+  location.replace('/');
+ }
+}
 export const newId=()=>crypto.randomUUID();
 export const q=(value:string)=>encodeURIComponent(value);
 
 // ---- Where we are: one small set of URL parameters -------------------------------------------------
 export type Page='start'|'project'|'account'|'guide'|'archive';
-export type Route={page:Page;project:string;chat:string;tab:'chat'|'tasks';task:string;info:boolean;agent:string};
+export const accountAreas=['profil','sicherheit','ki','daten','verwaltung'] as const;
+export type AccountArea=typeof accountAreas[number];
+export type Route={account?:AccountArea;page:Page;project:string;chat:string;tab:'chat'|'tasks';task:string;info:boolean;agent:string};
 const idOk=(v:string|null)=>!!v&&/^[\w-]{1,100}$/.test(v);
 export function readRoute(search=location.search):Route{
  const p=new URLSearchParams(search),project=p.get('p')??p.get('room')??'';
  const page=(['account','guide','archive'] as const).find(x=>x===p.get('page'))??(idOk(project)?'project':'start');
- const chat=p.get('chat')??'';
- return {page,project:idOk(project)?project:'',chat:/^(agent|member):[\w-]{1,100}$/.test(chat)?chat:'',tab:p.get('tab')==='tasks'?'tasks':'chat',
+ const chat=p.get('chat')??'',account=page==='account'?accountAreas.find(area=>area===p.get('bereich')):undefined;
+ return {...(account?{account}:{}),page,project:idOk(project)?project:'',chat:/^(agent|member):[\w-]{1,100}$/.test(chat)?chat:'',tab:p.get('tab')==='tasks'?'tasks':'chat',
   task:idOk(p.get('task'))?p.get('task')!:'',info:p.get('info')==='1',agent:idOk(p.get('agent'))?p.get('agent')!:''};
 }
 export function routeURL(r:Partial<Route>):string{
  const p=new URLSearchParams();
  if(r.page&&r.page!=='start'&&r.page!=='project')p.set('page',r.page);
+ if(r.page==='account'&&r.account)p.set('bereich',r.account);
  if(r.project){p.set('p',r.project);if(r.chat)p.set('chat',r.chat);if(r.tab==='tasks')p.set('tab','tasks');if(r.task)p.set('task',r.task);if(r.info)p.set('info','1');if(r.agent)p.set('agent',r.agent);}
  return '/'+(p.size?'?'+p.toString():'');
 }

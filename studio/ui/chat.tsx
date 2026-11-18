@@ -1,7 +1,7 @@
 import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import type {Studio} from './app';
 import {api,clock,draft,newId,q,type Agent,type Member,type Message,type Proposal,type Run} from './api';
-import {Face} from './avatar';
+import {Face,photoOf} from './avatar';
 import {RichText} from './rich-text';
 import {jobOf,introOf,JOBS,leadOf,messagesOf,runActive,runLine,teamOrder} from './model';
 import {ErrorLine,Mark,Send} from './parts';
@@ -61,7 +61,7 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
    {empty&&place.kind==='task'&&<p className="ui-muted center">Noch kein Gespräch. Hol jemanden aus dem Team mit @Name.</p>}
    {empty&&place.kind==='member'&&<p className="ui-muted center">Nur ihr zwei lest hier.</p>}
    {list.map(m=><Bubble key={m.id} m={m} me={me.id} place={place} agent={agentOf(m.senderAgent)} to={m.recipientKind==='agent'?nameOf(m.recipient):''}
-    canTalk={canTalk} marking={marking} onMark={()=>setMarking(x=>x?(x.includes(m.id)?x.filter(i=>i!==m.id):[...x,m.id].slice(0,20)):[m.id])}
+    photo={photoOf(room!.members.find(person=>person.id===m.author),project)} canTalk={canTalk} marking={marking} onMark={()=>setMarking(x=>x?(x.includes(m.id)?x.filter(i=>i!==m.id):[...x,m.id].slice(0,20)):[m.id])}
     onOpenTask={task=>go({task})} busy={busy}
     onDecide={(p,decision)=>void act(()=>api('/api/agent-proposals/decide',{proposal:p.id,decision}))}
     onShare={()=>void act(()=>api('/api/room',{action:'share',project,id:newId(),message:m.id}))}
@@ -78,8 +78,8 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
  </div>;
 }
 
-function Bubble({m,me,place,agent,to,canTalk,marking,onMark,onOpenTask,onDecide,onShare,nameOf,taskTitle,busy}:{m:Message;me:string;place:ChatPlace;agent:Agent|null;to:string;
- canTalk:boolean;marking:string[]|null;onMark:()=>void;onOpenTask:(task:string)=>void;onDecide:(p:Proposal,d:'accept'|'reject')=>void;onShare:()=>void;nameOf:(id:string)=>string;taskTitle:(id:string)=>string;busy:boolean}){
+function Bubble({m,me,place,agent,to,photo,canTalk,marking,onMark,onOpenTask,onDecide,onShare,nameOf,taskTitle,busy}:{m:Message;me:string;place:ChatPlace;agent:Agent|null;to:string;
+ photo?:string;canTalk:boolean;marking:string[]|null;onMark:()=>void;onOpenTask:(task:string)=>void;onDecide:(p:Proposal,d:'accept'|'reject')=>void;onShare:()=>void;nameOf:(id:string)=>string;taskTitle:(id:string)=>string;busy:boolean}){
  const mine=!agent&&m.author===me&&m.kind!=='card';
  const selected=marking?.includes(m.id);
  if(m.kind==='card'&&m.card)return <div className="ui-card-line">
@@ -90,7 +90,7 @@ function Bubble({m,me,place,agent,to,canTalk,marking,onMark,onOpenTask,onDecide,
  const inTask=place.kind==='group'&&m.inTask?m.inTask:null;
  return <div className={'ui-msg'+(mine?' mine':'')+(agent?' agent':'')+(selected?' selected':'')+(marking?' picking':'')}
   onClick={marking?onMark:undefined} onContextMenu={e=>{if(canTalk&&(place.kind==='group'||place.kind==='task')){e.preventDefault();onMark();}}}>
-  {!mine&&<Face agent={agent} name={m.authorName??nameOf(m.author)} size={32}/>}
+  {!mine&&<Face agent={agent} name={m.authorName??nameOf(m.author)} photo={photo} size={32}/>}
   <div className="ui-msg-body">
    {!mine&&<div className="ui-msg-head"><b>{agent?agent.name:m.authorName??nameOf(m.author)}</b>{to&&<span> an {to}</span>}<small>{clock(m.created)}</small></div>}
    {m.markColor!=null&&<span className={'ui-mark c'+m.markColor}>{MARK[m.markColor]} markiert</span>}

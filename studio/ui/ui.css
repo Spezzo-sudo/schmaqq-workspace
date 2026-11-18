@@ -245,3 +245,26 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .ui-result{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
 .ui-result .ui-link{margin-left:8px}
 .ui-center{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 16px 8px}
+
+/* Account, home and page orientation */
+.ui-brand{display:inline-flex;align-items:center;white-space:nowrap;color:var(--ink);text-decoration:none;font-size:14px}
+.ui-brand span{display:inline-block;transform-origin:center}
+.ui-brand b{font-family:var(--sans);letter-spacing:.12em;border-radius:4px}
+.ui-brand.intro span{animation:ui-mark-intro .55s ease-out both}
+@keyframes ui-mark-intro{0%{transform:translateY(3px) rotate(-14deg);opacity:.4}70%{transform:translateY(-1px) rotate(4deg)}}
+.wide .ui-bar>.ui-brand{display:none}
+.ui-account-nav{display:grid;gap:6px;padding:6px 16px 20px;width:min(100%,640px);margin-inline:auto}
+.ui-account-nav .ui-row{justify-content:space-between;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+.ui-account-nav .ui-row:hover{background:var(--deep)}
+.ui-account-nav .ui-row span{color:var(--muted)}
+.account>.ui-section{width:min(100%,640px);margin-inline:auto}
+.ui-profile-card{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:10px 0}
+.ui-profile-card h2{margin:0}
+.ui-photo-picker{position:relative;cursor:pointer}
+.ui-photo-picker:focus-within{outline:2px solid var(--approve);outline-offset:2px}
+.ui-photo-picker:has(input:disabled){opacity:.5}
+.ui-photo-picker input{position:absolute;inset:0;width:100%;opacity:0;cursor:pointer}
+.ui-scroll-hint{position:sticky;bottom:56px;align-self:flex-end;height:0;margin-right:12px;z-index:6;flex:none}
+.ui-scroll-hint button{background:var(--card);border:1px solid var(--line);box-shadow:0 2px 8px #11122520;color:var(--ink);font-size:22px;animation:ui-scroll-cue .65s ease-in-out 2}
+@keyframes ui-scroll-cue{50%{transform:translateY(3px)}}
+@media(prefers-reduced-motion:reduce){.ui-brand.intro span,.ui-scroll-hint button{animation:none}}

@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import type {Studio} from './app';
 import {api,newId,plural,type TeamTask} from './api';
-import {Face} from './avatar';
+import {Face,photoOf} from './avatar';
 import {Chat} from './chat';
 import {activeAgents,jobOf,runActive,taskState,teamOrder,TEAM_LIMIT} from './model';
 import {Bar,Dialog,ErrorLine,Field,Info,Plus} from './parts';
@@ -25,7 +25,7 @@ export function ProjectScreen({studio}:{studio:Studio}){
   {profile&&<ProfileDialog studio={studio} agentId={profile} onClose={()=>setProfile('')}/>}
  </section>;
  if(chatMember)return <section className="ui-screen">
-  <Bar onBack={()=>go({chat:''})} title={chatMember.name} sub="privat" end={<Face name={chatMember.name} size={34}/>}/>
+  <Bar onBack={()=>go({chat:''})} title={chatMember.name} sub="privat" end={<Face name={chatMember.name} photo={photoOf(chatMember,room.project.id)} size={34}/>}/>
   <Chat studio={studio} place={{kind:'member',member:chatMember}} key={chatMember.id}/>
  </section>;
  return <section className="ui-screen">
@@ -36,8 +36,8 @@ export function ProjectScreen({studio}:{studio:Studio}){
    {agents.map(a=><button key={a.id} className="ui-team-member" onClick={()=>go({chat:'agent:'+a.id})} onContextMenu={e=>{e.preventDefault();setProfile(a.id);}}>
     <Face agent={a} size={48} working={working.has(a.id)} badge={unread('agent:'+a.id)}/><b>{a.name}</b><small>{jobOf(a).title}</small>
    </button>)}
-   {people.map(m=>m.id===studio.me.id?<div key={m.id} className="ui-team-member me"><Face name={m.name} size={48}/><b>Du</b><small>{m.role==='owner'?'Inhaber':'Mensch'}</small></div>
-    :<button key={m.id} className="ui-team-member" onClick={()=>go({chat:'member:'+m.id})}><Face name={m.name} size={48} badge={unread('member:'+m.id)}/><b>{m.name.split(' ')[0]}</b><small>Mensch</small></button>)}
+   {people.map(m=>m.id===studio.me.id?<div key={m.id} className="ui-team-member me"><Face name={m.name} photo={photoOf(m,room.project.id)} size={48}/><b>Du</b><small>{m.role==='owner'?'Inhaber':'Mensch'}</small></div>
+    :<button key={m.id} className="ui-team-member" onClick={()=>go({chat:'member:'+m.id})}><Face name={m.name} photo={photoOf(m,room.project.id)} size={48} badge={unread('member:'+m.id)}/><b>{m.name.split(' ')[0]}</b><small>Mensch</small></button>)}
    {canDevelop&&agents.length<TEAM_LIMIT&&<button className="ui-team-member add" onClick={()=>setHiring(true)}><span className="ui-face add"><Plus/></span><b>Einstellen</b><small>&nbsp;</small></button>}
   </nav>
   <div className="ui-tabs" role="tablist">
