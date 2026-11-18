@@ -18,7 +18,7 @@ Etappen und Entscheide: [PLAN.md](PLAN.md). Iststand mit Nachweisen: [STATUS.jso
 Ablauf und Rollen: [WORKFLOW.md](WORKFLOW.md). Wer einen Schritt übernimmt, schreibt sich unter „In Arbeit“ ein
 (z. B. „Claude Code – Aufräumen“ oder „Codex – Messenger-Feinschliff“).
 
-**In Arbeit:** Projektteilnahme und Einladungen. Zuletzt live am 17.11.2026: Agenten im Messenger, private Chats, Gruppenchat mit @Name, Projektleitung plant (#91, `ce5a50a`); Agenten in Produktion für Marco eingeschaltet. Nächste Schritte: [HANDOFF-AGENTS.md](archive/HANDOFF-AGENTS-20261117.md).
+**In Arbeit:** Konto, Profilfotos und Orientierung. Baut auf Datenschutz beim Datenauszug und mobiler Navigation auf. Zuletzt live am 17.11.2026: Agenten im Messenger, private Chats, Gruppenchat mit @Name, Projektleitung plant (#91, `ce5a50a`); Agenten in Produktion für Marco eingeschaltet. Nächste Schritte: [HANDOFF-AGENTS.md](archive/HANDOFF-AGENTS-20261117.md).
 
 **Gemeinsame Grundlage:** Der Guru-Branch enthält den Gesprächs-/Team-Branch (GitHub-Vergleich: vier Commits voraus, keiner zurück). Frühere Messenger-Arbeitsaufträge sind daher keine parallelen Bauaufträge. Vor dem Schliessen älterer PRs deren Einbeziehung einzeln prüfen.
 
@@ -69,7 +69,7 @@ Grundlage: [AI_SUBSCRIPTION_TERMS_20261030.md](archive/evidence/AI_SUBSCRIPTION_
 
 ## In Arbeit
 
-**Studio – Projektteilnahme und Einladungen** (18.11.2026) — umgesetzt und lokal geprüft.
+**Studio – Datenschutz beim Datenauszug und mobile Navigation** (18.11.2026).
 
 **Nachtauftrag: live seit 30.10.2026** (Studio und Worker auf 5c3208a,
 [Live-Nachweis](archive/evidence/NIGHT_RELEASE_DEPLOY_20261030.md), [Status](archive/NIGHT_STATUS_20261029.md)).

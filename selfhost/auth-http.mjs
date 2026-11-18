@@ -1,9 +1,25 @@
 import { z } from 'zod';
 import {can} from './project-roles.mjs';
 import {practiceOwner} from './practice.mjs';
-import {metadata} from './team-model.mjs';
-import { digest, passwordHash, passwordValid, createInvite, transaction } from './store.mjs';
-import { noteInvite, consumeInvite, isRemoved, openInvites, checkInviteProjects, mayManageInvite, withdrawInvite, proposeInvite, inviteRequests, decideRequest, removeMember } from './team-access.mjs';
+import {metadata,storeMetadata} from './team-model.mjs';
+import { accountEmail, digest, passwordHash, passwordValid, createInvite, transaction } from './store.mjs';
+import { noteInvite, consumeInvite, isRemoved, openInvites, checkInviteProjects, mayManageInvite, photoKey, withdrawInvite, proposeInvite, inviteRequests, decideRequest, removeMember } from './team-access.mjs';
+
+// Studio stores small raster portraits. Validate dimensions before a browser decodes them.
+function smallJpeg(bytes) {
+  if (bytes.length<20 || bytes.readUInt16BE(0)!==0xffd8 || bytes.readUInt16BE(bytes.length-2)!==0xffd9) return false;
+  for(let offset=2;offset+9<bytes.length;){
+    if(bytes[offset]!==0xff)return false;
+    const marker=bytes[offset+1],length=bytes.readUInt16BE(offset+2);
+    if(length<2||offset+2+length>bytes.length||marker===0xda)return false;
+    if(marker===0xc0||marker===0xc2){
+      const height=bytes.readUInt16BE(offset+5),width=bytes.readUInt16BE(offset+7);
+      return length>=11&&height>0&&height<=256&&width>0&&width<=256;
+    }
+    offset+=2+length;
+  }
+  return false;
+}
 
 /**
  * Cookie-session and invitation HTTP routes.
@@ -31,8 +47,6 @@ export function createAuthHttpRoute({
   const text = z.string().trim().min(1).max(160);
   const projectId = z.string().regex(/^[\w-]{1,100}$/);
   const projectsInput = z.array(projectId).max(100).default([]);
-  // Sign-in name: an e-mail address or a simple user name such as "markus". Stored lower-case in members.email.
-  const loginName = z.string().trim().toLowerCase().max(200).refine(v => z.string().email().safeParse(v).success || /^[a-z0-9][a-z0-9._-]{2,39}$/.test(v), 'Benutzername (3–40 Zeichen: a–z, 0–9, Punkt, Strich) oder E-Mail-Adresse angeben.');
   const publicMember = member => ({
     id: member.id,
     name: member.name,
@@ -48,6 +62,27 @@ export function createAuthHttpRoute({
     res,
     send
   }) {
+    if (route === '/api/auth/photo') {
+      const member=user(req);
+      if(method==='POST'){
+        const {jpeg}=parse(z.object({jpeg:z.string().max(110000).regex(/^[A-Za-z0-9+/]+={0,2}$/).nullable()}),await readJSON(req,112000));
+        if(jpeg===null)db.prepare('DELETE FROM workspace_meta WHERE key=?').run(photoKey(member.id));
+        else {
+          if(!smallJpeg(Buffer.from(jpeg,'base64')))throw fail(400,'Bitte ein gültiges Profilfoto auswählen.');
+          storeMetadata(db,photoKey(member.id),{revision:uuid(),jpeg});
+        }
+        send({ok:true});return true;
+      }
+      if(method!=='GET')throw fail(405,'Methode nicht erlaubt.');
+      const target=parse(projectId,url.searchParams.get('member'));
+      const project=url.searchParams.has('project')?parse(projectId,url.searchParams.get('project')):null;
+      const person=db.prepare('SELECT id,role FROM members WHERE id=?').get(target);
+      const teammate=project&&can(db,member,project,'view')&&can(db,person,project,'view')&&db.prepare('SELECT 1 FROM projects WHERE id=?').get(project);
+      const photo=person&&!isRemoved(db,target)&&(target===member.id||member.role==='owner'||teammate)?metadata(db,photoKey(target)):null;
+      if(!photo)throw fail(404,'Profilfoto fehlt.');
+      res.writeHead(200,{'Content-Type':'image/jpeg','Cross-Origin-Resource-Policy':'same-origin'});
+      res.end(Buffer.from(photo.jpeg,'base64'));return true;
+    }
     if (route === '/api/auth/session') {
       send({
         user: publicMember(user(req))
@@ -101,7 +136,7 @@ export function createAuthHttpRoute({
         password: z.string().min(12).max(200)
       }), await readJSON(req));
       const invite = db.prepare('SELECT * FROM invites WHERE hash=? AND expires>?').get(digest(v.invite), now());
-      if (!invite) throw fail(403, 'Einladung ungültig oder abgelaufen.');
+      if (!invite || !accountEmail.safeParse(invite.email).success) throw fail(403, 'Einladung ungültig. Bitte lass dich mit deiner E-Mail-Adresse einladen.');
       if (db.prepare('SELECT id FROM members WHERE email=?').get(invite.email)) throw fail(409, 'Dieses Konto existiert bereits.');
       const memberId = uuid(),
         hash = passwordHash(v.password);
@@ -152,7 +187,7 @@ export function createAuthHttpRoute({
       // A non-owner can only issue links from a project they lead.
       const m = user(req);
       const v = parse(z.object({
-        email: loginName,
+        email: accountEmail,
         project: projectId.optional(),
         projects: projectsInput
       }), await readJSON(req));
@@ -211,6 +246,7 @@ export function createAuthHttpRoute({
         const request = decideRequest(db, v.id, v.approve ? 'approved' : 'declined', m.id);
         if (!request) throw fail(404, 'Dieser Vorschlag ist schon entschieden.');
         if (!v.approve) return {};
+        parse(accountEmail,request.email);
         if (db.prepare('SELECT 1 FROM members WHERE email=?').get(request.email)) throw fail(409, 'Diese Person hat schon ein Konto.');
         const projects = [...new Set(v.projects)];
         checkInviteProjects(db, projects, m);
@@ -233,15 +269,6 @@ export function createAuthHttpRoute({
         db.prepare('DELETE FROM sessions WHERE member=? AND hash<>?').run(m.id, t ? digest(t) : '');
       });
       send({ ok: true });
-      return true;
-    }
-    if (route === '/api/members/reset' && method === 'POST') {
-      const m = user(req);
-      if (m.role !== 'owner') throw fail(403, 'Nur der Inhaber kann einen Link für ein neues Passwort erstellen.');
-      const v = parse(z.object({ member: z.string().max(100) }), await readJSON(req, 2048));
-      const target = db.prepare('SELECT id FROM members WHERE id=?').get(v.member);
-      if (!target || isRemoved(db, target.id)) throw fail(404, 'Dieses Mitglied gibt es nicht.');
-      send({ link: passwordRecovery.issue(target.id) });
       return true;
     }
     if (route === '/api/members/remove' && method === 'POST') {

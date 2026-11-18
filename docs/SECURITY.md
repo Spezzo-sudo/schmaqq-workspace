@@ -12,9 +12,9 @@
   Darum: Link direkt an die Person, kurze Gültigkeit, im Zweifel zurücknehmen.
 
 ## Anmeldename und Passwort
-- Anmeldename: Benutzername (3–40 Zeichen a–z, 0–9, Punkt, Strich) oder E-Mail, gespeichert in `members.email`.
+- Neue Konten und Einladungen brauchen eine E-Mail-Adresse. Alte Anmeldenamen bleiben bis zur Umstellung gültig.
 - Passwort ändern (Mein Konto): altes Passwort nötig, andere Anmeldungen enden, Versuche gebremst.
-- Neues Passwort bei Vergessen: nur der Inhaber erstellt einen Link (`/#reset=…`, 24 h, einmal, als Hash gespeichert).
+- Bei vergessenem Passwort verschickt Studio einen einmaligen Link an die E-Mail-Adresse des Kontos. Der Inhaber bekommt keinen Link. Vor dem Onlinestellen den Versand einrichten und prüfen.
   Verbundene Rechner bleiben verbunden (Vergessen ist keine Kompromittierung); beim Mail-Weg „Passwort vergessen“
   werden sie weiterhin getrennt.
 

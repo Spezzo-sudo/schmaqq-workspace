@@ -1,12 +1,12 @@
 import {useCallback,useEffect,useState} from 'react';
 import type {Studio} from './app';
 import {api,newId,q,type Role} from './api';
-import {Face} from './avatar';
+import {Face,photoOf} from './avatar';
 import {jobOf,taskState,teamOrder} from './model';
 import {projectTasks} from './project';
 import {HireDialog,ProfileDialog} from './people';
 import {tileColor} from './start';
-import {Bar,Dialog,ErrorLine,Field,More,Section} from './parts';
+import {Bar,Dialog,ErrorLine,Field,More,ScrollHint,Section} from './parts';
 import {CodeSection} from './code';
 import {InviteLink,InviteRows,projectVisibility,type Invite} from './account';
 
@@ -20,7 +20,7 @@ export function InfoScreen({studio}:{studio:Studio}){
  async function saveProject(changes:{title?:string;description?:string;archived?:boolean;scope?:string[]}){
   setError('');
   try{await api('/api/team',{action:'project',project:room!.project.id,revision:room!.meta.revision,title:room!.project.title,description:room!.project.description,archived:false,
-   base:room!.meta.base??'main',workflow:room!.meta.workflow??'pull-request',...changes});await studio.reload();if(changes.archived)go({page:'start',project:''});}
+   base:room!.meta.base??'main',workflow:room!.meta.workflow??'pull-request',...changes});await studio.reload();if(changes.archived)go({page:'start',project:''},true);}
   catch(e){setError((e as Error).message);}
  }
  return <section className="ui-screen info">
@@ -42,6 +42,7 @@ export function InfoScreen({studio}:{studio:Studio}){
   <Knowledge studio={studio}/>
   <Rules studio={studio} admin={admin}/>
   {!desktop&&<div className="ui-pad"/>}
+  <ScrollHint/>
   {hiring&&<HireDialog studio={studio} onClose={()=>setHiring(false)}/>}
   {profile&&<ProfileDialog studio={studio} agentId={profile} onClose={()=>setProfile('')}/>}
   {renaming&&<Rename title={room.project.title} goal={room.project.description} onClose={()=>setRenaming(false)} onSave={(title,description)=>saveProject({title,description}).then(()=>setRenaming(false))}/>}
@@ -72,7 +73,7 @@ function TeamSection({studio,admin,onHire,onProfile}:{studio:Studio;admin:boolea
  return <Section title={'Team ('+(agents.length+people.length)+')'} end={canDevelop?<button className="ui-link" onClick={onHire}>+ Einstellen</button>:undefined}>
   {agents.map(a=><button key={a.id} className="ui-row" onClick={()=>onProfile(a.id)}><Face agent={a} size={36}/><span className="ui-row-text"><b>{a.name}</b><small>{jobOf(a).title} · {jobOf(a).does}</small></span></button>)}
   {people.map(m=>{
-   const line=<><Face name={m.name} size={36}/><span className="ui-row-text"><b>{m.name}{m.id===me.id?' (du)':''}</b><small>{peopleRoles[peopleRole(m.roles)].label}</small></span></>;
+   const line=<><Face name={m.name} photo={photoOf(room!.members.find(person=>person.id===m.id),project)} size={36}/><span className="ui-row-text"><b>{m.name}{m.id===me.id?' (du)':''}</b><small>{peopleRoles[peopleRole(m.roles)].label}</small></span></>;
    return <div className="ui-team-person" key={m.id}>
     {m.id===me.id||!canWrite?<div className="ui-row static">{line}</div>:<button className="ui-row" aria-label={'Privat schreiben mit '+m.name} onClick={()=>go({info:false,chat:'member:'+m.id})}>{line}</button>}
     {canManage&&<button className="ui-link" aria-label={m.name+' verwalten'} onClick={()=>{setError('');setEditing(m.id);}}>Ändern</button>}
@@ -122,7 +123,7 @@ function AddPerson({project,available,onAdd,onClose}:{project:string;available:{
    <form className="ui-form" onSubmit={e=>{e.preventDefault();void act(async()=>{
     const d=await api<{link:string}>('/api/invites',{project,email:email.trim()});setLink(d.link);setEmail('');await load();
    });}}>
-    <Field label="Benutzername oder E-Mail"><input value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none" required/></Field>
+    <Field label="E-Mail"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none" required/></Field>
     <div className="ui-actions left"><button className="ui-btn" disabled={busy||!email.trim()}>Einladungslink erstellen</button></div>
    </form>
    {link&&<InviteLink key={link} link={link}/>}

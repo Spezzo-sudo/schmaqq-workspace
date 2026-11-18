@@ -36,7 +36,7 @@ export function Login({resetToken}:{resetToken:string}){
     <p className="ui-muted">{invite?'Leg dein Konto an. Deine eingeladenen Projekte sind danach sofort für dich da.':'Eure Projekte, euer Team aus Menschen und Agenten.'}</p>
     <form className="ui-form" onSubmit={signIn}>
      {joining&&<Field label="Dein Name"><input name="name" required maxLength={160} autoComplete="name"/></Field>}
-     {(!invite||setup)&&<Field label={setup?'E-Mail':'Benutzername oder E-Mail'}><input name="email" type={setup?'email':'text'} autoCapitalize="none" autoCorrect="off" spellCheck={false} required autoComplete="username"/></Field>}
+     {(!invite||setup)&&<Field label="E-Mail"><input name="email" type={setup?'email':'text'} inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} required autoComplete="username"/></Field>}
      <Field label="Passwort" hint={joining?'Mindestens 12 Zeichen.':undefined}><input name="password" type={show?'text':'password'} required minLength={joining?12:1} maxLength={200} autoComplete={joining?'new-password':'current-password'}/></Field>
      <label className="ui-check"><input type="checkbox" checked={show} onChange={e=>setShow(e.target.checked)}/> Passwort anzeigen</label>
      <ErrorLine text={error}/>
@@ -47,7 +47,7 @@ export function Login({resetToken}:{resetToken:string}){
    </>}
    {mode==='forgot'&&<>
     <h1>Passwort vergessen</h1>
-    <p className="ui-muted">Gib deine E-Mail ein. Du bekommst einen Link, der 15 Minuten gilt. Ohne E-Mail: frag den Inhaber nach einem Link für ein neues Passwort.</p>
+    <p className="ui-muted">Gib deine E-Mail ein. Du bekommst einen Link, der 15 Minuten gilt.</p>
     {info?<p className="ui-note" role="status">{info}</p>:<form className="ui-form" onSubmit={e=>{e.preventDefault();const email=new FormData(e.currentTarget).get('email');void run(async()=>{const d=await post('/api/auth/recovery/request',{email});setInfo(d.message??'Falls das Konto existiert, kommt gleich eine E-Mail.');setBusy(false);});}}>
      <Field label="E-Mail"><input type="email" name="email" required autoComplete="username" maxLength={200}/></Field>
      <ErrorLine text={error}/><button className="ui-btn primary wide" disabled={busy}>Link schicken</button></form>}

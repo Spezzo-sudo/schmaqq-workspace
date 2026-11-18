@@ -1,6 +1,76 @@
-import {useEffect,type ReactNode} from 'react';
+import {useEffect,useRef,useState,type MouseEvent,type ReactNode} from 'react';
+import {letterPaths} from './brand-paths';
 
 // The few building blocks every screen uses. One look, one place.
+
+export function Brand(){
+ const mark=useRef<SVGSVGElement>(null),timer=useRef<ReturnType<typeof setTimeout>>(null);
+ const [delays,setDelays]=useState<number[]|null>(null);
+ useEffect(()=>()=>{if(timer.current)clearTimeout(timer.current);},[]);
+ function activate(event:MouseEvent<HTMLAnchorElement>){
+  if(event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches||!mark.current)return;
+  event.preventDefault();
+  if(timer.current)return;
+  const box=mark.current.getBoundingClientRect();
+  const origin=event.detail>0?Math.min(box.right,Math.max(box.left,event.clientX)):box.left;
+  const parts=[...mark.current.querySelectorAll('g')];
+  const wave=parts.map(part=>{
+   const bounds=part.getBoundingClientRect();
+   return Math.round(Math.abs(bounds.left+bounds.width/2-origin)/Math.max(box.width,1)*420);
+  });
+  const goHome=location.pathname!=='/'||location.search||location.hash;
+  setDelays(wave);
+  timer.current=setTimeout(()=>{
+   timer.current=null;setDelays(null);
+   if(goHome)location.assign('/');
+   else window.scrollTo(0,0);
+  },Math.max(...wave,0)+360);
+ }
+ return <a href="/" onClick={activate} aria-label="SCHMAQQ Studio – Start" className={'ui-brand'+(delays?' is-playing':'')}>
+  <svg ref={mark} viewBox="-12 -68 492 92" aria-hidden="true" focusable="false">
+   {letterPaths.map((d,i)=><g key={i} style={{animationDelay:(delays?.[i]??0)+'ms'}}><path d={d}/></g>)}
+   <g style={{animationDelay:(delays?.[letterPaths.length]??0)+'ms'}}><rect x="444.17" y="-15.26" width="15.26" height="15.26"/></g>
+  </svg><b>STUDIO</b>
+ </a>;
+}
+
+export function ScrollHint(){
+ const anchor=useRef<HTMLDivElement>(null),[show,setShow]=useState(false);
+ useEffect(()=>{
+  const element=anchor.current,screen=element?.parentElement;
+  if(!screen)return;
+  const viewport=window.visualViewport;
+  const update=()=>{
+   const editing=document.activeElement?.matches('input,textarea,[contenteditable=true]');
+   const keyboard=viewport&&window.innerHeight-viewport.height>120;
+   setShow(!editing&&!keyboard&&screen.scrollHeight-screen.clientHeight-screen.scrollTop>28);
+  };
+  let frame=0;
+  const schedule=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(update);};
+  const observer=new ResizeObserver(schedule);
+  const observeContent=()=>{
+   observer.disconnect();observer.observe(screen);
+   for(const child of screen.children)if(child!==element)observer.observe(child);
+   schedule();
+  };
+  const changes=new MutationObserver(observeContent);
+  changes.observe(screen,{childList:true,subtree:true});
+  observeContent();
+  screen.addEventListener('scroll',schedule,{passive:true});
+  document.addEventListener('focusin',schedule);document.addEventListener('focusout',schedule);
+  viewport?.addEventListener('resize',schedule);
+  return ()=>{
+   changes.disconnect();observer.disconnect();cancelAnimationFrame(frame);screen.removeEventListener('scroll',schedule);
+   document.removeEventListener('focusin',schedule);document.removeEventListener('focusout',schedule);
+   viewport?.removeEventListener('resize',schedule);
+  };
+ },[]);
+ return <div className="ui-scroll-hint" ref={anchor}>{show&&<button className="ui-icon" aria-label="Weiter nach unten" onClick={()=>{
+  const screen=anchor.current?.parentElement;
+  screen?.scrollBy({top:screen.clientHeight*.75,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+ }}>⌄</button>}</div>;
+}
 
 export function Dialog({title,onClose,children,wide=false}:{title:string;onClose:()=>void;children:ReactNode;wide?:boolean}){
  useEffect(()=>{const f=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};addEventListener('keydown',f);return()=>removeEventListener('keydown',f);},[onClose]);
@@ -20,7 +90,7 @@ export function Bar({onBack,title,sub,onTitle,end}:{onBack?:()=>void;title:React
  return <header className="ui-bar">
   {onBack&&<button className="ui-icon" aria-label="Zurück" onClick={onBack}><Back/></button>}
   {onTitle?<button className="ui-bar-title" onClick={onTitle}>{head}</button>:<div className="ui-bar-title">{head}</div>}
-  {end}
+  {end}<Brand/>
  </header>;
 }
 export function Section({title,children,id,end}:{title:string;children:ReactNode;id?:string;end?:ReactNode}){

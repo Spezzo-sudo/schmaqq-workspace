@@ -1,20 +1,24 @@
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import type {Studio} from './app';
-import {api,newId,when} from './api';
-import {Face} from './avatar';
+import {api,newId,signOut,when} from './api';
+import {Face,photoOf} from './avatar';
 import {taskState} from './model';
-import {Checklist,Dialog,Field,Plus} from './parts';
+import {Brand,Close,Checklist,Dialog,Field,Plus} from './parts';
 
 /** Start: what waits for you, then the projects. On the desktop it is the left column. */
 export function StartScreen({studio,compact=false}:{studio:Studio;compact?:boolean}){
  const {me,projects,team,go,route}=studio;
  const [creating,setCreating]=useState(false);
+ const menuName=/\s/.test(me.name.trim())?me.name:[...me.name.trim()][0]??'?';
  const titleOf=(id:string)=>projects.find(p=>p.id===id)?.title??'';
  const waiting=team.tasks.filter(t=>projects.some(p=>p.id===t.project)&&t.status!=='done'&&taskState(t).tone==='approve'&&(t.assignee===me.id||t.status==='review'&&t.assignee!==me.id));
  return <section className={'ui-start'+(compact?' compact':'')}>
   <header className="ui-top">
-   <button className="ui-me" aria-label={'Menü öffnen ('+me.name+')'} onClick={studio.openMenu}><Face name={me.name} size={36}/></button>
-   <span className="ui-brand">SCHMAQQ<b>STUDIO</b></span>
+   <button className="ui-me" aria-label={'Menü öffnen ('+me.name+')'} onClick={studio.openMenu}>
+    <Face name={menuName} photo={photoOf(studio.members.find(m=>m.id===me.id))} size={30}/>
+    <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12"><path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+   </button>
+   <Brand/>
   </header>
   {!compact&&<div className="ui-greeting"><h1>{greeting()}, {me.name.split(' ')[0]}.</h1>
    <p>{waiting.length?`${waiting.length===1?'Eine Sache wartet':waiting.length+' Sachen warten'} auf dich.`:projects.length?'Gerade wartet nichts auf dich. Dein Team arbeitet in den Projekten.':'Leg dein erstes Projekt an und sag Herrn Grau, was du vorhast.'}</p></div>}
@@ -27,8 +31,9 @@ export function StartScreen({studio,compact=false}:{studio:Studio;compact?:boole
   <div className="ui-block">
    <h2 className="ui-label">Projekte</h2>
    {projects.length===0&&<div className="ui-hello">
-    <p>Noch kein Projekt. Ein Projekt ist ein Chat mit deinem Team aus Menschen und Agenten.</p>
+    <p>Keine aktiven Projekte.</p>
     <button className="ui-btn primary" onClick={()=>setCreating(true)}><Plus/> Projekt anlegen</button>
+    <button className="ui-btn" onClick={()=>go({page:'archive'})}>Archiv öffnen</button>
    </div>}
    {projects.map(p=>{const tasks=team.tasks.filter(t=>t.project===p.id&&t.status!=='done'),approve=tasks.filter(t=>taskState(t).tone==='approve').length;
     return <button key={p.id} className={'ui-row project'+(compact?'':' card')+(route.project===p.id?' current':'')} onClick={()=>go({page:'project',project:p.id})}>
@@ -76,17 +81,20 @@ function NewProject({studio,onClose}:{studio:Studio;onClose:()=>void}){
 export function Menu({studio,onClose}:{studio:Studio;onClose:()=>void}){
  const {me,go,agentsReady}=studio;
  const [creating,setCreating]=useState(false);
- async function logout(){try{await api('/api/auth/logout',{});}finally{try{sessionStorage.clear();}catch{/* private mode */}location.replace('/');}}
+ useEffect(()=>{
+  const closeOnEscape=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!creating)onClose();};
+  addEventListener('keydown',closeOnEscape);return()=>removeEventListener('keydown',closeOnEscape);
+ },[onClose,creating]);
  if(creating)return <NewProject studio={studio} onClose={()=>{setCreating(false);onClose();}}/>;
  return <div className="ui-sheet-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
   <nav className="ui-sheet left" aria-label="Menü">
-   <div className="ui-sheet-head"><Face name={me.name} size={44}/><span><b>{me.name}</b><small>{me.email}</small></span></div>
+   <div className="ui-sheet-head"><Face name={me.name} photo={photoOf(studio.members.find(m=>m.id===me.id))} size={44}/><span><b>{me.name}</b><small>{me.email}</small></span><button className="ui-icon" aria-label="Schließen" onClick={onClose}><Close/></button></div>
    <button onClick={()=>go({page:'account'})}>Mein Konto</button>
    <button onClick={()=>setCreating(true)}>Projekt anlegen</button>
-   {studio.members.some(m=>m.id===me.id&&m.role==='owner')&&<button onClick={()=>{go({page:'account'});setTimeout(()=>document.getElementById('invite')?.scrollIntoView({block:'start'}),400);}}>Jemanden einladen</button>}
+   {studio.members.some(m=>m.id===me.id&&m.role==='owner')&&<button onClick={()=>{go({page:'account',account:'verwaltung'});}}>Jemanden einladen</button>}
    <button onClick={()=>go({page:'archive'})}>Projekte und Archiv</button>
    <button onClick={()=>go({page:'guide'})}>So funktioniert Studio</button>
-   <button onClick={()=>void logout()}>Abmelden</button>
+   <button onClick={()=>void signOut()}>Abmelden</button>
    <p className="ui-sheet-foot"><span className={'ui-dot '+(agentsReady===false?'fail':agentsReady?'ok':'idle')}/>KI-Zugang {agentsReady===false?'gerade nicht erreichbar':agentsReady?'bereit':'wird geprüft'}</p>
   </nav>
  </div>;

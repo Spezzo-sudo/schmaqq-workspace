@@ -11,7 +11,7 @@ const studio=path.join(root,'studio');
 const files=dir=>readdirSync(dir).flatMap(f=>{const p=path.join(dir,f);return statSync(p).isDirectory()?files(p):[path.relative(studio,p).split(path.sep).join('/')];});
 
 const ALLOWED=['env.d.ts','index.html','main.tsx','vite.config.ts',
- 'ui/account.tsx','ui/api.ts','ui/app.tsx','ui/avatar.tsx','ui/avatars.ts','ui/chat.tsx','ui/code.tsx','ui/diff.ts','ui/info.tsx','ui/live.ts','ui/login.tsx',
+ 'ui/account.tsx','ui/api.ts','ui/app.tsx','ui/avatar.tsx','ui/avatars.ts','ui/brand-paths.ts','ui/chat.tsx','ui/code.tsx','ui/diff.ts','ui/info.tsx','ui/live.ts','ui/login.tsx',
  'ui/model.ts','ui/next-step.ts','ui/parts.tsx','ui/people.tsx','ui/project.tsx','ui/rich-text.tsx','ui/start.tsx','ui/task.tsx','ui/ui.css'];
 
 test('the app consists of exactly the files of the screen list; the old interface does not come back',()=>{

@@ -4,7 +4,7 @@ import {mkdtempSync, rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {createInvite} from './store.mjs';
+import {createInvite,digest,passwordHash,token as makeToken} from './store.mjs';
 import {createStudioServer} from './server.mjs';
 
 test('Studio is invitation-only: owner invites, members propose, removed members are locked out', async t => {
@@ -39,6 +39,12 @@ test('Studio is invitation-only: owner invites, members propose, removed members
   const people = (await call('GET','/api/workspace',undefined,owner.cookie)).body.members;
   const memberRow = people.find(p=>p.name==='Member'),ownerRow = people.find(p=>p.name==='Owner');
   assert.equal(memberRow.invitedBy,ownerRow.id);
+  assert.equal(memberRow.email,'member@fixture.invalid');
+  const memberView=(await call('GET','/api/workspace',undefined,member.cookie)).body.members;
+  assert.equal(memberView.find(p=>p.id===memberRow.id).email,'member@fixture.invalid');
+  assert.equal(memberView.find(p=>p.id===ownerRow.id).name,'Owner');
+  assert.equal(Object.hasOwn(memberView.find(p=>p.id===ownerRow.id),'email'),false);
+
 
   // General invitations create a Studio account with an empty project list.
   const create = async (title,cookie) => {
@@ -53,12 +59,12 @@ test('Studio is invitation-only: owner invites, members propose, removed members
   assert.deepEqual(await lists(member.cookie),[]);
   const memberProject=await create('Projekt von Member',member.cookie);
   assert.deepEqual(await lists(member.cookie),[memberProject]);
-  assert.equal((await call('POST','/api/invites',{email:'forbidden',project:a},member.cookie)).status,403);
-  assert.equal((await call('POST','/api/invites',{email:'forbidden',projects:[memberProject]},member.cookie)).status,403);
-  assert.equal((await call('POST','/api/invites',{email:'forbidden',projects:[memberProject]},owner.cookie)).status,403);
+  assert.equal((await call('POST','/api/invites',{email:'forbidden@fixture.invalid',project:a},member.cookie)).status,403);
+  assert.equal((await call('POST','/api/invites',{email:'forbidden@fixture.invalid',projects:[memberProject]},member.cookie)).status,403);
+  assert.equal((await call('POST','/api/invites',{email:'forbidden@fixture.invalid',projects:[memberProject]},owner.cookie)).status,403);
 
   // The project lead can invite straight into their own project without waiting for the owner.
-  const single=await call('POST','/api/invites',{email:'single',project:memberProject},member.cookie);
+  const single=await call('POST','/api/invites',{email:'single@fixture.invalid',project:memberProject},member.cookie);
   assert.equal(single.status,200);
   const joined=await call('POST','/api/auth/register',{invite:token(single.body.link),name:'Single',password});
   assert.deepEqual(joined.body,{ok:true,project:memberProject});
@@ -66,21 +72,33 @@ test('Studio is invitation-only: owner invites, members propose, removed members
   assert.equal((await call('GET','/api/room?project='+privateProject,undefined,joined.cookie)).status,403);
 
   // The owner chooses multiple projects; duplicate selections give only one membership.
-  const multi=await call('POST','/api/invites',{email:'multi',projects:[a,b,b]},owner.cookie);
+  const multi=await call('POST','/api/invites',{email:'multi@fixture.invalid',projects:[a,b,b]},owner.cookie);
   assert.equal(multi.status,200);
   const choices=await call('GET','/api/invites',undefined,owner.cookie);
   assert.deepEqual(choices.body.projects.map(p=>p.id).sort(),[a,b,privateProject].sort());
-  assert.deepEqual(choices.body.invites.find(i=>i.email==='multi').projects,['Erstes Projekt','Zweites Projekt']);
+  assert.deepEqual(choices.body.invites.find(i=>i.email==='multi@fixture.invalid').projects,['Erstes Projekt','Zweites Projekt']);
   const multiJoined=await call('POST','/api/auth/register',{invite:token(multi.body.link),name:'Multi',password});
   assert.deepEqual(multiJoined.body,{ok:true});
   assert.deepEqual(await lists(multiJoined.cookie),[a,b].sort());
 
-  const revoked=await call('POST','/api/invites',{email:'revoked',project:memberProject},member.cookie);
+  const revoked=await call('POST','/api/invites',{email:'revoked@fixture.invalid',project:memberProject},member.cookie);
   const scoped=await call('GET','/api/invites?project='+memberProject,undefined,member.cookie);
   assert.equal(scoped.body.invites.length,1);
   assert.equal((await call('POST','/api/invites/withdraw',{project:memberProject,id:scoped.body.invites[0].id},joined.cookie)).status,403);
   assert.equal((await call('POST','/api/invites/withdraw',{project:memberProject,id:scoped.body.invites[0].id},member.cookie)).status,200);
   assert.equal((await call('POST','/api/auth/register',{invite:token(revoked.body.link),name:'Revoked',password})).status,403);
+
+  assert.equal((await call('POST','/api/auth/photo',{jpeg:'ZmFrZQ=='},member.cookie)).status,400);
+  const photoMeta='member:v1:photo:'+memberRow.id;
+  app.db.prepare('INSERT INTO workspace_meta VALUES(?,?)').run(photoMeta,JSON.stringify({revision:'fixture',jpeg:'ZmFrZQ=='}));
+  const photoPath='/api/auth/photo?member='+memberRow.id;
+  const getPhoto=(path,cookie)=>fetch(base+path,{headers:{Cookie:cookie}});
+  assert.equal((await getPhoto(photoPath,joined.cookie)).status,404);
+  assert.equal((await getPhoto(photoPath+'&project='+privateProject,joined.cookie)).status,404);
+  assert.equal((await getPhoto(photoPath+'&project='+memberProject,joined.cookie)).headers.get('content-type'),'image/jpeg');
+  assert.equal((await getPhoto(photoPath,member.cookie)).status,200);
+  assert.equal((await call('POST','/api/auth/photo',{jpeg:null},member.cookie)).status,200);
+  assert.equal((await getPhoto(photoPath,member.cookie)).status,404);
 
   // A member cannot create links, only propose; the owner decides.
   const proposal = await call('POST','/api/invites',{email:'friend@fixture.invalid'},member.cookie);
@@ -100,30 +118,39 @@ test('Studio is invitation-only: owner invites, members propose, removed members
   assert.equal((await call('POST','/api/invites/withdraw',{id:open.id},owner.cookie)).status,200);
   assert.equal((await call('POST','/api/auth/register',{invite:token(approved.body.link),name:'Friend',password})).status,403);
 
-  // A user name instead of an e-mail address works for invitation and sign-in.
+  // An e-mail address is mandatory, and is normalized for sign-in.
   assert.equal((await call('POST','/api/invites',{email:'x'},owner.cookie)).status,400);
-  const named = await call('POST','/api/invites',{email:'Lena.K'},owner.cookie);
+  assert.equal((await call('POST','/api/invites',{email:'Lena.K'},owner.cookie)).status,400);
+  assert.throws(()=>createInvite(app.db,'Lena.K'));
+  const pendingWithoutEmail=makeToken();
+  app.db.prepare('INSERT INTO invites VALUES(?,?,?,?)').run(digest(pendingWithoutEmail),'old-name','member',Date.now()+60000);
+  assert.equal((await call('POST','/api/auth/register',{invite:pendingWithoutEmail,name:'Alt',password})).status,403);
+  app.db.prepare('INSERT INTO members VALUES(?,?,?,?,?,?)').run(randomUUID(),'Altes Konto','legacy-login',passwordHash(password),'member',Date.now());
+  assert.equal((await call('POST','/api/auth/login',{email:'legacy-login',password})).status,200);
+
+  const named = await call('POST','/api/invites',{email:'Lena.K@fixture.invalid'},owner.cookie);
   assert.equal(named.status,200);
   assert.equal((await call('POST','/api/auth/register',{invite:token(named.body.link),name:'Lena',password})).status,200);
-  const lena = await call('POST','/api/auth/login',{email:'lena.k',password});
+  const lena = await call('POST','/api/auth/login',{email:'lena.k@fixture.invalid',password});
   assert.equal(lena.status,200);
 
   // Changing your own password needs the old one; other sign-ins end, this one stays.
-  const second = await call('POST','/api/auth/login',{email:'lena.k',password});
+  const second = await call('POST','/api/auth/login',{email:'lena.k@fixture.invalid',password});
   assert.equal((await call('POST','/api/auth/password',{current:'wrong-password-123',password:'new-fixture-password-1'},lena.cookie)).status,403);
   assert.equal((await call('POST','/api/auth/password',{current:password,password:'new-fixture-password-1'},lena.cookie)).status,200);
   assert.equal((await call('GET','/api/workspace',undefined,lena.cookie)).status,200);
   assert.equal((await call('GET','/api/workspace',undefined,second.cookie)).status,401);
-  assert.equal((await call('POST','/api/auth/login',{email:'lena.k',password:'new-fixture-password-1'})).status,200);
+  assert.equal((await call('POST','/api/auth/login',{email:'lena.k@fixture.invalid',password:'new-fixture-password-1'})).status,200);
 
-  // Forgotten password: only the owner creates a one-time link; it sets a new password once.
-  const lenaId = app.db.prepare("SELECT id FROM members WHERE email='lena.k'").get().id;
-  assert.equal((await call('POST','/api/members/reset',{member:lenaId},member.cookie)).status,403);
-  const reset = await call('POST','/api/members/reset',{member:lenaId},owner.cookie);
-  const raw = new URL(reset.body.link).hash.replace('#reset=','');
-  assert.equal((await call('POST','/api/auth/recovery/confirm',{token:raw,password:'reset-fixture-password-2'})).status,200);
-  assert.equal((await call('POST','/api/auth/recovery/confirm',{token:raw,password:'reset-fixture-password-3'})).status,400);
-  assert.equal((await call('POST','/api/auth/login',{email:'lena.k',password:'reset-fixture-password-2'})).status,200);
+  // The owner cannot request a password link; older owner-issued links are invalid too.
+  const lenaId = app.db.prepare("SELECT id FROM members WHERE email='lena.k@fixture.invalid'").get().id;
+  assert.equal((await call('POST','/api/members/reset',{member:lenaId},owner.cookie)).status,404);
+  const raw = makeToken(),hash=digest(raw),expires=Date.now()+60000;
+  const put=app.db.prepare('INSERT INTO workspace_meta VALUES(?,?)');
+  put.run('password-recovery:member:'+lenaId,JSON.stringify({hash,expires}));
+  put.run('password-recovery:token:'+hash,JSON.stringify({member:lenaId,expires,byOwner:true}));
+  assert.equal((await call('POST','/api/auth/recovery/confirm',{token:raw,password:'reset-fixture-password-2'})).status,400);
+  assert.equal((await call('POST','/api/auth/login',{email:'lena.k@fixture.invalid',password:'new-fixture-password-1'})).status,200);
 
   // Removing a member ends the session at once and blocks a new login; the owner cannot be removed.
   assert.equal((await call('POST','/api/members/remove',{member:ownerRow.id},owner.cookie)).status,400);

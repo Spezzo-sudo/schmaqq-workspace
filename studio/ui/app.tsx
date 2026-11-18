@@ -6,6 +6,7 @@ import {StartScreen,Menu} from './start';
 import {ProjectScreen} from './project';
 import {TaskScreen} from './task';
 import {InfoScreen} from './info';
+import {Bar} from './parts';
 import {AccountScreen,ArchiveScreen,GuideScreen} from './account';
 
 export type Me={id:string;name:string;email:string};
@@ -28,7 +29,7 @@ export default function StudioApp({user}:{user:{userId:string;displayName:string
  const me=useMemo(()=>({id:user.userId,name:user.displayName,email:user.email}),[user]);
  const [route,setRoute]=useState(()=>readRoute());
  const [projects,setProjects]=useState<Project[]>([]),[team,setTeam]=useState<Team>({tasks:[]}),[members,setMembers]=useState<Member[]>([]);
- const [resources,setResources]=useState<Resource[]>([]),[menu,setMenu]=useState(false),[error,setError]=useState(''),[loaded,setLoaded]=useState(false);
+ const [resources,setResources]=useState<Resource[]>([]),[menu,setMenu]=useState(()=>history.state?.studioMenu===true),[error,setError]=useState(''),[loaded,setLoaded]=useState(false);
  // Project data is kept together with the project it belongs to; another project never shows the old one's data.
  const [projectData,setProjectData]=useState<{project:string;room:RoomState|null;roles:Roles|null}>({project:'',room:null,roles:null});
  const [runState,setRunState]=useState<{project:string;runs:Runs}>({project:'',runs:{configured:false,runs:[]}});
@@ -39,10 +40,12 @@ export default function StudioApp({user}:{user:{userId:string;displayName:string
  const runs=runState.project===route.project?runState.runs:{configured:runState.runs.configured,online:runState.runs.online,runs:[]};
 
  const go=useCallback((next:Partial<Route>,replace=false)=>{
-  const target=readRoute(routeURL({...(next.project===undefined&&next.page===undefined?readRoute():{}),...next}).slice(1));
-  history[replace?'replaceState':'pushState'](null,'',routeURL(target));setRoute(target);setMenu(false);scrollTo(0,0);
+  const before=readRoute();
+  const target=readRoute(routeURL({...(next.project===undefined&&next.page===undefined?before:{}),...next}).slice(1));
+  const accountOverview=before.page==='account'&&!before.account&&target.page==='account'&&!!target.account;
+  history[replace||history.state?.studioMenu?'replaceState':'pushState'](accountOverview?{accountOverview:true}:null,'',routeURL(target));setRoute(target);setMenu(false);scrollTo(0,0);
  },[]);
- useEffect(()=>{const f=()=>setRoute(readRoute());addEventListener('popstate',f);return()=>removeEventListener('popstate',f);},[]);
+ useEffect(()=>{const f=()=>{setRoute(readRoute());setMenu(history.state?.studioMenu===true);};addEventListener('popstate',f);return()=>removeEventListener('popstate',f);},[]);
 
  const reload=useCallback(async()=>{
   const project=current.current;
@@ -86,14 +89,26 @@ export default function StudioApp({user}:{user:{userId:string;displayName:string
  const working=runs.runs.filter(runActive).length;const lastWorking=useRef(working);
  useEffect(()=>{if(working<lastWorking.current)void reload();lastWorking.current=working;},[working,reload]);
 
+ const openMenu=()=>{
+  if(history.state?.studioMenu)return;
+  history.pushState({studioMenu:true},'',location.href);setMenu(true);
+ };
+ const closeMenu=()=>{
+  if(history.state?.studioMenu)history.back();
+  else setMenu(false);
+ };
  const agentsReady=runs.configured?runs.online!==false:null;
- const studio:Studio={me,route,go,projects,team,members,resources,agentsReady,room,runs,roles,reload,reloadRuns,desktop,openMenu:()=>setMenu(true)};
+ const studio:Studio={me,route,go,projects,team,members,resources,agentsReady,room,runs,roles,reload,reloadRuns,desktop,openMenu};
  if(!loaded)return <main className="ui-loading" role="status">Studio wird geladen …</main>;
 
  const inProject=route.page==='project'&&!!route.project;
- const side=inProject&&(route.task||route.info)?(route.task?<TaskScreen studio={studio} key={route.task}/>:<InfoScreen studio={studio}/>):null;
+ const archived=inProject&&room?.meta.archived===true;
+ const side=inProject&&!archived&&(route.task||route.info)?(route.task?<TaskScreen studio={studio} key={route.task}/>:<InfoScreen studio={studio}/>):null;
  const page=route.page==='account'?<AccountScreen studio={studio}/>:route.page==='guide'?<GuideScreen studio={studio}/>
-  :route.page==='archive'?<ArchiveScreen studio={studio}/>:inProject?<ProjectScreen studio={studio}/>:<StartScreen studio={studio}/>;
+  :route.page==='archive'?<ArchiveScreen studio={studio}/>:archived?<section className="ui-screen">
+   <Bar title={room!.project.title} onBack={()=>go({page:'start',project:''},true)}/>
+   <div className="ui-hello"><p>Dieses Projekt ist archiviert.</p><button className="ui-btn" onClick={()=>go({page:'archive',project:''},true)}>Archiv öffnen</button></div>
+  </section>:inProject?<ProjectScreen studio={studio}/>:<StartScreen studio={studio}/>;
  return <div className={'ui-app'+(desktop?' wide':'')}>
   {error&&<div className="ui-banner" role="alert">{error} <button onClick={()=>void reload()}>Nochmal</button></div>}
   {desktop?<div className="ui-columns">
@@ -101,6 +116,6 @@ export default function StudioApp({user}:{user:{userId:string;displayName:string
    <main className="ui-col-main">{inProject||route.page!=='start'?page:<div className="ui-empty-pane"><p>Wähle links ein Projekt.</p></div>}</main>
    {side&&<aside className="ui-col-right">{side}</aside>}
   </div>:<main className="ui-col-main">{side??page}</main>}
-  {menu&&<Menu studio={studio} onClose={()=>setMenu(false)}/>}
+  {menu&&<Menu studio={studio} onClose={closeMenu}/>}
  </div>;
 }

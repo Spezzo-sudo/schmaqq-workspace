@@ -2,6 +2,19 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 18.11.2026 (Passwort und Wortmarke)
+- Studio-Konten werden nur mit E-Mail eingeladen. Der Inhaber kann Konten einladen und entfernen. Ein neues Passwort setzt die Person selbst über den Link an ihre E-Mail-Adresse.
+- Die SCHMAQQ-Wortmarke verwendet das Originalzeichen und die rote Welle, die sich vom Berührungspunkt ausbreitet.
+
+## 18.11.2026 (Konto und Orientierung)
+- Das Konto hat eine Übersicht und einzelne Bereiche für Profil, Sicherheit, KI-Zugänge und Daten. Die Teamverwaltung bleibt dem Inhaber vorbehalten.
+- Menschen können ihr eigenes Profilfoto speichern oder entfernen. Studio zeigt es im Team und Chat. Der Server prüft, wer es abrufen darf.
+- Die Wortmarke führt zu Start. Eine kurze Bewegung und der bedingte Scroll-Pfeil helfen bei der Orientierung.
+
+## 18.11.2026 (Datenauszug und Navigation)
+- Mitglieder sehen beim Auswählen von Studio-Konten deren Namen. E-Mail-Adressen anderer Konten sieht im Datenauszug nur der Inhaber.
+- Das Handymenü hat einen Schließen-Knopf. Alte Links zu archivierten Projekten öffnen den Archivhinweis.
+
 ## 18.11.2026 (Projekteinladungen)
 - Studio-Konto und Teilnahme an Projekten sind getrennt. Beim Anlegen ist nur die Person dabei, die das Projekt anlegt, plus die ausgewählten Studio-Konten.
 - In der Projektinfo kann die Projektleitung Menschen dazunehmen, Rollen ändern, Menschen herausnehmen und ein neues Konto direkt für ihr Projekt einladen. Der Inhaber kann unter Mein Konto auch ohne Projekt oder für mehrere Projekte einladen. Die Einladung schaltet die ausgewählten Projekte beim Annehmen frei. Bisherige Projektmitglieder bleiben dabei.

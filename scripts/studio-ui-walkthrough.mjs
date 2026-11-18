@@ -34,7 +34,7 @@ async function screen(name,url,width,act=async()=>{}){
 }
 const expect=(text,what)=>{if(!text.includes(what))throw new Error('Nicht gefunden: '+what);};
 try{
- expect(await screen('01-start','/',390),'Noch kein Projekt');
+ expect(await screen('01-start','/',390),'Keine aktiven Projekte');
  expect(await screen('01b-project-create','/',390,async page=>{
   await page.getByRole('button',{name:'Projekt anlegen',exact:true}).click();
   if(await page.getByRole('checkbox',{name:'Lena Weber'}).isChecked())throw new Error('Studio-Konto war vorausgewählt.');
@@ -57,7 +57,11 @@ try{
  expect(accepted,'@Otto bitte übernimm: Startseite mit Öffnungszeiten');expect(accepted,'Otto');
  expect(await screen('06-tasks','/?p='+project+'&tab=tasks',390),'Startseite mit Öffnungszeiten');
  expect(await screen('07-info','/?p='+project+'&info=1',390),'Wo liegt euer Code?');
- expect(await screen('07b-new-code','/?p='+project+'&info=1',390,async p=>{await p.getByText('Neu anfangen').click();await p.locator('.ui-inline input').scrollIntoViewIfNeeded();}),'leeres Repository');
+ expect(await screen('07b-new-code','/?p='+project+'&info=1',390,async p=>{await p.getByText('Neu anfangen').click();
+  const input=p.locator('.ui-inline input'),arrow=p.getByRole('button',{name:'Weiter nach unten',exact:true});
+  await p.locator('.ui-screen.info').evaluate(el=>{el.scrollTop=0;});
+  await arrow.waitFor({state:'visible'});await input.focus();await arrow.waitFor({state:'hidden'});
+  await input.scrollIntoViewIfNeeded();}),'leeres Repository');
  expect(await screen('06b-task','/?p='+project+'&tab=tasks',390,p=>p.getByText('Startseite mit Öffnungszeiten').first().click()),'braucht das Projekt zuerst seinen Code');
  // "Bei uns ansehen": a server workplace builds the shared state; the fixed address shows it.
  const device=randomUUID(),deviceToken=randomUUID();
@@ -70,7 +74,7 @@ try{
  expect(await screen('07c-ansehen','/?p='+project+'&info=1',390),'Ansehen ›');
  const url=(await (await fetch(host+'/api/room?project='+project,{headers:{Cookie:'studio_session='+session}})).json()).showcase.url;
  const page=await browser.newPage();await page.goto(url);expect(await page.locator('body').innerText(),'Mo–Fr 7–18 Uhr');await page.screenshot({path:path.join(out,'07d-seite.png')});await page.close();
- expect(await screen('08-account','/?page=account',390),'Einmal verbinden, dann kann jeder Agent');
+ expect(await screen('08-account','/?page=account&bereich=ki',390),'Einmal verbinden, dann kann jeder Agent');
  await post('/api/room',{action:'create',id:randomUUID(),title:'Internes Projekt',description:'Nur für das eigene Team'});
  const team=await browser.newContext({viewport:{width:390,height:844}});
  await team.addCookies([{name:'studio_session',value:session,url:host}]);
@@ -82,7 +86,7 @@ try{
  await dialog.getByRole('button',{name:'Dazunehmen',exact:true}).click();
  await leadPage.getByText('Lena Weber',{exact:true}).waitFor();
  await leadPage.getByRole('button',{name:'+ Mensch dazunehmen'}).click();
- await dialog.getByLabel('Benutzername oder E-Mail').fill('fruehschicht@fixture.invalid');
+ await dialog.getByLabel('E-Mail',{exact:true}).fill('fruehschicht@fixture.invalid');
  await dialog.getByRole('button',{name:'Einladungslink erstellen'}).click();
  const inviteField=dialog.getByLabel('Einladungslink');
  await inviteField.waitFor();
@@ -104,7 +108,7 @@ try{
  const afterRemoval=await guestPage.request.get(host+'/api/room?project='+project);
  if(afterRemoval.status()!==403)throw new Error('Projekt bleibt nach dem Herausnehmen sichtbar.');
  await guestPage.waitForURL(host+'/');
- await guestPage.getByText('Noch kein Projekt',{exact:false}).first().waitFor();
+ await guestPage.getByText('Keine aktiven Projekte',{exact:false}).first().waitFor();
  await guest.close();await team.close();
 
  for(const width of [390,1440]){
@@ -112,17 +116,77 @@ try{
    const person=p.getByText('Lena Weber',{exact:true});
    await person.scrollIntoViewIfNeeded();
   }),'Macht mit');
-  expect(await screen('mein-konto-team-'+width,'/?page=account',width,async p=>{
+  expect(await screen('mein-konto-team-'+width,'/?page=account&bereich=verwaltung',width,async p=>{
    const section=p.locator('#invite');
    await section.getByRole('checkbox',{name:'Café Sonne'}).check();
    if(await section.getByRole('checkbox',{name:'Internes Projekt'}).isChecked())throw new Error('Falsches Projekt vorausgewählt.');
-   await section.getByLabel('Benutzername oder E-Mail').fill('neues-mitglied@fixture.invalid');
+   await section.getByLabel('E-Mail',{exact:true}).fill('neues-mitglied@fixture.invalid');
    await section.getByRole('button',{name:'Einladen',exact:true}).scrollIntoViewIfNeeded();
   }),'Für welche Projekte?');
  }
+ for(const width of [390,1440]){
+  expect(await screen('konto-uebersicht-'+width,'/?page=account',width),'Studio verwalten');
+ }
+ expect(await screen('13-profil','/?page=account',390,async p=>{
+  await p.getByRole('button',{name:'Profil',exact:true}).click();
+  const png=await p.evaluate(()=>{
+   const c=document.createElement('canvas');c.width=c.height=32;
+   const g=c.getContext('2d');g.fillStyle='#305c42';g.fillRect(0,0,32,32);return c.toDataURL().split(',')[1];
+  });
+  await p.locator('input[type=file]').setInputFiles({name:'foto.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
+  await p.getByRole('button',{name:'Foto speichern',exact:true}).click();
+  await p.getByText('Foto gespeichert.',{exact:true}).waitFor();
+  const src=await p.locator('.ui-profile-card img').getAttribute('src');
+  await p.screenshot({path:path.join(out,'profilfoto-390.png')});
+  if(!src||(await p.request.get(host+src)).status()!==200)throw new Error('Profilfoto fehlt.');
+  const anonymous=await browser.newContext();
+  try{if((await anonymous.request.get(host+src)).status()!==401)throw new Error('Profilfoto ist öffentlich.');}finally{await anonymous.close();}
+  await p.getByRole('button',{name:'Foto entfernen',exact:true}).click();
+  await p.getByText('Foto entfernt.',{exact:true}).waitFor();
+  if((await p.request.get(host+src)).status()!==404)throw new Error('Entferntes Profilfoto ist noch abrufbar.');
+  await p.getByRole('button',{name:'Zurück',exact:true}).click();
+  await p.getByRole('navigation',{name:'Mein Konto',exact:true}).waitFor();
+ }),'Mein Konto');
  expect(await screen('09-guide','/?page=guide',390),'Herr Grau plant');
  expect(await screen('11-start-with-projects','/',390),'Café Sonne');
  expect(await screen('10-desktop','/?p='+project+'&tab=tasks',1440),'Café Sonne');
+ expect(await screen('14-scroll','/?page=guide',390,async p=>{
+  const arrow=p.getByRole('button',{name:'Weiter nach unten',exact:true});
+  await arrow.waitFor({state:'visible'});
+  await arrow.click();
+  await p.waitForFunction(()=>document.querySelector('.ui-screen.page').scrollTop>0);
+  await p.locator('.ui-screen.page').evaluate(el=>{el.scrollTop=el.scrollHeight;});
+  await arrow.waitFor({state:'hidden'});
+  await p.emulateMedia({reducedMotion:'reduce'});
+  const home=p.getByRole('link',{name:'SCHMAQQ Studio – Start'});
+  if(await home.locator('svg g').first().evaluate(el=>getComputedStyle(el).animationName)!=='none')throw new Error('Logo bewegt sich trotz reduzierter Bewegung.');
+  await home.click();
+  await p.waitForURL(host+'/');
+ }),'Café Sonne');
+ expect(await screen('15-logo','/',390,async p=>{
+  const logo=p.getByRole('link',{name:'SCHMAQQ Studio – Start'}),mark=logo.locator('svg');
+  const box=await mark.boundingBox();
+  await mark.click({position:{x:box.width-2,y:box.height/2}});
+  const wave=await mark.locator('g').evaluateAll(parts=>parts.map(el=>({name:getComputedStyle(el).animationName,delay:parseFloat(el.style.animationDelay)})));
+  if(wave[0].name!=='ui-mark-wave'||wave[0].delay<=wave.at(-1).delay)throw new Error('Logo-Welle beginnt nicht am rechten Tipp-Punkt.');
+  await p.waitForTimeout(150);
+  await p.screenshot({path:path.join(out,'schmaqq-rote-welle-390.png')});
+ }),'Café Sonne');
+ expect(await screen('12-navigation','/',390,async page=>{
+  const open=page.getByRole('button',{name:/Menü öffnen/}),menu=page.getByRole('navigation',{name:'Menü',exact:true});
+  if(await open.locator('.ui-face').textContent()!=='N'||!await open.locator('svg').isVisible())throw new Error('Menüknopf zeigt kein eindeutiges Kürzel mit Pfeil.');
+  await open.click();await menu.getByRole('button',{name:'Schließen',exact:true}).click();await menu.waitFor({state:'hidden'});
+  await open.click();await page.goBack();await menu.waitFor({state:'hidden'});
+  await open.click();await page.keyboard.press('Escape');await menu.waitFor({state:'hidden'});
+  await page.getByRole('button',{name:/Internes Projekt/}).first().click();
+  await page.getByRole('button',{name:'Projektinfo',exact:true}).click();
+  await page.getByRole('button',{name:'Mehr',exact:true}).click();
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'Archivieren',exact:true}).click();
+  await page.waitForURL(host+'/');
+  await page.goBack();
+  await page.getByText('Dieses Projekt ist archiviert.',{exact:true}).waitFor();
+ }),'Archiv öffnen');
  if(errors.length)throw new Error('Fehler auf der Seite:\n'+errors.join('\n'));
  console.log('WALKTHROUGH=PASS ('+out+')');
 }finally{await browser.close();app.server.close();app.previewServer.close();rmSync(dir,{recursive:true,force:true});}
