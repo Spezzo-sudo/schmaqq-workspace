@@ -2,10 +2,10 @@ import {useEffect,useRef,useState} from 'react';
 import type {Studio} from './app';
 import {api,q,type Resource} from './api';
 import {serverFor} from './task';
-import {ErrorLine,Section} from './parts';
+import {ErrorLine,Field,Section} from './parts';
 import {START_WITHOUT_TESTS,setupRequest} from './model';
 
-// "Code" in the project info: one question, "Wo liegt euer Code?". Everything after it Studio does by itself:
+// "Code" in the project info: one form, "GitHub einrichten". Everything after it Studio does by itself:
 // it sets up the team's workplace on the server (recognises tests and preview, runs a trial) and only speaks up
 // when something needs a person. How changes go online and the personal ChatGPT sign-in are asked later, when needed.
 
@@ -22,7 +22,7 @@ async function waitJob(id:string){
 export function plainError(message:string){
  if(/Remote branch \S+ not found|repository is empty/i.test(message))return 'Das Repository ist noch ganz leer. Studio konnte die erste Datei nicht anlegen. Leg auf GitHub einmal eine README an und tippe dann „Nochmal“.';
  if(/Authentication failed|could not read Username|Permission denied|403/i.test(message))return 'Studio darf noch nicht auf diesen Code zugreifen. Prüfe auf GitHub, ob die Studio-App das Repository sehen darf.';
- if(/not found|Repository not found|404/i.test(message))return 'Diesen Code findet Studio auf GitHub nicht. Stimmt die Adresse?';
+ if(/not found|Repository not found|404/i.test(message))return 'Diesen Code findet Studio auf GitHub nicht. Stimmt der Link?';
  if(/timeout|timed out|ETIMEDOUT|nicht erreichbar/i.test(message))return 'GitHub oder der Server antwortet gerade nicht. Bitte gleich nochmal.';
  return message;
 }
@@ -37,7 +37,7 @@ export function CodeSection({studio,admin}:{studio:Studio;admin:boolean}){
  const {room,resources,me}=studio;
  const project=room!.project.id,meta=room!.meta;
  const [github,setGithub]=useState<Github|null>(null),[kinds,setKinds]=useState<Record<string,string>>({});
- const [choice,setChoice]=useState<'new'|'existing'|''>(''),[repo,setRepo]=useState(''),[error,setError]=useState(githubReturn);
+ const [repo,setRepo]=useState(''),[error,setError]=useState(githubReturn);
  const [phase,setPhase]=useState<'idle'|'working'|'no-tests'>('idle');
  useEffect(()=>{let alive=true;
   Promise.all([api<Github['app']>('/api/github-app'),api<Github['access']>('/api/github-app/access?project='+q(project))]).then(([app,access])=>{if(alive)setGithub({app,access});})
@@ -99,15 +99,14 @@ export function CodeSection({studio,admin}:{studio:Studio;admin:boolean}){
  // 1. No code yet: the one question.
  if(!meta.repository)return <Section title="Code">
   {!admin?<p className="ui-muted">Wo der Code liegt, legt der Projekt-Admin fest.</p>:<>
-   <p><b>Wo liegt euer Code?</b></p>
-   <div className="ui-choice" role="radiogroup" aria-label="Wo liegt euer Code?">
-    <button role="radio" aria-checked={choice==='new'} onClick={()=>setChoice('new')}><b>Neu anfangen</b><small>Noch kein Code. Das Team baut von Grund auf.</small></button>
-    <button role="radio" aria-checked={choice==='existing'} onClick={()=>setChoice('existing')}><b>Vorhandener Code</b><small>Der Code liegt schon auf GitHub.</small></button>
-   </div>
-   {choice&&<form className="ui-form" onSubmit={connect}>
-    {choice==='new'&&<p className="ui-muted">Leg auf GitHub ein <a href="https://github.com/new" target="_blank" rel="noreferrer">leeres Repository</a> an (privat, mit README) und trag die Adresse hier ein.</p>}
-    <div className="ui-inline"><input value={repo} onChange={e=>setRepo(e.target.value)} placeholder="https://github.com/name/projekt" aria-label="GitHub-Adresse"/><button className="ui-btn primary" disabled={!repo.trim()}>Verbinden</button></div>
-   </form>}
+   <p><b>GitHub einrichten</b></p>
+   <form className="ui-form" onSubmit={connect}>
+    <Field label="Link zu deinem Projekt auf GitHub" hint="Öffne dein Projekt auf GitHub und kopiere den Link aus der Browserzeile.">
+     <input type="url" value={repo} onChange={e=>setRepo(e.target.value)} placeholder="https://github.com/name/projekt" required/>
+    </Field>
+    <p className="ui-muted">Noch kein Projekt auf GitHub? <a href="https://github.com/new" target="_blank" rel="noreferrer">Auf GitHub anlegen</a>.</p>
+    <div className="ui-actions left"><button className="ui-btn primary" disabled={!repo.trim()}>Verbinden</button></div>
+   </form>
   </>}
   <ErrorLine text={error}/>
  </Section>;

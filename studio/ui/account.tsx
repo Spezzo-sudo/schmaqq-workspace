@@ -241,7 +241,7 @@ export function GuideScreen({studio}:{studio:Studio}){
    <p>Wer einen Agenten fragt, zahlt mit dem eigenen KI-Zugang, auch für weitergegebene Schritte.</p>
   </Section>
   <Section title="Damit das Team Code ändern kann">
-   <p>Einmal pro Projekt beantwortest du in der Projektinfo unter „Code“ die Frage „Wo liegt euer Code?“. Den Rest richtet Studio selbst ein. Das erste Mal, wenn Otto für dich programmieren soll, verbindest du dein ChatGPT, direkt in der Aufgabe.</p>
+   <p>Öffne einmal pro Projekt in der Projektinfo unter „Code“ den Bereich „GitHub einrichten“. Füge den Link zu deinem Projekt auf GitHub ein und tippe auf „Verbinden“. Studio richtet den Rest ein. Das erste Mal, wenn Otto für dich programmieren soll, verbindest du dein ChatGPT, direkt in der Aufgabe.</p>
   </Section>
   <ScrollHint/>
  </section>;

@@ -96,7 +96,7 @@ export function TaskScreen({studio}:{studio:Studio}){
  // Code tasks need the project's code connected first; until then that is the one next step.
  const unconnected=contract.kind==='code'&&!server&&!myCopy&&!result&&task.status!=='done';
  // The step text in the words of the company: the team changes code, people look and approve.
- const label=unconnected?(meta.repository?'Projektinfo':'Wo liegt euer Code?'):step.action==='claim'||step.action==='start'||step.action==='edit'?(coder?coder.name+' beauftragen':'Übernehmen')
+ const label=unconnected?(meta.repository?'Projektinfo':'GitHub einrichten'):step.action==='claim'||step.action==='start'||step.action==='edit'?(coder?coder.name+' beauftragen':'Übernehmen')
   :step.action==='submit'||step.action==='resubmit'?'Ansehen':step.action==='look'?'Ansehen':step.label;
 const text=unconnected?(meta.repository?'Der Arbeitsplatz des Teams wird noch eingerichtet.':`Damit ${coder?.name??'die Entwicklung'} Code ändern kann, braucht das Projekt zuerst seinen Code. Das ist einmal pro Projekt.`)
   :step.action==='claim'||step.action==='start'||step.action==='edit'
