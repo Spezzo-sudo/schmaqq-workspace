@@ -8,7 +8,9 @@ const forward=value=>value.split(path.sep).join('/');
 const inside=(parent,child)=>{const relative=path.relative(parent,child);return relative!==''&&!relative.startsWith('..'+path.sep)&&relative!=='..'&&!path.isAbsolute(relative);};
 const entries=['server','store','reviews','workspaces','admin','backup','private-path','ai-routes','oidc','connections','collaboration','change-overview','source-evidence','project-start','github-pr-status','auth-http','workspace-http','login-rate-limit','password-recovery','room-http',
  // The server worker runs the runner from the same verified release.
- 'runner'].map(name=>'selfhost/'+name+'.mjs');
+ 'runner'].map(name=>'selfhost/'+name+'.mjs')
+ // The agent service (Hermes adapter) is installed by the deploy from the same verified release.
+ .concat(['selfhost/hermes-agent-worker.mjs','selfhost/hermes-pilot-infer.py']);
 
 function imports(source,filename){
  const result=new Set(),file=ts.createSourceFile(filename,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS);

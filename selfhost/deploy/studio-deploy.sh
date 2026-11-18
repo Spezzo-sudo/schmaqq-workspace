@@ -127,6 +127,7 @@ prepare(){
 agents_update(){
  local HW=${STUDIO_AGENT_WORKER_DIR:-/opt/schmaqq-hermes-pilot/worker} f units u ok=1
  [ -d "$HW" ] || { note "AGENTS=nicht eingerichtet"; return 0; }
+ for f in hermes-agent-worker.mjs hermes-pilot-infer.py; do [ -f "$NEW/selfhost/$f" ] || { note "AGENTS=nicht im Paket, unverändert"; return 0; }; done
  if cmp -s "$NEW/selfhost/hermes-agent-worker.mjs" "$HW/hermes-agent-worker.mjs" && cmp -s "$NEW/selfhost/hermes-pilot-infer.py" "$HW/hermes-pilot-infer.py"; then
   note "AGENTS=unverändert"; return 0
  fi
