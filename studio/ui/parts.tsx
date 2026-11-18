@@ -89,12 +89,12 @@ export function Field({label,hint,children}:{label:string;hint?:string;children:
  return <label className="ui-field"><span>{label}</span>{children}{hint&&<small>{hint}</small>}</label>;
 }
 /** A header line for a screen: back, title (optionally tappable), and room for one action. */
-export function Bar({onBack,title,sub,onTitle,end}:{onBack?:()=>void;title:ReactNode;sub?:ReactNode;onTitle?:()=>void;end?:ReactNode}){
+export function Bar({onBack,title,sub,onTitle,end,projectHeading=false}:{onBack?:()=>void;title:ReactNode;sub?:ReactNode;onTitle?:()=>void;end?:ReactNode;projectHeading?:boolean}){
  const head=<><b>{title}</b>{sub&&<small>{sub}</small>}</>;
- return <header className="ui-bar">
+ return <header className={'ui-bar'+(projectHeading?' ui-bar-project':'')}>
   {onBack&&<button className="ui-icon" aria-label="Zurück" onClick={onBack}><Back/></button>}
   {onTitle?<button className="ui-bar-title" onClick={onTitle}>{head}</button>:<div className="ui-bar-title">{head}</div>}
-  {end}<Brand/>
+  {projectHeading&&end?<div className="ui-bar-project-info">{end}</div>:end}<Brand/>
  </header>;
 }
 export function Section({title,children,id,end}:{title:string;children:ReactNode;id?:string;end?:ReactNode}){

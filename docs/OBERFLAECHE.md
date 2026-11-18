@@ -42,7 +42,7 @@ Mein Konto · Projekt anlegen · Jemanden einladen (Inhaber) · Projekte und Arc
 Darunter der Zustand des KI-Zugangs (bereit / nicht erreichbar).
 
 ### Projekt
-- **Kopf**: Zurück, Projektname (tippen öffnet Projektinfo), darunter „2 Menschen · 3 Agenten“.
+- **Kopf**: Auf dem Handy stehen Zurück und das SCHMAQQ-Zeichen oben. Eine feine Linie trennt diese Leiste von der Zeile darunter. Dort stehen der vollständige Projektname (Tippen öffnet Projektinfo), die Zahl der Menschen und Agenten und der Info-Knopf. Lange Projektnamen brechen um.
 - **Team-Leiste**: rundes Bild je Agent mit Namen und Job darunter (Herr Grau: „Leitung“), danach die Menschen (du als „Du“). Tippen öffnet den Direktchat,
   grüner Punkt = arbeitet gerade, Zähler = ungelesen. Am Ende „+ Team erweitern“.
 - **Reiter**: Chat · Aufgaben.
