@@ -356,7 +356,7 @@ export function AgentProfileView({
       {job.lead&&<li className="yes">Stellt ein, wenn für etwas niemand da ist (höchstens 6 im Team, jede Rolle einmal)</li>}
       {!job.lead&&perms.manageTasks&&<li className="yes">Schlägt Aufgaben vor</li>}
       {job.code&&<li className="yes">Ändert Code in deiner Arbeitskopie einer Code-Aufgabe; du prüfst und gibst ab</li>}
-      {job.web&&<li className="yes">Liest öffentliche Webseiten (höchstens drei pro Antwort)</li>}
+      {job.web&&<li className="yes">Sucht im Web wie ChatGPT und liest Seiten; nennt die Quellen</li>}
       {job.review&&<li className="yes">Liest eingereichte Änderungen und gibt Rückmeldung</li>}
      </ul>
      <strong>Nicht sein Job</strong>
