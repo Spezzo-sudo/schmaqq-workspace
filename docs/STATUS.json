@@ -1,4 +1,15 @@
 {
+  "compact_project_chat_20261119": {
+    "summary": "Kompakte Team-Leiste auf dem Handy mit sichtbaren Bildern und Arbeitsstatus. Namen, Jobs und Team erweitern lassen sich aufklappen.",
+    "verification": "Browser-Rundgang misst den zusätzlichen Platz und prüft den Arbeitspunkt, die Team-Aktionen und die Position im Chat beim Auf- und Zuklappen.",
+    "acceptance_remaining": "Brave auf einem echten Android-Gerät."
+  },
+  "readable_headings_20261119": {
+    "summary": "Gemeinsame Kopfzeile mit vollständigen Titeln unter der Wortmarke auf schmalen Bildschirmen. Namen und Titel können in Listen und Dialogen umbrechen.",
+    "photos": "Wenn ein Agentenbild fehlt, versucht Studio die andere Bildgröße und zeigt bei Bedarf Anfangsbuchstaben.",
+    "verification": "Browser-Rundgang bei 320, 390 und 1440 px mit Direktchats, langen Projektnamen und Aufgabentiteln sowie ausgefallenen Bilddateien.",
+    "acceptance_remaining": "Brave auf einem echten Android-Gerät."
+  },
   "account_and_orientation_20261118": {
     "summary": "Konto mit einzeln öffnenden Bereichen, Profilfotos, Originalwortmarke mit roter Welle und Start-Link sowie bedingtem Scroll-Pfeil.",
     "photo": "Eigenes Foto speichern oder entfernen. Abruf nur im berechtigten Projektteam, fürs eigene Konto oder durch den Inhaber.",

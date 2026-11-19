@@ -31,7 +31,7 @@ export function StartScreen({studio,compact=false}:{studio:Studio;compact?:boole
    {projects.map(p=>{const tasks=team.tasks.filter(t=>t.project===p.id&&t.status!=='done'),approve=tasks.filter(t=>taskState(t).tone==='approve').length;
     return <button key={p.id} className={'ui-row project'+(compact?'':' card')+(route.project===p.id?' current':'')} onClick={()=>go({page:'project',project:p.id})}>
     <span className="ui-tile" style={{background:tileColor(p.title)}}>{p.title.slice(0,2).toUpperCase()}</span>
-    <span className="ui-row-text"><b>{p.title}</b><small>{p.lastExcerpt||p.description||'Noch keine Nachricht'}</small>
+    <span className="ui-row-text"><b>{p.title}</b><small className="ui-row-excerpt">{p.lastExcerpt||p.description||'Noch keine Nachricht'}</small>
      {!compact&&<span className="ui-chips small">{tasks.length?<span className="ui-pill">{tasks.length} offen</span>:<span className="ui-pill quiet">keine offenen Aufgaben</span>}{approve>0&&<span className="ui-pill approve">{approve} zum Freigeben</span>}</span>}</span>
     <span className="ui-row-end">{p.lastMessage?<small>{when(p.lastMessage)}</small>:null}{(p.unread??0)>0&&<b className="ui-count">{p.unread}</b>}</span>
    </button>;})}

@@ -19,6 +19,8 @@ Die alte Oberfläche wurde nicht umgebaut, sondern gelöscht; der Test `studio-s
   später ein eigener PC als zweiter Ort dazukommen kann, ohne die Oberfläche umzubauen.
 
 - Das SCHMAQQ-Zeichen führt zu Start. Die Originalform liegt in `studio/ui/brand-paths.ts`. Beim Antippen breitet sich die rote Welle vom Berührungspunkt über das Originalzeichen aus, wenn Animationen erlaubt sind.
+- Wo es eine Zurück-Taste gibt, stehen auf dem Handy Zurück und SCHMAQQ Studio in der oberen Leiste. Unter einer feinen Linie stehen Titel, Zusatz und der passende Knopf oder das Bild. Lange Titel und Namen brechen in Listen, Fenstern und Köpfen um. Auf dem Desktop bleibt die Wortmarke links bei den Projekten.
+- Wenn ein Profilbild nicht lädt, zeigt Studio ein kleineres oder größeres vorhandenes Bild oder die Anfangsbuchstaben.
 - Beim Antippen von Knöpfen, Links und Feldern gibt es keinen blauen Browser-Kasten. Wer mit der Tastatur durch die Oberfläche geht, sieht am ausgewählten Element einen dunklen Rahmen.
 - In Projektinfo, Mein Konto und Anleitung zeigt „Weiter nach unten“ bei weiterem Inhalt den Weg nach unten. Beim Schreiben und am Seitenende ist der Pfeil weg.
 
@@ -43,9 +45,8 @@ Mein Konto · Projekt anlegen · Jemanden einladen (Inhaber) · Projekte und Arc
 Darunter der Zustand des KI-Zugangs (bereit / nicht erreichbar).
 
 ### Projekt
-- **Kopf**: Auf dem Handy stehen Zurück und das SCHMAQQ-Zeichen oben. Eine feine Linie trennt diese Leiste von der Zeile darunter. Dort stehen der vollständige Projektname (Tippen öffnet Projektinfo), die Zahl der Menschen und Agenten und der Info-Knopf. Lange Projektnamen brechen um.
-- **Team-Leiste**: rundes Bild je Agent mit Namen und Job darunter (Herr Grau: „Leitung“), danach die Menschen (du als „Du“). Tippen öffnet den Direktchat,
-  grüner Punkt = arbeitet gerade, Zähler = ungelesen. Am Ende „+ Team erweitern“.
+- **Kopf**: Vollständiger Projektname (Tippen öffnet Projektinfo) und Info-Knopf. Die Zahl der Menschen und Agenten steht bei aufgeklapptem Team unter dem Namen.
+- **Team-Leiste**: Auf dem Handy sind anfangs nur die runden Bilder zu sehen, zuerst die Agenten, dann die Menschen. Der Knopf „Team“ klappt Namen, Jobs und „Team erweitern“ auf und wieder zu. Weitere Bilder sind seitlich erreichbar. Auf dem Desktop sind die Namen durchgehend zu sehen. Tippen auf ein Bild öffnet den Direktchat, grüner Punkt = arbeitet gerade, Zähler = ungelesen.
 - **Reiter**: Chat · Aufgaben.
 - **Chat**: Nachrichten, Karten, Markierungen. Eingabe „Nachricht … (@Name holt einen Agenten)“.
   Ein Chat mit Nachrichten öffnet bei der neuesten Nachricht. Ein leerer Chat öffnet am Anfang der Begrüßung.

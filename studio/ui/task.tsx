@@ -105,12 +105,14 @@ const text=unconnected?(meta.repository?'Der Arbeitsplatz des Teams wird noch ei
   :step.action==='submit'||step.action==='resubmit'?'Es gibt eine Änderung. Schau sie an und gib sie frei.':step.text;
  return <section className="ui-screen task">
   <Bar onBack={close} title={task.title} sub={<><span className={'ui-dot '+state.tone}/>{state.label} · {agentOnTask(studio,task.id)??(task.assignee?person:'noch niemand')}</>}
-   end={<button className="ui-icon" aria-label="Mehr" onClick={()=>setMenu(m=>!m)}><More/></button>}/>
-  {menu&&<div className="ui-popover" onMouseLeave={()=>setMenu(false)}>
-   <button onClick={()=>{setMenu(false);setEditing(true);}}>Bearbeiten</button>
-   {task.status==='done'&&<button onClick={()=>{setMenu(false);act('reopen');}}>Wieder öffnen</button>}
-   {!desktop&&<button onClick={()=>go({task:'',info:true})}>Projektinfo</button>}
-  </div>}
+   end={<div className="ui-bar-menu">
+    <button className="ui-icon" aria-label="Mehr" aria-expanded={menu} onClick={()=>setMenu(m=>!m)}><More/></button>
+    {menu&&<div className="ui-popover" onMouseLeave={()=>setMenu(false)}>
+     <button onClick={()=>{setMenu(false);setEditing(true);}}>Bearbeiten</button>
+     {task.status==='done'&&<button onClick={()=>{setMenu(false);act('reopen');}}>Wieder öffnen</button>}
+     {!desktop&&<button onClick={()=>go({task:'',info:true})}>Projektinfo</button>}
+    </div>}
+   </div>}/>
   <details className="ui-about"><summary>Worum es geht</summary>
    {task.description&&<p>{task.description}</p>}{contract.criteria&&<p><b>Fertig, wenn:</b> {contract.criteria}</p>}
    <p className="ui-muted">{contract.kind==='code'?'Code-Aufgabe':'Sonstige Aufgabe'}</p>
