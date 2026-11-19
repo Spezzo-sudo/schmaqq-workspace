@@ -441,6 +441,11 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null,p
      const text=value.body.toLowerCase();
      const mentioned=agentsFor(db,value.project).filter(a=>a.active!==false&&text.includes('@'+a.name.toLowerCase())).sort((a,b)=>b.name.length-a.name.length)[0];
      if(mentioned)value.recipient=mentioned.id;
+     // An answer to an agent's message goes to that agent, without "@".
+     else if(value.replyTo){
+      const replied=readMeta(db,key('message',value.replyTo));
+      if(replied?.senderAgent&&agentsFor(db,value.project).some(a=>a.id===replied.senderAgent&&a.active!==false))value.recipient=replied.senderAgent;
+     }
     }
     if(value.recipient){
      const targetMember=db.prepare('SELECT id,role FROM members WHERE id=?').get(value.recipient);

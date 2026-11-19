@@ -52,6 +52,7 @@ Darunter der Zustand des KI-Zugangs (bereit / nicht erreichbar).
   Ein Chat mit Nachrichten öffnet bei der neuesten Nachricht. Ein leerer Chat öffnet am Anfang der Begrüßung.
   Herr Grau stellt sich im leeren Projektchat vor: „Ich bin Herr Grau, eure Projektleitung. Sagt mir, was ihr erreichen wollt:
   Ich mache einen Plan, verteile die Arbeit im Team und stelle ein, wen wir noch brauchen.“ Knopf „@Herr Grau“.
+- **Antworten**: Unter jeder Nachricht eines Agenten im Projektchat und in der Aufgabe steht „Antworten“. Über der Eingabe steht dann „Antwort an <Name>“ (mit Schließen); der Agent antwortet, ohne dass @ nötig ist. Zeilen von Aufgaben im Projektchat haben das nicht, dort öffnet man die Aufgabe.
 - **Lange drücken** auf eine Nachricht: Markieren → „Agent fragen“; Kopieren.
 - **Aufgaben**: alle Karten als Liste in drei Gruppen: Bei dir · Läuft · Erledigt. Knopf „+ Aufgabe“ (Titel, Fertig wenn, Art: Code oder Sonstiges).
 

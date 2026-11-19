@@ -29,7 +29,6 @@ a.ui-btn{text-decoration:none;color:var(--ink)}
 .ui-btn.danger{border-color:var(--fail);color:var(--fail)}
 .ui-link{color:var(--approve);font-size:14px;font-weight:700;padding:4px 0}.ui-link.danger{color:var(--fail)}.ui-link.center{display:block;margin:8px auto}
 .ui-icon{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%}
-.ui-icon:hover{background:var(--deep)}
 .ui-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}.ui-actions.left{justify-content:flex-start}
 .ui-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:14px;background:var(--card)}
 .ui-chip.on{border-color:var(--ink);background:var(--acid)}
@@ -64,9 +63,8 @@ a.ui-btn{text-decoration:none;color:var(--ink)}
 .ui-me{display:inline-flex;align-items:center;gap:5px;min-height:44px;padding:5px 8px 5px 5px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);flex:none;user-select:none;-webkit-user-select:none}
 .ui-me[aria-expanded=true]>svg{transform:rotate(180deg)}
 .ui-me .ui-face.person{background:var(--deep);color:var(--ink)}
-.ui-me:hover{border-color:var(--muted);color:var(--ink)}
 .ui-brand{font-weight:900;letter-spacing:.02em}.ui-brand b{background:var(--acid);font:700 10px ui-monospace,monospace;letter-spacing:.2em;padding:3px 6px;margin-left:6px;vertical-align:middle}
-.ui-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--paper);border-bottom:1px solid var(--line);min-height:58px}
+.ui-bar{flex:none;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--paper);border-bottom:1px solid var(--line);min-height:58px}
 .ui-col-right .ui-bar{background:var(--card)}
 .ui-bar-heading{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
 .ui-bar-heading>*{flex:none}
@@ -89,7 +87,7 @@ a.ui-btn{text-decoration:none;color:var(--ink)}
 .ui-hello{border:1.5px dashed var(--line);border-radius:var(--r);padding:16px;margin:4px}
 .ui-hello p{margin:0 0 12px}
 .ui-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 8px;border-radius:12px}
-button.ui-row:hover,.ui-row.current{background:var(--deep)}
+.ui-row.current{background:var(--deep)}
 .ui-row.soft{background:var(--card);border:1px solid var(--line);margin-bottom:12px}
 .ui-row-text{flex:1;min-width:0;display:flex;flex-direction:column}
 .ui-row-text{overflow-wrap:anywhere}
@@ -111,7 +109,7 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .ui-sheet .ui-top{margin-inline:-16px;flex:none;background:var(--paper)}
 .ui-sheet-account{display:flex;flex-direction:column;gap:2px;padding:12px 0;border-bottom:1px solid var(--line);margin-bottom:8px;overflow-wrap:anywhere}
 .ui-sheet-account small{color:var(--muted)}
-.ui-sheet>button{text-align:left;padding:12px 8px;border-radius:10px;font-size:16px}.ui-sheet>button:hover{background:var(--deep)}
+.ui-sheet>button{text-align:left;padding:12px 8px;border-radius:10px;font-size:16px}
 .ui-sheet-foot{margin-top:auto;color:var(--muted);font-size:14px;display:flex;align-items:center}
 .ui-dialog{background:var(--card);width:100%;max-width:520px;max-height:92dvh;border-radius:20px 20px 0 0;display:flex;flex-direction:column}
 .ui-dialog.wide{max-width:900px}
@@ -136,7 +134,7 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .ui-choice button[aria-checked=true]{border-color:var(--ink);background:#f6ffd9}
 .ui-choice small{color:var(--muted)}
 .ui-popover{position:absolute;right:0;top:100%;z-index:20;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(17,18,37,.14);display:flex;flex-direction:column;min-width:180px}
-.ui-popover button{text-align:left;padding:12px 14px}.ui-popover button:hover{background:var(--deep)}
+.ui-popover button{text-align:left;padding:12px 14px}
 .ui-screen{position:relative}
 
 /* Project: team bar and tabs */
@@ -149,7 +147,6 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .ui-team-panel.compact .ui-team-member{justify-content:center;min-width:44px;min-height:44px;padding:0}
 .ui-team-panel.compact .ui-team-member>b,.ui-team-panel.compact .ui-team-member>small{display:none}
 .ui-team-member{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:72px;max-width:84px;padding:4px;border-radius:12px}
-.ui-team-member:hover{background:var(--deep)}
 .ui-team-member b{font-size:13px;overflow-wrap:anywhere;max-width:100%;line-height:1.2}
 .ui-team-member small{font-size:11px;color:var(--muted);overflow-wrap:anywhere;max-width:100%}
 .ui-tabs{display:flex;border-bottom:1px solid var(--line);flex:none}
@@ -196,6 +193,8 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .ui-suggest{display:flex;gap:6px;flex-wrap:wrap;padding:0 0 8px}
 .ui-suggest button{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:14px}
 .ui-suggest small{color:var(--muted)}
+.ui-quote{display:flex;align-items:center;gap:6px;margin-bottom:6px;padding:4px 4px 4px 10px;border-left:3px solid var(--approve);background:var(--deep);border-radius:8px;font-size:13px}
+.ui-quote span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ui-markbar{border-top:2px solid var(--approve);padding:10px;background:#eef3ff}
 .ui-markbar p{margin:0 0 6px;font-size:14px}
 .ui-markbar input{border-radius:20px}
@@ -263,7 +262,6 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .ui-greeting h1{font-size:28px;line-height:1.15;margin:6px 0 4px}
 .ui-greeting p{margin:0;color:var(--muted)}
 .ui-row.card{background:var(--card);border:1px solid var(--line);margin-bottom:10px;padding:12px;align-items:flex-start}
-.ui-row.card:hover{background:#fff}
 .ui-chips.small{margin:6px 0 0;gap:4px}
 .ui-pill{font-size:12px;border-radius:999px;padding:2px 8px;background:var(--deep);color:var(--ink)}
 .ui-pill.approve{background:#dde7fb;color:#24489a}.ui-pill.quiet{color:var(--muted)}
@@ -285,7 +283,6 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .wide .ui-bar>.ui-brand{display:none}
 .ui-account-nav{display:grid;gap:6px;padding:6px 16px 20px;width:min(100%,640px);margin-inline:auto}
 .ui-account-nav .ui-row{justify-content:space-between;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
-.ui-account-nav .ui-row:hover{background:var(--deep)}
 .ui-account-nav .ui-row span{color:var(--muted)}
 .account>.ui-section{width:min(100%,640px);margin-inline:auto}
 .ui-profile-card{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:10px 0}
@@ -299,3 +296,9 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .ui-scroll-hint button{background:var(--card);border:1px solid var(--line);box-shadow:0 2px 8px #11122520;color:var(--ink);font-size:22px;animation:ui-scroll-cue .65s ease-in-out 2}
 @keyframes ui-scroll-cue{50%{transform:translateY(3px)}}
 @media(prefers-reduced-motion:reduce){.ui-brand.is-playing g,.ui-scroll-hint button{animation:none}}
+/* Hover only where a pointer really hovers: on a touch screen it would stay lit after a tap. */
+@media(hover:hover){
+.ui-icon:hover,button.ui-row:hover,.ui-sheet>button:hover,.ui-popover button:hover,.ui-team-member:hover,.ui-account-nav .ui-row:hover{background:var(--deep)}
+.ui-me:hover{border-color:var(--muted);color:var(--ink)}
+.ui-row.card:hover{background:#fff}
+}

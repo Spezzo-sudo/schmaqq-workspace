@@ -466,6 +466,22 @@ test('agent ↔ agent: what the colleague delivers is the task\'s result; a pers
  assert.equal(done.status,'review','"Zum Freigeben": the project\'s approval rule decides who may close it');
 });
 
+test('reply: answering an agent\'s message asks that agent without "@"; answering a person does not',async t=>{
+ const f=await fixture(t),[alice]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Antwort',description:''},{cookie:alice.cookie})).data.project;
+ const lead=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.agents[0];
+ const q=randomUUID();await f.post('/api/room',{action:'message',id:q,project,body:'@Herr Grau Hallo'},{cookie:alice.cookie});
+ await f.post('/api/agent-runs',{project,agent:lead.id,message:q},{cookie:alice.cookie});
+ const j=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ const done=(await f.post('/api/agent-worker/finish',{run:j.run,lease:j.lease,status:'completed',output:'Guten Tag.'},w)).data;
+ const reply=await f.post('/api/room',{action:'message',id:randomUUID(),project,body:'Und weiter?',replyTo:done.message},{cookie:alice.cookie});
+ assert.equal(reply.data.ask,lead.id,'the reply goes to the agent whose message it answers');
+ const plain=await f.post('/api/room',{action:'message',id:randomUUID(),project,body:'Nur so',replyTo:q},{cookie:alice.cookie});
+ assert.equal(plain.data.ask??null,null,'a reply to a person asks nobody');
+ const none=await f.post('/api/room',{action:'message',id:randomUUID(),project,body:'Ohne Bezug'},{cookie:alice.cookie});
+ assert.equal(none.data.ask??null,null,'without reply or @ agents stay quiet');
+});
+
 test('scope areas: two projects on one repository know each other; the area is the admin\'s; changes outside are named',async t=>{
  const {outsideScope}=await import('../studio/ui/diff.ts');
  const f=await fixture(t),[alice,bob]=f.members;

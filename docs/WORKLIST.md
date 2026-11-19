@@ -14,8 +14,8 @@ Marco gibt frei, Deploy nach [OPERATIONS.md](OPERATIONS.md).
 1. ✅ (Branch) Antwort eines Kollegen auf eine Agenten-Aufgabe = Ergebnis der Aufgabe, Status „Zum Freigeben“; Herr Grau fasst nicht extra zusammen.
 2. ✅ (Branch) Im Projektchat steht pro Aufgabe nur **eine kurze Zeile** („Mika hat geliefert · Öffnen ›“), nie der ganze Text.
 3. ✅ (Branch) Herr Grau sagt nur zu, was Studio kann (kein „ich unterhalte mich mit Mika“, sondern „ich gebe Mika eine Aufgabe, tippe auf Annehmen“).
-4. Wer direkt auf die Nachricht eines Agenten antwortet, holt diesen Agenten (kein @ nötig).
-5. ✅ (Branch) „Team erweitern“ steht fest neben „Team“. Offen: doppelte Trennlinie im Agentenprofil (Bildschirmfoto nötig).
+4. ✅ (Branch) Wer auf die Nachricht eines Agenten antwortet, holt diesen Agenten (kein @ nötig).
+5. ✅ (Branch) „Team erweitern“ steht fest neben „Team“. Doppelte Linie und mitwandernde Kopfzeile: Ursache war die zusammengedrückte Kopfzeile, behoben.
 
 ## Danach: einmal den echten Ablauf durchspielen (Marco und Claude gemeinsam)
 

@@ -4,7 +4,7 @@ import {api,clock,draft,newId,q,type Agent,type Member,type Message,type Proposa
 import {Face,photoOf} from './avatar';
 import {RichText} from './rich-text';
 import {jobOf,introOf,JOBS,leadOf,messagesOf,runActive,runLine,teamOrder} from './model';
-import {ErrorLine,Mark,Send} from './parts';
+import {Close,ErrorLine,Mark,Send} from './parts';
 
 // One chat for three places: the project chat, a private chat with an agent, and the conversation of a task.
 export type ChatPlace={kind:'group'}|{kind:'agent';agent:Agent}|{kind:'member';member:Member}|{kind:'task';task:string;thread:Message[];onChanged:()=>void};
@@ -15,7 +15,7 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
  const canTalk=roles?.mine.some(r=>r!=='viewer')??false;
  const project=room!.project.id,agents=teamOrder(room!.agents),lead=leadOf(room!.agents);
  const [older,setOlder]=useState<Message[]>([]),[more,setMore]=useState(room!.more);
- const [seed,setSeed]=useState(''),[marking,setMarking]=useState<string[]|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[now,setNow]=useState(()=>Date.now());
+ const [seed,setSeed]=useState(''),[replyTo,setReplyTo]=useState<Message|null>(null),[marking,setMarking]=useState<string[]|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[now,setNow]=useState(()=>Date.now());
  const list=useMemo(()=>place.kind==='task'?place.thread:messagesOf([...older,...room!.messages],place.kind==='agent'?{agent:place.agent.id}:place.kind==='member'?{member:place.member.id}:{}),[older,room,place]);
  const ids=useMemo(()=>new Set(list.map(m=>m.id)),[list]);
  // Runs that answer a message of this place: working ones as a live line, failed ones once with "Nochmal".
@@ -57,9 +57,9 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
  async function send(body:string,recipient?:string){
   const id=newId();
   const payload={action:'message',id,project,body,...(place.kind==='agent'?{recipient:place.agent.id,direct:true}:place.kind==='member'?{recipient:place.member.id,direct:true}:{}),...(place.kind==='task'?{topicTask:place.task}:{}),
-   ...(marking&&recipient?{recipient,marked:marking}:{})};
+   ...(marking&&recipient?{recipient,marked:marking}:{}),...(replyTo&&!marking?{replyTo:replyTo.id}:{})};
   const sent=await api<{ask?:string|null}>('/api/room',payload);
-  follow.current=true;setMarking(null);
+  follow.current=true;setMarking(null);setReplyTo(null);
   if(sent.ask)await ask(id,sent.ask);
   if(place.kind==='task')place.onChanged();
   await studio.reload();
@@ -79,7 +79,7 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
    {empty&&place.kind==='member'&&<p className="ui-muted center">Nur ihr zwei lest hier.</p>}
    {list.map(m=><Bubble key={m.id} m={m} me={me.id} place={place} agent={agentOf(m.senderAgent)} to={m.recipientKind==='agent'?nameOf(m.recipient):''}
     photo={photoOf(room!.members.find(person=>person.id===m.author),project)} canTalk={canTalk} marking={marking} onMark={()=>setMarking(x=>x?(x.includes(m.id)?x.filter(i=>i!==m.id):[...x,m.id].slice(0,20)):[m.id])}
-    onOpenTask={task=>go({task})} busy={busy}
+    onOpenTask={task=>go({task})} busy={busy} onReply={canTalk&&(place.kind==='group'||place.kind==='task')&&agentOf(m.senderAgent)&&!m.inTask?()=>setReplyTo(m):undefined}
     onDecide={(p,decision)=>void act(()=>api('/api/agent-proposals/decide',{proposal:p.id,decision}))}
     onShare={()=>void act(()=>api('/api/room',{action:'share',project,id:newId(),message:m.id}))}
     nameOf={nameOf} taskTitle={id=>room!.tasks.find(t=>t.id===id)?.title??'Aufgabe'}/>)}
@@ -90,7 +90,7 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
   {chainRun?.chain&&chainRun.chain.used>1&&<ChainBar run={chainRun} onSteer={action=>void act(()=>api('/api/agent-chains',{run:chainRun.id,action}).then(()=>studio.reloadRuns()))}/>}
   <ErrorLine text={error}/>
   {canTalk&&(marking?<MarkBar count={marking.length} agents={agents} onCancel={()=>setMarking(null)} onSend={(agent,text)=>send(text,agent)}/>
-   :<Composer key={seed} seed={seed} place={place} agents={agents} draftKey={'ui:'+me.id+':'+project+':'+(view??'task:'+(place.kind==='task'?place.task:''))} onSend={body=>send(body)}
+   :<Composer key={seed} seed={seed} quote={replyTo?{name:nameOf(replyTo.senderAgent),text:glimpse(replyTo.body)}:null} onClearQuote={()=>setReplyTo(null)} place={place} agents={agents} draftKey={'ui:'+me.id+':'+project+':'+(view??'task:'+(place.kind==='task'?place.task:''))} onSend={body=>send(body)}
     placeholder={place.kind==='agent'?'Nachricht an '+place.agent.name+' …':place.kind==='member'?'Nachricht an '+place.member.name+' …':'Nachricht · @Name holt jemanden'} canMark={place.kind==='group'||place.kind==='task'} onMark={()=>setMarking([])}/>)}
  </div>;
 }
@@ -98,8 +98,8 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
 /** In the project chat a task shows one short line; the whole text stays in the task. */
 const glimpse=(text:string)=>{const one=text.replace(/\s+/g,' ').trim();return one.length>140?one.slice(0,137).trimEnd()+' …':one;};
 
-function Bubble({m,me,place,agent,to,photo,canTalk,marking,onMark,onOpenTask,onDecide,onShare,nameOf,taskTitle,busy}:{m:Message;me:string;place:ChatPlace;agent:Agent|null;to:string;
- photo?:string;canTalk:boolean;marking:string[]|null;onMark:()=>void;onOpenTask:(task:string)=>void;onDecide:(p:Proposal,d:'accept'|'reject')=>void;onShare:()=>void;nameOf:(id:string)=>string;taskTitle:(id:string)=>string;busy:boolean}){
+function Bubble({m,me,place,agent,to,photo,canTalk,marking,onMark,onOpenTask,onDecide,onShare,onReply,nameOf,taskTitle,busy}:{m:Message;me:string;place:ChatPlace;agent:Agent|null;to:string;
+ photo?:string;canTalk:boolean;marking:string[]|null;onMark:()=>void;onOpenTask:(task:string)=>void;onDecide:(p:Proposal,d:'accept'|'reject')=>void;onShare:()=>void;onReply?:()=>void;nameOf:(id:string)=>string;taskTitle:(id:string)=>string;busy:boolean}){
  const mine=!agent&&m.author===me&&m.kind!=='card';
  const selected=marking?.includes(m.id);
  if(m.kind==='card'&&m.card)return <div className="ui-card-line">
@@ -118,6 +118,7 @@ function Bubble({m,me,place,agent,to,photo,canTalk,marking,onMark,onOpenTask,onD
    <div className="ui-msg-text">{inTask?glimpse(m.body):agent?<RichText text={m.body}/>:m.body}</div>
    {m.proposalCard&&<ProposalCard p={m.proposalCard} busy={busy} onDecide={d=>onDecide(m.proposalCard!,d)} onOpenTask={onOpenTask} nameOf={nameOf}/>}
    {canTalk&&agent&&place.kind==='agent'&&!m.sharedBy&&<button className="ui-link" onClick={onShare}>Im Projekt teilen</button>}
+   {onReply&&!marking&&<button className="ui-link" onClick={onReply}>Antworten</button>}
    {m.sharedBy&&<small className="ui-muted">geteilt von {nameOf(m.sharedBy)}</small>}
    {mine&&<small className="ui-msg-time">{clock(m.created)}</small>}
   </div>
@@ -161,7 +162,7 @@ function ChainBar({run,onSteer}:{run:Run;onSteer:(a:'stop'|'continue')=>void}){
  </div>;
 }
 
-function Composer({seed,place,agents,draftKey,onSend,placeholder,canMark,onMark}:{seed:string;place:ChatPlace;agents:Agent[];draftKey:string;onSend:(body:string)=>Promise<void>;placeholder:string;canMark:boolean;onMark:()=>void}){
+function Composer({seed,place,agents,draftKey,onSend,placeholder,canMark,onMark,quote,onClearQuote}:{quote:{name:string;text:string}|null;onClearQuote:()=>void;seed:string;place:ChatPlace;agents:Agent[];draftKey:string;onSend:(body:string)=>Promise<void>;placeholder:string;canMark:boolean;onMark:()=>void}){
  const [text,setText]=useState(()=>seed||draft(draftKey)),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const box=useRef<HTMLTextAreaElement>(null);
  useLayoutEffect(()=>{const el=box.current;if(!el)return;el.style.height='auto';el.style.height=Math.min(el.scrollHeight,132)+'px';},[text]);
@@ -176,6 +177,7 @@ function Composer({seed,place,agents,draftKey,onSend,placeholder,canMark,onMark}
  return <div className="ui-composer">
   {suggestions.length>0&&<div className="ui-suggest">{suggestions.map(a=><button key={a.id} onMouseDown={e=>{e.preventDefault();pick(a);}}><Face agent={a} size={22}/>{a.name}<small>{jobOf(a).title}</small></button>)}</div>}
   <ErrorLine text={error}/>
+  {quote&&<div className="ui-quote"><span><b>Antwort an {quote.name}</b> {quote.text}</span><button className="ui-icon" aria-label="Antwort verwerfen" onClick={onClearQuote}><Close/></button></div>}
   <div className="ui-composer-row">
    {canMark&&<button className="ui-icon" aria-label="Nachrichten markieren und einen Agenten fragen" title="Markieren" onClick={onMark}><Mark/></button>}
    <textarea ref={box} rows={1} autoFocus={!!seed} value={text} placeholder={placeholder} aria-label="Nachricht" maxLength={8000}
