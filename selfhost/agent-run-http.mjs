@@ -7,6 +7,7 @@ import { agentRunStore, ensureAgentRunSchema } from './agent-run-store.mjs';
 import { ensureChatSchema, inheritScope, privateScope } from './chat-scope.mjs';
 import { codeRunBlocker, queueAgentCodeRun } from './agent-code.mjs';
 import { readWebPage } from './web-read.mjs';
+import { latestGeneralResult, storeMetadata, taskContract } from './team-model.mjs';
 import { canLead, canResearch, canReview, HIRABLE, jobOf, TEAM_LIMIT } from './agent-roles.mjs';
 
 // Agent runs: a person asks an agent of the project, and the worker bound to THAT person produces the
@@ -94,7 +95,9 @@ const BASE_TOOLS = Object.freeze({
       + 'prüfbarem Ergebnis und „who“ als Name eines vorhandenen Teammitglieds oder „Mensch“. Keine Aufgabe ohne '
       + 'eigenes Ergebnis, keine Abstimmungs- oder Sammelaufgaben. „hire“ nur, wenn eine Aufgabe sonst niemand im '
       + 'Team sinnvoll übernehmen kann, höchstens zwei Rollen mit je einem Satz Begründung. Schreibe danach höchstens '
-      + 'zwei Sätze zur Reihenfolge; der Plan steht als Karte unter deiner Antwort und die Person entscheidet dort.',
+      + 'zwei Sätze zur Reihenfolge; der Plan steht als Karte unter deiner Antwort und die Person entscheidet dort. '
+      + 'Versprich nichts, was erst nach der Annahme passiert: Du sprichst nicht selbst mit Kollegen und fasst ihre Ergebnisse nicht später zusammen. '
+      + 'Sage nur, wer welche Aufgabe bekommt und dass die Person den Vorschlag annehmen muss.',
     args: z.object({
       goal: z.string().trim().min(1).max(200),
       tasks: z.array(z.object({
@@ -780,6 +783,29 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
     return { ok: true, stopped: true };
   }
 
+  /**
+   * A colleague (not the lead) answers a task he was handed by an agent: that answer is the task's result, kept the
+   * same way as a result a person files ("Ergebnis festhalten"). The person then sees "Fertig – bitte abschliessen".
+   * Code tasks have their own path (code run, review); nothing changes for them.
+   */
+  function holdResult(run, agent, owner, topic, output, messageId, now) {
+    if (!agent || agent.lead) return;
+    const handed = metaGet('room:v1:message:' + run.source_message);
+    if (!handed?.senderAgent) return; // a person's own question in the task is not a delivered result
+    const task = db.prepare('SELECT * FROM tasks WHERE id=?').get(topic);
+    if (!task || task.status === 'done') return;
+    const contract = taskContract(db, task);
+    if (contract.kind === 'code' || contract.cancelled) return;
+    const previous = latestGeneralResult(db, task);
+    if (previous) storeMetadata(db, 'team:v1:result-history:' + previous.id, { ...previous, task: task.id });
+    storeMetadata(db, 'team:v1:result:' + task.id, {
+      id: messageId, task: task.id, body: output.slice(0, 12000), owner, created: now, contractRevision: contract.revision,
+      contractSnapshot: { title: task.title, description: task.description, criteria: contract.criteria },
+      state: contract.requiresReview ? 'pending' : 'accepted', votes: []
+    });
+    db.prepare('UPDATE tasks SET assignee=COALESCE(assignee,?),status=? WHERE id=?').run(owner, contract.requiresReview ? 'review' : 'doing', task.id);
+  }
+
   // ---- The worker reports the end of a run ------------------------------------------------------------
   function finish(owner, request, now) {
     const run = ownRun(request.run, owner);
@@ -817,6 +843,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
         ...(published ? { proposal: published.id } : {})
       };
       db.prepare('INSERT INTO workspace_meta(key,value) VALUES(?,?)').run('room:v1:message:' + messageId, JSON.stringify(meta));
+      if (topic) holdResult(run, agent, owner, topic, request.output, messageId, now);
     }
 
     const status = cancelled ? 'cancelled' : success ? 'completed' : 'failed';

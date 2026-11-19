@@ -48,8 +48,8 @@ export function ProjectScreen({studio}:{studio:Studio}){
      <Face name={m.name} photo={photoOf(m,room.project.id)} size={photoSize}/><b>Du</b><small>{m.role==='owner'?'Inhaber':'Mensch'}</small></div>
      :<button key={m.id} className="ui-team-member" aria-label={teamLabel(m.name,'member:'+m.id)} onClick={()=>go({chat:'member:'+m.id})}>
       <Face name={m.name} photo={photoOf(m,room.project.id)} size={photoSize} badge={unread('member:'+m.id)}/><b>{m.name.split(' ')[0]}</b><small>Mensch</small></button>)}
-    {teamExpanded&&<TeamExpand key={room.project.id} studio={studio} inStrip/>}
    </nav>
+   {teamExpanded&&<div className="ui-team-add"><TeamExpand key={room.project.id} studio={studio} inStrip/></div>}
    {!desktop&&<button className="ui-team-toggle" type="button" aria-controls={teamId} aria-expanded={teamExpanded}
     onClick={()=>setExpandedProject(teamExpanded?'':room.project.id)}>Team
     <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
