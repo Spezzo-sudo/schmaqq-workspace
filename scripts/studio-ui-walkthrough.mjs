@@ -25,11 +25,14 @@ await new Promise(r=>app.server.listen(4466,'127.0.0.1',r));await new Promise(r=
 const host='http://127.0.0.1:4466',errors=[];
 const post=async(route,body,token)=>{const r=await fetch(host+route,{method:'POST',headers:{Origin:host,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{Cookie:'studio_session='+session})},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(route+': '+d.error);return d;};
 const browser=await chromium.launch({...(process.env.CHROME?{executablePath:process.env.CHROME}:{}),args:['--no-sandbox']});
-async function screen(name,url,width,act=async()=>{}){
- const ctx=await browser.newContext({viewport:{width,height:width>1000?900:844}});
+async function screen(name,url,width,act=async()=>{},options={}){
+ const ctx=await browser.newContext({viewport:{width,height:width>1000?900:844},...options});
  await ctx.addCookies([{name:'studio_session',value:session,url:host}]);
  const page=await ctx.newPage();page.on('pageerror',e=>errors.push(name+': '+e.message));
  await page.goto(host+url);await page.waitForTimeout(1200);await act(page);await page.waitForTimeout(800);
+ const tapHighlight=await page.locator('button,a,input,textarea,select,summary,[role=button],[tabindex]').evaluateAll(elements=>
+  elements.find(el=>getComputedStyle(el).webkitTapHighlightColor!=='rgba(0, 0, 0, 0)')?.outerHTML.split('>')[0]);
+ if(tapHighlight)throw new Error(name+' hat noch eine Browser-Markierung beim Tippen: '+tapHighlight);
  await page.screenshot({path:path.join(out,name+'.png')});const text=await page.locator('body').innerText();await ctx.close();return text;
 }
 const expect=(text,what)=>{if(!text.includes(what))throw new Error('Nicht gefunden: '+what);};
@@ -40,7 +43,20 @@ try{
   if(await page.getByRole('checkbox',{name:'Lena Weber'}).isChecked())throw new Error('Studio-Konto war vorausgewählt.');
  }),'Wer ist dabei?');
  const project=(await post('/api/room',{action:'create',id:randomUUID(),title:'Café Sonne',description:'Eine Website'})).project;
- expect(await screen('02-project','/?p='+project,390),'Ich bin Herr Grau, eure Projektleitung');
+ expect(await screen('02-project','/?p='+project,390,async p=>{
+  const stream=p.locator('.ui-stream'),portrait=stream.locator('.ui-intro .ui-face');
+  const [chat,face]=await Promise.all([stream.boundingBox(),portrait.boundingBox()]);
+  if(!chat||!face||face.y<chat.y||face.y+face.height>chat.y+chat.height||
+     await stream.evaluate(el=>el.scrollTop)!==0)throw new Error('Begrüßung im leeren Chat ist beim Öffnen abgeschnitten.');
+  const tab=p.getByRole('tab',{name:'Chat',exact:true});
+  await tab.tap();
+  if(await tab.evaluate(el=>el.matches(':focus-visible')))throw new Error('Antippen zeigt den Tastaturrahmen.');
+  await p.keyboard.press('Tab');
+  await tab.focus();
+  if(await tab.evaluate(el=>getComputedStyle(el).outlineColor)!=='rgb(17, 18, 37)'||
+     await tab.evaluate(el=>getComputedStyle(el).outlineStyle)!=='solid')throw new Error('Sichtbarer Tastaturrahmen fehlt.');
+  await tab.blur();
+ },{viewport:{width:390,height:620},isMobile:true,hasTouch:true}),'Ich bin Herr Grau, eure Projektleitung');
  expect(await screen('03-hire','/?p='+project,390,async p=>{await p.getByRole('button',{name:'Team erweitern',exact:true}).click();await p.getByRole('button',{name:'Agent einstellen',exact:true}).click();}),'Kundendienst');
  for(const [name,role,face] of [['Otto','developer','otto'],['Frau Kern','reviewer','frau-kern']])
   await post('/api/room',{action:'agent',id:randomUUID(),project,name,role,avatarPresetId:face,model:'x',permissions:{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false}});
@@ -52,7 +68,10 @@ try{
  await post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool:'plan.propose',args:{goal:'Website für das Café',tasks:[
   {title:'Startseite mit Öffnungszeiten',done_when:'Öffnungszeiten stehen oben.',kind:'code',who:'Otto'},{title:'Texte liefern',done_when:'Zwei Sätze liegen vor.',kind:'general',who:'Mensch'}],hire:[]}},worker);
  await post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'Gerne, hier ist ein Plan.'},worker);
- expect(await screen('04-plan','/?p='+project,390),'Plan annehmen');
+ expect(await screen('04-plan','/?p='+project,390,async p=>{
+  const bottom=await p.locator('.ui-stream').evaluate(el=>el.scrollHeight-el.clientHeight-el.scrollTop);
+  if(bottom>1)throw new Error('Chat öffnet nicht bei der neuesten Nachricht.');
+ }),'Plan annehmen');
  const accepted=await screen('05-accepted','/?p='+project,390,p=>p.getByText('Plan annehmen').click());
  expect(accepted,'@Otto bitte übernimm: Startseite mit Öffnungszeiten');expect(accepted,'Otto');
  expect(await screen('06-tasks','/?p='+project+'&tab=tasks',390),'Startseite mit Öffnungszeiten');

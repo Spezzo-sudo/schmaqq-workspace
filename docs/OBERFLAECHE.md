@@ -19,6 +19,7 @@ Die alte Oberfläche wurde nicht umgebaut, sondern gelöscht; der Test `studio-s
   später ein eigener PC als zweiter Ort dazukommen kann, ohne die Oberfläche umzubauen.
 
 - Das SCHMAQQ-Zeichen führt zu Start. Die Originalform liegt in `studio/ui/brand-paths.ts`. Beim Antippen breitet sich die rote Welle vom Berührungspunkt über das Originalzeichen aus, wenn Animationen erlaubt sind.
+- Beim Antippen von Knöpfen, Links und Feldern gibt es keinen blauen Browser-Kasten. Wer mit der Tastatur durch die Oberfläche geht, sieht am ausgewählten Element einen dunklen Rahmen.
 - In Projektinfo, Mein Konto und Anleitung zeigt „Weiter nach unten“ bei weiterem Inhalt den Weg nach unten. Beim Schreiben und am Seitenende ist der Pfeil weg.
 
 ## Bildschirme
@@ -47,7 +48,8 @@ Darunter der Zustand des KI-Zugangs (bereit / nicht erreichbar).
   grüner Punkt = arbeitet gerade, Zähler = ungelesen. Am Ende „+ Team erweitern“.
 - **Reiter**: Chat · Aufgaben.
 - **Chat**: Nachrichten, Karten, Markierungen. Eingabe „Nachricht … (@Name holt einen Agenten)“.
-  Leerer Chat: Herr Grau stellt sich vor: „Ich bin Herr Grau, eure Projektleitung. Sagt mir, was ihr erreichen wollt:
+  Ein Chat mit Nachrichten öffnet bei der neuesten Nachricht. Ein leerer Chat öffnet am Anfang der Begrüßung.
+  Herr Grau stellt sich im leeren Projektchat vor: „Ich bin Herr Grau, eure Projektleitung. Sagt mir, was ihr erreichen wollt:
   Ich mache einen Plan, verteile die Arbeit im Team und stelle ein, wen wir noch brauchen.“ Knopf „@Herr Grau“.
 - **Lange drücken** auf eine Nachricht: Markieren → „Agent fragen“; Kopieren.
 - **Aufgaben**: alle Karten als Liste in drei Gruppen: Bei dir · Läuft · Erledigt. Knopf „+ Aufgabe“ (Titel, Fertig wenn, Art: Code oder Sonstiges).

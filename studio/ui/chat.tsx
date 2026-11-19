@@ -25,9 +25,17 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
  const anyWorking=placeRuns.some(runActive);
  useEffect(()=>{if(!anyWorking)return;const t=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(t);},[anyWorking]);
 
- // Stay at the newest message unless the person scrolled up to read.
+ const empty=list.length===0;
  const stream=useRef<HTMLDivElement>(null),follow=useRef(true);
- useLayoutEffect(()=>{const el=stream.current;if(el&&follow.current)el.scrollTop=el.scrollHeight;},[list.length,placeRuns.length,place.kind]);
+ useLayoutEffect(()=>{
+  const el=stream.current;if(!el)return;
+  if(empty){
+   el.scrollTop=0;
+   follow.current=true;
+  }else if(follow.current){
+   el.scrollTop=el.scrollHeight;
+  }
+ },[empty,list.length,placeRuns.length,place.kind]);
  // Reading: only while this chat is on screen.
  const view=place.kind==='agent'?'agent:'+place.agent.id:place.kind==='member'?'member:'+place.member.id:place.kind==='group'?'all':null,last=list.at(-1)?.id;
  useEffect(()=>{if(!view||document.hidden||!last)return;void api('/api/room',{action:'read',project,view,messageId:last}).catch(()=>{});},[view,last,project]);
@@ -51,10 +59,9 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
 
  const nameOf=(id:string|null|undefined)=>agents.find(a=>a.id===id)?.name??room!.members.find(m=>m.id===id)?.name??'Jemand';
  const agentOf=(id:string|null|undefined)=>(room!.agents??[]).find(a=>a.id===id)??null;
- const empty=list.length===0;
  const greeter=place.kind==='agent'?place.agent:place.kind==='group'?lead:null;
  return <div className="ui-chat">
-  <div className="ui-stream" ref={stream} onScroll={e=>{const el=e.currentTarget;follow.current=el.scrollHeight-el.scrollTop-el.clientHeight<80;}}>
+  <div className="ui-stream" ref={stream} onScroll={e=>{const el=e.currentTarget;follow.current=empty||el.scrollHeight-el.scrollTop-el.clientHeight<80;}}>
    {more&&place.kind!=='task'&&!empty&&<button className="ui-link center" disabled={busy} onClick={()=>void loadOlder()}>Ältere Nachrichten</button>}
    {empty&&greeter&&<div className="ui-intro"><Face agent={greeter} size={72}/><p>{introOf(greeter)}</p>
     {place.kind==='group'&&<>{canTalk&&<button className="ui-chip on" onClick={()=>setSeed('@'+greeter.name+' ')}>@{greeter.name} schreiben</button>}<p className="ui-muted">Alle im Projekt lesen hier mit. Agenten antworten nur, wenn ihr sie mit @Name holt.</p></>}</div>}
