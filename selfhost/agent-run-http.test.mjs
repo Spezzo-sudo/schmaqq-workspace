@@ -438,6 +438,34 @@ test('agent ↔ agent: only in a task, one level, counted, stoppable, and paid b
  assert.equal((await f.post('/api/agent-chains',{run:a.run,action:'continue'},{cookie:alice.cookie})).data.limit,7,'"Weitermachen?" opens another round');
 });
 
+test('agent ↔ agent: what the colleague delivers is the task\'s result; a person\'s own question is not',async t=>{
+ const f=await fixture(t),[alice]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Ergebnis',description:''},{cookie:alice.cookie})).data.project;
+ const lead=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.agents[0];
+ const perms={readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:true};
+ const mara=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Mara',role:'frontend',avatarPresetId:'mara',model:'x',permissions:perms},{cookie:alice.cookie})).data.agentId;
+ const task=(await f.post('/api/room',{action:'task',id:randomUUID(),project,title:'Farben',description:'',kind:'general'},{cookie:alice.cookie})).data.task;
+ const view=async()=>(await f.get('/api/team',{cookie:alice.cookie})).data.tasks.find(x=>x.id===task);
+ // A person asks Mara in the task: her answer is just an answer.
+ const own=randomUUID();await f.post('/api/room',{action:'message',id:own,project,topicTask:task,body:'@Mara magst du Blau?'},{cookie:alice.cookie});
+ await f.post('/api/agent-runs',{project,agent:mara,message:own},{cookie:alice.cookie});
+ const j=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ await f.post('/api/agent-worker/finish',{run:j.run,lease:j.lease,status:'completed',output:'Ja.'},w);
+ assert.equal((await view()).completion.ready,false,'no result from a plain answer');
+ // The lead hands the task to Mara: her delivery is the result and the task waits for approval.
+ const q=randomUUID();await f.post('/api/room',{action:'message',id:q,project,topicTask:task,body:'@Herr Grau welche Farbe?'},{cookie:alice.cookie});
+ await f.post('/api/agent-runs',{project,agent:lead.id,message:q},{cookie:alice.cookie});
+ const a=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ await f.post('/api/agent-worker/tool',{run:a.run,lease:a.lease,callId:randomUUID().slice(0,16),tool:'agent.ask',args:{agent:'mara',question:'Welche Farbe?'}},w);
+ await f.post('/api/agent-worker/finish',{run:a.run,lease:a.lease,status:'completed',output:'Ich frage Mara.'},w);
+ assert.equal((await view()).completion.ready,false,'the lead\'s own answer is no result');
+ const b=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ await f.post('/api/agent-worker/finish',{run:b.run,lease:b.lease,status:'completed',output:'Ein ruhiges Blau.'},w);
+ const done=await view();
+ assert.equal(done.completion.result.body,'Ein ruhiges Blau.','her delivery is the result');assert.equal(done.assignee,alice.id);
+ assert.equal(done.status,'review','"Zum Freigeben": the project\'s approval rule decides who may close it');
+});
+
 test('scope areas: two projects on one repository know each other; the area is the admin\'s; changes outside are named',async t=>{
  const {outsideScope}=await import('../studio/ui/diff.ts');
  const f=await fixture(t),[alice,bob]=f.members;

@@ -11,11 +11,11 @@ Marco gibt frei, Deploy nach [OPERATIONS.md](OPERATIONS.md).
 ## In Arbeit
 
 **Die Kette Herr Grau → Kollege schließen** (Befund 19.11.2026, Projekt „Wo stehen wir“):
-1. Wenn ein Kollege in einer Aufgabe fertig ist, meldet sich Herr Grau, fasst zusammen und die Aufgabe springt auf „Zum Freigeben“.
-2. Im Projektchat steht pro Aufgabe nur **eine kurze Zeile** („Mika hat geliefert · Öffnen ›“), nie der ganze Text.
-3. Herr Grau sagt nur zu, was Studio kann (kein „ich unterhalte mich mit Mika“, sondern „ich gebe Mika eine Aufgabe, tippe auf Annehmen“).
+1. ✅ (Branch) Antwort eines Kollegen auf eine Agenten-Aufgabe = Ergebnis der Aufgabe, Status „Zum Freigeben“; Herr Grau fasst nicht extra zusammen.
+2. ✅ (Branch) Im Projektchat steht pro Aufgabe nur **eine kurze Zeile** („Mika hat geliefert · Öffnen ›“), nie der ganze Text.
+3. ✅ (Branch) Herr Grau sagt nur zu, was Studio kann (kein „ich unterhalte mich mit Mika“, sondern „ich gebe Mika eine Aufgabe, tippe auf Annehmen“).
 4. Wer direkt auf die Nachricht eines Agenten antwortet, holt diesen Agenten (kein @ nötig).
-5. „Team erweitern“ steht fest neben „Team“ und wandert nicht aus dem Bild; keine doppelte Trennlinie im Agentenprofil.
+5. ✅ (Branch) „Team erweitern“ steht fest neben „Team“. Offen: doppelte Trennlinie im Agentenprofil (Bildschirmfoto nötig).
 
 ## Danach: einmal den echten Ablauf durchspielen (Marco und Claude gemeinsam)
 

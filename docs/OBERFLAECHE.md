@@ -75,6 +75,7 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
     dein ChatGPT. Gilt danach für alle Agenten.“ Knopf „Mit ChatGPT verbinden“, direkt im Kasten.
   - Sonstige Aufgabe: „Erledigt“.
 - Darunter **das Gespräch** inklusive Agent ↔ Agent, Kette mit Zähler, Stopp, Weitermachen.
+  Antwortet ein Kollege auf eine Aufgabe, die ihm ein Agent gegeben hat, ist seine Antwort das Ergebnis der Aufgabe; sie steht dann auf „Zum Freigeben“ bzw. „Fertig – bitte abschliessen“. Im Projektchat steht dazu nur eine kurze Zeile.
 - „Worum es geht“ (Beschreibung, Fertig wenn) eingeklappt oben.
 - ⋯ : Bearbeiten (Titel, Beschreibung, Fertig wenn), Wieder öffnen, Löschen (nur Ersteller/Admin).
 
