@@ -94,7 +94,9 @@ const BASE_TOOLS = Object.freeze({
       + 'prüfbarem Ergebnis und „who“ als Name eines vorhandenen Teammitglieds oder „Mensch“. Keine Aufgabe ohne '
       + 'eigenes Ergebnis, keine Abstimmungs- oder Sammelaufgaben. „hire“ nur, wenn eine Aufgabe sonst niemand im '
       + 'Team sinnvoll übernehmen kann, höchstens zwei Rollen mit je einem Satz Begründung. Schreibe danach höchstens '
-      + 'zwei Sätze zur Reihenfolge; der Plan steht als Karte unter deiner Antwort und die Person entscheidet dort.',
+      + 'zwei Sätze zur Reihenfolge; der Plan steht als Karte unter deiner Antwort und die Person entscheidet dort. '
+      + 'Versprich nichts, was erst nach der Annahme passiert: Du sprichst nicht selbst mit Kollegen und fasst ihre Ergebnisse nicht später zusammen. '
+      + 'Sage nur, wer welche Aufgabe bekommt und dass die Person den Vorschlag annehmen muss.',
     args: z.object({
       goal: z.string().trim().min(1).max(200),
       tasks: z.array(z.object({

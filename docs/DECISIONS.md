@@ -2,6 +2,13 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 19.11.2026 (Kette Herr Grau → Kollege, Aufräumen)
+- Im Projektchat steht pro Aufgabe nur **eine kurze Zeile** (höchstens etwa 140 Zeichen) mit „Öffnen ›“; der ganze Text steht in der Aufgabe.
+- „Team erweitern“ steht fest neben dem Knopf „Team“ und wandert nicht mit der wischbaren Bilderleiste.
+- Herr Grau sagt nur zu, was Studio kann: Er spricht nicht selbst mit Kollegen und fasst später nichts zusammen. Er nennt, wer welche Aufgabe bekommt; die Person nimmt an.
+- **Noch offen, erst nach Marcos Ok:** (a) Meldet ein Kollege sein Ergebnis in einer Aufgabe, springt sie auf „Zum Freigeben“ und Herr Grau fasst zusammen. (b) Wer direkt auf die Nachricht eines Agenten antwortet, holt diesen Agenten ohne @. Beides ändert Konzept Regel 1 und 4.
+- Arbeitsliste neu geschrieben, alte unter `docs/archive/WORKLIST-20261119.md`.
+
 ## 19.11.2026 (Mehr Platz im Projektchat)
 - Auf dem Handy zeigt die Team-Leiste zuerst kleine Bilder mit Arbeitsstatus. Namen, Jobs und Team erweitern lassen sich über „Team“ aufklappen. Chat und Aufgaben sind immer erreichbar.
 

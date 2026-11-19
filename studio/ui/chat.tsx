@@ -95,6 +95,9 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
  </div>;
 }
 
+/** In the project chat a task shows one short line; the whole text stays in the task. */
+const glimpse=(text:string)=>{const one=text.replace(/\s+/g,' ').trim();return one.length>140?one.slice(0,137).trimEnd()+' …':one;};
+
 function Bubble({m,me,place,agent,to,photo,canTalk,marking,onMark,onOpenTask,onDecide,onShare,nameOf,taskTitle,busy}:{m:Message;me:string;place:ChatPlace;agent:Agent|null;to:string;
  photo?:string;canTalk:boolean;marking:string[]|null;onMark:()=>void;onOpenTask:(task:string)=>void;onDecide:(p:Proposal,d:'accept'|'reject')=>void;onShare:()=>void;nameOf:(id:string)=>string;taskTitle:(id:string)=>string;busy:boolean}){
  const mine=!agent&&m.author===me&&m.kind!=='card';
@@ -112,7 +115,7 @@ function Bubble({m,me,place,agent,to,photo,canTalk,marking,onMark,onOpenTask,onD
    {!mine&&<div className="ui-msg-head"><b>{agent?agent.name:m.authorName??nameOf(m.author)}</b>{to&&<span> an {to}</span>}<small>{clock(m.created)}</small></div>}
    {m.markColor!=null&&<span className={'ui-mark c'+m.markColor}>{MARK[m.markColor]} markiert</span>}
    {inTask&&<button className="ui-task-ref" onClick={()=>onOpenTask(inTask)}>In „{taskTitle(inTask)}“ ›</button>}
-   <div className="ui-msg-text">{agent?<RichText text={m.body}/>:m.body}</div>
+   <div className="ui-msg-text">{inTask?glimpse(m.body):agent?<RichText text={m.body}/>:m.body}</div>
    {m.proposalCard&&<ProposalCard p={m.proposalCard} busy={busy} onDecide={d=>onDecide(m.proposalCard!,d)} onOpenTask={onOpenTask} nameOf={nameOf}/>}
    {canTalk&&agent&&place.kind==='agent'&&!m.sharedBy&&<button className="ui-link" onClick={onShare}>Im Projekt teilen</button>}
    {m.sharedBy&&<small className="ui-muted">geteilt von {nameOf(m.sharedBy)}</small>}

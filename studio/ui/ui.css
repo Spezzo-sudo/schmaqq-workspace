@@ -142,6 +142,7 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 /* Project: team bar and tabs */
 .ui-team-panel{display:flex;align-items:flex-start;border-bottom:1px solid var(--line);flex:none}
 .ui-team{display:flex;flex:1;min-width:0;gap:6px;overflow-x:auto;padding:10px 10px 6px;scrollbar-width:none}
+.ui-team-add{flex:none;display:flex;padding:10px 0 6px}
 .ui-team-toggle{display:flex;flex:none;align-items:center;justify-content:center;gap:4px;min-height:44px;padding:0 12px;color:var(--ink);font-size:13px;font-weight:700}
 .ui-team-toggle[aria-expanded=true] svg{transform:rotate(180deg)}
 .ui-team-panel.compact .ui-team{gap:0;padding:0 4px}
