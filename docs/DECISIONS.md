@@ -2,6 +2,9 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 19.11.2026 (Lesbare Kopfzeilen)
+- Auf dem Handy stehen Name oder Überschrift und der passende Knopf unter der Leiste mit Zurück und SCHMAQQ Studio. Lange Namen und Titel brechen um.
+
 ## 18.11.2026 (Passwort und Wortmarke)
 - Studio-Konten werden nur mit E-Mail eingeladen. Der Inhaber kann Konten einladen und entfernen. Ein neues Passwort setzt die Person selbst über den Link an ihre E-Mail-Adresse.
 - Die SCHMAQQ-Wortmarke verwendet das Originalzeichen und die rote Welle, die sich vom Berührungspunkt ausbreitet.

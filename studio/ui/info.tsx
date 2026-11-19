@@ -24,9 +24,11 @@ export function InfoScreen({studio}:{studio:Studio}){
   catch(e){setError((e as Error).message);}
  }
  return <section className="ui-screen info">
-  <Bar onBack={()=>go({info:false})} title="Projektinfo" end={admin?<button className="ui-icon" aria-label="Mehr" onClick={()=>setMenu(m=>!m)}><More/></button>:undefined}/>
-  {menu&&<div className="ui-popover"><button onClick={()=>{setMenu(false);setRenaming(true);}}>Umbenennen</button>
-   <button onClick={()=>{setMenu(false);if(confirm('„'+room.project.title+'“ archivieren? Unter „Projekte und Archiv“ lässt es sich wiederherstellen.'))void saveProject({archived:true});}}>Archivieren</button></div>}
+  <Bar onBack={()=>go({info:false})} title="Projektinfo" end={admin?<div className="ui-bar-menu">
+   <button className="ui-icon" aria-label="Mehr" aria-expanded={menu} onClick={()=>setMenu(m=>!m)}><More/></button>
+   {menu&&<div className="ui-popover"><button onClick={()=>{setMenu(false);setRenaming(true);}}>Umbenennen</button>
+    <button onClick={()=>{setMenu(false);if(confirm('„'+room.project.title+'“ archivieren? Unter „Projekte und Archiv“ lässt es sich wiederherstellen.'))void saveProject({archived:true});}}>Archivieren</button></div>}
+  </div>:undefined}/>
   <div className="ui-info-head"><span className="ui-tile big" style={{background:tileColor(room.project.title)}}>{room.project.title.slice(0,2).toUpperCase()}</span>
    <h2>{room.project.title}</h2>{room.project.description&&<p className="ui-muted">{room.project.description}</p>}</div>
   <ErrorLine text={error}/>

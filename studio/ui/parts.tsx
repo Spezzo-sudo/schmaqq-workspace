@@ -88,13 +88,16 @@ export function Dialog({title,onClose,children,wide=false}:{title:string;onClose
 export function Field({label,hint,children}:{label:string;hint?:string;children:ReactNode}){
  return <label className="ui-field"><span>{label}</span>{children}{hint&&<small>{hint}</small>}</label>;
 }
-/** A header line for a screen: back, title (optionally tappable), and room for one action. */
-export function Bar({onBack,title,sub,onTitle,end,projectHeading=false}:{onBack?:()=>void;title:ReactNode;sub?:ReactNode;onTitle?:()=>void;end?:ReactNode;projectHeading?:boolean}){
+/** A screen heading with room for a title, supporting text and one action. */
+export function Bar({onBack,title,sub,onTitle,end}:{onBack?:()=>void;title:ReactNode;sub?:ReactNode;onTitle?:()=>void;end?:ReactNode}){
  const head=<><b>{title}</b>{sub&&<small>{sub}</small>}</>;
- return <header className={'ui-bar'+(projectHeading?' ui-bar-project':'')}>
-  {onBack&&<button className="ui-icon" aria-label="Zurück" onClick={onBack}><Back/></button>}
-  {onTitle?<button className="ui-bar-title" onClick={onTitle}>{head}</button>:<div className="ui-bar-title">{head}</div>}
-  {projectHeading&&end?<div className="ui-bar-project-info">{end}</div>:end}<Brand/>
+ return <header className="ui-bar">
+  {onBack&&<button className="ui-icon ui-bar-back" aria-label="Zurück" onClick={onBack}><Back/></button>}
+  <Brand/>
+  <div className="ui-bar-heading">
+   {onTitle?<button className="ui-bar-title" onClick={onTitle}>{head}</button>:<div className="ui-bar-title">{head}</div>}
+   {end}
+  </div>
  </header>;
 }
 export function Section({title,children,id,end}:{title:string;children:ReactNode;id?:string;end?:ReactNode}){
