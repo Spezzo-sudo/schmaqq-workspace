@@ -111,7 +111,7 @@ ausgegraut („Otto macht das schon“), bei 6 im Team: „Das Team ist voll.“
 Alternative oben: „Lieber Herrn Grau fragen“ (öffnet seinen Direktchat).
 
 ### Agentenprofil
-Bild, Name, Job mit Satz „Was er tut“, Persönlichkeit (änderbar), „Privat schreiben“. Unter „Erweitert“ das KI-Modell (nur die freigeschalteten).
+Bild, Name, Job mit Satz „Was er tut“, Persönlichkeit (änderbar), „Privat schreiben“. Unter „Erweitert“ **Modell und Denkstufe** für das Gespräch und, bei Agenten die Code ändern, getrennt dafür „Beim Programmieren“ (leer = Standard). Das Modell wählt man aus der Liste oder tippt einen anderen Namen ein; die Denkstufen zeigen nur, was das gewählte Modell kann.
 „Bild ändern“. Admin: „Kündigen“ (Herr Grau nicht). Keine Rechte-Häkchen.
 
 ### Mein Konto
@@ -120,7 +120,7 @@ Bild, Name, Job mit Satz „Was er tut“, Persönlichkeit (änderbar), „Priva
 - **Sicherheit**: Passwort ändern und Abmelden.
 - **KI-Zugänge**: KI-Zugang für Gespräche und Recherche und „ChatGPT fürs Programmieren“. Fragst du einen Agenten, arbeitet er mit deinem Zugang. Für Programmierarbeit fragt Studio beim ersten Mal nach der Verbindung, falls sie noch fehlt.
 - **Deine Daten**: „Datenauszug herunterladen“ mit sichtbaren Projekten, Aufgaben, Dokumenten und bis zu 500 Nachrichten.
-- **Studio verwalten** (Inhaber): Team, „Entfernen“, offene Einladungen mit „Zurücknehmen“ und Vorschläge. Beim „Einladen“ sind unter „Für welche Projekte?“ die aktiven Projekte, die der Inhaber leitet, einzeln auswählbar. Ohne Auswahl ist es eine Einladung ins Studio. Der Link wird kopiert und direkt an die Person geschickt.
+- **Studio verwalten** (Inhaber): Abschnitt **KI-Modelle** (Liste, aus der die Agentenprofile wählen: Modell mit Anzeigename und Denkstufen hinzufügen, aus- und einschalten, entfernen; neue Modelle brauchen kein Update von Studio) und Team, „Entfernen“, offene Einladungen mit „Zurücknehmen“ und Vorschläge. Beim „Einladen“ sind unter „Für welche Projekte?“ die aktiven Projekte, die der Inhaber leitet, einzeln auswählbar. Ohne Auswahl ist es eine Einladung ins Studio. Der Link wird kopiert und direkt an die Person geschickt.
 
 ### Projekte und Archiv
 Aktive und archivierte Projekte, Wiederherstellen. Ein alter Link oder Browser-Zurück zeigt „Dieses Projekt ist archiviert“ mit „Archiv öffnen“.

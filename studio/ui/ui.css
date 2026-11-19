@@ -302,3 +302,6 @@ a.ui-btn{text-decoration:none;color:var(--ink)}
 .ui-me:hover{border-color:var(--muted);color:var(--ink)}
 .ui-row.card:hover{background:#fff}
 }
+.ui-model-pick{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.ui-model-pick:first-of-type{border-top:0;margin-top:0}
+.ui-model-pick h4{margin:0 0 6px;font-size:14px}

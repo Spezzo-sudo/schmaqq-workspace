@@ -1,3 +1,4 @@
+import {EFFORT_ID,MODEL_ID} from './model-catalog.mjs';
 import {randomUUID} from 'node:crypto';
 import {resolveDevice} from './placement.mjs';
 import {activeJobInCopy} from './job-lifecycle.mjs';
@@ -67,7 +68,9 @@ export function queueAgentCodeRun(db,{member,task,agent,run,instruction,now=Date
  const payload={worktree,prompt:codePrompt({task,contract,scope:project.scope??[],agent,instruction}),
   contractRevision:contract.revision,contractSnapshot:{title:task.title,description:task.description,criteria:contract.criteria},
   ...(project.repository?{expectedRepository:project.repository,expectedBase:project.base??'main'}:{}),
-  placement,agent:{id:agent.id,name:agent.name,run:run.id}};
+  placement,agent:{id:agent.id,name:agent.name,run:run.id},
+  // Otto's own model and thinking level (profile); empty means Codex's own default.
+  ...(agent.codeModel||agent.codeEffort?{codex:{...(MODEL_ID.test(agent.codeModel??'')?{model:agent.codeModel}:{}),...(EFFORT_ID.test(agent.codeEffort??'')?{effort:agent.codeEffort}:{})}}:{})};
  db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created) VALUES(?,?,?,?,?,?,?,?)').run(job,member.id,placed.device,task.project,'codex',JSON.stringify(payload),'queued',now+1);
  if(task.status==='review')db.prepare("UPDATE tasks SET status='doing' WHERE id=?").run(task.id);
  return {job,worktree,prepared:!copy,device:placed.name};
