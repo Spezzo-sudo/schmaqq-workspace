@@ -36,6 +36,16 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
    el.scrollTop=el.scrollHeight;
   }
  },[empty,list.length,placeRuns.length,place.kind]);
+ // The project team can expand above the chat without moving someone who is reading older messages.
+ useLayoutEffect(()=>{
+  const el=stream.current;
+  if(!el||empty||place.kind!=='group')return;
+  const observer=new ResizeObserver(()=>{
+   if(follow.current)el.scrollTop=el.scrollHeight;
+  });
+  observer.observe(el);
+  return ()=>observer.disconnect();
+ },[empty,place.kind]);
  // Reading: only while this chat is on screen.
  const view=place.kind==='agent'?'agent:'+place.agent.id:place.kind==='member'?'member:'+place.member.id:place.kind==='group'?'all':null,last=list.at(-1)?.id;
  useEffect(()=>{if(!view||document.hidden||!last)return;void api('/api/room',{action:'read',project,view,messageId:last}).catch(()=>{});},[view,last,project]);

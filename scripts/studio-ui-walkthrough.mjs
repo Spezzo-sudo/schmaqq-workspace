@@ -54,6 +54,14 @@ try{
   const [chat,face]=await Promise.all([stream.boundingBox(),portrait.boundingBox()]);
   if(!chat||!face||face.y<chat.y||face.y+face.height>chat.y+chat.height||
      await stream.evaluate(el=>el.scrollTop)!==0)throw new Error('Begrüßung im leeren Chat ist beim Öffnen abgeschnitten.');
+  const team=p.getByRole('button',{name:'Team',exact:true}),agent=p.getByRole('button',{name:/Herr Grau · Leitung/});
+  const compactHeight=await stream.evaluate(el=>el.clientHeight);
+  if(await team.getAttribute('aria-expanded')!=='false'||!await agent.locator('.ui-face').isVisible())throw new Error('Die Team-Leiste öffnet nicht kompakt mit sichtbarem Agenten.');
+  await team.tap();
+  await agent.getByText('Leitung',{exact:true}).waitFor();
+  if(compactHeight-await stream.evaluate(el=>el.clientHeight)<60)throw new Error('Die kompakte Leiste schafft zu wenig Platz.');
+  await team.tap();
+  await agent.getByText('Leitung',{exact:true}).waitFor({state:'hidden'});
   const tab=p.getByRole('tab',{name:'Chat',exact:true});
   await tab.tap();
   if(await tab.evaluate(el=>el.matches(':focus-visible')))throw new Error('Antippen zeigt den Tastaturrahmen.');
@@ -63,7 +71,7 @@ try{
      await tab.evaluate(el=>getComputedStyle(el).outlineStyle)!=='solid')throw new Error('Sichtbarer Tastaturrahmen fehlt.');
   await tab.blur();
  },{viewport:{width:390,height:620},isMobile:true,hasTouch:true}),'Ich bin Herr Grau, eure Projektleitung');
- expect(await screen('03-hire','/?p='+project,390,async p=>{await p.getByRole('button',{name:'Team erweitern',exact:true}).click();await p.getByRole('button',{name:'Agent einstellen',exact:true}).click();}),'Kundendienst');
+ expect(await screen('03-hire','/?p='+project,390,async p=>{await p.getByRole('button',{name:'Team',exact:true}).click();await p.getByRole('button',{name:'Team erweitern',exact:true}).click();await p.getByRole('button',{name:'Agent einstellen',exact:true}).click();}),'Kundendienst');
  for(const [name,role,face] of [['Otto','developer','otto'],['Frau Kern','reviewer','frau-kern']])
   await post('/api/room',{action:'agent',id:randomUUID(),project,name,role,avatarPresetId:face,model:'x',permissions:{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false}});
  const room=await (await fetch(host+'/api/room?project='+project,{headers:{Cookie:'studio_session='+session}})).json(),lead=room.agents.find(a=>a.lead);
@@ -93,7 +101,21 @@ try{
   const bottom=await p.locator('.ui-stream').evaluate(el=>el.scrollHeight-el.clientHeight-el.scrollTop);
   if(bottom>1)throw new Error('Chat öffnet nicht bei der neuesten Nachricht.');
  }),'Plan annehmen');
- const accepted=await screen('05-accepted','/?p='+project,390,p=>p.getByText('Plan annehmen').click());
+ const accepted=await screen('05-accepted','/?p='+project,390,async p=>{
+  await p.getByText('Plan annehmen').click();
+  await p.getByRole('button',{name:/Otto · arbeitet gerade/}).locator('.ui-face-working').waitFor();
+  const stream=p.locator('.ui-stream');
+  const atBottom=el=>el.scrollHeight-el.clientHeight-el.scrollTop<2;
+  await p.waitForFunction(atBottom,await stream.elementHandle());
+  const team=p.getByRole('button',{name:'Team',exact:true});
+  await team.click();
+  await p.waitForFunction(atBottom,await stream.elementHandle());
+  await stream.evaluate(el=>{el.scrollTop=0;});
+  await p.waitForFunction(()=>document.querySelector('.ui-stream').scrollTop===0);
+  await team.click();
+  await p.getByRole('button',{name:'Team',exact:true,expanded:false}).waitFor();
+  if(await stream.evaluate(el=>el.scrollTop)!==0)throw new Error('Die Team-Leiste hat beim Lesen älterer Nachrichten den Chat verschoben.');
+ },{viewport:{width:390,height:620}});
  expect(accepted,'@Otto bitte übernimm: Startseite mit Öffnungszeiten');expect(accepted,'Otto');
  expect(await screen('06-tasks','/?p='+project+'&tab=tasks',390),'Startseite mit Öffnungszeiten');
  expect(await screen('07-info','/?p='+project+'&info=1',390),'GitHub einrichten');

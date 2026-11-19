@@ -2,6 +2,9 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 19.11.2026 (Mehr Platz im Projektchat)
+- Auf dem Handy zeigt die Team-Leiste zuerst kleine Bilder mit Arbeitsstatus. Namen, Jobs und Team erweitern lassen sich über „Team“ aufklappen. Chat und Aufgaben sind immer erreichbar.
+
 ## 19.11.2026 (Lesbare Kopfzeilen)
 - Auf dem Handy stehen Name oder Überschrift und der passende Knopf unter der Leiste mit Zurück und SCHMAQQ Studio. Lange Namen und Titel brechen um.
 

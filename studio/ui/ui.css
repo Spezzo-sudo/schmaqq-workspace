@@ -140,14 +140,26 @@ button.ui-row:hover,.ui-row.current{background:var(--deep)}
 .ui-screen{position:relative}
 
 /* Project: team bar and tabs */
-.ui-team{display:flex;gap:6px;overflow-x:auto;padding:10px 10px 6px;border-bottom:1px solid var(--line);scrollbar-width:none}
+.ui-team-panel{display:flex;align-items:flex-start;border-bottom:1px solid var(--line);flex:none}
+.ui-team{display:flex;flex:1;min-width:0;gap:6px;overflow-x:auto;padding:10px 10px 6px;scrollbar-width:none}
+.ui-team-toggle{display:flex;flex:none;align-items:center;justify-content:center;gap:4px;min-height:44px;padding:0 12px;color:var(--ink);font-size:13px;font-weight:700}
+.ui-team-toggle[aria-expanded=true] svg{transform:rotate(180deg)}
+.ui-team-panel.compact .ui-team{gap:0;padding:0 4px}
+.ui-team-panel.compact .ui-team-member{justify-content:center;min-width:44px;min-height:44px;padding:0}
+.ui-team-panel.compact .ui-team-member>b,.ui-team-panel.compact .ui-team-member>small{display:none}
 .ui-team-member{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:72px;max-width:84px;padding:4px;border-radius:12px}
 .ui-team-member:hover{background:var(--deep)}
 .ui-team-member b{font-size:13px;overflow-wrap:anywhere;max-width:100%;line-height:1.2}
 .ui-team-member small{font-size:11px;color:var(--muted);overflow-wrap:anywhere;max-width:100%}
-.ui-tabs{display:flex;border-bottom:1px solid var(--line)}
+.ui-tabs{display:flex;border-bottom:1px solid var(--line);flex:none}
 .ui-tabs button{flex:1;padding:12px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent}
 .ui-tabs button[aria-selected=true]{color:var(--ink);border-color:var(--ink)}
+
+/* Leave more of the project conversation visible on a short screen. */
+.ui-app:not(.wide) .ui-project>.ui-bar{flex:none;padding-block:4px}
+.ui-app:not(.wide) .ui-project .ui-bar-heading{padding-block:0}
+.ui-app:not(.wide) .ui-project>.ui-tabs button{min-height:44px;padding-block:7px}
+.ui-app:not(.wide) .ui-project .ui-stream{min-height:0}
 
 /* Chat */
 .ui-chat{flex:1;display:flex;flex-direction:column;min-height:0}

@@ -45,9 +45,8 @@ Mein Konto · Projekt anlegen · Jemanden einladen (Inhaber) · Projekte und Arc
 Darunter der Zustand des KI-Zugangs (bereit / nicht erreichbar).
 
 ### Projekt
-- **Kopf**: Vollständiger Projektname (Tippen öffnet Projektinfo), Zahl der Menschen und Agenten und Info-Knopf.
-- **Team-Leiste**: rundes Bild je Agent mit Namen und Job darunter (Herr Grau: „Leitung“), danach die Menschen (du als „Du“). Tippen öffnet den Direktchat,
-  grüner Punkt = arbeitet gerade, Zähler = ungelesen. Am Ende „+ Team erweitern“.
+- **Kopf**: Vollständiger Projektname (Tippen öffnet Projektinfo) und Info-Knopf. Die Zahl der Menschen und Agenten steht bei aufgeklapptem Team unter dem Namen.
+- **Team-Leiste**: Auf dem Handy sind anfangs nur die runden Bilder zu sehen, zuerst die Agenten, dann die Menschen. Der Knopf „Team“ klappt Namen, Jobs und „Team erweitern“ auf und wieder zu. Weitere Bilder sind seitlich erreichbar. Auf dem Desktop sind die Namen durchgehend zu sehen. Tippen auf ein Bild öffnet den Direktchat, grüner Punkt = arbeitet gerade, Zähler = ungelesen.
 - **Reiter**: Chat · Aufgaben.
 - **Chat**: Nachrichten, Karten, Markierungen. Eingabe „Nachricht … (@Name holt einen Agenten)“.
   Ein Chat mit Nachrichten öffnet bei der neuesten Nachricht. Ein leerer Chat öffnet am Anfang der Begrüßung.
