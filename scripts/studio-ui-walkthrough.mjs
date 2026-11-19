@@ -39,6 +39,9 @@ async function screen(name,url,width,act=async()=>{},options={}){
    (!desktop&&heading.getBoundingClientRect().top<brand.getBoundingClientRect().bottom);
  }),width>=1000);
  if(compressedHeading)throw new Error(name+' hat einen abgeschnittenen Titel oder Titel neben dem Logo.');
+ // The header must keep its full height, also in a scrolling screen: a squeezed header lets the title run over the content.
+ const squeezed=await page.locator('.ui-bar').evaluateAll(bars=>bars.some(bar=>bar.getBoundingClientRect().height<bar.scrollHeight-1));
+ if(squeezed)throw new Error(name+': Die Kopfzeile ist zusammengedrückt, der Titel läuft über den Inhalt.');
  await page.screenshot({path:path.join(out,name+'.png')});const text=await page.locator('body').innerText();await ctx.close();return text;
 }
 const expect=(text,what)=>{if(!text.includes(what))throw new Error('Nicht gefunden: '+what);};

@@ -29,6 +29,7 @@ und verteilt, ist aber kein Pflicht-Umweg.
    - **Nachrichten markieren**: lange drücken, mehrere wählen, „Agent fragen“, Agent wählen, kurz sagen was.
      Die gewählten Nachrichten bekommen eine farbige Markierung. Der Agent liest **nur diese** (sparsam, genau).
    - **Direktchat** mit dem Agenten.
+   - **Antworten** auf eine Nachricht des Agenten (ohne @): der Agent, dessen Nachricht beantwortet wird, antwortet.
 3. **Arbeit wird immer sichtbar:** Wird aus einem Direktchat ein Plan, eine Aufgabe, ein Ergebnis oder eine Vorschau,
    erscheint automatisch eine Karte im Projektchat („aus Marcos Gespräch mit Herr Grau“). Zusätzlich „Im Projekt teilen“
    für einzelne Antworten. Direktchats bleiben sonst privat.

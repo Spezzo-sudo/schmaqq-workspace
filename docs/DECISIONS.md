@@ -2,6 +2,12 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 19.11.2026 (Antwort ohne @, feste Kopfzeile)
+- **Antwort auf die Nachricht eines Agenten holt diesen Agenten**, ohne @ (Marco: „Ja!“). Dafür gibt es an Agenten-Nachrichten im Projektchat und in Aufgaben „Antworten“; über der Eingabe steht „Antwort an <Name>“. Menschen-Nachrichten und Nachrichten ohne Bezug holen niemanden. Ergänzt Konzept Regel 2 (vierter Weg).
+- **Die Kopfzeile behält ihre volle Höhe** in jedem scrollenden Bildschirm (Projektinfo, Konto, Anleitung, Aufgabe rechts). Vorher wurde sie in Spaltenlayouts zusammengedrückt, und Titel und „⋯“ liefen über den Inhalt; das erzeugte auch die doppelte Linie. Der Rundgang prüft das jetzt auf jedem Bildschirm.
+- **Hover nur mit Maus:** Auf dem Handy blieb „⋯“ nach dem Tippen hell. Hover-Farben gelten nur noch bei Geräten mit Zeiger.
+- **Agenten voll einstellbar** (Marco, 19.11.): Name, Bild, Modell, Denkstufe, Rechte, jeder Agent einzeln, Rechte durch den Projekt-Admin. Modelle aus einem in der App pflegbaren Katalog; Eintragen eigener Namen bleibt möglich. Umsetzung in Phasen (siehe WORKLIST).
+
 ## 19.11.2026 (Kette Herr Grau → Kollege, Aufräumen)
 - Im Projektchat steht pro Aufgabe nur **eine kurze Zeile** (höchstens etwa 140 Zeichen) mit „Öffnen ›“; der ganze Text steht in der Aufgabe.
 - „Team erweitern“ steht fest neben dem Knopf „Team“ und wandert nicht mit der wischbaren Bilderleiste.
