@@ -8,6 +8,7 @@ import { ensureChatSchema, inheritScope, privateScope } from './chat-scope.mjs';
 import { codeRunBlocker, queueAgentCodeRun } from './agent-code.mjs';
 import { readWebPage } from './web-read.mjs';
 import { latestGeneralResult, storeMetadata, taskContract } from './team-model.mjs';
+import { EFFORT_ID, MODEL_ID, readCatalog, writeCatalog } from './model-catalog.mjs';
 import { canLead, canResearch, canReview, HIRABLE, jobOf, TEAM_LIMIT } from './agent-roles.mjs';
 
 // Agent runs: a person asks an agent of the project, and the worker bound to THAT person produces the
@@ -188,7 +189,7 @@ const chainRequest = z.object({ run: id, action: z.enum(['stop', 'continue']) })
 const WORKER_ROUTES = ['claim', 'heartbeat', 'tool', 'finish'];
 // '/api/hermes-worker/' is the path the first pilot worker was installed with; it stays as an alias.
 const WORKER_PREFIXES = ['/api/agent-worker/', '/api/hermes-worker/'];
-const MEMBER_ROUTES = ['/api/agent-runs', '/api/agent-runs/cancel', '/api/agent-proposals/decide', '/api/agent-chains'];
+const MEMBER_ROUTES = ['/api/model-catalog', '/api/agent-runs', '/api/agent-runs/cancel', '/api/agent-proposals/decide', '/api/agent-chains'];
 const LOOPBACK = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
 // A reverse proxy or tunnel on this machine also connects from loopback. These headers give it away.
 const PROXY_HEADERS = ['x-forwarded-for', 'x-real-ip', 'forwarded', 'cf-connecting-ip', 'cf-ray'];
@@ -196,7 +197,6 @@ const PROXY_HEADERS = ['x-forwarded-for', 'x-real-ip', 'forwarded', 'cf-connecti
 // Models an agent can be set to, best general choice first. An agent whose profile names something else
 // (older profiles, typing errors) answers with the first one instead of failing. Router-style names such as
 // "vendor/model:variant" are allowed, so other providers fit in without a schema change.
-const MODEL_ID = /^[a-zA-Z0-9][a-zA-Z0-9_.:\/-]{0,99}$/;
 export function agentModels(setting = process.env.STUDIO_AGENT_MODELS) {
   const models = String(setting ?? 'gpt-5.6-sol,gpt-5.6-terra,gpt-5.6-luna').split(',').map(m => m.trim()).filter(m => MODEL_ID.test(m));
   return models.length ? [...new Set(models)].slice(0, 12) : ['gpt-5.6-sol'];
@@ -224,7 +224,9 @@ export function agentEffort(setting = process.env.STUDIO_AGENT_EFFORT) {
 }
 
 export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], live = null, models = agentModels(), effort = agentEffort() }) {
-  const modelFor = agent => (models.includes(agent.model) ? agent.model : models[0]);
+  // Every agent has its own model and thinking level; the lists are suggestions, only the spelling is checked.
+  const modelFor = agent => (MODEL_ID.test(agent.model ?? '') ? agent.model : models[0]);
+  const effortFor = agent => (EFFORT_ID.test(agent.effort ?? '') ? agent.effort : effort);
   const registered = validWorkers(workers);
   // Agents are switched on by binding a worker to a person. Until then nothing is stored and nothing runs.
   const enabled = registered.length > 0;
@@ -309,6 +311,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
     return {
       configured: hasWorker(member.id),
       models,
+      catalog: readCatalog(db),
       online: hasWorker(member.id) && workerOnline(member.id, now),
       runs: runs.map(run => summary(run, position(run)))
     };
@@ -475,7 +478,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
         tool_policy: toolPolicy.allowed
       });
       return {
-        run: run.id, lease: leaseToken, owner, project: run.project, agent: run.agent, model: run.model, effort,
+        run: run.id, lease: leaseToken, owner, project: run.project, agent: run.agent, model: run.model, effort: effortFor(agent),
         // Research is the researcher's job: ChatGPT's own web search, with the asking person's access.
         search: canResearch(agent),
         prompt: source.body, replyTo: source.id,
@@ -982,6 +985,18 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
 
   async function memberRoute(route, { method, req, url, send }) {
     const member = user(req), now = Date.now();
+    // The model catalog: everybody reads it (profiles offer it), only the Studio owner changes it.
+    if (route === '/api/model-catalog') {
+      if (method === 'GET') return send({ catalog: readCatalog(db) });
+      if (method !== 'POST') throw fail(405, 'Methode nicht erlaubt.');
+      if (memberRow(member.id)?.role !== 'owner') throw fail(403, 'Den Modellkatalog ändert nur der Inhaber von Studio.');
+      const body = parse(z.object({ catalog: z.array(z.object({
+        id: z.string().trim().min(1).max(100), label: z.string().trim().max(80).optional(),
+        efforts: z.array(z.string().max(12)).max(10).optional(), defaultEffort: z.string().max(12).nullable().optional(),
+        context: z.number().int().positive().nullable().optional(), note: z.string().max(200).optional(), enabled: z.boolean().optional()
+      }).strict()).min(1).max(60) }).strict(), await readJSON(req, 40000));
+      return send({ catalog: writeCatalog(db, body.catalog) });
+    }
     if (!enabled) {
       if (method === 'GET' && route === '/api/agent-runs') return send({ configured: false, online: false, models, runs: [] });
       if (method !== 'POST') throw fail(405, 'Methode nicht erlaubt.');

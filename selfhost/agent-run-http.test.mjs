@@ -309,22 +309,36 @@ test('planning: the lead proposes a few tasks in one run; accepting the plan cre
  assert.ok(thread.some(m=>/^@Mara bitte übernimm: Überschrift kürzen/.test(m.body)),'the hand-over is in the task conversation');
 });
 
-test('models: an agent set to a model nobody can use answers with the default one; the list is offered to the app',async t=>{
+test('models: every agent has its own model and thinking level; the catalog is offered; only the spelling is checked',async t=>{
  const f=await fixture(t),[alice]=f.members,[worker]=f.secrets;
  const {project,agent,message}=await f.createAgentMessage(); // the fixture profile says "pilot-codex"
  const list=(await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data;
  assert.deepEqual(list.models,['gpt-5.6-sol','gpt-5.6-terra','gpt-5.6-luna']);
+ assert.ok(list.catalog.some(m=>m.id==='gpt-6.1-sol'&&m.efforts.includes('ultra')),'the catalog names the thinking levels of every model');
  await f.post('/api/agent-runs',{project,agent,message},{cookie:alice.cookie});
  const job=(await f.post('/api/agent-worker/claim',{},{token:worker.token})).data.job;
- assert.equal(job.model,'gpt-5.6-sol');
+ assert.equal(job.model,'pilot-codex','the profile decides, not a fixed list');
+ assert.equal(job.effort,'low','without an own level the Studio default applies');
  const failed=await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'failed',errorCode:'model-unavailable'},{token:worker.token});
  assert.equal(failed.data.status,'failed');
  assert.equal((await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data.runs[0].errorCode,'model-unavailable');
  const {agentModels}=await import('./agent-run-http.mjs');
  assert.deepEqual(agentModels('a-1, b.2 ,bad model,,a-1'),['a-1','b.2']);
  assert.deepEqual(agentModels(''),['gpt-5.6-sol']);
- // Names of routed providers carry a vendor and a variant; paths and options still do not pass.
  assert.deepEqual(agentModels('openai/gpt-5.6-sol,meta-llama/llama-4:free,/etc/x,-x,a b'),['openai/gpt-5.6-sol','meta-llama/llama-4:free']);
+});
+
+test('model catalog: everybody reads it, only the owner changes it, bad entries are dropped',async t=>{
+ const f=await fixture(t),[alice,bob]=f.members;
+ const read=async who=>(await f.get('/api/model-catalog',{cookie:who.cookie}));
+ assert.equal((await read(bob)).status,200);
+ const entry={id:'gpt-7-test',label:'Neu',efforts:['low','high','Bad Value'],defaultEffort:'low'};
+ const asMember=await f.post('/api/model-catalog',{catalog:[entry]},{cookie:bob.cookie});
+ assert.equal(asMember.status,403);
+ const owner=await f.post('/api/model-catalog',{catalog:[entry,{id:'bad name'},{id:'gpt-7-test'}]},{cookie:alice.cookie});
+ assert.equal(owner.status,200);
+ assert.deepEqual(owner.data.catalog.map(m=>[m.id,m.efforts]),[['gpt-7-test',['low','high']]],'misspelled entries and duplicates are dropped');
+ assert.deepEqual((await read(bob)).data.catalog.map(m=>m.id),['gpt-7-test'],'a new model is there at once, without a deploy');
 });
 
 test('cards: asked inside a task, the agent works with that task and answers in its conversation',async t=>{
@@ -509,7 +523,7 @@ test('company: the developer changes code in the asker\'s own copy; the lead han
  const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Code',description:''},{cookie:alice.cookie})).data.project;
  const room=async()=>(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data;
  const lead=(await room()).agents[0];
- const otto=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Otto',role:'developer',avatarPresetId:'otto',model:'x',permissions:{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false}},{cookie:alice.cookie})).data.agentId;
+ const otto=(await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Otto',role:'developer',avatarPresetId:'otto',model:'x',codeModel:'gpt-6.1-sol',codeEffort:'high',effort:'medium',permissions:{readProject:true,writeMessages:true,manageTasks:false,editCode:false,prepareReviews:false,delegateAgents:false}},{cookie:alice.cookie})).data.agentId;
  const task=(await f.post('/api/room',{action:'task',id:randomUUID(),project,title:'Überschrift kürzen',description:'Oben zu lang',kind:'code',criteria:'Passt in zwei Zeilen'},{cookie:alice.cookie})).data.task;
  const general=(await f.post('/api/room',{action:'task',id:randomUUID(),project,title:'Texte sammeln',description:'',kind:'general'},{cookie:alice.cookie})).data.task;
  const ask=async(agent,name,topic,body)=>{const id=randomUUID();await f.post('/api/room',{action:'message',id,project,topicTask:topic,body:'@'+name+' '+body},{cookie:alice.cookie});await f.post('/api/agent-runs',{project,agent,message:id},{cookie:alice.cookie});return (await f.post('/api/agent-worker/claim',{},w)).data.job;};
@@ -537,6 +551,7 @@ test('company: the developer changes code in the asker\'s own copy; the lead han
  const payload=JSON.parse(jobs[1].payload);
  assert.match(payload.prompt,/Überschrift kürzen[\s\S]*Fertig, wenn: Passt in zwei Zeilen[\s\S]*Kürze die Überschrift in site\/index.html[\s\S]*Committe nicht, pushe nicht/);
  assert.equal(payload.agent.name,'Otto');
+ assert.deepEqual(payload.codex,{model:'gpt-6.1-sol',effort:'high'},'Otto\'s own model and thinking level travel with the code run');
  assert.equal((await room()).tasks.find(t=>t.id===task).assignee,alice.id,'the person who asked takes the task');
  job=await ask(otto,'Otto',task,'Und noch die Farbe.');
  assert.equal((await call(job,{instruction:'Ändere die Farbe.'})).status,409,'the copy is busy');

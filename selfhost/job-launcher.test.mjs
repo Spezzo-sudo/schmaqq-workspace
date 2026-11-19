@@ -4,7 +4,7 @@ import {mkdtempSync,mkdirSync,rmSync,writeFileSync,symlinkSync} from 'node:fs';
 import {spawn} from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
-import {createJobLauncher,checkJobDirectory,checkArgv,jobUnitArgs} from './deploy/worker/job-launcher.mjs';
+import {createJobLauncher,checkJobDirectory,checkArgv,jobUnitArgs,codexExecArgv} from './deploy/worker/job-launcher.mjs';
 import {launcherCommand,launcherPrograms} from './job-client.mjs';
 import {LocalRunner} from './runner.mjs';
 
@@ -156,4 +156,15 @@ test('versioned preparation and tests both use the launcher and the same job cop
  const p={projectPlanVersion:1,requires:[],generated:['.prepared'],prepare:[[process.execPath,'-e',`require('fs').mkdirSync('.prepared',{recursive:true});require('fs').writeFileSync('.prepared/ready','yes')`]],check:[process.execPath,'-e',`if(require('fs').readFileSync('.prepared/ready','utf8')!=='yes')process.exit(1);console.log('isolated sequence')`]};
  assert.equal(await runner.check(copy,p),'isolated sequence');assert.equal(calls.length,2);assert.ok(calls.every(c=>c.cwd===copy));
  assert.equal(await command(['git','status','--porcelain'],copy),'');
+});
+
+test('code runs: Otto\'s model and thinking level from the profile reach Codex as quoted settings; only the spelling is checked',()=>{
+ const base=codexExecArgv('/c/codex','/w','Auftrag');
+ assert.ok(!base.some(a=>/^model/.test(a)),'without a profile choice Codex keeps its own default');
+ const set=codexExecArgv('/c/codex','/w','Auftrag',{model:'gpt-6.1-sol',effort:'xhigh'});
+ assert.ok(set.includes('model="gpt-6.1-sol"')&&set.includes('model_reasoning_effort="xhigh"'));
+ assert.equal(set.at(-1),'Auftrag','the prompt stays the last argument');
+ assert.ok(codexExecArgv('/c/codex','/w','x',{model:'vendor/model:variant'}).includes('model="vendor/model:variant"'),'a model that is not listed yet works');
+ for(const model of ['x"; rm','a b','--flag','',' ','x\n','../x'])if(model!=='')assert.throws(()=>codexExecArgv('/c/codex','/w','x',{model}),/invalid model/,JSON.stringify(model));
+ for(const effort of ['HIGH','hi gh','x"','1','toolongeffortvalue'])assert.throws(()=>codexExecArgv('/c/codex','/w','x',{effort}),/invalid effort/,effort);
 });

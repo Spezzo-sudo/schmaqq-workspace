@@ -28,9 +28,17 @@ export const codexModes=Object.freeze({login:{args:['login','--device-auth'],tim
 /** A code run with the member's own sign-in: fixed arguments, the prompt is the last argument. Codex's own sandbox
  * needs namespaces that this unit forbids; the unit itself is the sandbox (only this copy and the member's folder,
  * network only through the egress proxy). */
-export function codexExecArgv(bin,dir,prompt){
+// Otto's model and thinking level come from his profile. Only the spelling is checked (letters, digits, . _ : / -),
+// so a new model needs no change here; the value is passed as a quoted TOML string, never as a loose argument.
+const MODEL_NAME=/^[a-zA-Z0-9][a-zA-Z0-9_.:\/-]{0,99}$/,EFFORT_NAME=/^[a-z]{3,12}$/;
+export function codexChoice(model,effort){
+ if(model!==undefined&&!(typeof model==='string'&&MODEL_NAME.test(model)))throw fail(400,'invalid model');
+ if(effort!==undefined&&!(typeof effort==='string'&&EFFORT_NAME.test(effort)))throw fail(400,'invalid effort');
+ return [...(model?['-c',`model="${model}"`]:[]),...(effort?['-c',`model_reasoning_effort="${effort}"`]:[])];
+}
+export function codexExecArgv(bin,dir,prompt,{model,effort}={}){
  if(typeof prompt!=='string'||!prompt.trim()||prompt.length>16000||prompt.includes('\0'))throw fail(400,'invalid prompt');
- return [bin,'exec','-c','forced_login_method="chatgpt"','-c','approval_policy="never"','-c','sandbox_mode="danger-full-access"','--skip-git-repo-check','--json','-C',dir,prompt];
+ return [bin,'exec','-c','forced_login_method="chatgpt"','-c','approval_policy="never"','-c','sandbox_mode="danger-full-access"',...codexChoice(model,effort),'--skip-git-repo-check','--json','-C',dir,prompt];
 }
 export function codexHome(root,member){
  if(typeof member!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(member))throw fail(400,'invalid member');
@@ -164,7 +172,7 @@ export function createJobLauncher({root,key,run=(file,args)=>spawn(file,args,{st
     if(body.mode==='exec'){
      // Only a member who signed in runs code, and only in a copy of the job area.
      if(!exists(home))throw fail(409,'not signed in');
-     workDir=checkJobDirectory(root,body.dir);argv=codexExecArgv(codexBin,workDir,body.prompt);
+     workDir=checkJobDirectory(root,body.dir);argv=codexExecArgv(codexBin,workDir,body.prompt,{model:body.model,effort:body.effort});
     }else{
      if(!exists(home))makeHome(home);
      argv=[codexBin,...mode.args];

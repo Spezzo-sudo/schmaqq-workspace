@@ -1,9 +1,9 @@
 import {useCallback,useEffect,useState} from 'react';
 import type {Studio} from './app';
-import {api,newId,q,type Agent,type Role} from './api';
+import {api,newId,q,type Agent,type CatalogModel,type Role} from './api';
 import {Face} from './avatar';
 import {FIELD_GUILD_R2_PRESETS} from './avatars';
-import {activeAgents,jobOf,JOBS,leadOf,TEAM_LIMIT} from './model';
+import {activeAgents,jobOf,JOBS,leadOf,ROLE_JOBS,TEAM_LIMIT} from './model';
 import {Dialog,ErrorLine,Field,Plus,Section} from './parts';
 import {InviteLink,InviteRows,type Invite} from './account';
 
@@ -12,7 +12,7 @@ function agentPayload(agent:Agent,changes:Partial<Agent>){
  const a={...agent,...changes};
  return {action:'agent',id:newId(),project:a.project,agentId:a.id,name:a.name,nickname:a.nickname??'',role:a.role,avatar:a.avatar??'',
   avatarPresetId:a.avatarPresetId??'',avatarPackId:a.avatarPackId??'field-guild-r2',purpose:a.purpose??'',personality:a.personality??'',
-  responsibility:a.responsibility??'',model:a.model||'default',capabilities:a.capabilities??['chat'],contextSources:a.contextSources??['messages','tasks','decisions'],
+  responsibility:a.responsibility??'',model:a.model||'default',effort:a.effort||null,codeModel:a.codeModel||null,codeEffort:a.codeEffort||null,capabilities:a.capabilities??['chat'],contextSources:a.contextSources??['messages','tasks','decisions'],
   ...(a.permissions?{permissions:a.permissions}:{}),active:a.active!==false};
 }
 
@@ -122,12 +122,14 @@ export function ProfileDialog({studio,agentId,onClose}:{studio:Studio;agentId:st
  const {room,go,roles}=studio;
  const agent=(room!.agents??[]).find(a=>a.id===agentId);
  const [name,setName]=useState(agent?.name??''),[personality,setPersonality]=useState(agent?.personality??''),[face,setFace]=useState(agent?.avatarPresetId??'');
- const models=studio.runs.models??[];
- const [model,setModel]=useState(agent?.model??'');
+ const catalog=(studio.runs.catalog??[]).filter(m=>m.enabled);
+ const [model,setModel]=useState(agent?.model??''),[effort,setEffort]=useState(agent?.effort??''),[codeModel,setCodeModel]=useState(agent?.codeModel??''),[codeEffort,setCodeEffort]=useState(agent?.codeEffort??'');
  const [picking,setPicking]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  if(!agent)return null;
  const job=jobOf(agent),admin=roles?.mine.includes('admin')??false;
- const changed=name.trim()!==agent.name||personality.trim()!==(agent.personality??'')||face!==(agent.avatarPresetId??'')||model!==(agent.model??'');
+ const changed=name.trim()!==agent.name||personality.trim()!==(agent.personality??'')||face!==(agent.avatarPresetId??'')||model!==(agent.model??'')
+  ||effort!==(agent.effort??'')||codeModel!==(agent.codeModel??'')||codeEffort!==(agent.codeEffort??'');
+ const codes=(ROLE_JOBS.code as readonly string[]).includes(agent.role);
  async function save(changes:Partial<Agent>,close=false){
   setBusy(true);setError('');
   try{await api('/api/room',agentPayload(agent!,changes));await studio.reload();if(close)onClose();}catch(e){setError((e as Error).message);}finally{setBusy(false);}
@@ -140,15 +142,42 @@ export function ProfileDialog({studio,agentId,onClose}:{studio:Studio;agentId:st
   </div>
   <Field label="Name"><input value={name} onChange={e=>setName(e.target.value)} maxLength={80}/></Field>
   <Field label="Persönlichkeit" hint="Wie er schreibt und auftritt."><textarea rows={3} value={personality} onChange={e=>setPersonality(e.target.value)} maxLength={600}/></Field>
-  {models.length>0&&<details className="ui-advanced"><summary>Erweitert</summary>
-   <Field label="KI-Modell" hint={models.length<2?'Im Moment ist nur eines freigeschaltet.':'Größere denken gründlicher, kosten aber mehr von deinem Kontingent.'}>
-    <select value={models.includes(model)?model:models[0]} onChange={e=>setModel(e.target.value)} disabled={models.length<2}>{models.map(m=><option key={m} value={m}>{m}</option>)}</select></Field>
+  {catalog.length>0&&<details className="ui-advanced"><summary>Erweitert</summary>
+   <ModelPick title="Im Gespräch" catalog={catalog} model={model} effort={effort} onModel={setModel} onEffort={setEffort}/>
+   {codes&&<ModelPick title="Beim Programmieren" catalog={catalog} model={codeModel} effort={codeEffort} onModel={setCodeModel} onEffort={setCodeEffort} standard="Standard"/>}
+   <p className="ui-muted">Stärkere Modelle und höhere Stufen denken gründlicher, kosten aber mehr von deinem Kontingent. Ob dein Zugang ein Modell kennt, zeigt sich beim ersten Einsatz.</p>
   </details>}
   <ErrorLine text={error}/>
   <div className="ui-actions">
    {admin&&!agent.lead&&<button className="ui-btn danger" disabled={busy} onClick={()=>{if(confirm(agent.name+' kündigen? Das Gespräch bleibt lesbar.'))void save({active:false},true);}}>Kündigen</button>}
    <button className="ui-btn" onClick={()=>{onClose();go({chat:'agent:'+agent.id});}}>Privat schreiben</button>
-   <button className="ui-btn primary" disabled={busy||!changed||!name.trim()} onClick={()=>void save({name:name.trim(),personality:personality.trim(),avatarPresetId:face,...(model?{model}:{})})}>Speichern</button>
+   <button className="ui-btn primary" disabled={busy||!changed||!name.trim()} onClick={()=>void save({name:name.trim(),personality:personality.trim(),avatarPresetId:face,...(model?{model}:{}),effort:effort||null,codeModel:codeModel||null,codeEffort:codeEffort||null})}>Speichern</button>
   </div>
  </Dialog>;
+}
+
+const ALL_EFFORTS=['minimal','low','medium','high','xhigh','max','ultra'];
+const EFFORT_LABEL:Record<string,string>={minimal:'minimal',low:'niedrig',medium:'mittel',high:'hoch',xhigh:'sehr hoch',max:'maximal',ultra:'ultra'};
+/** One model with its thinking level: the catalog as a list, any other name typed in, and only the levels the model has. */
+function ModelPick({title,catalog,model,effort,onModel,onEffort,standard}:{title:string;catalog:CatalogModel[];model:string;effort:string;onModel:(v:string)=>void;onEffort:(v:string)=>void;standard?:string}){
+ const known=catalog.find(m=>m.id===model);
+ const [own,setOwn]=useState(()=>Boolean(model)&&!known);
+ const efforts=known?.efforts.length?known.efforts:ALL_EFFORTS;
+ return <div className="ui-model-pick">
+  <h4>{title}</h4>
+  <Field label="KI-Modell">
+   <select value={own?'__own':model} onChange={e=>{if(e.target.value==='__own'){setOwn(true);}else{setOwn(false);onModel(e.target.value);const next=catalog.find(m=>m.id===e.target.value);if(effort&&next&&!next.efforts.includes(effort))onEffort('');}}}>
+    {standard&&<option value="">{standard}</option>}
+    {catalog.map(m=><option key={m.id} value={m.id}>{m.label} – {m.note||m.id}</option>)}
+    <option value="__own">Anderer Name …</option>
+   </select>
+  </Field>
+  {own&&<Field label="Modellname" hint="So, wie ihn der Anbieter nennt."><input value={model} onChange={e=>onModel(e.target.value.trim())} maxLength={100} pattern="[A-Za-z0-9][A-Za-z0-9_.:/\\-]*"/></Field>}
+  <Field label="Denkstufe" hint={known?.defaultEffort?'Standard dieses Modells: '+(EFFORT_LABEL[known.defaultEffort]??known.defaultEffort)+'.':undefined}>
+   <select value={effort} onChange={e=>onEffort(e.target.value)}>
+    <option value="">Standard</option>
+    {efforts.map(v=><option key={v} value={v}>{EFFORT_LABEL[v]??v}</option>)}
+   </select>
+  </Field>
+ </div>;
 }

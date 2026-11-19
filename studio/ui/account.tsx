@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useState} from 'react';
 import type {Studio} from './app';
-import {api,q,signOut,type AccountArea} from './api';
+import {api,q,signOut,type AccountArea,type CatalogModel} from './api';
 import {Face,photoOf} from './avatar';
 import {Bar,Checklist,ErrorLine,Field,ScrollHint,Section} from './parts';
 
@@ -30,7 +30,7 @@ export function AccountScreen({studio}:{studio:Studio}){
    </Section>
    <CodeSignIn studio={studio}/>
   </>}
-  {area==='verwaltung'&&owner&&<TeamAccess studio={studio}/>}
+  {area==='verwaltung'&&owner&&<><TeamAccess studio={studio}/><ModelCatalogAdmin studio={studio}/></>}
   {area==='daten'&&<Section title="Datenauszug"><p className="ui-muted">Deine sichtbaren Projekte, Aufgaben und Dokumente sowie bis zu 500 Nachrichten.</p><button className="ui-btn" onClick={()=>void download()}>Datenauszug herunterladen</button></Section>}
   <ScrollHint/>
  </section>;
@@ -245,4 +245,34 @@ export function GuideScreen({studio}:{studio:Studio}){
   </Section>
   <ScrollHint/>
  </section>;
+}
+
+/** The model list agents choose from. The owner keeps it: a new model is entered here, no update of Studio needed. */
+function ModelCatalogAdmin({studio}:{studio:Studio}){
+ const [list,setList]=useState<CatalogModel[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const [id,setId]=useState(''),[label,setLabel]=useState(''),[efforts,setEfforts]=useState('low, medium, high');
+ useEffect(()=>{let alive=true;api<{catalog:CatalogModel[]}>('/api/model-catalog').then(r=>{if(alive)setList(r.catalog);}).catch(e=>{if(alive)setError((e as Error).message);});return()=>{alive=false;};},[]);
+ async function save(next:CatalogModel[]){
+  setBusy(true);setError('');
+  try{const r=await api<{catalog:CatalogModel[]}>('/api/model-catalog',{catalog:next});setList(r.catalog);await studio.reloadRuns();}
+  catch(e){setError((e as Error).message);}finally{setBusy(false);}
+ }
+ function add(e:React.FormEvent){
+  e.preventDefault();if(list.some(m=>m.id===id.trim())){setError('Dieses Modell steht schon in der Liste.');return;}
+  const levels=efforts.split(/[ ,]+/).map(v=>v.trim().toLowerCase()).filter(Boolean);
+  void save([...list,{id:id.trim(),label:label.trim()||id.trim(),efforts:levels,defaultEffort:levels[0]??null,context:null,note:'',enabled:true}]).then(()=>{setId('');setLabel('');});
+ }
+ return <Section title="KI-Modelle">
+  <p className="ui-muted">Diese Liste bieten die Agentenprofile an. Neue Modelle trägst du hier ein; ausgeschaltete verschwinden aus der Auswahl, bestehende Agenten behalten ihre Wahl.</p>
+  {list.map(m=><div key={m.id} className="ui-row static"><span className="ui-row-text"><b>{m.label}</b><small>{m.id} · {m.efforts.join(', ')||'keine Stufen'}</small></span>
+   <button className="ui-link" disabled={busy||list.length<2&&m.enabled} onClick={()=>void save(list.map(x=>x.id===m.id?{...x,enabled:!x.enabled}:x))}>{m.enabled?'Ausschalten':'Einschalten'}</button>
+   <button className="ui-link" disabled={busy||list.length<2} onClick={()=>{if(confirm(m.label+' aus der Liste nehmen?'))void save(list.filter(x=>x.id!==m.id));}}>Entfernen</button></div>)}
+  <form className="ui-form" onSubmit={add}>
+   <Field label="Neues Modell" hint="Name genau so, wie ihn der Anbieter nennt."><input value={id} onChange={e=>setId(e.target.value)} required maxLength={100} pattern="[A-Za-z0-9][A-Za-z0-9_.:/\\-]*"/></Field>
+   <Field label="Anzeigename (freiwillig)"><input value={label} onChange={e=>setLabel(e.target.value)} maxLength={80}/></Field>
+   <Field label="Denkstufen" hint="Durch Komma getrennt, zum Beispiel low, medium, high."><input value={efforts} onChange={e=>setEfforts(e.target.value)} maxLength={120}/></Field>
+   <ErrorLine text={error}/>
+   <div className="ui-actions"><button className="ui-btn primary" disabled={busy||!id.trim()}>Hinzufügen</button></div>
+  </form>
+ </Section>;
 }

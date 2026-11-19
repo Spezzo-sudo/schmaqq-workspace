@@ -2,6 +2,11 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 19.11.2026 (Modell und Denkstufe pro Agent, Modellkatalog)
+- Jeder Agent hat sein **eigenes Modell und seine eigene Denkstufe**, getrennt für Gespräch und für Programmieren. Leer heißt Standard (Studio bzw. Codex). Vorher galt eine feste Liste (`STUDIO_AGENT_MODELS`) und für alle dieselbe Stufe; Ottos Programmierläufe bekamen gar keine Einstellung.
+- Der **Modellkatalog** liegt in der App (Mein Konto → Studio verwalten → KI-Modelle), gefüllt aus dem Katalog des installierten Codex (`codex debug models`, 0.169.0). Geprüft wird nur die Schreibweise, nie gegen eine Liste. Ob ein Zugang ein Modell kennt, zeigt der Lauf (Fehler im Chat, „Nochmal“).
+- Bestehende Profile hielten `gpt-5.6-sol`, liefen aber wegen der alten Liste mit `gpt-5.6-luna`. Damit nichts still teurer wird, wurden sie auf `gpt-5.6-luna` gesetzt.
+
 ## 19.11.2026 (Antwort ohne @, feste Kopfzeile)
 - **Antwort auf die Nachricht eines Agenten holt diesen Agenten**, ohne @ (Marco: „Ja!“). Dafür gibt es an Agenten-Nachrichten im Projektchat und in Aufgaben „Antworten“; über der Eingabe steht „Antwort an <Name>“. Menschen-Nachrichten und Nachrichten ohne Bezug holen niemanden. Ergänzt Konzept Regel 2 (vierter Weg).
 - **Die Kopfzeile behält ihre volle Höhe** in jedem scrollenden Bildschirm (Projektinfo, Konto, Anleitung, Aufgabe rechts). Vorher wurde sie in Spaltenlayouts zusammengedrückt, und Titel und „⋯“ liefen über den Inhalt; das erzeugte auch die doppelte Linie. Der Rundgang prüft das jetzt auf jedem Bildschirm.

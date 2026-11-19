@@ -176,7 +176,7 @@ def register_zero_toolset():
         raise RuntimeError("Hermes tool policy mismatch: zero-tool configuration required.")
 
 
-EFFORTS = ("minimal", "low", "medium", "high")
+EFFORTS = ("minimal", "low", "medium", "high", "xhigh", "max", "ultra")
 
 
 def engine_hooks():

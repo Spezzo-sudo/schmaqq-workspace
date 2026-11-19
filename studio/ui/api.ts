@@ -3,7 +3,7 @@
 export type Project={practice?:boolean;id:string;title:string;description:string;color?:string;lastMessage?:number;lastExcerpt?:string;unread?:number;openTasks?:number};
 export type Member={photo?:string|null;id:string;name:string;role:string;seen:number;removed?:number|boolean;projectRoles?:string[]};
 export type Agent={id:string;project:string;name:string;role:string;avatar:string;avatarPresetId?:string|null;avatarPackId?:string;
- purpose:string;personality?:string;responsibility?:string;active:boolean;lead?:boolean;created:number;updated:number;model?:string;
+ purpose:string;personality?:string;responsibility?:string;active:boolean;lead?:boolean;created:number;updated:number;model?:string;effort?:string|null;codeModel?:string|null;codeEffort?:string|null;
  nickname?:string;permissions?:Record<string,boolean>;capabilities?:string[];contextSources?:string[]};
 export type Proposal={id:string;title:string;description:string;kind:'general'|'code'|'plan'|'hire';hire?:{role:string;agent:string|null};who?:string;
  status:'pending'|'accepted'|'rejected';task:string|null;tasks?:string[];agent:string;owner:string;canDecide:boolean;
@@ -21,7 +21,8 @@ export type RoomState={project:Project;meta:{revision:number;archived?:boolean;r
 export type Chain={root:string;depth:number;used:number;limit:number;stopped:boolean;full:boolean;active:boolean};
 export type Run={id:string;owner:string;project:string;agent:string;message:string;status:'queued'|'running'|'cancelling'|'completed'|'failed'|'cancelled';
  created:number;updated:number;started?:number|null;position?:number|null;steps?:{tool:string;at:number}[];completedMessage:string|null;errorCode:string|null;chain?:Chain|null};
-export type Runs={configured:boolean;online?:boolean;models?:string[];runs:Run[]};
+export type CatalogModel={id:string;label:string;efforts:string[];defaultEffort:string|null;context:number|null;note:string;enabled:boolean};
+export type Runs={configured:boolean;online?:boolean;models?:string[];catalog?:CatalogModel[];runs:Run[]};
 export type Contract={kind:'general'|'code';criteria:string;requiresReview:boolean;blocked:string;cancelled:boolean;revision:number};
 export type Result={id:string;owner:string;body?:string;commit?:string;state:string;created:number;shared?:boolean;integrated?:boolean;changedAfter?:boolean;
  contractRevision?:number;workflow?:string};

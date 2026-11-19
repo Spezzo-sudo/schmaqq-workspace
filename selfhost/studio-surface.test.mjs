@@ -39,9 +39,10 @@ test('no words the screen list forbids: engines, models, technical setup terms',
  const forbidden=/Arbeitskopie|Werkstatt|Worker|Runner|Deploy-Key|Deploy-Schlüssel|Connector|Pull Request|Branch|Commit|Field Guild|Legacy|Bisherige Ansicht|gpt-\d|\bCodex\b|\bHermes\b|Modellzugang|\bModell\b|studio\.project\.json|Server vorbereiten|Probelauf|Programmierl[äa]uf|\bLive\b|(?:ist jetzt|noch nicht|selbst|schalten|schaltet) live\b/;
  for(const f of files(studio).filter(f=>/\.tsx$/.test(f)||f==='ui/next-step.ts'||f==='ui/model.ts')){
   const text=visibleText(readFileSync(path.join(studio,f),'utf8'));
-  // The concept allows the model only under "Erweitert" in the agent profile.
-  const allowed=f==='ui/people.tsx'?/^KI-Modell$/:null;
-  const hit=text.split('\n').find(line=>forbidden.test(line)&&!(allowed&&allowed.test(line.trim())));
+  // Since 19.11.2026 (owner): model and thinking level are settings of every agent. The word "Modell" belongs to the agent
+  // profile (Erweitert) and to the owner's list of models; engine and vendor names stay out of every text.
+  const settings=f==='ui/people.tsx'||f==='ui/account.tsx';
+  const hit=text.split('\n').find(line=>forbidden.test(settings?line.replace(/\bModell\b/g,'KI'):line));
   assert.equal(hit,undefined,f+': '+hit);
  }
 });

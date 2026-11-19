@@ -298,7 +298,7 @@ export class LocalRunner{
    const launcher=this.config.launcher,member=job.owner,signal=control.signal;
    const execute=async(argv,cwd,{input,onStdout}={})=>{
     if(argv[1]==='login')return launcherCodex(launcher,{member,mode:'status'},{signal});
-    try{return await launcherCodex(launcher,{member,mode:'exec',dir:w.dir,prompt:input},{signal,onOutput:t=>onStdout?.(Buffer.from(t))});}
+    try{return await launcherCodex(launcher,{member,mode:'exec',dir:w.dir,prompt:input,...(job.payload.codex??{})},{signal,onOutput:t=>onStdout?.(Buffer.from(t))});}
     catch(e){if(/409/.test(e.message)&&/not signed in/.test(e.message))throw new Error('Für Programmierläufe zuerst unter Mein Konto die Anmeldung für Programmierläufe verbinden.');throw e;}
    };
    const result=await runCodex({executable:'codex',cwd:w.dir,prompt:job.payload.prompt,sessionFile:path.join(this.state,`codex-${job.id}.session`),signal,onEvent:control.onEvent,execute});
