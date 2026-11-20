@@ -21,7 +21,7 @@ Marco gibt frei, Deploy nach [OPERATIONS.md](OPERATIONS.md).
 - ✅ Phase 1 (live): Modell und Denkstufe pro Agent, Modellkatalog in der App. Offen darin: eigenes Foto, Rolle ändern, Rechte für den Admin.
 - ✅ Phase 3 (Branch): Übergabepaket mit Gespräch der Aufgabe.
 - ❌ Phase 0: Messung mit echtem Lauf. Braucht Test-Repository und ChatGPT-Verbindung von Marco.
-- ❌ Phase 2: Verbrauch (`turn.completed`) speichern und anzeigen. Phase 4: Fortsetzen derselben Sitzung (nur selbe Person und Aufgabe). Phase 5: Anmeldung erklären.
+- ✅ Phase 2 (Branch): Verbrauch pro Lauf speichern, Summe pro Aufgabe anzeigen (ungetestet mit echtem Codex-Lauf, das Format ist aus der Doku). Offen: Übersicht über Zeit. ❌ Phase 4: Fortsetzen derselben Sitzung (nur selbe Person und Aufgabe). Phase 5: Anmeldung erklären.
 - ❌ Chat-Zugang für Markus (zweiter Agenten-Dienst mit seiner Anmeldung).
 
 ## Danach: einmal den echten Ablauf durchspielen (Marco und Claude gemeinsam)

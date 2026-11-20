@@ -305,3 +305,4 @@ a.ui-btn{text-decoration:none;color:var(--ink)}
 .ui-model-pick{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
 .ui-model-pick:first-of-type{border-top:0;margin-top:0}
 .ui-model-pick h4{margin:0 0 6px;font-size:14px}
+.ui-usage{margin:0;padding:6px 16px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line)}

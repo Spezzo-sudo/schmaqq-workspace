@@ -2,6 +2,9 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 20.11.2026 (Verbrauch sichtbar)
+- Studio liest am Ende jedes Programmierlaufs die Verbrauchszahlen von Codex (`turn.completed`: neu gelesen, aus dem Zwischenspeicher, geschrieben, Denkanteil), speichert sie im Ergebnis des Laufs und zeigt die Summe pro Aufgabe. Ohne Meldung keine Zahl; Läufe ohne Meldung werden nur gezählt. Eine Übersicht über Aufgaben und Zeit folgt, wenn echte Zahlen vorliegen.
+
 ## 20.11.2026 (Übergabepaket für Programmierläufe)
 - Der Auftrag an Otto ist ein **Übergabepaket** in fester Reihenfolge: zuerst, was sich nie ändert (arbeite nur hier, lies nur Nötiges, nichts veröffentlichen), dann Aufgabe, „Fertig, wenn“ und Bereich, dann das **bisherige Gespräch der Aufgabe** (die letzten 8 Nachrichten von Menschen und Kollegen, mit Namen), zuletzt die Anweisung des Agenten. Die Anweisung steht hinten, damit das Kürzen sie nie wegnimmt. Gleicher Anfang heißt: der Anbieter kann seinen Zwischenspeicher nutzen.
 - Agenten, die Otto beauftragen, schreiben hinein, was früher falsch war und was jetzt anders sein soll; er kennt sonst nur Aufgabe, Gespräch und Anweisung.

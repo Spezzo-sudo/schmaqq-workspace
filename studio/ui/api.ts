@@ -30,7 +30,8 @@ export type TeamTask=Task&{contract:Contract;completion:{ready:boolean;missing:s
 export type Team={tasks:TeamTask[];active?:{id:string;owner:string;project:string;action:string;status:string;task:string|null}[]};
 export type Resource={team?:boolean;device:string;owner:string;ownerName:string;name:string;online:boolean;
  development?:{id:string;readiness?:{ready:boolean;missing:string;probe:{state:'ok'|'running'|'failed';error?:string}|null}}[]};
-export type TaskDetail={task:TeamTask;thread:Message[];reviews:{id:string;owner:string;ownerName:string;created:number;commit:string;state:string;dropped?:string[];mergeWait?:{reason:string}|null}[];
+export type CodeUsage={runs:number;reported:number;input:number;cached:number;output:number;reasoning:number};
+export type TaskDetail={task:TeamTask;usage?:CodeUsage|null;thread:Message[];reviews:{id:string;owner:string;ownerName:string;created:number;commit:string;state:string;dropped?:string[];mergeWait?:{reason:string}|null}[];
  activeJobs:{id:string;action:string;status:string;ownerName:string;behind?:string}[];lastFailure:{id:string;action:string;owner:string;ownerName:string;text:string;detail:string;interrupted:boolean}|null;
  workspaces:{id:string;owner:string;changed?:boolean;behind?:number}[]};
 export type Role='admin'|'developer'|'reviewer'|'viewer';

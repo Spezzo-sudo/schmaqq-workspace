@@ -113,6 +113,7 @@ const text=unconnected?(meta.repository?'Der Arbeitsplatz des Teams wird noch ei
      {!desktop&&<button onClick={()=>go({task:'',info:true})}>Projektinfo</button>}
     </div>}
    </div>}/>
+  {detail.usage&&detail.usage.reported>0&&<p className="ui-usage">Verbrauch der Entwicklung ({detail.usage.runs===1?'1 Auftrag':detail.usage.runs+' Aufträge'}): {tokens(detail.usage.input)} neu gelesen · {tokens(detail.usage.cached)} aus dem Zwischenspeicher · {tokens(detail.usage.output)} geschrieben</p>}
   <details className="ui-about"><summary>Worum es geht</summary>
    {task.description&&<p>{task.description}</p>}{contract.criteria&&<p><b>Fertig, wenn:</b> {contract.criteria}</p>}
    <p className="ui-muted">{contract.kind==='code'?'Code-Aufgabe':'Sonstige Aufgabe'}</p>
@@ -216,3 +217,6 @@ function ResultForm({studio,detail,mine,onClose,onSaved}:{studio:Studio;detail:T
   </>}
  </Dialog>;
 }
+
+/** 1.234.567 as "1,2 Mio.", 45.300 as "45 Tsd." – a feeling for the size, not an exact figure. */
+const tokens=(n:number)=>n>=1e6?(n/1e6).toFixed(1).replace('.',',')+' Mio.':n>=1000?Math.round(n/1000)+' Tsd.':String(n);
