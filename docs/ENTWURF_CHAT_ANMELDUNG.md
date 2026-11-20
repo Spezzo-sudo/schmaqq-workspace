@@ -38,7 +38,13 @@ Alternativen:
 
 Marcos bestehender Dienst `a` wird ein Platz mit fester Zuordnung zu Marco; nichts ändert sich für ihn.
 
-## Offene Punkte, vor dem Bau zu klären
+## Stand 20.11.2026: gebaut
+
+- Ausgabe von `hermes auth add openai-codex --no-browser` geprüft: Mit `python -u` kommen nach wenigen Sekunden „Open this URL: https://auth.openai.com/codex/device“ und „Enter this code: XXXX-XXXXX“ (mit Farbcodes). Die erste Probe ohne Ausgabe lag an der Pufferung durch `| head`.
+- Server (`/api/chat-connection`, Zuordnung `chat-slot:v1:<platz>`, Anmeldestand `chat-login:v1:<platz>`), Dienst (`runLogin`, liest Link und Code, meldet sie, meldet „verbunden“), App (KI-Zugänge), Anlegen der Plätze (`selfhost/deploy/hermes-slots.sh`), Tests.
+- Noch nicht gebaut: Trennen (Platz freigeben).
+
+## Offene Punkte (waren vor dem Bau zu klären)
 
 - **Ausgabe von `hermes auth add`:** In einer Probe (20 und 25 Sekunden, mit und ohne Proxy) kam keine Ausgabe an.
   Die Form von Link und Code muss mit einem Pseudo-Terminal untersucht werden, bevor das Auslesen gebaut wird.

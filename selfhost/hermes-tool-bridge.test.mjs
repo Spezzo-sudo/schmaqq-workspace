@@ -328,3 +328,27 @@ test('worker: a provider refusal printed by the engine is a failed run, never an
  const run=(await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data.runs[0];
  assert.deepEqual([run.status,run.errorCode],['failed','model-unavailable']);
 });
+
+test('chat sign-in: link and code are read from the real output; only an OpenAI link counts; the result is reported',async()=>{
+ const {parseLogin,runLogin}=await import('./hermes-agent-worker.mjs');
+ const real='To continue, follow these steps:\n\n  1. Open this URL in your browser:\n     \x1b[94mhttps://auth.openai.com/codex/device\x1b[0m\n\n  2. Enter this code:\n     \x1b[94mT1OM-B1JX3\x1b[0m\n\nWaiting for sign-in... (press Ctrl+C to cancel)\n';
+ assert.deepEqual(parseLogin(real),{url:'https://auth.openai.com/codex/device',code:'T1OM-B1JX3'});
+ assert.equal(parseLogin('Open https://evil.example/codex/device\nEnter this code: ABCD-EFGH'),null,'a foreign link is not shown to anybody');
+ assert.equal(parseLogin('https://auth.openai.com/codex/device'),null,'a link without a code is not enough');
+ // The whole run with a fake child process: output in two pieces, then a clean exit.
+ const {EventEmitter}=await import('node:events'),{PassThrough}=await import('node:stream');
+ const posts=[];
+ const http=await import('node:http');
+ const server=http.createServer((req,res)=>{let body='';req.on('data',c=>body+=c);req.on('end',()=>{posts.push([req.url,JSON.parse(body)]);res.setHeader('content-type','application/json');res.end('{"ok":true}');});});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ try{
+  const cfg={backend:'http://127.0.0.1:'+server.address().port,origin:'https://studio.example',token:'t'.repeat(43),slot:'s01'};
+  const fake=(outcome)=>()=>{const child=new EventEmitter();child.stdout=new PassThrough();child.stderr=new PassThrough();
+   setTimeout(()=>{child.stdout.write(real.slice(0,60));child.stdout.write(real.slice(60));setTimeout(()=>child.emit('close',outcome),30);},10);child.kill=()=>{};return child;};
+  assert.equal(await runLogin(cfg,{HERMES_HOME:'/tmp'},{spawnFn:fake(0)}),'connected');
+  assert.deepEqual(posts.map(p=>[p[0],p[1].state]),[['/api/agent-worker/login','code'],['/api/agent-worker/login','connected']]);
+  posts.length=0;
+  assert.equal(await runLogin(cfg,{HERMES_HOME:'/tmp'},{spawnFn:fake(1)}),'failed');
+  assert.deepEqual(posts.map(p=>p[1].state),['code','failed'],'a sign-in that did not finish is reported as failed');
+ }finally{await new Promise(r=>server.close(r));}
+});

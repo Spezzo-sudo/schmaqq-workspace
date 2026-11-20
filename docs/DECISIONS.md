@@ -2,6 +2,9 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 20.11.2026 (Chat-Anmeldung selbst verbinden: gebaut)
+- Wer in KI-Zugänge bei „Gespräche und Recherche“ auf „Mit ChatGPT verbinden“ tippt, bekommt einen freien **Platz** (eigener Benutzer und Dienst auf dem Server, beim Deploy einmal angelegt, Start mit 10). Der Dienst des Platzes führt die Geräte-Anmeldung aus, Studio zeigt Link und Code, danach beantwortet derselbe Dienst die Agenten dieser Person. Marcos bestehender Dienst bleibt fest ihm zugeordnet. Ausführlich: `docs/ENTWURF_CHAT_ANMELDUNG.md`.
+
 ## 20.11.2026 (Zwei Anmeldungen, jede Person selbst)
 - **Beschluss (Marco):** Es bleibt bei **zwei Anmeldungen bei ChatGPT, und jede Person macht beide selbst**: (1) **Gespräche und Recherche**, (2) **Code ändern**. Beide einmalig pro Person, nicht pro Agent und nicht pro Projekt, beide in Mein Konto → KI-Zugänge. Niemand wartet darauf, dass der Inhaber etwas am Server einrichtet. Wer einen Agenten anstößt, zahlt mit dem eigenen Konto.
 - **Ist-Stand:** (2) kann die Person selbst verbinden. (1) richtet heute der Betreiber von Hand ein (eigener Dienst und eigener Benutzer auf dem Server pro Person, `hermes auth add openai-codex`); nur Marco ist eingerichtet. Das ist die offene Lücke.

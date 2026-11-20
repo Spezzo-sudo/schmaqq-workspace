@@ -22,7 +22,7 @@ Marco gibt frei, Deploy nach [OPERATIONS.md](OPERATIONS.md).
 - ✅ Phase 3 (Branch): Übergabepaket mit Gespräch der Aufgabe.
 - ❌ Phase 0: Messung mit echtem Lauf. Braucht Test-Repository und ChatGPT-Verbindung von Marco.
 - ✅ Phase 2 (Branch): Verbrauch pro Lauf speichern, Summe pro Aufgabe anzeigen (ungetestet mit echtem Codex-Lauf, das Format ist aus der Doku). Offen: Übersicht über Zeit. ❌ Phase 4: Fortsetzen derselben Sitzung (nur selbe Person und Aufgabe). Phase 5: Anmeldung erklären.
-- ❌ **Chat-Anmeldung selbst verbinden** (Beschluss 20.11.: zwei Anmeldungen, jede Person beide selbst). Heute richtet der Betreiber den Chat-Zugang jeder Person von Hand ein; nur Marco ist eingerichtet. Entwurf zuerst (Job-Starter arbeitet einen Auftrag nach dem anderen, Anmeldedaten pro Person getrennt), dann Bau. Siehe DECISIONS.
+- ✅ **Chat-Anmeldung selbst verbinden** (Beschluss 20.11.): gebaut mit Plätzen (siehe DECISIONS und `docs/ENTWURF_CHAT_ANMELDUNG.md`). Offen: mit einer zweiten Person von Anfang bis Ende testen; Trennen; mehr als 10 Plätze per `hermes-slots.sh <Anzahl>`.
 
 ## Danach: einmal den echten Ablauf durchspielen (Marco und Claude gemeinsam)
 

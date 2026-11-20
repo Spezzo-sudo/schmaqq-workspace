@@ -186,10 +186,10 @@ const toolCall = workRun.extend({
 const decideProposal = z.object({ proposal: id, decision: z.enum(['accept', 'reject']) }).strict();
 const chainRequest = z.object({ run: id, action: z.enum(['stop', 'continue']) }).strict();
 
-const WORKER_ROUTES = ['claim', 'heartbeat', 'tool', 'finish'];
+const WORKER_ROUTES = ['claim', 'heartbeat', 'tool', 'finish', 'login'];
 // '/api/hermes-worker/' is the path the first pilot worker was installed with; it stays as an alias.
 const WORKER_PREFIXES = ['/api/agent-worker/', '/api/hermes-worker/'];
-const MEMBER_ROUTES = ['/api/model-catalog', '/api/agent-runs', '/api/agent-runs/cancel', '/api/agent-proposals/decide', '/api/agent-chains'];
+const MEMBER_ROUTES = ['/api/chat-connection', '/api/model-catalog', '/api/agent-runs', '/api/agent-runs/cancel', '/api/agent-proposals/decide', '/api/agent-chains'];
 const LOOPBACK = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
 // A reverse proxy or tunnel on this machine also connects from loopback. These headers give it away.
 const PROXY_HEADERS = ['x-forwarded-for', 'x-real-ip', 'forwarded', 'cf-connecting-ip', 'cf-ray'];
@@ -207,15 +207,19 @@ const plans = agent => agent.lead === true || agent.permissions?.manageTasks ===
 const fingerprint = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const secureMatch = (a, b) => timingSafeEqual(Buffer.from(digest(a)), Buffer.from(digest(b)));
 
+// A worker is bound to a person in the file (owner) or is a free place ("slot") that a person takes by connecting
+// their ChatGPT in the app; the binding then lives in the database.
+const SLOT = /^s\d{2}$/;
 function validWorkers(workers) {
   const wellFormed = Array.isArray(workers) && workers.every(w =>
-    w && typeof w.owner === 'string' && typeof w.token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(w.token));
+    w && typeof w.token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(w.token)
+    && ((typeof w.owner === 'string' && w.slot === undefined) || (typeof w.slot === 'string' && SLOT.test(w.slot) && w.owner === undefined)));
   if (!wellFormed) throw new Error('Ungültige Hermes-Worker-Konfiguration.');
   const distinct = values => new Set(values).size === values.length;
-  if (!distinct(workers.map(w => w.owner)) || !distinct(workers.map(w => w.token))) {
-    throw new Error('Hermes-Worker müssen getrennte Benutzer und Tokens haben.');
+  if (!distinct(workers.filter(w => w.owner).map(w => w.owner)) || !distinct(workers.filter(w => w.slot).map(w => w.slot)) || !distinct(workers.map(w => w.token))) {
+    throw new Error('Hermes-Worker müssen getrennte Benutzer, Plätze und Tokens haben.');
   }
-  return workers.map(w => ({ owner: w.owner, secret: w.token }));
+  return workers.map(w => ({ owner: w.owner ?? null, slot: w.slot ?? null, secret: w.token }));
 }
 
 /** How long agents think: Studio decides for all of them (STUDIO_AGENT_EFFORT), short by default to save usage. */
@@ -241,7 +245,10 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
   const answerPosted = (owner, project, source) =>
     live?.publish({ type: 'room', project, only: privateScope(db, source) ? [owner] : null });
 
-  const hasWorker = memberId => registered.some(w => w.owner === memberId);
+  // Who a worker works for: the person named in the file, or whoever took the free place.
+  const ownerOf = w => w.owner ?? (w.slot ? metaGet('chat-slot:v1:' + w.slot)?.owner ?? null : null);
+  const workerOf = memberId => registered.find(w => ownerOf(w) === memberId);
+  const hasWorker = memberId => Boolean(workerOf(memberId));
   const workerOnline = (memberId, now) => now - (lastContact.get(memberId) ?? 0) < WORKER_ONLINE_MS;
   const memberRow = memberId => db.prepare('SELECT * FROM members WHERE id=?').get(memberId);
   const activeAgent = (project, agent) => agentsFor(db, project).find(a => a.id === agent && a.active !== false);
@@ -268,7 +275,7 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
     if (!worker) throw fail(401, 'Hermes-Dienstanmeldung ungültig.');
     const direct = LOOPBACK.includes(req.socket?.remoteAddress) && !PROXY_HEADERS.some(h => req.headers[h] !== undefined);
     if (!direct) throw fail(403, 'Hermes-Dienst nur auf localhost.');
-    return worker.owner;
+    return worker;
   }
 
   function ownRun(runId, owner) {
@@ -942,10 +949,74 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
   }
 
   // ---- HTTP -------------------------------------------------------------------------------------------
+  // ---- Connecting ChatGPT for the chat: the person taps "Verbinden", the worker of their place runs the sign-in ----
+  const LOGIN_URL = /^https:\/\/auth\.openai\.com\/[a-zA-Z0-9\/_-]{1,100}$/;
+  const LOGIN_CODE = /^[A-Z0-9]{3,8}(-[A-Z0-9]{3,8}){0,2}$/;
+  const loginKey = slot => 'chat-login:v1:' + slot;
+  const loginRequest = z.union([
+    z.object({ state: z.literal('code'), url: z.string().regex(LOGIN_URL), code: z.string().regex(LOGIN_CODE) }).strict(),
+    z.object({ state: z.literal('connected') }).strict(),
+    z.object({ state: z.literal('failed'), error: z.string().max(300).optional() }).strict()
+  ]);
+  const chatConnectionRequest = z.object({ action: z.literal('start') }).strict();
+
+  /** What the app shows for a person: none | requested | code | connected | failed (plus the link and code while waiting). */
+  function chatConnection(member, now) {
+    const worker = workerOf(member.id);
+    if (!worker) return { state: 'none', free: registered.some(w => w.slot && !ownerOf(w)) };
+    const login = worker.slot ? metaGet(loginKey(worker.slot)) : null;
+    const state = !login ? 'connected' : login.state === 'running' ? 'requested' : login.state;
+    return {
+      state, online: workerOnline(member.id, now),
+      ...(state === 'code' ? { url: login.url, code: login.code } : {}),
+      ...(state === 'failed' ? { error: login.error ?? 'Die Anmeldung hat nicht geklappt.' } : {})
+    };
+  }
+
+  function startChatConnection(member, now) {
+    let worker = workerOf(member.id);
+    if (worker && !worker.slot) throw fail(409, 'Dein Zugang ist schon eingerichtet.');
+    if (worker) {
+      const state = metaGet(loginKey(worker.slot))?.state;
+      if (state === 'connected') throw fail(409, 'Du bist schon verbunden.');
+    } else {
+      worker = registered.find(w => w.slot && !ownerOf(w));
+      if (!worker) throw fail(409, 'Im Moment sind alle Plätze vergeben. Bitte frag den Inhaber von Studio.');
+      metaPut('chat-slot:v1:' + worker.slot, { owner: member.id, created: now });
+    }
+    metaPut(loginKey(worker.slot), { owner: member.id, state: 'requested', updated: now });
+    waiting.get('slot:' + worker.slot)?.(); // the worker of this place is asking for work: wake it
+    waiting.get(member.id)?.();
+    return chatConnection(member, now);
+  }
+
   async function workerRoute(action, { method, req, send }) {
-    const owner = authenticate(req);
+    const worker = authenticate(req);
+    const owner = ownerOf(worker), key = owner ?? 'slot:' + worker.slot;
     if (method !== 'POST') throw fail(405, 'Methode nicht erlaubt.');
-    lastContact.set(owner, Date.now());
+    lastContact.set(key, Date.now());
+
+    if (action === 'login') {
+      if (!worker.slot) throw fail(403, 'Dieser Dienst meldet sich nicht selbst an.');
+      const request = parse(loginRequest, await readJSON(req, 1000)), now = Date.now(), current = metaGet(loginKey(worker.slot));
+      if (!current || !['requested', 'running', 'code'].includes(current.state)) throw fail(409, 'Es läuft keine Anmeldung.');
+      metaPut(loginKey(worker.slot), { ...current, ...request, updated: now });
+      return send({ ok: true });
+    }
+    const pending = worker.slot && owner ? metaGet(loginKey(worker.slot)) : null;
+    if (action === 'claim' && pending?.state === 'requested') {
+      // A sign-in is asked for: the worker does that instead of a chat answer.
+      metaPut(loginKey(worker.slot), { ...pending, state: 'running', updated: Date.now() });
+      return send({ job: null, login: { slot: worker.slot } });
+    }
+    if (!owner) {
+      // A free place has nothing to do until a person takes it; it just waits.
+      if (action !== 'claim') throw fail(403, 'Dieser Platz ist noch niemandem zugeordnet.');
+      const { wait = 0 } = parse(claimRequest, await readJSON(req, 200));
+      if (wait > 0) await waitForWork(key, req, wait);
+      lastContact.set(key, Date.now());
+      return send({ job: null });
+    }
 
     if (action === 'claim') {
       const { wait = 0 } = parse(claimRequest, await readJSON(req, 200));
@@ -953,6 +1024,11 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
       if (!job && wait > 0) {
         await waitForWork(owner, req, wait);
         lastContact.set(owner, Date.now());
+        const again = worker.slot ? metaGet(loginKey(worker.slot)) : null;
+        if (again?.state === 'requested') {
+          metaPut(loginKey(worker.slot), { ...again, state: 'running', updated: Date.now() });
+          return send({ job: null, login: { slot: worker.slot } });
+        }
         job = claim(owner, Date.now());
       }
       send({ job });
@@ -985,6 +1061,13 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
 
   async function memberRoute(route, { method, req, url, send }) {
     const member = user(req), now = Date.now();
+    if (route === '/api/chat-connection') {
+      if (method === 'GET') return send(enabled ? chatConnection(member, now) : { state: 'unavailable' });
+      if (method !== 'POST') throw fail(405, 'Methode nicht erlaubt.');
+      if (!enabled) throw fail(503, 'Agenten sind hier nicht eingerichtet.');
+      parse(chatConnectionRequest, await readJSON(req, 100));
+      return send(transaction(db, () => startChatConnection(member, now)));
+    }
     // The model catalog: everybody reads it (profiles offer it), only the Studio owner changes it.
     if (route === '/api/model-catalog') {
       if (method === 'GET') return send({ catalog: readCatalog(db) });
