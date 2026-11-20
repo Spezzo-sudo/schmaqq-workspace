@@ -24,10 +24,7 @@ export function AccountScreen({studio}:{studio:Studio}){
   {area==='profil'&&<Profile studio={studio} photo={photo}/>}
   {area==='sicherheit'&&<><Password/><Section title="Anmeldung"><p>{me.email}</p><button className="ui-btn" onClick={()=>void signOut()}>Abmelden</button></Section></>}
   {area==='ki'&&<>
-   <Section title="Chat und Recherche">
-    <p className="ui-fact"><span className={'ui-dot '+(agentsReady===false?'fail':agentsReady?'ok':'idle')}/>{agentsReady===false?'Gerade nicht erreichbar.':agentsReady?'Bereit.':'Noch nicht eingerichtet.'}</p>
-    <p className="ui-muted">Fragst du einen Agenten, arbeitet er mit deinem Zugang. Andere im Team nutzen ihren eigenen. Nur fürs Ändern von Code verbindest du darunter einmal dein ChatGPT.</p>
-   </Section>
+   <ChatSignIn studio={studio}/>
    <CodeSignIn studio={studio}/>
   </>}
   {area==='verwaltung'&&owner&&<><TeamAccess studio={studio}/><ModelCatalogAdmin studio={studio}/></>}
@@ -83,6 +80,32 @@ async function download(){
 
 type SignIn={connected:boolean;checked:number|null;error:string|null;places:{name:string}[];
  pending:{job:string;mode:'login'|'status'|'logout'|null;status:string;login:{url:string;code:string}|null}|null};
+type ChatConnection={state:'none'|'requested'|'code'|'connected'|'failed'|'unavailable';free?:boolean;online?:boolean;url?:string;code?:string;error?:string};
+/** Once per person, for all agents: lets the agents answer you (chat and research) with your own ChatGPT. */
+function ChatSignIn({studio}:{studio:Studio}){
+ const [state,setState]=useState<ChatConnection|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[copied,setCopied]=useState(false);
+ const load=useCallback(async()=>{try{setState(await api<ChatConnection>('/api/chat-connection'));setError('');}catch(e){setError((e as Error).message);}},[]);
+ useEffect(()=>{let alive=true;api<ChatConnection>('/api/chat-connection').then(s=>{if(alive)setState(s);}).catch(e=>{if(alive)setError((e as Error).message);});return()=>{alive=false;};},[]);
+ const waiting=state?.state==='requested'||state?.state==='code';
+ useEffect(()=>{if(!waiting)return;const t=setInterval(()=>void load(),2500);return()=>clearInterval(t);},[waiting,load]);
+ useEffect(()=>{if(state?.state==='connected')void studio.reloadRuns();},[state?.state]);// eslint-disable-line react-hooks/exhaustive-deps
+ async function start(){setBusy(true);setError('');try{setState(await api<ChatConnection>('/api/chat-connection',{action:'start'}));}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+ return <Section title="Gespräche und Recherche">
+  <p className="ui-muted">Damit die Agenten dir antworten, verbinde einmal dein ChatGPT. Gilt für alle Agenten und alle deine Projekte. Nur du nutzt diese Anmeldung.</p>
+  {state?.state==='unavailable'&&<p className="ui-muted">Agenten sind auf diesem Studio noch nicht eingerichtet.</p>}
+  {state?.state==='connected'&&<p className="ui-fact"><span className={'ui-dot '+(state.online===false?'fail':'ok')}/>{state.online===false?'Verbunden, der Dienst ist gerade nicht erreichbar.':'Verbunden.'}</p>}
+  {state?.state==='none'&&(state.free?<button className="ui-btn primary" disabled={busy} onClick={()=>void start()}>Mit ChatGPT verbinden</button>:<p className="ui-muted">Im Moment sind alle Plätze vergeben. Bitte frag den Inhaber von Studio.</p>)}
+  {state?.state==='requested'&&<p className="ui-muted" role="status">Wird vorbereitet …</p>}
+  {state?.state==='code'&&state.url&&state.code&&<ol className="ui-checklist plain">
+   <li><span className="ui-step">1</span><div><a className="ui-btn primary" href={state.url} target="_blank" rel="noreferrer noopener">ChatGPT-Anmeldung öffnen</a></div></li>
+   <li><span className="ui-step">2</span><div>Mit deinem ChatGPT anmelden und diesen Code eingeben: <code className="ui-code">{state.code}</code> <button className="ui-link" onClick={()=>void navigator.clipboard?.writeText(state.code!).then(()=>setCopied(true))}>{copied?'Kopiert':'Kopieren'}</button></div></li>
+   <li><span className="ui-step">3</span><div>Zurückkommen. Hier steht dann „Verbunden“. Der Code gilt 15 Minuten.</div></li>
+  </ol>}
+  {state?.state==='failed'&&<><ErrorLine text={state.error??'Die Anmeldung hat nicht geklappt.'}/><button className="ui-btn primary" disabled={busy} onClick={()=>void start()}>Nochmal</button></>}
+  <ErrorLine text={error}/>
+ </Section>;
+}
+
 /** Once per person, for all agents: lets the team change code on the server with your ChatGPT. */
 export function CodeSignIn({studio,compact=false,who}:{studio:Studio;compact?:boolean;who?:string}){
  const [state,setState]=useState<SignIn|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[copied,setCopied]=useState(false);
@@ -250,8 +273,10 @@ export function GuideScreen({studio}:{studio:Studio}){
   </Section>
   <Section title="Dein ChatGPT verbinden">
    <p><b>Du musst das nur ein einziges Mal tun.</b> Nicht pro Agent und nicht pro Projekt.</p>
-   <p><b>Mit Agenten schreiben:</b> Jede Person braucht dafür ihren eigenen Zugang. Den richtet der Inhaber von Studio für dich ein, du kannst ihn noch nicht selbst verbinden. Unter „KI-Zugänge“ steht „Bereit“ oder „Noch nicht eingerichtet“. Bis er bereit ist, antworten dir die Agenten nicht.</p>
-   <p><b>Wenn ein Agent Code ändern soll</b> (zum Beispiel Otto): Das verbindest du selbst. Tippe auf „Mit ChatGPT verbinden“, öffne die Seite und tippe den Code ein. Danach gilt es für alle Agenten und alle deine Projekte.</p>
+   <p><b>Zwei Anmeldungen, beide machst du selbst, jede nur einmal:</b></p>
+   <p><b>1. Gespräche und Recherche</b>, damit dir die Agenten antworten. Unter „KI-Zugänge“ bei „Gespräche und Recherche“ auf „Mit ChatGPT verbinden“ tippen, die Seite öffnen, den Code eintippen.</p>
+   <p><b>2. Code ändern</b>, damit zum Beispiel Otto für dich programmiert. Im Abschnitt darunter genauso.</p>
+   <p>Warum zwei? Gespräche und Code laufen auf getrennten Wegen, und jeder Weg braucht seine Anmeldung. Es ist dasselbe ChatGPT-Konto mit demselben Limit.</p>
    <p><b>Neues Projekt, neuer Otto, neuer Agent:</b> du verbindest nichts neu.</p>
    <p><b>Jede Person verbindet ihr eigenes ChatGPT.</b> Wer einen Agenten beauftragt, verbraucht das eigene Limit.</p>
    {to('Zu „KI-Zugänge“',{page:'account',account:'ki'})}

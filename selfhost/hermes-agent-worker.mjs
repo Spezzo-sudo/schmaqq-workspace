@@ -309,6 +309,41 @@ function bridgeTools(cfg, job, tools, child, { cancel, violate }) {
   });
 }
 
+// ---- Signing in to ChatGPT for the chat: started by Studio when the person taps "Verbinden" ----------------------
+const stripAnsi = text => text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+/** Link and code from the sign-in's text. Only an OpenAI sign-in link counts; anything else is ignored. */
+export function parseLogin(text) {
+  const clean = stripAnsi(text);
+  const url = /https:\/\/auth\.openai\.com\/[a-zA-Z0-9\/_-]{1,100}/.exec(clean)?.[0];
+  const code = /enter this code:\s*([A-Z0-9]{3,8}(?:-[A-Z0-9]{3,8}){0,2})/i.exec(clean)?.[1]?.toUpperCase();
+  return url && code ? { url, code } : null;
+}
+
+const LOGIN_MAX_MS = 16 * 60 * 1000; // the code is valid for 15 minutes
+export async function runLogin(cfg, env, { spawnFn = spawn, label = 'schmaqq-' + (cfg.slot ?? 'chat') } = {}) {
+  const child = spawnFn(python, ['-u', '/opt/hermes-agent/venv/bin/hermes', 'auth', 'add', 'openai-codex', '--no-browser', '--label', label],
+    { cwd: env.HERMES_HOME, env, stdio: ['ignore', 'pipe', 'pipe'] });
+  let text = '', reported = false;
+  const tell = body => post(cfg, 'login', body, 15000).catch(() => {});
+  const onData = async chunk => {
+    text = (text + chunk).slice(-4000);
+    const found = !reported && parseLogin(text);
+    if (found) { reported = true; await tell({ state: 'code', ...found }); }
+  };
+  child.stdout.on('data', onData);
+  child.stderr.on('data', onData);
+  const timer = setTimeout(() => child.kill('SIGKILL'), LOGIN_MAX_MS);
+  const code = await new Promise(resolve => {
+    child.once('error', () => resolve(-1));
+    child.once('close', n => resolve(n ?? -1));
+  });
+  clearTimeout(timer);
+  if (code === 0 && reported) { await tell({ state: 'connected' }); return 'connected'; }
+  const why = reported ? 'Die Anmeldung wurde nicht abgeschlossen (Zeit abgelaufen oder abgebrochen).' : 'Der Anmeldelink konnte nicht abgerufen werden.';
+  await tell({ state: 'failed', error: why });
+  return 'failed';
+}
+
 export async function start() {
   if (process.argv.length !== 3) throw Error('One private service config file required.');
   const cfg = readPrivateConfig(process.argv[2]), env = environment();
@@ -320,7 +355,8 @@ export async function start() {
   while (true) {
     try {
       const data = await post(cfg, 'claim', { wait: CLAIM_WAIT_S }, (CLAIM_WAIT_S + 10) * 1000);
-      if (data.job) await execute(cfg, data.job, env);
+      if (data.login) await runLogin(cfg, env);
+      else if (data.job) await execute(cfg, data.job, env);
       continue; // Studio already held the request open; ask again right away
     } catch {
       process.stderr.write('Agent worker: Studio backend temporarily unavailable.\n');

@@ -8,7 +8,7 @@ import {createStudioServer} from './server.mjs';
 import {openStore,digest,passwordHash} from './store.mjs';
 import {ensureAgentRunSchema} from './agent-run-store.mjs';
 
-async function fixture(t,{configured=true}={}){
+async function fixture(t,{configured=true,slots=0}={}){
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-hermes-queue-'));
  const filename=path.join(dir,'pilot.sqlite'),origin='http://127.0.0.1:49151';
  const privateDb=openStore(filename,{seedProjects:false});
@@ -20,7 +20,7 @@ async function fixture(t,{configured=true}={}){
   m.cookie='studio_session='+m.session;
  }
  privateDb.close();
- const secrets=members.map(m=>({owner:m.id,token:randomBytes(32).toString('base64url')}));
+ const secrets=slots?Array.from({length:slots},(_,i)=>({slot:'s0'+(i+1),token:randomBytes(32).toString('base64url')})):members.map(m=>({owner:m.id,token:randomBytes(32).toString('base64url')}));
  const app=createStudioServer({filename,origin,previewOrigin:'http://127.0.0.1:49152',resetMailer:null,hermesWorkers:configured?secrets:[]});
  await new Promise((resolve,reject)=>{app.server.once('error',reject);app.server.listen(0,'127.0.0.1',resolve);});
  t.after(async()=>{await new Promise(resolve=>app.server.close(resolve));app.db.close();rmSync(dir,{recursive:true,force:true});});
@@ -714,4 +714,46 @@ test('handover package: stable rules first, the order of the day last, never cut
  assert.ok(prompt.endsWith('LETZTES'),'the instruction survives the length limit');
  const bare=codePrompt({task:{title:'T',description:''},contract:{criteria:''},agent:{name:'Grau'},instruction:'Mach es.'});
  assert.ok(!bare.includes('Bisheriges Gespräch'),'no empty section');
+});
+
+test('chat connection: a person takes a free place, the worker of that place signs in, then answers that person',async t=>{
+ const f=await fixture(t,{slots:1}),[alice,bob]=f.members,[place]=f.secrets,w={token:place.token};
+ assert.deepEqual((await f.get('/api/chat-connection',{cookie:alice.cookie})).data,{state:'none',free:true});
+ assert.equal((await f.post('/api/agent-worker/claim',{},w)).data.job,null,'a free place has nothing to do');
+ assert.equal((await f.post('/api/agent-worker/finish',{run:randomUUID(),lease:'x'.repeat(40),status:'completed',output:'x'},w)).status,403,'a free place may do nothing but wait');
+ const started=await f.post('/api/chat-connection',{action:'start'},{cookie:alice.cookie});
+ assert.equal(started.status,200);assert.equal(started.data.state,'requested');
+ assert.equal((await f.post('/api/chat-connection',{action:'start'},{cookie:bob.cookie})).status,409,'all places taken');
+ assert.equal((await f.get('/api/chat-connection',{cookie:bob.cookie})).data.state,'none','Bob sees nothing of Alice\'s connection');
+ // The worker of the place is asked to sign in, not to answer.
+ const asked=(await f.post('/api/agent-worker/claim',{},w)).data;
+ assert.deepEqual([asked.job,asked.login],[null,{slot:'s01'}]);
+ assert.equal((await f.post('/api/agent-worker/login',{state:'code',url:'http://evil.example/x',code:'ABCD-EFGH1'},w)).status,400,'only OpenAI sign-in links');
+ assert.equal((await f.post('/api/agent-worker/login',{state:'code',url:'https://auth.openai.com/codex/device',code:'ab cd'},w)).status,400);
+ assert.equal((await f.post('/api/agent-worker/login',{state:'code',url:'https://auth.openai.com/codex/device',code:'T1OM-B1JX3'},w)).status,200);
+ assert.deepEqual((await f.get('/api/chat-connection',{cookie:alice.cookie})).data,{state:'code',online:true,url:'https://auth.openai.com/codex/device',code:'T1OM-B1JX3'});
+ assert.equal((await f.post('/api/agent-worker/login',{state:'connected'},w)).status,200);
+ assert.equal((await f.get('/api/chat-connection',{cookie:alice.cookie})).data.state,'connected');
+ assert.equal((await f.post('/api/chat-connection',{action:'start'},{cookie:alice.cookie})).status,409,'already connected');
+ assert.equal((await f.post('/api/agent-worker/login',{state:'connected'},w)).status,409,'no sign-in is running');
+ // From now on this worker answers Alice.
+ const {project,agent,message}=await f.createAgentMessage();
+ assert.ok((await f.post('/api/agent-runs',{project,agent,message},{cookie:alice.cookie})).status<300);
+ const job=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ assert.equal(job.owner,alice.id,'the place works for the person who took it');
+});
+
+test('chat connection: a failed sign-in can be tried again; a person with a fixed worker is simply connected',async t=>{
+ const slotted=await fixture(t,{slots:2}),[alice]=slotted.members,[first]=slotted.secrets;
+ await slotted.post('/api/chat-connection',{action:'start'},{cookie:alice.cookie});
+ await slotted.post('/api/agent-worker/claim',{},{token:first.token});
+ await slotted.post('/api/agent-worker/login',{state:'failed',error:'Zeit abgelaufen'},{token:first.token});
+ assert.deepEqual((await slotted.get('/api/chat-connection',{cookie:alice.cookie})).data.state,'failed');
+ const again=await slotted.post('/api/chat-connection',{action:'start'},{cookie:alice.cookie});
+ assert.equal(again.data.state,'requested','tapping again starts a new try on the same place');
+ const fixed=await fixture(t);
+ assert.equal((await fixed.get('/api/chat-connection',{cookie:fixed.members[0].cookie})).data.state,'connected');
+ assert.equal((await fixed.post('/api/chat-connection',{action:'start'},{cookie:fixed.members[0].cookie})).status,409);
+ const off=await fixture(t,{configured:false});
+ assert.equal((await off.get('/api/chat-connection',{cookie:off.members[0].cookie})).data.state,'unavailable');
 });
