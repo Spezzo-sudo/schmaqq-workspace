@@ -250,8 +250,8 @@ export function GuideScreen({studio}:{studio:Studio}){
   </Section>
   <Section title="Dein ChatGPT verbinden">
    <p><b>Du musst das nur ein einziges Mal tun.</b> Nicht pro Agent und nicht pro Projekt.</p>
-   <p><b>Mit Agenten schreiben:</b> geht sofort, du musst nichts verbinden. Steht unter „KI-Zugänge“ „Bereit“, ist alles in Ordnung.</p>
-   <p><b>Nur wenn ein Agent Code ändern soll</b> (zum Beispiel Otto): Tippe auf „Mit ChatGPT verbinden“, öffne die Seite und tippe den Code ein. Danach gilt es für alle Agenten und alle deine Projekte.</p>
+   <p><b>Mit Agenten schreiben:</b> Jede Person braucht dafür ihren eigenen Zugang. Den richtet der Inhaber von Studio für dich ein, du kannst ihn noch nicht selbst verbinden. Unter „KI-Zugänge“ steht „Bereit“ oder „Noch nicht eingerichtet“. Bis er bereit ist, antworten dir die Agenten nicht.</p>
+   <p><b>Wenn ein Agent Code ändern soll</b> (zum Beispiel Otto): Das verbindest du selbst. Tippe auf „Mit ChatGPT verbinden“, öffne die Seite und tippe den Code ein. Danach gilt es für alle Agenten und alle deine Projekte.</p>
    <p><b>Neues Projekt, neuer Otto, neuer Agent:</b> du verbindest nichts neu.</p>
    <p><b>Jede Person verbindet ihr eigenes ChatGPT.</b> Wer einen Agenten beauftragt, verbraucht das eigene Limit.</p>
    {to('Zu „KI-Zugänge“',{page:'account',account:'ki'})}
