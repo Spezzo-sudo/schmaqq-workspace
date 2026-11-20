@@ -77,6 +77,7 @@ Mit einem Menschen: Kopf mit Name und „privat“; nur die beiden lesen mit.
   - Sonstige Aufgabe: „Erledigt“.
 - Darunter **das Gespräch** inklusive Agent ↔ Agent, Kette mit Zähler, Stopp, Weitermachen.
   Antwortet ein Kollege auf eine Aufgabe, die ihm ein Agent gegeben hat, ist seine Antwort das Ergebnis der Aufgabe; sie steht dann auf „Zum Freigeben“ bzw. „Fertig – bitte abschliessen“. Im Projektchat steht dazu nur eine kurze Zeile.
+- Hat die Entwicklung schon gearbeitet, steht unter dem Kasten eine leise Zeile **Verbrauch** („Verbrauch der Entwicklung (3 Aufträge): 120 Tsd. neu gelesen · 80 Tsd. aus dem Zwischenspeicher · 4 Tsd. geschrieben“). Die Zahlen meldet Codex pro Lauf; Studio addiert sie pro Aufgabe. Ohne Meldung steht keine Zeile.
 - „Worum es geht“ (Beschreibung, Fertig wenn) eingeklappt oben.
 - ⋯ : Bearbeiten (Titel, Beschreibung, Fertig wenn), Wieder öffnen, Löschen (nur Ersteller/Admin).
 

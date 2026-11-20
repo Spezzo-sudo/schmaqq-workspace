@@ -80,3 +80,22 @@ test('parallel task ownership, durable task discussion and active workspace assi
   const reopened=openStore(filename);try{assert.equal(reopened.prepare('SELECT body FROM task_comments WHERE id=?').get(cid).body,body);}finally{reopened.close();}
  }finally{await new Promise(r=>app.server.close(r));app.db.close();assert.ok(dir.startsWith(path.join(os.tmpdir(),'studio-collaboration-')));rmSync(dir,{recursive:true,force:true});}
 });
+
+test('code usage of a task: runs are counted, what Codex reported is summed, bad results count as runs only',async()=>{
+ const {openStore}=await import('./store.mjs'),{codeUsage}=await import('./collaboration.mjs');
+ const {mkdtempSync,rmSync}=await import('node:fs'),os=await import('node:os'),path=await import('node:path');
+ const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-usage-')),db=openStore(path.join(dir,'s.sqlite'),{seedProjects:false});
+ try{
+  db.exec('PRAGMA foreign_keys=OFF');const task='t1',add=(id,action,status,result)=>{
+   db.prepare('INSERT INTO workspaces(job,title,scope,task) VALUES(?,?,?,?)').run('w-'+id,'x','',task);
+   db.prepare('INSERT INTO jobs(id,owner,device,project,action,payload,status,created,result) VALUES(?,?,?,?,?,?,?,?,?)').run(id,'o','d','p',action,JSON.stringify({worktree:'w-'+id}),status,Date.now(),result);
+  };
+  assert.equal(codeUsage(db,task),null,'no run, no line');
+  add('a','codex','completed',JSON.stringify({usage:{turns:1,input:1000,cached:800,output:50,reasoning:5}}));
+  add('b','codex','completed',JSON.stringify({usage:{turns:2,input:500,cached:100,output:20,reasoning:0}}));
+  add('c','codex','completed','not json');
+  add('d','codex','failed',JSON.stringify({usage:{input:9999}}));
+  add('e','review','completed',JSON.stringify({usage:{input:9999}}));
+  assert.deepEqual(codeUsage(db,task),{runs:3,reported:2,input:1500,cached:900,output:70,reasoning:5});
+ }finally{db.close();rmSync(dir,{recursive:true,force:true});}
+});

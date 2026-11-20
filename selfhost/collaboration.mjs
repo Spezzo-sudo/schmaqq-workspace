@@ -11,6 +11,15 @@ import {taskView,assertTaskStatus,teamEvent,taskContract,invalidateTaskResult,st
 
 const id=z.string().regex(/^[\w-]{1,100}$/);
 const fail=(status,message)=>Object.assign(new Error(message),{status});
+/** What the code runs of a task used, summed (Codex reports it per run; a run without a report counts as a run only). */
+export function codeUsage(db,task){
+ const total={runs:0,reported:0,input:0,cached:0,output:0,reasoning:0};
+ for(const j of db.prepare(`SELECT j.result FROM jobs j JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree') WHERE w.task=? AND j.action='codex' AND j.status='completed'`).all(task)){
+  total.runs+=1;
+  try{const u=JSON.parse(j.result??'{}')?.usage;if(u&&typeof u==='object'){total.reported+=1;for(const k of ['input','cached','output','reasoning'])total[k]+=Number.isFinite(u[k])?u[k]:0;}}catch{/* unreadable result */}
+ }
+ return total.runs?total:null;
+}
 export function taskWorkspaces(db,task){return listWorkspaces(db).filter(w=>w.taskId===task&&!w.archived);}
 export function assertAssignment(db,task,assignee){
  if(taskWorkspaces(db,task).some(w=>w.owner!==assignee))throw fail(409,'Für diese Aufgabe ist noch ein Arbeitsbereich reserviert. Erst abstimmen und den Arbeitsbereich abschließen.');
@@ -115,7 +124,7 @@ export async function collaborationRoute({route,method,req,url,db,user,send,read
   const activeJobs=db.prepare(`SELECT j.id,j.action,j.status,m.name AS ownerName FROM jobs j JOIN members m ON m.id=j.owner WHERE j.status IN ('queued','running','cancelling') AND (json_extract(j.payload,'$.worktree') IN (SELECT job FROM workspaces WHERE task=?) OR (j.action='integrate' AND json_extract(j.payload,'$.reviewJob') IN (SELECT r.id FROM jobs r JOIN workspaces w ON w.job=json_extract(r.payload,'$.worktree') WHERE w.task=?))) AND j.action NOT IN ('files','read-file','save-file') ORDER BY j.created`).all(task.id,task.id);
   // A queued job of this task may wait behind someone else's work on the same Werkstatt.
   for(const j of activeJobs)if(j.status==='queued'){const ahead=db.prepare("SELECT m.name FROM jobs o JOIN members m ON m.id=o.owner WHERE o.device=(SELECT device FROM jobs WHERE id=?) AND o.status IN ('running','cancelling') AND o.id<>? LIMIT 1").get(j.id,j.id);if(ahead)j.behind=ahead.name;}
-  send({task:taskView(db,task),brief,reviews,activeJobs,...taskJobState(db,task.id),source,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),thread:taskThread(db,task.id,member),workspaces:workspaces.map(w=>({...w,changed:copyHasChange(db,w.id),behind:copyBehind(db,w.id)}))});return true;
+  send({task:taskView(db,task),brief,reviews,activeJobs,usage:codeUsage(db,task.id),...taskJobState(db,task.id),source,changes:changeOverview(db,workspaces),comments:db.prepare('SELECT c.id,c.author,m.name AS authorName,c.body,c.created FROM task_comments c JOIN members m ON m.id=c.author WHERE c.task=? ORDER BY c.created,c.rowid').all(task.id),thread:taskThread(db,task.id,member),workspaces:workspaces.map(w=>({...w,changed:copyHasChange(db,w.id),behind:copyBehind(db,w.id)}))});return true;
  }
  if(route!=='/api/collaboration/task'||method!=='POST')throw fail(405,'Methode nicht erlaubt.');
  const value=parse(z.discriminatedUnion('action',[

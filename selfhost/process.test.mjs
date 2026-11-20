@@ -32,10 +32,12 @@ test('Codex JSON stream keeps UTF-8, emits useful events and resumes only its sa
    calls.push(argv);assert.equal(cwd,dir);assert.equal(options.env.OPENAI_API_KEY,undefined);
    if(argv[1]==='login')return 'Logged in using ChatGPT';
    assert.equal(options.input,'Weiter');assert.ok(argv.includes('sandbox_mode="workspace-write"'));
-   const bytes=Buffer.from(JSON.stringify({type:'thread.started',thread_id:session})+'\n'+JSON.stringify({type:'item.completed',item:{type:'agent_message',text:'Grüße aus Zürich'}})+'\n');
+   const bytes=Buffer.from(JSON.stringify({type:'thread.started',thread_id:session})+'\n'+JSON.stringify({type:'item.completed',item:{type:'agent_message',text:'Grüße aus Zürich'}})+'\n'
+    +JSON.stringify({type:'turn.completed',usage:{input_tokens:1000,cached_input_tokens:800,output_tokens:50,reasoning_output_tokens:20}})+'\n'+JSON.stringify({type:'turn.completed',usage:{input_tokens:'x',cached_input_tokens:-5,output_tokens:10}})+'\n');
    for(const byte of bytes)options.onStdout(Buffer.from([byte]));return '';
   };
   const first=await runCodex({executable:'local-codex',cwd:dir,prompt:'Weiter',sessionFile,onEvent:e=>events.push(e),execute});
+  assert.deepEqual(first.usage,{turns:2,input:1000,cached:800,output:60,reasoning:20},'the sum of what Codex reports; bad numbers count as zero');
   assert.equal(first.resumed,false);assert.equal(first.output,'Grüße aus Zürich');assert.equal(readFileSync(sessionFile,'utf8'),session);assert.equal(events.at(-1).text,'Grüße aus Zürich');
   const second=await runCodex({executable:'local-codex',cwd:dir,prompt:'Weiter',sessionFile,execute});
   assert.equal(second.resumed,true);assert.ok(calls.at(-1).includes('resume'));assert.ok(calls.at(-1).includes(session));assert.ok(!calls.at(-1).includes('--last'));
