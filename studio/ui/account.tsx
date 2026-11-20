@@ -26,7 +26,7 @@ export function AccountScreen({studio}:{studio:Studio}){
   {area==='ki'&&<>
    <Section title="Chat und Recherche">
     <p className="ui-fact"><span className={'ui-dot '+(agentsReady===false?'fail':agentsReady?'ok':'idle')}/>{agentsReady===false?'Gerade nicht erreichbar.':agentsReady?'Bereit.':'Noch nicht eingerichtet.'}</p>
-    <p className="ui-muted">Fragst du einen Agenten, arbeitet er mit deinem Zugang. Andere im Team nutzen ihren eigenen.</p>
+    <p className="ui-muted">Fragst du einen Agenten, arbeitet er mit deinem Zugang. Andere im Team nutzen ihren eigenen. Fürs Ändern von Code brauchst du zusätzlich die Verbindung darunter: Es ist dasselbe ChatGPT-Konto und dasselbe Limit, nur ein zweiter Weg.</p>
    </Section>
    <CodeSignIn studio={studio}/>
   </>}
@@ -223,25 +223,42 @@ export function GuideScreen({studio}:{studio:Studio}){
   ['Das Team arbeitet','Jede Aufgabe hat ihr Gespräch. Dort siehst du, wer gerade was macht: Otto ändert den Code, Eule sucht im Internet, Frau Kern prüft.'],
   ['Du gibst frei','Ist eine Änderung fertig, tippst du „Ansehen“, schaust sie an und gibst frei oder gibst sie mit einem Satz zurück. Danach „Übernehmen“. Beim ersten Mal fragt Studio, wie eine Änderung online kommt.']
  ];
+ const owner=studio.members.find(m=>m.id===studio.me.id)?.role==='owner';
+ const to=(label:string,next:Parameters<Studio['go']>[0])=><button className="ui-link" onClick={()=>studio.go(next)}>{label} ›</button>;
  return <section className="ui-screen page">
   <Bar onBack={back(studio)} title="So funktioniert Studio"/>
   <ol className="ui-guide">{steps.map(([t,d],i)=><li key={t}><span className="ui-step">{i+1}</span><div><b>{t}</b><p>{d}</p></div></li>)}</ol>
   <Section title="Agenten holen">
    <p><b>@Name</b> im Chat: genau dieser Agent antwortet. Ohne @Name schweigen alle.</p>
    <p><b>Markieren</b>: lange auf eine Nachricht drücken (oder den Stift neben dem Eingabefeld), weitere antippen, einen Agenten wählen und sagen, was er damit tun soll. Er liest nur diese.</p>
+   <p><b>Antworten</b>: unter jeder Nachricht eines Agenten steht „Antworten“. Dann antwortet dieser Agent, auch ohne @Name.</p>
    <p><b>Privat</b>: oben auf ein Bild tippen öffnet den Einzelchat. Was dort zur Aufgabe wird, erscheint als Karte im Projekt.</p>
   </Section>
   <Section title="Das Team">
    <p>Jeder Agent hat einen Job: Entwicklung ändert Code, Recherche sucht im Internet, Prüfung prüft Änderungen. Herr Grau leitet und stellt ein. Höchstens sechs im Team, pro Job einer.</p>
-   <p>Über „Team erweitern“ kannst du Personen für dein Projekt einladen, wenn du es leitest.</p>
+   <p>Über „Team erweitern“ im Projekt stellst du einen Agenten ein (Job wählen, Name ist vorgeschlagen) oder lädst Personen ein, wenn du das Projekt leitest. Du kannst auch Herrn Grau fragen, wen ihr braucht.</p>
    <p>{projectVisibility}</p>
+  </Section>
+  <Section title="Agenten einstellen">
+   <p>Jeder Agent lässt sich einzeln einstellen: Bild lange drücken oder im Einzelchat auf Bild und Namen tippen. Dort änderst du Name, Bild und Persönlichkeit. Unter „Erweitert“ wählst du das KI-Modell und die Denkstufe, getrennt für das Gespräch und, bei Agenten die Code ändern, für das Programmieren. „Standard“ lässt es offen. Stärkere Modelle und höhere Stufen denken gründlicher, kosten aber mehr von deinem Kontingent.</p>
+   <p>Die Liste der Modelle pflegt der Inhaber von Studio. Neue Modelle trägt er dort ein, ohne dass Studio ein Update braucht.</p>
+   {owner&&to('KI-Modelle verwalten',{page:'account',account:'verwaltung'})}
   </Section>
   <Section title="Grenzen und Kosten">
    <p>Agenten geben Arbeit höchstens eine Stufe weiter und antworten pro Auftrag höchstens sechsmal, dann fragt Studio „Weitermachen?“. Stopp geht jederzeit.</p>
-   <p>Wer einen Agenten fragt, zahlt mit dem eigenen KI-Zugang, auch für weitergegebene Schritte.</p>
+   <p>Wer einen Agenten fragt, zahlt mit dem eigenen KI-Zugang, auch für weitergegebene Schritte. Hat die Entwicklung gearbeitet, steht an der Aufgabe eine Zeile Verbrauch.</p>
+  </Section>
+  <Section title="Dein ChatGPT verbinden">
+   <p><b>Zwei Verbindungen, ein Konto.</b> Gespräche und Recherche laufen auf einem Weg, das Ändern von Code auf einem anderen. Jeder Weg braucht seine Anmeldung. Es ist dasselbe ChatGPT-Konto und dasselbe Nutzungslimit deines Abos, es entstehen keine doppelten Kosten.</p>
+   <p><b>Chat und Recherche</b>: richtet der Betreiber von Studio einmal pro Person ein. Unter „KI-Zugänge“ steht, ob er bereit ist. Steht dort „Noch nicht eingerichtet“, sag dem Inhaber Bescheid.</p>
+   <p><b>Code ändern</b>: verbinde dort einmal dein ChatGPT: „Mit ChatGPT verbinden“, die Seite öffnen und den Code eintippen. Das gilt danach für alle Agenten und alle deine Projekte.</p>
+   <p><b>Jede Person für sich</b>: Wer einen Agenten anstößt, arbeitet mit dem eigenen ChatGPT und verbraucht das eigene Limit. Niemand nutzt den Zugang eines anderen, auch nicht im selben Projekt.</p>
+   {to('Zu „KI-Zugänge“',{page:'account',account:'ki'})}
   </Section>
   <Section title="Damit das Team Code ändern kann">
-   <p>Öffne einmal pro Projekt in der Projektinfo unter „Code“ den Bereich „GitHub einrichten“. Füge den Link zu deinem Projekt auf GitHub ein und tippe auf „Verbinden“. Studio richtet den Rest ein. Das erste Mal, wenn Otto für dich programmieren soll, verbindest du dein ChatGPT, direkt in der Aufgabe.</p>
+   <p>Öffne einmal pro Projekt in der Projektinfo unter „Code“ den Bereich „GitHub einrichten“. Füge den Link zu deinem Projekt auf GitHub ein und tippe auf „Verbinden“. Studio richtet den Rest ein. Das erste Mal, wenn Otto für dich programmieren soll, verbindest du dein ChatGPT, direkt in der Aufgabe oder unter „KI-Zugänge“.</p>
+   <p>Das Projekt öffnest du über die Startseite, dort findest du „Projektinfo“ oben rechts im Projekt.</p>
+   {to('Zu deinen Projekten',{page:'start',project:''})}
   </Section>
   <ScrollHint/>
  </section>;
