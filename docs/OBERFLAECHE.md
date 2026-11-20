@@ -128,7 +128,7 @@ Aktive und archivierte Projekte, Wiederherstellen. Ein alter Link oder Browser-Z
 
 ### So funktioniert Studio
 Vier Schritte mit Bildern: 1. Ziel sagen → 2. Herr Grau plant und verteilt → 3. Das Team arbeitet, du siehst alles im
-Gespräch → 4. Du gibst frei. Darunter: Agenten holen (@Name, Markieren, Direktchat), „Das Team“ mit Projekteinladungen und Sichtbarkeit, Grenzen (Ketten, wer zahlt).
+Gespräch → 4. Du gibst frei. Darunter: Agenten holen (@Name, Antworten, Markieren, Direktchat), „Das Team“ (Agent einstellen, Einladungen, Sichtbarkeit), **Agenten einstellen** (Profil, Modell, Denkstufe, Modellliste des Inhabers), Grenzen und Kosten (Ketten, wer zahlt, Verbrauch), **Dein ChatGPT verbinden** (zwei Verbindungen, ein Konto; Chat und Code; jede Person für sich) und „Damit das Team Code ändern kann“. Wo es einen Ort in der App gibt, steht ein Link darunter (KI-Zugänge, KI-Modelle verwalten für den Inhaber, Zu deinen Projekten). Die Anleitung in `docs/ANLEITUNG.md` und diese Seite werden zusammen geändert.
 
 ## Desktop
 Links schmal: Projekte und Direktnachrichten. Mitte: Projektchat bzw. Direktchat. Rechts: Projektinfo oder die geöffnete Karte.
