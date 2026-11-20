@@ -2,6 +2,11 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 20.11.2026 (Zwei Anmeldungen, jede Person selbst)
+- **Beschluss (Marco):** Es bleibt bei **zwei Anmeldungen bei ChatGPT, und jede Person macht beide selbst**: (1) **Gespräche und Recherche**, (2) **Code ändern**. Beide einmalig pro Person, nicht pro Agent und nicht pro Projekt, beide in Mein Konto → KI-Zugänge. Niemand wartet darauf, dass der Inhaber etwas am Server einrichtet. Wer einen Agenten anstößt, zahlt mit dem eigenen Konto.
+- **Ist-Stand:** (2) kann die Person selbst verbinden. (1) richtet heute der Betreiber von Hand ein (eigener Dienst und eigener Benutzer auf dem Server pro Person, `hermes auth add openai-codex`); nur Marco ist eingerichtet. Das ist die offene Lücke.
+- **Ziel für (1):** „Verbinden“ in KI-Zugänge startet dieselbe Geräte-Anmeldung wie bei (2), aber für den Chat-Weg, mit einem eigenen, abgeschotteten Ordner pro Person. Ein gemeinsamer Chat-Dienst nimmt Aufträge für alle an und startet die Antwort jeweils mit dem Ordner der fragenden Person. Der Job-Starter arbeitet heute einen Auftrag nach dem anderen ab; ob Chat-Antworten darüber laufen dürfen oder ein eigener Weg nötig ist, wird vor dem Bau entschieden (Entwurf in `docs/`).
+
 ## 20.11.2026 (Verbrauch sichtbar)
 - Studio liest am Ende jedes Programmierlaufs die Verbrauchszahlen von Codex (`turn.completed`: neu gelesen, aus dem Zwischenspeicher, geschrieben, Denkanteil), speichert sie im Ergebnis des Laufs und zeigt die Summe pro Aufgabe. Ohne Meldung keine Zahl; Läufe ohne Meldung werden nur gezählt. Eine Übersicht über Aufgaben und Zeit folgt, wenn echte Zahlen vorliegen.
 
