@@ -38,17 +38,18 @@ weitergegebene Schritte. Hat die Entwicklung gearbeitet, steht an der Aufgabe ei
 
 ## Dein ChatGPT verbinden
 
-**Zwei Verbindungen, ein Konto.** Gespräche und Recherche laufen auf einem Weg, das Ändern von Code auf einem anderen; jeder Weg braucht seine Anmeldung. Es ist dasselbe ChatGPT-Konto und dasselbe Nutzungslimit, keine doppelten Kosten.
+**Du musst das nur ein einziges Mal tun.** Nicht pro Agent und nicht pro Projekt.
 
-- **Chat und Recherche:** richtet der Betreiber einmal pro Person auf dem Server ein. Unter **Mein Konto → KI-Zugänge** steht, ob er bereit ist. Bei „Noch nicht eingerichtet“ dem Inhaber Bescheid sagen.
-- **Code ändern:** einmal pro Person unter **Mein Konto → KI-Zugänge → Mit ChatGPT verbinden** (Seite öffnen, Code eintippen), oder direkt in der Aufgabe. Gilt für alle Agenten und Projekte.
-- **Jede Person für sich:** Wer einen Agenten anstößt, arbeitet mit dem eigenen ChatGPT und verbraucht das eigene Limit. Niemand nutzt den Zugang eines anderen, auch nicht im selben Projekt.
+- **Mit Agenten schreiben:** geht sofort, du musst nichts verbinden. Unter **Mein Konto → KI-Zugänge** steht „Bereit“.
+- **Nur wenn ein Agent Code ändern soll** (zum Beispiel Otto): **Mein Konto → KI-Zugänge → Mit ChatGPT verbinden**, Seite öffnen, Code eintippen. Danach gilt es für alle Agenten und alle deine Projekte.
+- **Neues Projekt, neuer Otto, neuer Agent:** nichts neu verbinden.
+- **Jede Person verbindet ihr eigenes ChatGPT.** Wer einen Agenten beauftragt, verbraucht das eigene Limit.
 
 ## Damit das Team Code ändern kann
 
 - **Einmal pro Projekt** (Projekt-Admin): Projektinfo → „Code“ → **„GitHub einrichten“**. Öffne dein Projekt auf GitHub und kopiere den Link aus der Browserzeile. Wenn du noch keins hast, wähle „Auf GitHub anlegen“. Füge den Link ein und tippe auf „Verbinden“.
   Den Arbeitsplatz für das Team richtet Studio danach selbst ein. Findet es noch keine Tests, tippst du „So anfangen“.
-- **Einmal pro Person:** das ChatGPT für das Ändern von Code (siehe „Dein ChatGPT verbinden“). Studio fragt auch direkt in der Aufgabe danach.
+- **Einmal pro Person:** dein ChatGPT für das Ändern von Code (siehe „Dein ChatGPT verbinden“), einmalig. Studio fragt auch direkt in der Aufgabe danach.
 - **Beim ersten Übernehmen** fragt Studio einmal: **Wo soll man das Ergebnis sehen?**
   - **Bei uns ansehen:** Studio baut nach jedem Übernehmen den aktuellen Stand und zeigt ihn unter einer festen Adresse
     (`studio-preview.schmaqq.com/ansehen/<projekt>-<schlüssel>/`). Wer die Adresse hat, kann sie öffnen; „Neuer Link“ in

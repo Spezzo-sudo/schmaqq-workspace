@@ -26,7 +26,7 @@ export function AccountScreen({studio}:{studio:Studio}){
   {area==='ki'&&<>
    <Section title="Chat und Recherche">
     <p className="ui-fact"><span className={'ui-dot '+(agentsReady===false?'fail':agentsReady?'ok':'idle')}/>{agentsReady===false?'Gerade nicht erreichbar.':agentsReady?'Bereit.':'Noch nicht eingerichtet.'}</p>
-    <p className="ui-muted">Fragst du einen Agenten, arbeitet er mit deinem Zugang. Andere im Team nutzen ihren eigenen. Fürs Ändern von Code brauchst du zusätzlich die Verbindung darunter: Es ist dasselbe ChatGPT-Konto und dasselbe Limit, nur ein zweiter Weg.</p>
+    <p className="ui-muted">Fragst du einen Agenten, arbeitet er mit deinem Zugang. Andere im Team nutzen ihren eigenen. Nur fürs Ändern von Code verbindest du darunter einmal dein ChatGPT.</p>
    </Section>
    <CodeSignIn studio={studio}/>
   </>}
@@ -249,10 +249,11 @@ export function GuideScreen({studio}:{studio:Studio}){
    <p>Wer einen Agenten fragt, zahlt mit dem eigenen KI-Zugang, auch für weitergegebene Schritte. Hat die Entwicklung gearbeitet, steht an der Aufgabe eine Zeile Verbrauch.</p>
   </Section>
   <Section title="Dein ChatGPT verbinden">
-   <p><b>Zwei Verbindungen, ein Konto.</b> Gespräche und Recherche laufen auf einem Weg, das Ändern von Code auf einem anderen. Jeder Weg braucht seine Anmeldung. Es ist dasselbe ChatGPT-Konto und dasselbe Nutzungslimit deines Abos, es entstehen keine doppelten Kosten.</p>
-   <p><b>Chat und Recherche</b>: richtet der Betreiber von Studio einmal pro Person ein. Unter „KI-Zugänge“ steht, ob er bereit ist. Steht dort „Noch nicht eingerichtet“, sag dem Inhaber Bescheid.</p>
-   <p><b>Code ändern</b>: verbinde dort einmal dein ChatGPT: „Mit ChatGPT verbinden“, die Seite öffnen und den Code eintippen. Das gilt danach für alle Agenten und alle deine Projekte.</p>
-   <p><b>Jede Person für sich</b>: Wer einen Agenten anstößt, arbeitet mit dem eigenen ChatGPT und verbraucht das eigene Limit. Niemand nutzt den Zugang eines anderen, auch nicht im selben Projekt.</p>
+   <p><b>Du musst das nur ein einziges Mal tun.</b> Nicht pro Agent und nicht pro Projekt.</p>
+   <p><b>Mit Agenten schreiben:</b> geht sofort, du musst nichts verbinden. Steht unter „KI-Zugänge“ „Bereit“, ist alles in Ordnung.</p>
+   <p><b>Nur wenn ein Agent Code ändern soll</b> (zum Beispiel Otto): Tippe auf „Mit ChatGPT verbinden“, öffne die Seite und tippe den Code ein. Danach gilt es für alle Agenten und alle deine Projekte.</p>
+   <p><b>Neues Projekt, neuer Otto, neuer Agent:</b> du verbindest nichts neu.</p>
+   <p><b>Jede Person verbindet ihr eigenes ChatGPT.</b> Wer einen Agenten beauftragt, verbraucht das eigene Limit.</p>
    {to('Zu „KI-Zugänge“',{page:'account',account:'ki'})}
   </Section>
   <Section title="Damit das Team Code ändern kann">
