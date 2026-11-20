@@ -30,17 +30,36 @@ function signedIn(db,member){
  return accountState(jobs).connected;
 }
 
-/** The instruction for Codex: the task's goal and done-when, the project's area, and what the agent wants changed. */
-export function codePrompt({task,contract,scope=[],agent,instruction}){
+/**
+ * The handover package for Codex. Order matters: what never changes comes first (the same beginning lets the provider
+ * reuse its cache from run to run), then the task, then what happened so far, and the order of the day comes last so
+ * that cutting for length can never take it away.
+ */
+export function codePrompt({task,contract,scope=[],agent,instruction,thread=[]}){
+ const cut=(text,n)=>String(text??'').trim().slice(0,n);
+ const talk=thread.length?'Bisheriges Gespräch zu dieser Aufgabe (älteste Nachricht zuerst, neueste unten; das ist der Stand, auf dem du aufbaust):\n'
+  +thread.map(m=>`- ${m.name}: ${cut(m.body,700).replace(/\s+/g,' ')}`).join('\n'):'';
  return [
+  'Arbeite nur in diesem Repository. Lies nur die Dateien, die für diese Aufgabe nötig sind: suche gezielt, öffne Dateien nur ausschnittsweise und lies nicht das ganze Repository. Committe nicht, pushe nicht und veröffentliche nichts; die Person prüft die Änderung selbst.',
   `Aufgabe: ${task.title}`,
-  task.description?`Worum es geht: ${task.description.slice(0,3000)}`:'',
-  `Fertig, wenn: ${contract.criteria||'die Aufgabe erfüllt ist und die Tests grün sind.'}`,
+  task.description?`Worum es geht: ${cut(task.description,2000)}`:'',
+  `Fertig, wenn: ${cut(contract.criteria,1500)||'die Aufgabe erfüllt ist und die Tests grün sind.'}`,
   scope.length?`Ändere nur Dateien unter: ${scope.join(', ')}. Brauchst du etwas außerhalb, ändere es nicht und schreibe es in deine Antwort.`:'',
+  talk.slice(-3000),
   `Auftrag von ${agent.name} (Agent im Team):`,
-  instruction,
-  'Arbeite nur in diesem Repository. Committe nicht, pushe nicht und veröffentliche nichts; die Person prüft die Änderung selbst.'
+  cut(instruction,4000)
  ].filter(Boolean).join('\n\n').slice(0,PROMPT_LIMIT);
+}
+
+/** What was said in the task so far, oldest first: people and colleagues, as the task's conversation shows it. */
+export function taskThread(db,task,limit=8){
+ const rows=db.prepare(`SELECT m.body,m.author,json_extract(x.value,'$.senderAgent') AS agent FROM messages m
+  JOIN workspace_meta x ON x.key='room:v1:message:'||m.id WHERE m.channel=? AND json_extract(x.value,'$.topicTask')=?
+  ORDER BY m.created DESC,m.rowid DESC LIMIT ?`).all(task.project,task.id,limit).reverse();
+ return rows.map(r=>({
+  name:r.agent?(metadata(db,'room:v1:agent:'+task.project+':'+r.agent,{})?.name??'Agent'):(db.prepare('SELECT name FROM members WHERE id=?').get(r.author)?.name??'Person'),
+  body:r.body
+ }));
 }
 
 /**
@@ -65,7 +84,7 @@ export function queueAgentCodeRun(db,{member,task,agent,run,instruction,now=Date
   db.prepare("UPDATE tasks SET assignee=?,status=CASE WHEN status='todo' THEN 'doing' ELSE status END WHERE id=?").run(member.id,task.id);
  }
  const job=randomUUID();
- const payload={worktree,prompt:codePrompt({task,contract,scope:project.scope??[],agent,instruction}),
+ const payload={worktree,prompt:codePrompt({task,contract,scope:project.scope??[],agent,instruction,thread:taskThread(db,task)}),
   contractRevision:contract.revision,contractSnapshot:{title:task.title,description:task.description,criteria:contract.criteria},
   ...(project.repository?{expectedRepository:project.repository,expectedBase:project.base??'main'}:{}),
   placement,agent:{id:agent.id,name:agent.name,run:run.id},

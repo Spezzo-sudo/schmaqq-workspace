@@ -2,6 +2,11 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 20.11.2026 (Übergabepaket für Programmierläufe)
+- Der Auftrag an Otto ist ein **Übergabepaket** in fester Reihenfolge: zuerst, was sich nie ändert (arbeite nur hier, lies nur Nötiges, nichts veröffentlichen), dann Aufgabe, „Fertig, wenn“ und Bereich, dann das **bisherige Gespräch der Aufgabe** (die letzten 8 Nachrichten von Menschen und Kollegen, mit Namen), zuletzt die Anweisung des Agenten. Die Anweisung steht hinten, damit das Kürzen sie nie wegnimmt. Gleicher Anfang heißt: der Anbieter kann seinen Zwischenspeicher nutzen.
+- Agenten, die Otto beauftragen, schreiben hinein, was früher falsch war und was jetzt anders sein soll; er kennt sonst nur Aufgabe, Gespräch und Anweisung.
+- **Nicht** Teil davon: die Sitzung der anderen Person (bleibt privat) und Änderungen in deren Arbeitskopie. Fortsetzen der Sitzung (Phase 4) folgt nach der Messung.
+
 ## 19.11.2026 (Modell und Denkstufe pro Agent, Modellkatalog)
 - Jeder Agent hat sein **eigenes Modell und seine eigene Denkstufe**, getrennt für Gespräch und für Programmieren. Leer heißt Standard (Studio bzw. Codex). Vorher galt eine feste Liste (`STUDIO_AGENT_MODELS`) und für alle dieselbe Stufe; Ottos Programmierläufe bekamen gar keine Einstellung.
 - Der **Modellkatalog** liegt in der App (Mein Konto → Studio verwalten → KI-Modelle), gefüllt aus dem Katalog des installierten Codex (`codex debug models`, 0.169.0). Geprüft wird nur die Schreibweise, nie gegen eine Liste. Ob ein Zugang ein Modell kennt, zeigt der Lauf (Fehler im Chat, „Nochmal“).
