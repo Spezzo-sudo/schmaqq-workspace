@@ -40,8 +40,8 @@ weitergegebene Schritte. Hat die Entwicklung gearbeitet, steht an der Aufgabe ei
 
 **Du musst das nur ein einziges Mal tun.** Nicht pro Agent und nicht pro Projekt.
 
-- **Mit Agenten schreiben:** geht sofort, du musst nichts verbinden. Unter **Mein Konto → KI-Zugänge** steht „Bereit“.
-- **Nur wenn ein Agent Code ändern soll** (zum Beispiel Otto): **Mein Konto → KI-Zugänge → Mit ChatGPT verbinden**, Seite öffnen, Code eintippen. Danach gilt es für alle Agenten und alle deine Projekte.
+- **Mit Agenten schreiben:** Jede Person braucht dafür ihren eigenen Zugang. Den richtet der Inhaber von Studio auf dem Server für dich ein; du kannst ihn noch nicht selbst verbinden. Unter **Mein Konto → KI-Zugänge** steht „Bereit“ oder „Noch nicht eingerichtet“. Bis er bereit ist, antworten dir die Agenten nicht.
+- **Wenn ein Agent Code ändern soll** (zum Beispiel Otto), verbindest du selbst: **Mein Konto → KI-Zugänge → Mit ChatGPT verbinden**, Seite öffnen, Code eintippen. Danach gilt es für alle Agenten und alle deine Projekte.
 - **Neues Projekt, neuer Otto, neuer Agent:** nichts neu verbinden.
 - **Jede Person verbindet ihr eigenes ChatGPT.** Wer einen Agenten beauftragt, verbraucht das eigene Limit.
 
