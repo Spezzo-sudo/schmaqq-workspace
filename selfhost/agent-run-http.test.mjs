@@ -549,7 +549,10 @@ test('company: the developer changes code in the asker\'s own copy; the lead han
  const jobs=f.app.db.prepare('SELECT action,owner,device,payload,status FROM jobs WHERE project=? ORDER BY created').all(project);
  assert.deepEqual(jobs.map(j=>[j.action,j.owner,j.device,j.status]),[['prepare',alice.id,device,'queued'],['codex',alice.id,device,'queued']],'whoever asks pays, in their own copy');
  const payload=JSON.parse(jobs[1].payload);
- assert.match(payload.prompt,/Überschrift kürzen[\s\S]*Fertig, wenn: Passt in zwei Zeilen[\s\S]*Kürze die Überschrift in site\/index.html[\s\S]*Committe nicht, pushe nicht/);
+ assert.match(payload.prompt,/^Arbeite nur in diesem Repository\. Lies nur die Dateien, die für diese Aufgabe nötig sind[\s\S]*Committe nicht, pushe nicht[\s\S]*Aufgabe: Überschrift kürzen[\s\S]*Fertig, wenn: Passt in zwei Zeilen/,'what never changes comes first');
+ assert.match(payload.prompt,/Bisheriges Gespräch zu dieser Aufgabe[\s\S]*- Alice[^\n]*: @Otto Mach die Überschrift kürzer\./,'the conversation so far is part of the handover');
+ assert.match(payload.prompt,/Kürze die Überschrift in site\/index\.html\.$/,'the order of the day comes last, so cutting for length cannot take it away');
+ assert.ok(payload.prompt.length<=12000);
  assert.equal(payload.agent.name,'Otto');
  assert.deepEqual(payload.codex,{model:'gpt-6.1-sol',effort:'high'},'Otto\'s own model and thinking level travel with the code run');
  assert.equal((await room()).tasks.find(t=>t.id===task).assignee,alice.id,'the person who asked takes the task');
@@ -699,4 +702,16 @@ test('company: the app shows the same jobs the server enforces',async()=>{
   const agent={role,lead,active:true,permissions:{readProject:true}},job=appJob(agent);
   assert.deepEqual([job.code,job.web,job.review,job.lead],[canCode(agent),canResearch(agent),canReview(agent),canLead(agent)],role+lead);
  }
+});
+
+test('handover package: stable rules first, the order of the day last, never cut away, within the limit',async()=>{
+ const {codePrompt}=await import('./agent-code.mjs');
+ const long=n=>'x'.repeat(n);
+ const prompt=codePrompt({task:{title:'T',description:long(9000)},contract:{criteria:long(9000)},scope:['site/'],agent:{name:'Grau'},
+  instruction:'ENDE '+long(3987)+' LETZTES',thread:Array.from({length:8},(_,i)=>({name:'P'+i,body:long(5000)}))});
+ assert.ok(prompt.length<=12000,String(prompt.length));
+ assert.ok(prompt.startsWith('Arbeite nur in diesem Repository.'));
+ assert.ok(prompt.endsWith('LETZTES'),'the instruction survives the length limit');
+ const bare=codePrompt({task:{title:'T',description:''},contract:{criteria:''},agent:{name:'Grau'},instruction:'Mach es.'});
+ assert.ok(!bare.includes('Bisheriges Gespräch'),'no empty section');
 });

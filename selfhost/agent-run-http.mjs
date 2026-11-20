@@ -160,7 +160,7 @@ const TOOLS = Object.freeze({ ...BASE_TOOLS, 'agent.ask': {
   description: 'Ändert Code in der Arbeitskopie der Person für diese Code-Aufgabe (mit ihrer eigenen ChatGPT-Anmeldung, auf der Werkstatt des Projekts). Nichts wird geteilt oder zusammengeführt: die Person schaut die Änderung an und gibt sie zur Prüfung.',
   parameters: { type: 'object', properties: { instruction: text(4000, 1) }, required: ['instruction'], additionalProperties: false },
   guidance: 'Bittet die Person dich, in dieser Code-Aufgabe etwas zu ändern oder umzusetzen, rufe genau einmal studio_code_change mit '
-    + 'einer konkreten Anweisung auf (welche Dateien, was genau, welcher Test). Sage danach in einem Satz, was jetzt in ihrer Arbeitskopie '
+    + 'einer konkreten Anweisung auf (welche Dateien oder Ordner, was genau, welcher Test). Der Programmierer kennt nur Aufgabe, bisheriges Gespräch und deine Anweisung, nicht den Rest des Chats: Schreibe hinein, was bei einem früheren Versuch falsch war und was die Person jetzt anders haben will. Sage danach in einem Satz, was jetzt in ihrer Arbeitskopie '
     + 'passiert und dass sie die Änderung unter „Anschauen“ prüft. Behaupte nie, die Änderung sei schon fertig oder live.',
   args: z.object({ instruction: z.string().trim().min(1).max(4000) }).strict()
 } });
