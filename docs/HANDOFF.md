@@ -17,6 +17,8 @@ geändert hat → Frau Kern wird automatisch gefragt → Mensch: „Ansehen“ �
 ## Was live ist (studio.schmaqq.com)
 
 - Oberfläche neu aus `docs/OBERFLAECHE.md` gebaut (`studio/ui/`), alte Oberfläche gelöscht. Ein Stylesheet.
+- Seit 22.11.2026: Start ist die **Zentrale** (Übersicht über alle Projekte, ChatGPT-Kontingent, 7 Tage, Team), im Projekt
+  stehen links (Handy: Reiter „Gespräche“) nur dessen Gespräche. Private Chats lassen sich „fürs Team sichtbar“ machen.
 - Firmenmodell mit Rollen, Einstellen, Übergabe, Code-Läufen der Agenten mit Bericht im Gespräch und automatischer Prüfung.
 - Agenten: günstigstes Modell, niedrige Stufe; Recherche mit eingebauter Websuche. Modell im Profil unter „Erweitert“
   (derzeit nur ein Modell freigeschaltet).

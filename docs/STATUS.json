@@ -1,4 +1,9 @@
 {
+  "zentrale_and_conversations_20261122": {
+    "summary": "Start ist die Zentrale (Wartet auf dich, Gerade am Arbeiten, Projekte, Zuletzt bewegt, ChatGPT-Kontingent und Verbrauch, 7 Tage, Team) ohne Projektspalte. Im Projekt links bzw. im Reiter „Gespräche“ alle Gespräche nur dieses Projekts. Private Chats lassen sich fürs Team sichtbar machen (mit Agent: die Person; zwischen Menschen: beide).",
+    "verification": "selfhost/zentrale.test.mjs (Sichtbarkeit, Übersicht, Kontingent aus dem Protokoll); Browser-Rundgang 390/1440 px; Vorschau mit Beispieldaten.",
+    "acceptance_remaining": "Kontingent-Anzeige mit einem echten Programmierauftrag auf dem Server; Handy-Prüfung durch Marco."
+  },
   "compact_project_chat_20261119": {
     "summary": "Kompakte Team-Leiste auf dem Handy mit sichtbaren Bildern und Arbeitsstatus. Namen, Jobs und Team erweitern lassen sich aufklappen.",
     "verification": "Browser-Rundgang misst den zusätzlichen Platz und prüft den Arbeitspunkt, die Team-Aktionen und die Position im Chat beim Auf- und Zuklappen.",

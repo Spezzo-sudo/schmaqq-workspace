@@ -7,16 +7,18 @@ import {jobOf,introOf,JOBS,leadOf,messagesOf,runActive,runLine,teamOrder} from '
 import {Close,ErrorLine,Mark,Send} from './parts';
 
 // One chat for three places: the project chat, a private chat with an agent, and the conversation of a task.
-export type ChatPlace={kind:'group'}|{kind:'agent';agent:Agent}|{kind:'member';member:Member}|{kind:'task';task:string;thread:Message[];onChanged:()=>void};
+export type ChatPlace={kind:'group'}|{kind:'agent';agent:Agent}|{kind:'member';member:Member}|{kind:'task';task:string;thread:Message[];onChanged:()=>void}
+ /** A private chat of others, readable for the team: read only. */
+ |{kind:'team';chat:string;messages:Message[];more:boolean};
 const MARK=['blau','grün','orange','lila'];
 
 export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
  const {room,runs,me,go,roles}=studio;
- const canTalk=roles?.mine.some(r=>r!=='viewer')??false;
+ const canTalk=place.kind!=='team'&&(roles?.mine.some(r=>r!=='viewer')??false);
  const project=room!.project.id,agents=teamOrder(room!.agents),lead=leadOf(room!.agents);
- const [older,setOlder]=useState<Message[]>([]),[more,setMore]=useState(room!.more);
+ const [older,setOlder]=useState<Message[]>([]),[more,setMore]=useState(place.kind==='team'?place.more:room!.more);
  const [seed,setSeed]=useState(''),[replyTo,setReplyTo]=useState<Message|null>(null),[marking,setMarking]=useState<string[]|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[now,setNow]=useState(()=>Date.now());
- const list=useMemo(()=>place.kind==='task'?place.thread:messagesOf([...older,...room!.messages],place.kind==='agent'?{agent:place.agent.id}:place.kind==='member'?{member:place.member.id}:{}),[older,room,place]);
+ const list=useMemo(()=>place.kind==='task'?place.thread:place.kind==='team'?[...older,...place.messages]:messagesOf([...older,...room!.messages],place.kind==='agent'?{agent:place.agent.id}:place.kind==='member'?{member:place.member.id}:{}),[older,room,place]);
  const ids=useMemo(()=>new Set(list.map(m=>m.id)),[list]);
  // Runs that answer a message of this place: working ones as a live line, failed ones once with "Nochmal".
  const placeRuns=runs.runs.filter(r=>ids.has(r.message)&&(runActive(r)||(r.status==='failed'||r.status==='cancelled')&&!r.completedMessage))
@@ -65,7 +67,7 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
   await studio.reload();
  }
  async function act(fn:()=>Promise<unknown>){setBusy(true);setError('');try{await fn();await studio.reload();if(place.kind==='task')place.onChanged();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- async function loadOlder(){const first=list[0];if(!first)return;await act(async()=>{const r=await api<{messages:Message[];more:boolean}>('/api/room?project='+q(project)+'&before='+q(first.id));setOlder(p=>[...r.messages,...p]);setMore(r.more);});}
+ async function loadOlder(){const first=list[0];if(!first)return;await act(async()=>{const r=await api<{messages:Message[];more:boolean}>((place.kind==='team'?'/api/room/chat?chat='+q(place.chat)+'&project=':'/api/room?project=')+q(project)+'&before='+q(first.id));setOlder(p=>[...r.messages,...p]);setMore(r.more);});}
 
  const nameOf=(id:string|null|undefined)=>agents.find(a=>a.id===id)?.name??room!.members.find(m=>m.id===id)?.name??'Jemand';
  const agentOf=(id:string|null|undefined)=>(room!.agents??[]).find(a=>a.id===id)??null;

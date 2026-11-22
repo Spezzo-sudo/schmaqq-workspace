@@ -17,7 +17,19 @@ export type Note={id:string;title:string;body:string;author:string;updated:numbe
 export type Showcase={url:string|null;at:number|null;building:boolean;error:string|null};
 export type RoomState={project:Project;meta:{revision:number;archived?:boolean;repository:string|null;base?:string;workflow?:string;scope?:string[];live?:'merge'|'manual'|'show';liveHow?:string};showcase?:Showcase|null;
  neighbours?:{id:string;title:string;scope:string[]}[];messages:Message[];more:boolean;tasks:Task[];notes:Note[];members:Member[];agents?:Agent[];
- unread?:Record<string,number>};
+ unread?:Record<string,number>;
+ /** My switches "fürs Team sichtbar" per private chat; for a chat with a person both must agree. */
+ sharing?:Record<string,{mine:boolean;theirs?:boolean;shared:boolean}>;
+ /** Private chats of others that their people made readable for the team (read-only here). */
+ teamChats?:TeamChat[]};
+export type TeamChat={chat:string;kind:'agent'|'member';member:string;peer:string;last:number;excerpt:string};
+/** Start ("Zentrale"): everything across my projects in one answer. */
+export type PlanWindow={used:number;minutes:number|null;resets:number|null};
+export type Overview={projects:string[];agents:Agent[];at:number;
+ working:{kind:'answer'|'code';project:string;agent:string|null;status:string;started:number;step:string|null;task:string|null}[];
+ moved:Record<string,number>;week:Record<string,{answers:number;messages:number;codeRuns:number}>;
+ usage:{runs:number;reported:number;input:number;cached:number;output:number};
+ limits:{short:PlanWindow|null;week:PlanWindow|null;reached:boolean;at:number}|null};
 export type Chain={root:string;depth:number;used:number;limit:number;stopped:boolean;full:boolean;active:boolean};
 export type Run={id:string;owner:string;project:string;agent:string;message:string;status:'queued'|'running'|'cancelling'|'completed'|'failed'|'cancelled';
  created:number;updated:number;started?:number|null;position?:number|null;steps?:{tool:string;at:number}[];completedMessage:string|null;errorCode:string|null;chain?:Chain|null};
@@ -64,20 +76,20 @@ export const q=(value:string)=>encodeURIComponent(value);
 export type Page='start'|'project'|'account'|'guide'|'archive';
 export const accountAreas=['profil','sicherheit','ki','daten','verwaltung'] as const;
 export type AccountArea=typeof accountAreas[number];
-export type Route={account?:AccountArea;page:Page;project:string;chat:string;tab:'chat'|'tasks';task:string;info:boolean;agent:string};
+export type Route={account?:AccountArea;page:Page;project:string;chat:string;tab:'chat'|'talks'|'tasks';task:string;info:boolean;agent:string};
 const idOk=(v:string|null)=>!!v&&/^[\w-]{1,100}$/.test(v);
 export function readRoute(search=location.search):Route{
  const p=new URLSearchParams(search),project=p.get('p')??p.get('room')??'';
  const page=(['account','guide','archive'] as const).find(x=>x===p.get('page'))??(idOk(project)?'project':'start');
  const chat=p.get('chat')??'',account=page==='account'?accountAreas.find(area=>area===p.get('bereich')):undefined;
- return {...(account?{account}:{}),page,project:idOk(project)?project:'',chat:/^(agent|member):[\w-]{1,100}$/.test(chat)?chat:'',tab:p.get('tab')==='tasks'?'tasks':'chat',
+ return {...(account?{account}:{}),page,project:idOk(project)?project:'',chat:/^(?:(?:agent|member):[\w-]{1,100}|team:(?:agent|member):[\w-]{1,100}:[\w-]{1,100})$/.test(chat)?chat:'',tab:p.get('tab')==='tasks'?'tasks':p.get('tab')==='gespraeche'?'talks':'chat',
   task:idOk(p.get('task'))?p.get('task')!:'',info:p.get('info')==='1',agent:idOk(p.get('agent'))?p.get('agent')!:''};
 }
 export function routeURL(r:Partial<Route>):string{
  const p=new URLSearchParams();
  if(r.page&&r.page!=='start'&&r.page!=='project')p.set('page',r.page);
  if(r.page==='account'&&r.account)p.set('bereich',r.account);
- if(r.project){p.set('p',r.project);if(r.chat)p.set('chat',r.chat);if(r.tab==='tasks')p.set('tab','tasks');if(r.task)p.set('task',r.task);if(r.info)p.set('info','1');if(r.agent)p.set('agent',r.agent);}
+ if(r.project){p.set('p',r.project);if(r.chat)p.set('chat',r.chat);if(r.tab==='tasks')p.set('tab','tasks');if(r.tab==='talks')p.set('tab','gespraeche');if(r.task)p.set('task',r.task);if(r.info)p.set('info','1');if(r.agent)p.set('agent',r.agent);}
  return '/'+(p.size?'?'+p.toString():'');
 }
 /** After signing in again: back to the same place inside Studio, never somewhere else. */

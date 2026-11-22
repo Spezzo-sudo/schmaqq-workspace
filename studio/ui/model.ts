@@ -44,6 +44,8 @@ const steps:Record<string,string>={'project.read_context':'liest den Projektstan
  'agent.ask':'gibt Arbeit weiter','code.change':'ändert den Code','web.read':'liest eine Webseite','change.read':'prüft die Änderung','team.hire':'schlägt jemanden vor'};
 const failures:Record<string,string>={timeout:'Das hat zu lange gedauert.','provider-unavailable':'Der KI-Zugang war nicht erreichbar.',
  'model-unavailable':'Der KI-Zugang hat die Anfrage abgelehnt.','quota-exceeded':'Das Kontingent des KI-Zugangs ist aufgebraucht.','protocol-error':'Die Antwort kam unvollständig an.'};
+/** What an agent does in a step, in plain words ("ändert den Code"). */
+export const stepLabel=(tool:string|null|undefined)=>tool&&steps[tool]?steps[tool]:'denkt nach';
 export function duration(ms:number){const s=Math.max(1,Math.round(ms/1000));return s<60?s+' s':Math.floor(s/60)+' min'+(s%60?' '+(s%60)+' s':'');}
 /** One line about a run: who does what, or why nothing came. */
 export function runLine(run:Run,name:string,now:number,online=true):{tone:'wait'|'work'|'fail'|'stop';text:string;stop:boolean;retry:boolean}|null{

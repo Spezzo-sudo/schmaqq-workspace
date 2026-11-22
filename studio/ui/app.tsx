@@ -1,9 +1,9 @@
 import {useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
-import {api,q,readRoute,routeURL,type Member,type Project,type Resource,type Roles,type RoomState,type Route,type Runs,type Team} from './api';
+import {api,q,readRoute,routeURL,type Member,type Overview,type Project,type Resource,type Roles,type RoomState,type Route,type Runs,type Team} from './api';
 import {onLiveSignal} from './live';
 import {runActive} from './model';
 import {StartScreen,Menu} from './start';
-import {ProjectScreen} from './project';
+import {ProjectScreen,Conversations} from './project';
 import {TaskScreen} from './task';
 import {InfoScreen} from './info';
 import {Bar} from './parts';
@@ -14,7 +14,7 @@ export type Me={id:string;name:string;email:string};
 export type Studio={
  me:Me;route:Route;go:(next:Partial<Route>,replace?:boolean)=>void;
  projects:Project[];team:Team;members:Member[];resources:Resource[];agentsReady:boolean|null;
- room:RoomState|null;runs:Runs;roles:Roles|null;reload:()=>Promise<void>;reloadRuns:()=>Promise<boolean>;
+ room:RoomState|null;runs:Runs;roles:Roles|null;overview:Overview|null;reload:()=>Promise<void>;reloadRuns:()=>Promise<boolean>;
  desktop:boolean;openMenu:()=>void;
 };
 
@@ -29,6 +29,7 @@ export default function StudioApp({user}:{user:{userId:string;displayName:string
  const me=useMemo(()=>({id:user.userId,name:user.displayName,email:user.email}),[user]);
  const [route,setRoute]=useState(()=>readRoute());
  const [projects,setProjects]=useState<Project[]>([]),[team,setTeam]=useState<Team>({tasks:[]}),[members,setMembers]=useState<Member[]>([]);
+ const [overview,setOverview]=useState<Overview|null>(null);
  const [resources,setResources]=useState<Resource[]>([]),[menu,setMenu]=useState(()=>history.state?.studioMenu===true),[error,setError]=useState(''),[loaded,setLoaded]=useState(false);
  // Project data is kept together with the project it belongs to; another project never shows the old one's data.
  const [projectData,setProjectData]=useState<{project:string;room:RoomState|null;roles:Roles|null}>({project:'',room:null,roles:null});
@@ -53,6 +54,8 @@ export default function StudioApp({user}:{user:{userId:string;displayName:string
    const [p,t,m,a,r,roleState]=await Promise.all([api<{rooms:Project[]}>('/api/rooms'),api<Team>('/api/team'),api<{members:Member[]}>('/api/workspace'),
     api<{resources:Resource[]}>('/api/ai').catch(()=>({resources:[]})),project?api<RoomState>('/api/room?project='+q(project)):Promise.resolve(null),
     project?api<Roles>('/api/project-roles?project='+q(project)).catch(()=>null):Promise.resolve(null)]);
+   // Start shows the overview across all projects; inside a project it is not needed.
+   if(!project)void api<Overview>('/api/overview').then(o=>{if(!current.current)setOverview(o);}).catch(()=>{});
    setProjects(p.rooms);setTeam(t);setMembers(m.members);setResources(a.resources);
    if(project===current.current)setProjectData({project,room:r,roles:roleState});
    setError('');
@@ -98,7 +101,7 @@ export default function StudioApp({user}:{user:{userId:string;displayName:string
   else setMenu(false);
  };
  const agentsReady=runs.configured?runs.online!==false:null;
- const studio:Studio={me,route,go,projects,team,members,resources,agentsReady,room,runs,roles,reload,reloadRuns,desktop,openMenu};
+ const studio:Studio={me,route,go,projects,team,members,resources,agentsReady,room,runs,roles,overview,reload,reloadRuns,desktop,openMenu};
  if(!loaded)return <main className="ui-loading" role="status">Studio wird geladen …</main>;
 
  const inProject=route.page==='project'&&!!route.project;
@@ -111,11 +114,12 @@ export default function StudioApp({user}:{user:{userId:string;displayName:string
   </section>:inProject?<ProjectScreen studio={studio}/>:<StartScreen studio={studio}/>;
  return <div className={'ui-app'+(desktop?' wide':'')}>
   {error&&<div className="ui-banner" role="alert">{error} <button onClick={()=>void reload()}>Nochmal</button></div>}
-  {desktop?<div className="ui-columns">
-   <aside className="ui-col-left"><StartScreen studio={studio} compact/></aside>
-   <main className="ui-col-main">{inProject||route.page!=='start'?page:<div className="ui-empty-pane"><p>Wähle links ein Projekt.</p></div>}</main>
+  {desktop?(inProject&&!archived?<div className="ui-columns">
+   {/* In a project only this project: its conversations on the left, no other projects (owner, 22.11.2026). */}
+   <aside className="ui-col-left"><Conversations studio={studio}/></aside>
+   <main className="ui-col-main">{page}</main>
    {side&&<aside className="ui-col-right">{side}</aside>}
-  </div>:<main className="ui-col-main">{side??page}</main>}
+  </div>:<main className={'ui-col-main ui-full'+(route.page==='start'?' start':'')}>{page}</main>):<main className="ui-col-main">{side??page}</main>}
   {menu&&<Menu studio={studio} onClose={closeMenu}/>}
  </div>;
 }

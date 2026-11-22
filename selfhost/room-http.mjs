@@ -4,7 +4,7 @@ import {transaction} from './store.mjs';
 import {aiAccess} from './ai-routes.mjs';
 import {taskView,taskContract,storeMetadata,teamEvent} from './team-model.mjs';
 import {visibleProposal} from './agent-run-store.mjs';
-import {ensureChatSchema,markAgentChat,markDirectChat,privateScope,mayRead,readable,conversation,scopeLabel} from './chat-scope.mjs';
+import {ensureChatSchema,markAgentChat,markDirectChat,privateScope,mayRead,readable,conversation,scopeLabel,ownConversation,setShared,isShared,mySharing,teamChats,teamConversation,mayReadConversation} from './chat-scope.mjs';
 
 // R25 room orchestration. The current installation is one private team.
 // Reuse existing records; no implicit schema migration or provider access.
@@ -263,7 +263,8 @@ const actions=z.discriminatedUnion('action',[
  z.object({action:z.literal('link'),id,project:id,title,url:z.string().max(2000),kind:z.enum(['reference','chatgpt','github','result'])}),
  z.object({action:z.literal('repository'),project:id,url:z.string().max(2000),revision:z.number().int().min(0)}),
  z.object({action:z.literal('ai'),id,project:id,task:id.optional(),device:id,model:z.string().min(1).max(200),prompt:z.string().trim().min(1).max(3000),contextHash:z.string().regex(/^[a-f0-9]{64}$/)}),
- z.object({action:z.literal('share-result'),id,project:id,job:id})
+ z.object({action:z.literal('share-result'),id,project:id,job:id}),
+ z.object({action:z.literal('chat-visibility'),project:id,chat:z.string().regex(/^(?:member|agent):[\w-]{1,100}$/),shared:z.boolean()})
 ]);
 
 import {requirePermission,startRoles,can,rolesOf} from './project-roles.mjs';
@@ -274,7 +275,7 @@ import {showcaseOf} from './showcase.mjs';
 export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null,previewOrigin=''}){
  ensureChatSchema(db);
  return async function roomRoute({route,method,req,url,send}){
-  if(!['/api/rooms','/api/room','/api/room/context','/api/room/tasks'].includes(route))return false;
+  if(!['/api/rooms','/api/room','/api/room/context','/api/room/tasks','/api/room/chat'].includes(route))return false;
   const member=user(req);
   if(method==='GET'){
    db.prepare('UPDATE members SET seen=? WHERE id=?').run(now(),member.id);
@@ -291,6 +292,17 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null,p
    // Reading a project needs a role in it; whoever was taken out of the project sees nothing anymore.
    requirePermission(db,member,project,'view');
    if(route==='/api/room/context'){const task=url.searchParams.get('task');send(buildRoomContext(db,project,task?parse(id,task):undefined));return true;}
+   if(route==='/api/room/chat'){
+    // One private conversation that its people made readable for the team (or one's own), read-only for everyone else.
+    const conv=teamConversation(url.searchParams.get('chat')??'');
+    if(!conv||!mayReadConversation(db,project,conv,member.id))throw fail(404,'Dieses Gespräch ist privat.');
+    const before=url.searchParams.get('before');
+    const anchor=before?db.prepare('SELECT m.rowid AS sequence FROM messages m JOIN chat_private s ON s.message=m.id WHERE m.id=? AND s.project=? AND s.kind=? AND s.member=? AND s.peer=?').get(parse(id,before),project,conv.kind,conv.member,conv.peer):null;
+    if(before&&!anchor)throw fail(400,'Die ältere Nachricht gehört nicht zu diesem Gespräch.');
+    const rows=db.prepare('SELECT m.rowid AS sequence,m.*,a.name AS authorName FROM messages m JOIN members a ON a.id=m.author JOIN chat_private s ON s.message=m.id WHERE m.channel=? AND s.kind=? AND s.member=? AND s.peer=?'+(anchor?' AND m.rowid<?':'')+' ORDER BY m.rowid DESC LIMIT 101').all(project,conv.kind,conv.member,conv.peer,...(anchor?[anchor.sequence]:[]));
+    const chat=url.searchParams.get('chat');
+    send({messages:rows.slice(0,100).reverse().map(m=>{const meta=readMeta(db,key('message',m.id))??{};return {...m,...meta,proposal:undefined,proposalCard:null,scope:chat,topicTask:null,inTask:null};}),more:rows.length>100});return true;
+   }
    if(route==='/api/room/tasks'){send(listRoomTasks(db,project,{query:parse(z.string().max(160),url.searchParams.get('q')??''),includeDone:url.searchParams.get('done')==='1'}));return true;}
    const before=url.searchParams.get('before');
    const beforeMessage=before?db.prepare('SELECT rowid AS sequence,id FROM messages WHERE id=? AND channel=?').get(parse(id,before),project):null;
@@ -311,13 +323,13 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null,p
    const agents=agentsFor(db,project);
    const views=['all',...members.filter(m=>m.id!==member.id).map(m=>'member:'+m.id),...agents.filter(a=>a.active!==false).map(a=>'agent:'+a.id)];
    const unread=Object.fromEntries(views.map(view=>[view,unreadFor(db,project,member.id,view)]));
-   send({project:p,meta:roomMeta(db,project),showcase:showcaseOf(db,project,previewOrigin),neighbours:neighboursOf(db,project,member),messages,more,notes:notesFor(db,project),links:linksFor(db,project),tasks:db.prepare('SELECT * FROM tasks WHERE project=? ORDER BY created DESC,id').all(project),members,agents,runs,unread});return true;
+   send({project:p,meta:roomMeta(db,project),showcase:showcaseOf(db,project,previewOrigin),neighbours:neighboursOf(db,project,member),messages,more,notes:notesFor(db,project),links:linksFor(db,project),tasks:db.prepare('SELECT * FROM tasks WHERE project=? ORDER BY created DESC,id').all(project),members,agents,runs,unread,sharing:mySharing(db,project,member.id),teamChats:teamChats(db,project,member.id).filter(c=>members.some(m=>m.id===c.member)&&(c.kind==='agent'?agents.some(a=>a.id===c.peer):members.some(m=>m.id===c.peer)))});return true;
   }
   if(method!=='POST'||route!=='/api/room')throw fail(405,'Methode nicht erlaubt.');
   const value=parse(actions,await readJSON(req,24000));
   if(value.project){
    const talking=value.action==='share'||(value.action==='message'&&!value.senderAgent&&!value.handoff);
-   const permission=value.action==='read'?'view':value.action==='repository'?'admin':talking?'talk':'develop';
+   const permission=value.action==='read'||value.action==='chat-visibility'?'view':value.action==='repository'?'admin':talking?'talk':'develop';
    requirePermission(db,member,value.project,permission);
   }
   const result=transaction(db,()=>{
@@ -331,6 +343,12 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null,p
     return remember(db,member,value,{ok:true,project});
    }
    requireProject(db,value.project);
+   if(value.action==='chat-visibility'){
+    // "Fürs Team sichtbar": each person decides for their own private chats; between two people both must agree.
+    checkChatView(db,value.project,value.chat);
+    setShared(db,value.project,ownConversation(value.chat,member.id),member.id,value.shared,now());
+    return {ok:true,sharing:mySharing(db,value.project,member.id)};
+   }
    if(value.action==='read'){
     checkChatView(db,value.project,value.view);
     const message=value.messageId?db.prepare('SELECT rowid AS sequence,* FROM messages WHERE id=? AND channel=?').get(value.messageId,value.project):null;
@@ -552,7 +570,8 @@ export function createRoomRoute({db,user,readJSON,parse,now=Date.now,live=null,p
   // Tell the other browsers at once. A private chat signals only its two participants; reading signals nobody.
   const project=value.project??result.project;
   if(live&&project&&value.action!=='read'){
-   const only=value.action==='message'&&value.direct?[member.id,...(db.prepare('SELECT id FROM members WHERE id=?').get(value.recipient)?[value.recipient]:[])]:null;
+   const sharedChat=value.action==='message'&&value.direct&&isShared(db,project,ownConversation((db.prepare('SELECT id FROM members WHERE id=?').get(value.recipient)?'member:':'agent:')+value.recipient,member.id));
+   const only=value.action==='message'&&value.direct&&!sharedChat?[member.id,...(db.prepare('SELECT id FROM members WHERE id=?').get(value.recipient)?[value.recipient]:[])]:null;
    live.publish({type:'room',project,only});
   }
   return true;
