@@ -138,7 +138,7 @@ export function CodeSignIn({studio,compact=false,who}:{studio:Studio;compact?:bo
 export type Invite={id:string;email:string;expires:number;projects:string[];projectCount:number};
 type Suggestion={id:string;email:string;by:string};
 
-export const projectVisibility='Du siehst Chat, Aufgaben mit Gesprächen, Wissen und Team in deinen Projekten, während andere Projekte und fremde private Chats mit Menschen oder Agenten verborgen bleiben.';
+export const projectVisibility='Du siehst Chat, Aufgaben mit Gesprächen, Wissen und Team in deinen Projekten. Andere Projekte bleiben verborgen, fremde private Chats auch, solange sie nicht fürs Team sichtbar gemacht wurden.';
 
 export function InviteLink({link}:{link:string}){
  const [copied,setCopied]=useState(false);
@@ -255,7 +255,8 @@ export function GuideScreen({studio}:{studio:Studio}){
    <p><b>@Name</b> im Chat: genau dieser Agent antwortet. Ohne @Name schweigen alle.</p>
    <p><b>Markieren</b>: lange auf eine Nachricht drücken (oder den Stift neben dem Eingabefeld), weitere antippen, einen Agenten wählen und sagen, was er damit tun soll. Er liest nur diese.</p>
    <p><b>Antworten</b>: unter jeder Nachricht eines Agenten steht „Antworten“. Dann antwortet dieser Agent, auch ohne @Name.</p>
-   <p><b>Privat</b>: oben auf ein Bild tippen öffnet den Einzelchat. Was dort zur Aufgabe wird, erscheint als Karte im Projekt.</p>
+   <p><b>Privat</b>: unter „Gespräche“ (am Computer links) oder oben auf ein Bild tippen öffnet den Einzelchat. Was dort zur Aufgabe wird, erscheint als Karte im Projekt.</p>
+   <p><b>Fürs Team sichtbar</b>: oben im Einzelchat kannst du ihn fürs Team sichtbar machen. Dann können alle im Projekt mitlesen, schreiben können nur ihr. Ein Chat zwischen zwei Menschen wird erst sichtbar, wenn beide zustimmen. „Wieder privat“ macht ihn wieder privat.</p>
   </Section>
   <Section title="Das Team">
    <p>Jeder Agent hat einen Job: Entwicklung ändert Code, Recherche sucht im Internet, Prüfung prüft Änderungen. Herr Grau leitet und stellt ein. Höchstens sechs im Team, pro Job einer.</p>

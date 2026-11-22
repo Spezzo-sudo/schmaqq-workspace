@@ -190,7 +190,7 @@ try{
 
  for(const width of [390,1440]){
   expect(await screen('projektinfo-'+width,'/?p='+project+'&info=1',width,async p=>{
-   const person=p.getByText('Lena Weber',{exact:true});
+   const person=p.getByText('Lena Weber',{exact:true}).last(); // desktop: also in the conversations column
    await person.scrollIntoViewIfNeeded();
   }),'Macht mit');
   expect(await screen('mein-konto-team-'+width,'/?page=account&bereich=verwaltung',width,async p=>{

@@ -1,4 +1,6 @@
-import {readFileSync,writeFileSync,existsSync} from 'node:fs';
+import {readFileSync,writeFileSync,existsSync,readdirSync} from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {StringDecoder} from 'node:string_decoder';
 import {command} from './process.mjs';
 
@@ -36,5 +38,37 @@ export async function runCodex({executable,cwd,prompt,sessionFile,signal,onEvent
   buffer+=decoder.write(b);let end;while((end=buffer.indexOf('\n'))>=0){line(buffer.slice(0,end));buffer=buffer.slice(end+1);}if(buffer.length>1000000)buffer='';
  }});
  buffer+=decoder.end();if(buffer.trim())line(buffer);
- return {output:answer,sessionAvailable:!!session,resumed,...(usage.turns?{usage}:{})};
+ const limits=session?planLimits(env.CODEX_HOME||path.join(os.homedir(),'.codex'),session):null;
+ return {output:answer,sessionAvailable:!!session,resumed,...(usage.turns?{usage}:{}),...(limits?{limits}:{})};
+}
+
+/**
+ * How much of the ChatGPT plan is used: Codex notes it in the session's own log after every turn
+ * (a short window of a few hours and a weekly one). Studio shows it on Start; nothing else is read.
+ */
+export function planLimits(home,session,{now=Date.now()}={}){
+ try{
+  const root=path.join(home,'sessions'),day=d=>{const t=new Date(now-d*86400000);return [String(t.getFullYear()),String(t.getMonth()+1).padStart(2,'0'),String(t.getDate()).padStart(2,'0')];};
+  let file=null;
+  for(const d of [0,1,2]){
+   const dir=path.join(root,...day(d));if(!existsSync(dir))continue;
+   const hit=readdirSync(dir).find(f=>f.endsWith('-'+session+'.jsonl'));if(hit){file=path.join(dir,hit);break;}
+  }
+  if(!file)return null;
+  const lines=readFileSync(file,'utf8').trimEnd().split('\n');let latestReached=null;
+  for(let i=lines.length-1;i>=0&&i>=lines.length-400;i--){
+   if(!lines[i].includes('"rate_limits"'))continue;
+   let entry;try{entry=JSON.parse(lines[i]);}catch{continue;}
+   const r=entry?.payload?.rate_limits;if(!r||typeof r!=='object')continue;
+   const w=x=>x&&Number.isFinite(x.used_percent)?{used:x.used_percent,minutes:x.window_minutes,resets:Number.isFinite(x.resets_at)?x.resets_at*1000:null}:null;
+   // Which window is which depends on the plan: the length decides (up to a day = short, longer = week).
+   const windows=[w(r.primary),w(r.secondary)].filter(Boolean),reached=!!r.rate_limit_reached_type;
+   const short=windows.find(x=>x.minutes>0&&x.minutes<=1440)??null,week=windows.find(x=>x.minutes>1440)??null;
+   // The newest entry says whether a limit is reached; the newest entry with numbers says how much is used.
+   if(latestReached===null)latestReached=reached;
+   if(short||week)return {...(short?{short}:{}),...(week?{week}:{}),...(latestReached?{reached:true}:{})};
+  }
+  if(latestReached)return {reached:true};
+ }catch{/* no log: nothing to report */}
+ return null;
 }

@@ -26,6 +26,7 @@ import {createLoginLimiter} from './login-rate-limit.mjs';
 import {createResetMailer, createPasswordRecovery} from './password-recovery.mjs';
 import {createWorkspaceHttpRoute} from './workspace-http.mjs';
 import {createRoomRoute} from './room-http.mjs';
+import {createOverviewRoute} from './overview-http.mjs';
 import {createAgentRunRoute} from './agent-run-http.mjs';
 import {createLiveEvents} from './live-events.mjs';
 import {createTeamRoute} from './team-http.mjs';
@@ -85,6 +86,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
   db,origin,sessionCookie,user,session,readJSON,parse,fail,uuid,now,loginLimiter,passwordRecovery,onJoin
  });
  const roomRoute=createRoomRoute({db,user,readJSON,parse,live,previewOrigin});
+ const overviewRoute=createOverviewRoute({db,user,now});
  // Opt-in only: an operator-owned mode-0600 file binds each Hermes service identity to exactly one Studio member.
  let configuredHermesWorkers=hermesWorkers??[];
  if(hermesWorkersFile){
@@ -224,6 +226,7 @@ export function createStudioServer({oidcProvider,githubProvider,pullRequestReade
    if(await codexAccountRoute({route,method,req,db,user,send,readJSON,parse}))return;
    if(await authHttpRoute({route,method,req,url,res,send}))return;
    if(await agentRunRoute({route,method,req,res,url,send}))return;
+   if(await overviewRoute({route,method,req,send}))return;
    if(await roomRoute({route,method,req,res,url,send}))return;
    if(route==='/api/runner/poll'&&method==='POST'){
     const d=device(req);db.prepare('UPDATE devices SET seen=? WHERE id=?').run(now(),d.id);

@@ -4,7 +4,7 @@ import { digest, token, transaction } from './store.mjs';
 import { can, requirePermission } from './project-roles.mjs';
 import { agentsFor, buildRoomContext, listRoomTasks, insertRoomTask } from './room-http.mjs';
 import { agentRunStore, ensureAgentRunSchema } from './agent-run-store.mjs';
-import { ensureChatSchema, inheritScope, privateScope } from './chat-scope.mjs';
+import { ensureChatSchema, inheritScope, isShared, privateScope } from './chat-scope.mjs';
 import { codeRunBlocker, queueAgentCodeRun } from './agent-code.mjs';
 import { readWebPage } from './web-read.mjs';
 import { latestGeneralResult, storeMetadata, taskContract } from './team-model.mjs';
@@ -242,8 +242,11 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
 
   // Only the person who asked sees their runs; an answer in the group chat is news for everyone.
   const runMoved = (owner, project) => live?.publish({ type: 'runs', project, only: [owner] });
-  const answerPosted = (owner, project, source) =>
-    live?.publish({ type: 'room', project, only: privateScope(db, source) ? [owner] : null });
+  // A private chat made readable for the team ("fürs Team sichtbar") is news for everyone, too.
+  const answerPosted = (owner, project, source) => {
+    const scope = privateScope(db, source);
+    live?.publish({ type: 'room', project, only: scope && !isShared(db, project, scope) ? [owner] : null });
+  };
 
   // Who a worker works for: the person named in the file, or whoever took the free place.
   const ownerOf = w => w.owner ?? (w.slot ? metaGet('chat-slot:v1:' + w.slot)?.owner ?? null : null);

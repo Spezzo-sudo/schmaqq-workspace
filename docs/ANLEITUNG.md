@@ -19,7 +19,8 @@ Welche Bildschirme und Knöpfe es gibt, steht verbindlich in [OBERFLAECHE.md](OB
 - **Markieren:** lange auf eine Nachricht drücken (oder den Stift neben dem Eingabefeld), weitere antippen, einen Agenten
   wählen und sagen, was er damit tun soll. Er liest nur diese.
 - **Antworten:** unter jeder Nachricht eines Agenten steht „Antworten“. Dann antwortet dieser Agent, auch ohne @Name.
-- **Privat:** oben auf ein Bild tippen öffnet den Einzelchat. Was dort zur Aufgabe wird, erscheint als Karte im Projekt.
+- **Privat:** unter „Gespräche“ (am Computer links) oder oben auf ein Bild tippen öffnet den Einzelchat. Was dort zur Aufgabe wird, erscheint als Karte im Projekt.
+- **Fürs Team sichtbar:** oben im Einzelchat kannst du ihn fürs Team sichtbar machen. Dann können alle im Projekt mitlesen, schreiben können nur ihr. Ein Chat zwischen zwei Menschen wird erst sichtbar, wenn beide zustimmen. „Wieder privat“ macht ihn wieder privat.
 
 ## Das Team
 
@@ -66,7 +67,7 @@ Wer das Projekt leitet, kann über **„Team erweitern“ → „Person einladen
 Der Link gilt 24 Stunden und einmal. Sobald die Person ihr Konto anlegt, ist sie im Projekt und kann direkt anfangen.
 Unter **Mein Konto → Team** kann der Inhaber auch mehrere Projekte auswählen oder nur ins Studio einladen. Eine Einladung ohne Projekt erlaubt der Person, eigene Projekte anzulegen.
 
-Du siehst Chat, Aufgaben mit Gesprächen, Wissen und Team in deinen Projekten, während andere Projekte und fremde private Chats mit Menschen oder Agenten verborgen bleiben.
+Du siehst Chat, Aufgaben mit Gesprächen, Wissen und Team in deinen Projekten. Andere Projekte bleiben verborgen, fremde private Chats auch, solange sie nicht fürs Team sichtbar gemacht wurden.
 
 - **Leitet das Projekt** kann Menschen dazunehmen, ihre Rolle ändern und sie aus dem Projekt nehmen.
 - **Macht mit** kann schreiben, Aufgaben bearbeiten und Änderungen freigeben.

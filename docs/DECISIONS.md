@@ -2,6 +2,13 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 22.11.2026 (Start als Zentrale, Gespräche im Projekt, „fürs Team sichtbar“)
+- **Start ist die Zentrale** (Marco: „eine richtig gute Übersicht über die ganze Seite“): keine Projektspalte mehr daneben, auch auf dem Desktop nicht. Blöcke: Wartet auf dich, Gerade am Arbeiten, Projekte, Zuletzt bewegt, Dein ChatGPT (Kontingent und Verbrauch), Die letzten 7 Tage, Dein Team. Eine Abfrage `/api/overview` liefert alles; sie zählt nur, was die Person ohnehin lesen darf.
+- **Im Projekt nur das Projekt**: links (Handy: Reiter „Gespräche“) alle Gespräche dieses Projekts: Projektchat, mit Agenten, mit Menschen, fürs Team sichtbare Chats anderer, Aufgaben. Andere Projekte erreicht man über „‹ Zentrale“.
+- **Private Chats: Weg C** (Marco: „wir nehmen C“): jede Person entscheidet pro Chat, ob er privat bleibt oder **fürs Team sichtbar** ist. Mit einem Agenten entscheidet die Person allein, zwischen zwei Menschen müssen beide zustimmen. Sichtbar heißt: alle im Projekt lesen mit, nur die Beteiligten schreiben, Agenten lesen weiter nur den Projektchat. Gespeichert pro Chat in `workspace_meta` (`chat:v1:shared:…`), ohne neue Tabelle. Geprüft auf dem Server (`/api/room/chat`), nicht nur in der Oberfläche.
+- **Kontingent**: ChatGPT schreibt in das Protokoll jedes Programmierlaufs, wie viel vom kurzen Fenster (einige Stunden) und vom Wochenfenster verbraucht ist. Studio liest das am Ende jedes Laufs mit und zeigt den neuesten Stand der eigenen Läufe auf Start („Stand <Zeit>“). Für Chat-Antworten gibt es diese Meldung nicht; ohne Programmierauftrag steht „Noch keine Angabe“.
+- Handy und Desktop haben dieselben Funktionen, nur anders angeordnet.
+
 ## 20.11.2026 (Chat-Anmeldung selbst verbinden: gebaut)
 - Wer in KI-Zugänge bei „Gespräche und Recherche“ auf „Mit ChatGPT verbinden“ tippt, bekommt einen freien **Platz** (eigener Benutzer und Dienst auf dem Server, beim Deploy einmal angelegt, Start mit 10). Der Dienst des Platzes führt die Geräte-Anmeldung aus, Studio zeigt Link und Code, danach beantwortet derselbe Dienst die Agenten dieser Person. Marcos bestehender Dienst bleibt fest ihm zugeordnet. Ausführlich: `docs/ENTWURF_CHAT_ANMELDUNG.md`.
 
