@@ -39,10 +39,10 @@ export function overviewFor(db, member, now = Date.now()) {
  })));
 
  // Working right now: answers the person may see, and code runs.
- const lastStep = db.prepare('SELECT tool FROM agent_run_steps WHERE run=? ORDER BY seq DESC LIMIT 1');
+ const lastStep = answers ? db.prepare('SELECT tool FROM agent_run_steps WHERE run=? ORDER BY seq DESC LIMIT 1') : null;
  const working = (answers ? db.prepare("SELECT id,owner,project,agent,status,created,claimed,source_message FROM agent_runs WHERE status IN ('queued','running','cancelling') ORDER BY created").all() : [])
   .filter(r => ids.has(r.project) && (r.owner === member.id || mayRead(db, r.source_message, member.id)))
-  .map(r => ({kind: 'answer', project: r.project, agent: r.agent, status: r.status, started: r.claimed ?? r.created, step: lastStep.get(r.id)?.tool ?? null, task: null}));
+  .map(r => ({kind: 'answer', project: r.project, agent: r.agent, status: r.status, started: r.claimed ?? r.created, step: lastStep?.get(r.id)?.tool ?? null, task: null}));
  const code = db.prepare("SELECT j.project,j.status,j.created,j.started,w.task FROM jobs j LEFT JOIN workspaces w ON w.job=json_extract(j.payload,'$.worktree') WHERE j.action='codex' AND j.status IN ('queued','running','cancelling') ORDER BY j.created").all()
   .filter(j => ids.has(j.project))
   .map(j => ({kind: 'code', project: j.project, agent: null, status: j.status === 'queued' ? 'queued' : 'running', started: j.started ?? j.created, step: 'code.change', task: j.task ?? null}));
