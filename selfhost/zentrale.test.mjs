@@ -11,10 +11,10 @@ import {limitsOf} from './overview-http.mjs';
 
 // Start as "Zentrale" and private chats that their people make readable for the team (owner, 22.11.2026, option C).
 
-async function fixture(t){
+async function fixture(t,{hermesWorkers=[{owner:'nobody',token:'w'.repeat(43)}]}={}){
  const dir=mkdtempSync(path.join(os.tmpdir(),'schmaqq-zentrale-test-'));
  const origin='http://127.0.0.1:44893';
- const app=createStudioServer({seedProjects:false,filename:path.join(dir,'test.sqlite'),origin,previewOrigin:'http://127.0.0.1:44894',resetMailer:null,hermesWorkers:[{owner:'nobody',token:'w'.repeat(43)}]});
+ const app=createStudioServer({seedProjects:false,filename:path.join(dir,'test.sqlite'),origin,previewOrigin:'http://127.0.0.1:44894',resetMailer:null,hermesWorkers});
  await new Promise((resolve,reject)=>{app.server.once('error',reject);app.server.listen(0,'127.0.0.1',resolve);});
  t.after(async()=>{await new Promise(resolve=>app.server.close(resolve));app.db.close();rmSync(dir,{recursive:true,force:true});});
  const host='http://127.0.0.1:'+app.server.address().port;
@@ -75,6 +75,17 @@ test('a chat between two people becomes readable for the team only when both agr
  assert.equal((await read(f.lena)).status,404);
  // A chat with someone outside the project cannot be switched.
  assert.equal((await f.post({action:'chat-visibility',project:f.project,chat:'member:'+f.zora.id,shared:true},f.marco.cookie)).status,400);
+});
+
+test('overview works on a fresh studio without an agent service',async t=>{
+ const f=await fixture(t,{hermesWorkers:[]});
+ await f.say(f.marco,'Hallo Team');
+ const {status,data}=await f.get('/api/overview',f.marco.cookie);
+ assert.equal(status,200);
+ assert.deepEqual(data.projects,[f.project]);
+ assert.deepEqual(data.working,[]);
+ assert.deepEqual(data.week[f.project],{answers:0,messages:1,codeRuns:0});
+ assert.ok(data.agents.some(agent=>agent.id===f.lead.id));
 });
 
 test('overview: own projects only, private work of others stays hidden, limits and usage from my own code runs',async t=>{
