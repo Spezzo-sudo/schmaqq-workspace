@@ -757,3 +757,47 @@ test('chat connection: a failed sign-in can be tried again; a person with a fixe
  const off=await fixture(t,{configured:false});
  assert.equal((await off.get('/api/chat-connection',{cookie:off.members[0].cookie})).data.state,'unavailable');
 });
+
+test('accepting a plan with a full queue still puts the named colleague in line (owner, 24.11.2026: nothing gets lost silently)',async t=>{
+ const f=await fixture(t),[alice]=f.members,[worker]=f.secrets,w={token:worker.token};
+ const project=(await f.post('/api/room',{action:'create',id:randomUUID(),title:'Voll',description:'',members:[]},{cookie:alice.cookie})).data.project;
+ const lead=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.agents[0];
+ await f.post('/api/room',{action:'agent',id:randomUUID(),project,name:'Mara',role:'frontend',avatarPresetId:'mara',model:'x'},{cookie:alice.cookie});
+ const message=randomUUID();
+ await f.post('/api/room',{action:'message',id:message,project,recipient:lead.id,direct:true,body:'Mach einen Plan.'},{cookie:alice.cookie});
+ await f.post('/api/agent-runs',{project,agent:lead.id,message},{cookie:alice.cookie});
+ const job=(await f.post('/api/agent-worker/claim',{},w)).data.job;
+ const plan={goal:'Ziel',tasks:[{title:'Eins',done_when:'a',kind:'general',who:'Mara'},{title:'Zwei',done_when:'b',kind:'general',who:'Mensch'}],hire:[]};
+ assert.equal((await f.post('/api/agent-worker/tool',{run:job.run,lease:job.lease,callId:randomUUID().slice(0,16),tool:'plan.propose',args:plan},w)).status,200);
+ const done=await f.post('/api/agent-worker/finish',{run:job.run,lease:job.lease,status:'completed',output:'Plan steht.'},w);
+ // Five requests already wait: the limit for new questions is reached.
+ for(let i=0;i<5;i++)f.app.db.prepare("INSERT INTO agent_runs(id,owner,project,agent,source_message,model,status,created,updated) VALUES(?,?,?,?,?,?,?,?,?)").run(randomUUID(),alice.id,project,lead.id,'wait'+i,'x','queued',Date.now(),Date.now());
+ const card=(await f.get('/api/room?project='+project,{cookie:alice.cookie})).data.messages.find(m=>m.id===done.data.message).proposalCard;
+ const accepted=await f.post('/api/agent-proposals/decide',{proposal:card.id,decision:'accept'},{cookie:alice.cookie});
+ assert.equal(accepted.status,200);
+ assert.equal(accepted.data.started?.length,1,'Mara is in line even though the queue was full');
+ const runs=(await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data.runs;
+ const mara=runs.find(r=>r.id===accepted.data.started[0]);
+ assert.deepEqual([mara.status,mara.position],['queued',6],'she waits, and the app can say where');
+});
+
+test('a question whose request never reached the agent shows as not started and can be sent again with the same message',async t=>{
+ const f=await fixture(t),[alice]=f.members;
+ const {project,agent,message}=await f.createAgentMessage();
+ const list=async()=>(await f.get('/api/agent-runs?project='+project,{cookie:alice.cookie})).data.runs;
+ assert.deepEqual(await list(),[],'a message just sent is not reported yet (its request may still be on the way)');
+ f.app.db.prepare('UPDATE messages SET created=? WHERE id=?').run(Date.now()-60000,message);
+ const missing=(await list()).find(r=>r.message===message);
+ assert.deepEqual([missing?.status,missing?.errorCode,missing?.agent],['failed','not-started',agent]);
+ // Somebody else does not see it.
+ assert.deepEqual((await f.get('/api/agent-runs?project='+project,{cookie:f.members[1].cookie})).data.runs,[]);
+ const again=await f.post('/api/agent-runs',{project,agent,message,retry:true},{cookie:alice.cookie});
+ assert.equal(again.status,202);
+ const runs=await list();
+ assert.deepEqual(runs.map(r=>[r.message,r.status]),[[message,'queued']],'the same message, now with a real request');
+ // Older than a day: not brought up again.
+ const old=randomUUID();
+ await f.post('/api/room',{action:'message',id:old,project,recipient:agent,body:'Alt'},{cookie:alice.cookie});
+ f.app.db.prepare('UPDATE messages SET created=? WHERE id=?').run(Date.now()-2*86400000,old);
+ assert.ok(!(await list()).some(r=>r.message===old));
+});

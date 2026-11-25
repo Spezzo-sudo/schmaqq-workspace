@@ -43,7 +43,7 @@ export const runActive=(run:Pick<Run,'status'>)=>run.status==='queued'||run.stat
 const steps:Record<string,string>={'project.read_context':'liest den Projektstand','task.propose':'schreibt einen Vorschlag','plan.propose':'macht einen Plan',
  'agent.ask':'gibt Arbeit weiter','code.change':'ändert den Code','web.read':'liest eine Webseite','change.read':'prüft die Änderung','team.hire':'schlägt jemanden vor'};
 const failures:Record<string,string>={timeout:'Das hat zu lange gedauert.','provider-unavailable':'Der KI-Zugang war nicht erreichbar.',
- 'model-unavailable':'Der KI-Zugang hat die Anfrage abgelehnt.','quota-exceeded':'Das Kontingent des KI-Zugangs ist aufgebraucht.','protocol-error':'Die Antwort kam unvollständig an.'};
+ 'model-unavailable':'Der KI-Zugang hat die Anfrage abgelehnt.','quota-exceeded':'Das Kontingent des KI-Zugangs ist aufgebraucht.','protocol-error':'Die Antwort kam unvollständig an.','not-started':'Der Auftrag ist nicht angekommen.'};
 /** What an agent does in a step, in plain words ("ändert den Code"). */
 export const stepLabel=(tool:string|null|undefined)=>tool&&steps[tool]?steps[tool]:'denkt nach';
 export function duration(ms:number){const s=Math.max(1,Math.round(ms/1000));return s<60?s+' s':Math.floor(s/60)+' min'+(s%60?' '+(s%60)+' s':'');}

@@ -62,7 +62,8 @@ export function Chat({studio,place}:{studio:Studio;place:ChatPlace}){
    ...(marking&&recipient?{recipient,marked:marking}:{}),...(replyTo&&!marking?{replyTo:replyTo.id}:{})};
   const sent=await api<{ask?:string|null}>('/api/room',payload);
   follow.current=true;setMarking(null);setReplyTo(null);
-  if(sent.ask)await ask(id,sent.ask);
+  // The message is saved. If the agent did not get the request, say so here; the message gets "Nochmal" (same message).
+  if(sent.ask)await ask(id,sent.ask).catch(e=>{setError(`Nachricht gesendet, aber ${nameOf(sent.ask)} hat den Auftrag nicht bekommen: ${(e as Error).message}`);setTimeout(()=>void studio.reloadRuns(),6000);});
   if(place.kind==='task')place.onChanged();
   await studio.reload();
  }
