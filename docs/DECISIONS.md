@@ -2,6 +2,10 @@
 
 Kurz, datiert, verbindlich. Neue Entscheidungen oben. Was hier steht, gilt, bis ein neuer Eintrag es ändert.
 
+## 25.11.2026 (Kein Auftrag geht mehr still verloren)
+- **Plan annehmen bei voller Warteschlange:** Bisher legte Studio die Aufgaben an, startete den genannten Kollegen aber nicht, wenn schon 5 Aufträge warteten, ohne Hinweis. Jetzt reiht Studio ihn immer ein (höchstens 6 pro Plan, da „Plan annehmen“ eine bewusste Entscheidung ist); in der Aufgabe steht „wartet (Platz N)“. Die Grenze von 5 gilt weiter für neue Fragen.
+- **Frage ohne gestarteten Auftrag:** Nachricht und Auftrag sind zwei Schritte. Scheitert der zweite, stand die Nachricht bisher ohne Antwort und ohne Hinweis im Chat. Jetzt meldet der Server eigene Fragen an Agenten der letzten 24 Stunden, zu denen es keinen Auftrag gibt, als „nicht angekommen“; „Nochmal“ schickt dieselbe Nachricht erneut. Direkt nach dem Senden sagt der Chat, warum. Ein einziger Schritt auf dem Server folgt mit „Agent fragen“ (Empfängerfeld), siehe Diskussionsentwurf Agentenkommunikation vom 24.11.2026.
+
 ## 22.11.2026 (Start als Zentrale, Gespräche im Projekt, „fürs Team sichtbar“)
 - **Start ist die Zentrale** (Marco: „eine richtig gute Übersicht über die ganze Seite“): keine Projektspalte mehr daneben, auch auf dem Desktop nicht. Blöcke: Wartet auf dich, Gerade am Arbeiten, Projekte, Zuletzt bewegt, Dein ChatGPT (Kontingent und Verbrauch), Die letzten 7 Tage, Dein Team. Eine Abfrage `/api/overview` liefert alles; sie zählt nur, was die Person ohnehin lesen darf.
 - **Im Projekt nur das Projekt**: links (Handy: Reiter „Gespräche“) alle Gespräche dieses Projekts: Projektchat, mit Agenten, mit Menschen, fürs Team sichtbare Chats anderer, Aufgaben. Andere Projekte erreicht man über „‹ Zentrale“.

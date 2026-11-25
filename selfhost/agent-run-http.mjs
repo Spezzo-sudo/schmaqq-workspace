@@ -312,18 +312,38 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
     };
   }
 
+  /** My own questions to agents of the last day that never became a run (older than a moment, so a send in flight is not one). */
+  function unstarted(owner, project, now) {
+    return db.prepare(`SELECT m.id,m.created,json_extract(x.value,'$.recipient') AS agent FROM messages m
+      JOIN workspace_meta x ON x.key='room:v1:message:'||m.id
+      WHERE m.channel=? AND m.author=? AND m.created BETWEEN ? AND ?
+        AND json_extract(x.value,'$.origin')='human' AND json_extract(x.value,'$.recipientKind')='agent'
+        AND json_extract(x.value,'$.senderAgent') IS NULL AND json_extract(x.value,'$.handoff') IS NULL
+        AND NOT EXISTS(SELECT 1 FROM agent_runs r WHERE r.owner=m.author AND r.agent=json_extract(x.value,'$.recipient') AND r.source_message=m.id)
+      ORDER BY m.created DESC LIMIT 10`).all(project, owner, now - 24 * 3600 * 1000, now - 5000)
+      .filter(row => activeAgent(project, row.agent))
+      .map(row => ({
+        id: 'unstarted:' + row.id, agent: row.agent, owner, project, message: row.id, status: 'failed',
+        created: row.created, updated: row.created, model: null, started: null, finished: null, position: null,
+        steps: [], completedMessage: null, errorCode: 'not-started', chain: null
+      }));
+  }
+
   function listRuns(member, project, now) {
     const queue = store.activeRuns(member.id).filter(r => r.status === 'queued').map(r => r.id);
     const position = run => (run.status === 'queued' ? queue.indexOf(run.id) + 1 : null);
     const runs = project
       ? store.recentRuns(member.id, project)
       : store.activeRuns(member.id).filter(run => can(db, member, run.project, 'view'));
+    // A question to an agent whose request never arrived (the second step failed or the page was closed): shown as
+    // "not started" with "Nochmal", which asks again with the same message.
+    const missing = project ? unstarted(member.id, project, now) : [];
     return {
       configured: hasWorker(member.id),
       models,
       catalog: readCatalog(db),
       online: hasWorker(member.id) && workerOnline(member.id, now),
-      runs: runs.map(run => summary(run, position(run)))
+      runs: [...runs.map(run => summary(run, position(run))), ...missing]
     };
   }
 
@@ -678,7 +698,9 @@ export function createAgentRunRoute({ db, user, readJSON, parse, workers = [], l
   function handOver(member, { project, lead: leadId, title, description, target: targetId }, task, now) {
     const target = targetId && agentsFor(db, project).find(a => a.id === targetId && a.active !== false && !a.lead);
     const lead = activeAgent(project, leadId);
-    if (!target || !lead || store.activeRuns(member.id).length >= QUEUE_LIMIT) return null;
+    // No queue limit here (owner, 24.11.2026): the person accepted the plan, so the named colleague always gets in line
+    // (at most PLAN_TASKS per plan). Before, a full queue left the task without anyone working on it, silently.
+    if (!target || !lead) return null;
     const messageId = randomUUID(), next = randomUUID();
     const body = '@' + target.name + ' bitte übernimm: ' + title + (description ? '\n' + description.slice(0, 800) : '');
     db.prepare('INSERT INTO messages VALUES(?,?,?,?,?)').run(messageId, project, member.id, body, now);

@@ -60,6 +60,7 @@ Darunter der Zustand des KI-Zugangs (bereit / nicht erreichbar).
   Ein Chat mit Nachrichten öffnet bei der neuesten Nachricht. Ein leerer Chat öffnet am Anfang der Begrüßung.
   Herr Grau stellt sich im leeren Projektchat vor: „Ich bin Herr Grau, eure Projektleitung. Sagt mir, was ihr erreichen wollt:
   Ich mache einen Plan, verteile die Arbeit im Team und stelle ein, wen wir noch brauchen.“ Knopf „@Herr Grau“.
+- **Auftragszeile** unter einer Nachricht an einen Agenten: „Otto fängt gleich an“ · „Otto wartet (Platz 3)“ · „Otto liest den Projektstand · 12 s“ (Stopp) · „Otto hat nicht geantwortet. <Grund>“ (Nochmal). Kam der Auftrag nie beim Agenten an (Verbindung weg, Seite zu früh geschlossen): „Otto hat nicht geantwortet. Der Auftrag ist nicht angekommen.“ mit „Nochmal“; das schickt dieselbe Nachricht erneut, keine zweite. Direkt nach dem Senden steht in diesem Fall über der Eingabe „Nachricht gesendet, aber Otto hat den Auftrag nicht bekommen: <Grund>“.
 - **Antworten**: Unter jeder Nachricht eines Agenten im Projektchat und in der Aufgabe steht „Antworten“. Über der Eingabe steht dann „Antwort an <Name>“ (mit Schließen); der Agent antwortet, ohne dass @ nötig ist. Zeilen von Aufgaben im Projektchat haben das nicht, dort öffnet man die Aufgabe.
 - **Lange drücken** auf eine Nachricht: Markieren → „Agent fragen“; Kopieren.
 - **Aufgaben**: alle Karten als Liste in drei Gruppen: Bei dir · Läuft · Erledigt. Knopf „+ Aufgabe“ (Titel, Fertig wenn, Art: Code oder Sonstiges).
